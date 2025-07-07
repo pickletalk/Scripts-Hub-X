@@ -73,16 +73,6 @@ local contentFrameCorner = Instance.new("UICorner")
 contentFrameCorner.CornerRadius = UDim.new(0, 20)
 contentFrameCorner.Parent = contentFrame
 
--- Content frame gradient
-local contentGradient = Instance.new("UIGradient")
-contentGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 20, 20)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(45, 30, 30)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(30, 20, 20))
-})
-contentGradient.Rotation = 90
-contentGradient.Parent = contentFrame
-
 -- Content frame border glow
 local contentStroke = Instance.new("UIStroke")
 contentStroke.Color = Color3.fromRGB(200, 100, 100)
