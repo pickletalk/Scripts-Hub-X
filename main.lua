@@ -56,109 +56,132 @@ screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(1, 0, 1, 0)
 mainFrame.Position = UDim2.new(0, 0, 0, 0)
-mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
+mainFrame.BackgroundColor3 = Color3.fromRGB(25, 15, 15)
 mainFrame.BorderSizePixel = 0
 mainFrame.Parent = screenGui
 
 -- Gradient background
 local backgroundGradient = Instance.new("UIGradient")
 backgroundGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(15, 15, 25)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(25, 25, 40)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(15, 15, 25))
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(25, 15, 15)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(40, 25, 25)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(25, 15, 15))
 })
 backgroundGradient.Rotation = 45
 backgroundGradient.Parent = mainFrame
 
--- Content frame
+-- Content frame (centered container)
 local contentFrame = Instance.new("Frame")
-contentFrame.Size = UDim2.new(0.8, 0, 0.6, 0)
-contentFrame.Position = UDim2.new(0.1, 0, 0.2, 0)
-contentFrame.BackgroundTransparency = 1
+contentFrame.Size = UDim2.new(0, 500, 0, 300)
+contentFrame.Position = UDim2.new(0.5, -250, 0.5, -150)
+contentFrame.BackgroundColor3 = Color3.fromRGB(30, 20, 20)
+contentFrame.BorderSizePixel = 0
 contentFrame.Parent = mainFrame
+
+-- Content frame corner radius
+local contentFrameCorner = Instance.new("UICorner")
+contentFrameCorner.CornerRadius = UDim.new(0, 20)
+contentFrameCorner.Parent = contentFrame
+
+-- Content frame gradient
+local contentGradient = Instance.new("UIGradient")
+contentGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 20, 20)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(45, 30, 30)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(30, 20, 20))
+})
+contentGradient.Rotation = 90
+contentGradient.Parent = contentFrame
+
+-- Content frame border glow
+local contentStroke = Instance.new("UIStroke")
+contentStroke.Color = Color3.fromRGB(200, 100, 100)
+contentStroke.Thickness = 2
+contentStroke.Transparency = 0.3
+contentStroke.Parent = contentFrame
 
 -- Title label
 local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(1, 0, 0.3, 0)
-titleLabel.Position = UDim2.new(0, 0, 0, 0)
+titleLabel.Size = UDim2.new(1, -40, 0, 60)
+titleLabel.Position = UDim2.new(0, 20, 0, 30)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Text = "Scripts Hub X | Official"
-titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.TextColor3 = Color3.fromRGB(255, 200, 200)
 titleLabel.TextScaled = true
 titleLabel.Font = Enum.Font.GothamBold
 titleLabel.Parent = contentFrame
 
 -- Title glow effect
 local titleStroke = Instance.new("UIStroke")
-titleStroke.Color = Color3.fromRGB(100, 150, 255)
+titleStroke.Color = Color3.fromRGB(255, 100, 100)
 titleStroke.Thickness = 2
 titleStroke.Transparency = 0.5
 titleStroke.Parent = titleLabel
 
 -- Credits label
 local creditsLabel = Instance.new("TextLabel")
-creditsLabel.Size = UDim2.new(1, 0, 0.1, 0)
-creditsLabel.Position = UDim2.new(0, 0, 0.4, 0)
+creditsLabel.Size = UDim2.new(1, -40, 0, 25)
+creditsLabel.Position = UDim2.new(0, 20, 0, 100)
 creditsLabel.BackgroundTransparency = 1
 creditsLabel.Text = "Credits to scripts owner"
-creditsLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+creditsLabel.TextColor3 = Color3.fromRGB(200, 150, 150)
 creditsLabel.TextScaled = true
 creditsLabel.Font = Enum.Font.Gotham
 creditsLabel.Parent = contentFrame
 
 -- Discord link label
 local discordLabel = Instance.new("TextLabel")
-discordLabel.Size = UDim2.new(1, 0, 0.1, 0)
-discordLabel.Position = UDim2.new(0, 0, 0.55, 0)
+discordLabel.Size = UDim2.new(1, -40, 0, 25)
+discordLabel.Position = UDim2.new(0, 20, 0, 130)
 discordLabel.BackgroundTransparency = 1
 discordLabel.Text = "Discord: https://discord.gg/bpsNUH5sVb"
-discordLabel.TextColor3 = Color3.fromRGB(114, 137, 218)
+discordLabel.TextColor3 = Color3.fromRGB(200, 120, 120)
 discordLabel.TextScaled = true
 discordLabel.Font = Enum.Font.Gotham
 discordLabel.Parent = contentFrame
 
 -- Loading bar background
 local loadingBarBg = Instance.new("Frame")
-loadingBarBg.Size = UDim2.new(0.8, 0, 0.02, 0)
-loadingBarBg.Position = UDim2.new(0.1, 0, 0.75, 0)
-loadingBarBg.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+loadingBarBg.Size = UDim2.new(1, -60, 0, 8)
+loadingBarBg.Position = UDim2.new(0, 30, 0, 180)
+loadingBarBg.BackgroundColor3 = Color3.fromRGB(50, 30, 30)
 loadingBarBg.BorderSizePixel = 0
 loadingBarBg.Parent = contentFrame
 
 -- Loading bar background corner
 local loadingBarBgCorner = Instance.new("UICorner")
-loadingBarBgCorner.CornerRadius = UDim.new(0, 10)
+loadingBarBgCorner.CornerRadius = UDim.new(0, 15)
 loadingBarBgCorner.Parent = loadingBarBg
 
 -- Loading bar fill
 local loadingBarFill = Instance.new("Frame")
 loadingBarFill.Size = UDim2.new(0, 0, 1, 0)
 loadingBarFill.Position = UDim2.new(0, 0, 0, 0)
-loadingBarFill.BackgroundColor3 = Color3.fromRGB(100, 150, 255)
+loadingBarFill.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
 loadingBarFill.BorderSizePixel = 0
 loadingBarFill.Parent = loadingBarBg
 
 -- Loading bar fill corner
 local loadingBarFillCorner = Instance.new("UICorner")
-loadingBarFillCorner.CornerRadius = UDim.new(0, 10)
+loadingBarFillCorner.CornerRadius = UDim.new(0, 15)
 loadingBarFillCorner.Parent = loadingBarFill
 
 -- Loading bar gradient
 local loadingBarGradient = Instance.new("UIGradient")
 loadingBarGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(100, 150, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(150, 200, 255)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(100, 150, 255))
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 100, 100)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 150, 150)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 100, 100))
 })
 loadingBarGradient.Parent = loadingBarFill
 
 -- Loading text
 local loadingText = Instance.new("TextLabel")
-loadingText.Size = UDim2.new(1, 0, 0.1, 0)
-loadingText.Position = UDim2.new(0, 0, 0.85, 0)
+loadingText.Size = UDim2.new(1, -40, 0, 30)
+loadingText.Position = UDim2.new(0, 20, 0, 220)
 loadingText.BackgroundTransparency = 1
 loadingText.Text = "Loading..."
-loadingText.TextColor3 = Color3.fromRGB(200, 200, 200)
+loadingText.TextColor3 = Color3.fromRGB(220, 180, 180)
 loadingText.TextScaled = true
 loadingText.Font = Enum.Font.Gotham
 loadingText.Parent = contentFrame
@@ -176,7 +199,7 @@ for i = 1, 20 do
     local particle = Instance.new("Frame")
     particle.Size = UDim2.new(0, math.random(2, 6), 0, math.random(2, 6))
     particle.Position = UDim2.new(math.random(), 0, math.random(), 0)
-    particle.BackgroundColor3 = Color3.fromRGB(100, 150, 255)
+    particle.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
     particle.BorderSizePixel = 0
     particle.BackgroundTransparency = 0.7
     particle.Parent = particlesFrame
@@ -218,8 +241,8 @@ end
 local function animateLoadingBar()
     local loadingSteps = {
         {progress = 0.2, text = "Initializing..."},
-        {progress = 0.4, text = "Finding game script..."},
-        {progress = 0.6, text = "Loading script ..."},
+        {progress = 0.4, text = "Loading scripts..."},
+        {progress = 0.6, text = "Connecting to server..."},
         {progress = 0.8, text = "Setting up interface..."},
         {progress = 1.0, text = "Almost ready..."}
     }
@@ -253,6 +276,8 @@ local function playEntranceAnimations()
     loadingBarBg.BackgroundTransparency = 1
     loadingText.TextTransparency = 1
     mainFrame.BackgroundTransparency = 1
+    contentFrame.BackgroundTransparency = 1
+    contentStroke.Transparency = 1
     
     -- Animate main frame
     local mainFrameTween = TweenService:Create(mainFrame, TweenInfo.new(
@@ -264,7 +289,33 @@ local function playEntranceAnimations()
     })
     
     mainFrameTween:Play()
-    mainFrameTween.Completed:Wait()
+    wait(0.2)
+    
+    -- Animate content frame with scale effect
+    contentFrame.Size = UDim2.new(0, 0, 0, 0)
+    contentFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+    
+    local contentFrameTween = TweenService:Create(contentFrame, TweenInfo.new(
+        0.8,
+        Enum.EasingStyle.Back,
+        Enum.EasingDirection.Out
+    ), {
+        Size = UDim2.new(0, 500, 0, 300),
+        Position = UDim2.new(0.5, -250, 0.5, -150),
+        BackgroundTransparency = 0
+    })
+    
+    local contentStrokeTween = TweenService:Create(contentStroke, TweenInfo.new(
+        0.8,
+        Enum.EasingStyle.Back,
+        Enum.EasingDirection.Out
+    ), {
+        Transparency = 0.3
+    })
+    
+    contentFrameTween:Play()
+    contentStrokeTween:Play()
+    contentFrameTween.Completed:Wait()
     
     -- Animate title
     local titleTween = TweenService:Create(titleLabel, TweenInfo.new(
@@ -374,6 +425,19 @@ local function animateTitlePulse()
     })
     
     pulseTween:Play()
+    
+    -- Also animate the content frame border
+    local borderPulseTween = TweenService:Create(contentStroke, TweenInfo.new(
+        3,
+        Enum.EasingStyle.Sine,
+        Enum.EasingDirection.InOut,
+        -1,
+        true
+    ), {
+        Transparency = 0.1
+    })
+    
+    borderPulseTween:Play()
 end
 
 -- Main execution
@@ -396,7 +460,7 @@ coroutine.wrap(function()
     end
     
     -- Game is supported, proceed with loading screen
-    print("Game supported! Loading Scripts...")
+    print("Game supported! Loading Scripts Hub X...")
     
     -- ========================================
     -- LOADING SCREEN EXECUTION
@@ -408,7 +472,7 @@ coroutine.wrap(function()
     animateLoadingBar()
     wait(1)
     playExitAnimations()
-    
+
     -- Load the actual game script
     local scriptLoaded = loadGameScript(scriptUrlOrError)
     
@@ -420,7 +484,7 @@ coroutine.wrap(function()
     end
 end)()
 
--- skip functionality
+-- Add click to skip functionality
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if not gameProcessed and input.KeyCode == Enum.KeyCode.Space then
         -- Skip loading animation
