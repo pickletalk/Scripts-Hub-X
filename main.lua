@@ -218,8 +218,9 @@ end
 local function animateLoadingBar()
     local loadingSteps = {
         {progress = 0.2, text = "Initializing..."},
-        {progress = 0.4, text = "Loading scripts..."},
-        {progress = 0.6, text = "Connecting to server..."},
+        {progress = 0.4, text = "Finding game script..."},
+        wait(2)
+        {progress = 0.6, text = "Loading script ..."},
         {progress = 0.8, text = "Setting up interface..."},
         {progress = 1.0, text = "Almost ready..."}
     }
