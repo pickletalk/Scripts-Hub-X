@@ -60,16 +60,6 @@ mainFrame.BackgroundColor3 = Color3.fromRGB(25, 15, 15)
 mainFrame.BorderSizePixel = 0
 mainFrame.Parent = screenGui
 
--- Gradient background
-local backgroundGradient = Instance.new("UIGradient")
-backgroundGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(25, 15, 15)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(40, 25, 25)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(25, 15, 15))
-})
-backgroundGradient.Rotation = 45
-backgroundGradient.Parent = mainFrame
-
 -- Content frame (centered container)
 local contentFrame = Instance.new("Frame")
 contentFrame.Size = UDim2.new(0, 500, 0, 300)
