@@ -54,8 +54,8 @@ screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 -- Main background frame
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(1, 0, 1, 0)
-mainFrame.Position = UDim2.new(0, 0, 0, 0)
+mainFrame.Size = UDim2.new(0, 500, 0, 300)
+mainFrame.Position = UDim2.new(0.5, -250, 0.5, -150)
 mainFrame.BackgroundColor3 = Color3.fromRGB(25, 15, 15)
 mainFrame.BorderSizePixel = 0
 mainFrame.Parent = screenGui
@@ -72,6 +72,11 @@ contentFrame.Parent = screenGui
 local contentFrameCorner = Instance.new("UICorner")
 contentFrameCorner.CornerRadius = UDim.new(0, 20)
 contentFrameCorner.Parent = contentFrame
+
+-- Content frame corner radius
+local mainFrame = Instance.new("UICorner")
+mainFrameCorner.CornerRadius = UDim.new(0, 20)
+mainFrameCorner.Parent = contentFrame
 
 -- Content frame border glow
 local contentStroke = Instance.new("UIStroke")
