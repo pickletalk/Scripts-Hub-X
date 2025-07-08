@@ -66,7 +66,7 @@ contentFrame.Size = UDim2.new(0, 500, 0, 300)
 contentFrame.Position = UDim2.new(0.5, -250, 0.5, -150)
 contentFrame.BackgroundColor3 = Color3.fromRGB(30, 20, 20)
 contentFrame.BorderSizePixel = 0
-contentFrame.Parent = screenGui
+contentFrame.Parent = mainFrame
 
 -- Content frame corner radius
 local contentFrameCorner = Instance.new("UICorner")
