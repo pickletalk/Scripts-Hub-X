@@ -39,6 +39,14 @@ local DISCORD_LINK = "https://discord.gg/bpsNUH5sVb"
 local EXIT_DELAY = 2 -- seconds
 local AD_TITLE = "Speed Hub X | Ad"
 
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
 -- ========================================
 -- ADVERTISING GUI
 -- ========================================
@@ -129,16 +137,8 @@ infoLabel.Font = Enum.Font.SourceSans
 infoLabel.Parent = mainFrame
 
 -- ========================================
--- LOADING SCREEN CODE STARTS BELOW
+-- LOADING SCREEN CODE
 -- ========================================
-
-local TweenService = game:GetService("TweenService")
-local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
 
 -- Create main GUI
 local screenGui = Instance.new("ScreenGui")
