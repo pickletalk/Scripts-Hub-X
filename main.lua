@@ -259,17 +259,7 @@ local function playEntranceAnimations()
     contentFrame.BackgroundTransparency = 1
     contentStroke.Transparency = 1
     
-    -- Animate main frame
-    local mainFrameTween = TweenService:Create(mainFrame, TweenInfo.new(
-        1,
-        Enum.EasingStyle.Quad,
-        Enum.EasingDirection.Out
-    ), {
-        BackgroundTransparency = 1
-    })
     
-    mainFrameTween:Play()
-    wait(0.2)
     
     -- Animate content frame with scale effect
     contentFrame.Size = UDim2.new(0, 0, 0, 0)
