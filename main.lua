@@ -66,7 +66,7 @@ contentFrame.Size = UDim2.new(0, 500, 0, 300)
 contentFrame.Position = UDim2.new(0.5, -250, 0.5, -150)
 contentFrame.BackgroundColor3 = Color3.fromRGB(30, 20, 20)
 contentFrame.BorderSizePixel = 0
-contentFrame.Parent = mainFrame
+contentFrame.Parent = screenGui
 
 -- Content frame corner radius
 local contentFrameCorner = Instance.new("UICorner")
@@ -171,7 +171,7 @@ local particlesFrame = Instance.new("Frame")
 particlesFrame.Size = UDim2.new(1, 0, 1, 0)
 particlesFrame.Position = UDim2.new(0, 0, 0, 0)
 particlesFrame.BackgroundTransparency = 1
-particlesFrame.Parent = mainFrame
+particlesFrame.Parent = screenGui
 
 -- Create floating particles
 local particles = {}
