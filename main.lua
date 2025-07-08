@@ -265,7 +265,7 @@ local function playEntranceAnimations()
         Enum.EasingStyle.Quad,
         Enum.EasingDirection.Out
     ), {
-        BackgroundTransparency = 0
+        BackgroundTransparency = 1
     })
     
     mainFrameTween:Play()
