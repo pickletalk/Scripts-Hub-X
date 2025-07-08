@@ -105,7 +105,7 @@ local profileImage = Instance.new("ImageLabel")
 profileImage.Size = UDim2.new(1, -10, 1, -10)
 profileImage.Position = UDim2.new(0, 5, 0, 5)
 profileImage.BackgroundTransparency = 1
-profileImage.Image = "rbxasset://textures/face.png" -- Default Roblox face, replace with your image
+profileImage.Image = "https://ibb.co/CKMst6pk" -- Default Roblox face, replace with your image
 profileImage.ScaleType = Enum.ScaleType.Fit
 profileImage.Parent = profileFrame
 
