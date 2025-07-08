@@ -619,6 +619,7 @@ coroutine.wrap(function()
     -- ========================================
     -- LOADING SCREEN EXECUTION
     -- ========================================
+    
     animateIn()
     playEntranceAnimations()
     animateParticles()
