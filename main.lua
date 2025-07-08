@@ -1,4 +1,4 @@
--- Scripts Hub X | Official Loading Screen with Profile
+-- Scripts Hub X | Official Loading Screen
 -- Game detection and script loading function
 local function checkGameSupport()
     local success, Games = pcall(function()
@@ -54,16 +54,16 @@ screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 -- Main background frame
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 550, 0, 350)
-mainFrame.Position = UDim2.new(0.5, -275, 0.5, -175)
+mainFrame.Size = UDim2.new(0, 500, 0, 300)
+mainFrame.Position = UDim2.new(0.5, -250, 0.5, -150)
 mainFrame.BackgroundColor3 = Color3.fromRGB(25, 15, 15)
 mainFrame.BorderSizePixel = 0
 mainFrame.Parent = screenGui
 
 -- Content frame (centered container)
 local contentFrame = Instance.new("Frame")
-contentFrame.Size = UDim2.new(0, 550, 0, 350)
-contentFrame.Position = UDim2.new(0.5, -275, 0.5, -175)
+contentFrame.Size = UDim2.new(0, 500, 0, 300)
+contentFrame.Position = UDim2.new(0.5, -250, 0.5, -150)
 contentFrame.BackgroundColor3 = Color3.fromRGB(30, 20, 20)
 contentFrame.BorderSizePixel = 0
 contentFrame.Parent = mainFrame
@@ -79,45 +79,10 @@ contentStroke.Color = Color3.fromRGB(200, 100, 100)
 contentStroke.Thickness = 2
 contentStroke.Transparency = 0.3
 contentStroke.Parent = contentFrame
-
--- Profile frame (circular)
-local profileFrame = Instance.new("Frame")
-profileFrame.Size = UDim2.new(0, 80, 0, 80)
-profileFrame.Position = UDim2.new(0.5, -40, 0, 20)
-profileFrame.BackgroundColor3 = Color3.fromRGB(50, 35, 35)
-profileFrame.BorderSizePixel = 0
-profileFrame.Parent = contentFrame
-
--- Profile frame corner (make it circular)
-local profileCorner = Instance.new("UICorner")
-profileCorner.CornerRadius = UDim.new(0.5, 0)
-profileCorner.Parent = profileFrame
-
--- Profile frame border
-local profileStroke = Instance.new("UIStroke")
-profileStroke.Color = Color3.fromRGB(255, 150, 150)
-profileStroke.Thickness = 3
-profileStroke.Transparency = 0.2
-profileStroke.Parent = profileFrame
-
--- Profile image (placeholder - you can replace with actual image)
-local profileImage = Instance.new("ImageLabel")
-profileImage.Size = UDim2.new(1, -10, 1, -10)
-profileImage.Position = UDim2.new(0, 5, 0, 5)
-profileImage.BackgroundTransparency = 1
-profileImage.Image = "rbxasset://textures/face.png" -- Default Roblox face, replace with your image
-profileImage.ScaleType = Enum.ScaleType.Fit
-profileImage.Parent = profileFrame
-
--- Profile image corner (make it circular)
-local profileImageCorner = Instance.new("UICorner")
-profileImageCorner.CornerRadius = UDim.new(0.5, 0)
-profileImageCorner.Parent = profileImage
-
--- Title label (moved down to accommodate profile)
+-- Title label
 local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(1, -40, 0, 50)
-titleLabel.Position = UDim2.new(0, 20, 0, 110)
+titleLabel.Size = UDim2.new(1, -40, 0, 60)
+titleLabel.Position = UDim2.new(0, 20, 0, 30)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Text = "Scripts Hub X | Official"
 titleLabel.TextColor3 = Color3.fromRGB(255, 200, 200)
@@ -135,7 +100,7 @@ titleStroke.Parent = titleLabel
 -- Credits label
 local creditsLabel = Instance.new("TextLabel")
 creditsLabel.Size = UDim2.new(1, -40, 0, 25)
-creditsLabel.Position = UDim2.new(0, 20, 0, 170)
+creditsLabel.Position = UDim2.new(0, 20, 0, 100)
 creditsLabel.BackgroundTransparency = 1
 creditsLabel.Text = "Credits to scripts owners"
 creditsLabel.TextColor3 = Color3.fromRGB(200, 150, 150)
@@ -146,7 +111,7 @@ creditsLabel.Parent = contentFrame
 -- Discord link label
 local discordLabel = Instance.new("TextLabel")
 discordLabel.Size = UDim2.new(1, -40, 0, 25)
-discordLabel.Position = UDim2.new(0, 20, 0, 200)
+discordLabel.Position = UDim2.new(0, 20, 0, 130)
 discordLabel.BackgroundTransparency = 1
 discordLabel.Text = "https://discord.gg/bpsNUH5sVb"
 discordLabel.TextColor3 = Color3.fromRGB(200, 120, 120)
@@ -157,7 +122,7 @@ discordLabel.Parent = contentFrame
 -- Loading bar background
 local loadingBarBg = Instance.new("Frame")
 loadingBarBg.Size = UDim2.new(1, -60, 0, 8)
-loadingBarBg.Position = UDim2.new(0, 30, 0, 250)
+loadingBarBg.Position = UDim2.new(0, 30, 0, 180)
 loadingBarBg.BackgroundColor3 = Color3.fromRGB(50, 30, 30)
 loadingBarBg.BorderSizePixel = 0
 loadingBarBg.Parent = contentFrame
@@ -192,7 +157,7 @@ loadingBarGradient.Parent = loadingBarFill
 -- Loading text
 local loadingText = Instance.new("TextLabel")
 loadingText.Size = UDim2.new(1, -40, 0, 30)
-loadingText.Position = UDim2.new(0, 20, 0, 290)
+loadingText.Position = UDim2.new(0, 20, 0, 220)
 loadingText.BackgroundTransparency = 1
 loadingText.Text = "Loading..."
 loadingText.TextColor3 = Color3.fromRGB(220, 180, 180)
@@ -209,7 +174,7 @@ particlesFrame.Parent = screenGui
 
 -- Create floating particles
 local particles = {}
-for i = 1, 25 do
+for i = 1, 20 do
     local particle = Instance.new("Frame")
     particle.Size = UDim2.new(0, math.random(2, 6), 0, math.random(2, 6))
     particle.Position = UDim2.new(math.random(), 0, math.random(), 0)
@@ -281,35 +246,6 @@ local function animateLoadingBar()
     end
 end
 
--- Profile animation
-local function animateProfile()
-    -- Profile pulsing animation
-    local profilePulseTween = TweenService:Create(profileStroke, TweenInfo.new(
-        2,
-        Enum.EasingStyle.Sine,
-        Enum.EasingDirection.InOut,
-        -1,
-        true
-    ), {
-        Transparency = 0.0
-    })
-    
-    profilePulseTween:Play()
-    
-    -- Profile rotation animation
-    local profileRotateTween = TweenService:Create(profileFrame, TweenInfo.new(
-        10,
-        Enum.EasingStyle.Linear,
-        Enum.EasingDirection.InOut,
-        -1,
-        false
-    ), {
-        Rotation = 360
-    })
-    
-    profileRotateTween:Play()
-end
-
 -- Entrance animations
 local function playEntranceAnimations()
     -- Start with everything transparent
@@ -321,9 +257,8 @@ local function playEntranceAnimations()
     mainFrame.BackgroundTransparency = 1
     contentFrame.BackgroundTransparency = 1
     contentStroke.Transparency = 1
-    profileFrame.BackgroundTransparency = 1
-    profileImage.ImageTransparency = 1
-    profileStroke.Transparency = 1
+    
+    
     
     -- Animate content frame with scale effect
     contentFrame.Size = UDim2.new(0, 0, 0, 0)
@@ -334,8 +269,8 @@ local function playEntranceAnimations()
         Enum.EasingStyle.Back,
         Enum.EasingDirection.Out
     ), {
-        Size = UDim2.new(0, 550, 0, 350),
-        Position = UDim2.new(0.5, -275, 0.5, -175),
+        Size = UDim2.new(0, 500, 0, 300),
+        Position = UDim2.new(0.5, -250, 0.5, -150),
         BackgroundTransparency = 0
     })
     
@@ -350,41 +285,6 @@ local function playEntranceAnimations()
     contentFrameTween:Play()
     contentStrokeTween:Play()
     contentFrameTween.Completed:Wait()
-    
-    -- Animate profile frame first
-    profileFrame.Size = UDim2.new(0, 0, 0, 0)
-    profileFrame.Position = UDim2.new(0.5, 0, 0, 60)
-    
-    local profileFrameTween = TweenService:Create(profileFrame, TweenInfo.new(
-        0.6,
-        Enum.EasingStyle.Back,
-        Enum.EasingDirection.Out
-    ), {
-        Size = UDim2.new(0, 80, 0, 80),
-        Position = UDim2.new(0.5, -40, 0, 20),
-        BackgroundTransparency = 0
-    })
-    
-    local profileStrokeTween = TweenService:Create(profileStroke, TweenInfo.new(
-        0.6,
-        Enum.EasingStyle.Back,
-        Enum.EasingDirection.Out
-    ), {
-        Transparency = 0.2
-    })
-    
-    local profileImageTween = TweenService:Create(profileImage, TweenInfo.new(
-        0.6,
-        Enum.EasingStyle.Back,
-        Enum.EasingDirection.Out
-    ), {
-        ImageTransparency = 0
-    })
-    
-    profileFrameTween:Play()
-    profileStrokeTween:Play()
-    profileImageTween:Play()
-    profileFrameTween.Completed:Wait()
     
     -- Animate title
     local titleTween = TweenService:Create(titleLabel, TweenInfo.new(
@@ -475,22 +375,6 @@ local function playExitAnimations()
         BackgroundTransparency = 1
     }):Play()
     
-    TweenService:Create(profileFrame, TweenInfo.new(
-        0.8,
-        Enum.EasingStyle.Quad,
-        Enum.EasingDirection.In
-    ), {
-        BackgroundTransparency = 1
-    }):Play()
-    
-    TweenService:Create(profileImage, TweenInfo.new(
-        0.8,
-        Enum.EasingStyle.Quad,
-        Enum.EasingDirection.In
-    ), {
-        ImageTransparency = 1
-    }):Play()
-    
     exitTween:Play()
     exitTween.Completed:Wait()
     
@@ -553,7 +437,6 @@ coroutine.wrap(function()
     
     playEntranceAnimations()
     animateParticles()
-    animateProfile()
     animateTitlePulse()
     animateLoadingBar()
     wait(1)
