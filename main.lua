@@ -102,7 +102,7 @@ local creditsLabel = Instance.new("TextLabel")
 creditsLabel.Size = UDim2.new(1, -40, 0, 25)
 creditsLabel.Position = UDim2.new(0, 20, 0, 100)
 creditsLabel.BackgroundTransparency = 1
-creditsLabel.Text = "Credits to scripts owner"
+creditsLabel.Text = "Credits to scripts owners"
 creditsLabel.TextColor3 = Color3.fromRGB(200, 150, 150)
 creditsLabel.TextScaled = true
 creditsLabel.Font = Enum.Font.Gotham
@@ -113,7 +113,7 @@ local discordLabel = Instance.new("TextLabel")
 discordLabel.Size = UDim2.new(1, -40, 0, 25)
 discordLabel.Position = UDim2.new(0, 20, 0, 130)
 discordLabel.BackgroundTransparency = 1
-discordLabel.Text = "Discord: https://discord.gg/bpsNUH5sVb"
+discordLabel.Text = "https://discord.gg/bpsNUH5sVb"
 discordLabel.TextColor3 = Color3.fromRGB(200, 120, 120)
 discordLabel.TextScaled = true
 discordLabel.Font = Enum.Font.Gotham
@@ -220,8 +220,8 @@ end
 local function animateLoadingBar()
     local loadingSteps = {
         {progress = 0.2, text = "Initializing..."},
-        {progress = 0.4, text = "Loading scripts..."},
-        {progress = 0.6, text = "Connecting to server..."},
+        {progress = 0.4, text = "Finding game script..."},
+        {progress = 0.6, text = "Loading script..."},
         {progress = 0.8, text = "Setting up interface..."},
         {progress = 1.0, text = "Almost ready..."}
     }
