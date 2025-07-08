@@ -37,7 +37,7 @@ end
 -- Configuration
 local DISCORD_LINK = "https://discord.gg/bpsNUH5sVb"
 local EXIT_DELAY = 2 -- seconds
-local AD_TITLE = "Speed Hub X | Ad"
+local AD_TITLE = "Scripts Hub X | Ad"
 
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
@@ -300,22 +300,6 @@ local function animateIn()
     tween:Play()
 end
 
-local function animateOut()
-    local tween = TweenService:Create(
-        mainFrame,
-        TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In),
-        {
-            Size = UDim2.new(0, 0, 0, 0),
-            Position = UDim2.new(0.5, 0, 0.5, 0)
-        }
-    )
-    tween:Play()
-    
-    tween.Completed:Connect(function()
-        screenGui:Destroy()
-    end)
-end
-
 -- Copy button functionality
 copyButton.MouseButton1Click:Connect(function()
     -- Visual feedback
@@ -348,7 +332,7 @@ exitButton.MouseButton1Click:Connect(function()
         end
         
         exitButton.Text = "Closing..."
-        animateOut()
+        screenGui:Destroy()
     end
 end)
 
