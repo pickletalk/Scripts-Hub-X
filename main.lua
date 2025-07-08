@@ -73,18 +73,12 @@ local contentFrameCorner = Instance.new("UICorner")
 contentFrameCorner.CornerRadius = UDim.new(0, 20)
 contentFrameCorner.Parent = contentFrame
 
--- Content frame corner radius
-local mainFrame = Instance.new("UICorner")
-mainFrameCorner.CornerRadius = UDim.new(0, 20)
-mainFrameCorner.Parent = contentFrame
-
 -- Content frame border glow
 local contentStroke = Instance.new("UIStroke")
 contentStroke.Color = Color3.fromRGB(200, 100, 100)
 contentStroke.Thickness = 2
 contentStroke.Transparency = 0.3
 contentStroke.Parent = contentFrame
-
 -- Title label
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(1, -40, 0, 60)
