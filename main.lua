@@ -35,10 +35,6 @@ local function loadGameScript(scriptUrl)
 end
 
 -- Configuration
-local DISCORD_LINK = "https://discord.gg/bpsNUH5sVb"
-local EXIT_DELAY = 2 -- seconds
-local AD_TITLE = "Scripts Hub X | Ad"
-
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -46,95 +42,6 @@ local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
-
--- ========================================
--- ADVERTISING GUI
--- ========================================
--- Create ScreenGui
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "DiscordAdGui"
-screenGui.Parent = playerGui
-screenGui.ResetOnSpawn = false
-
--- Main Frame
-local mainFrame = Instance.new("Frame")
-mainFrame.Name = "AdFrame"
-mainFrame.Size = UDim2.new(0, 400, 0, 200)
-mainFrame.Position = UDim2.new(0.5, -200, 0.5, -100)
-mainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-mainFrame.BorderSizePixel = 0
-mainFrame.Parent = screenGui
-
--- Add corner radius
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 10)
-corner.Parent = mainFrame
-
--- Add stroke/border
-local stroke = Instance.new("UIStroke")
-stroke.Color = Color3.fromRGB(255, 0, 0)
-stroke.Thickness = 2
-stroke.Parent = mainFrame
-
--- Title Label
-local titleLabel = Instance.new("TextLabel")
-titleLabel.Name = "Title"
-titleLabel.Size = UDim2.new(1, 0, 0, 50)
-titleLabel.Position = UDim2.new(0, 0, 0, 0)
-titleLabel.BackgroundTransparency = 1
-titleLabel.Text = AD_TITLE
-titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleLabel.TextScaled = true
-titleLabel.Font = Enum.Font.SourceSansBold
-titleLabel.Parent = mainFrame
-
--- Copy Discord Link Button
-local copyButton = Instance.new("TextButton")
-copyButton.Name = "CopyButton"
-copyButton.Size = UDim2.new(0, 180, 0, 40)
-copyButton.Position = UDim2.new(0, 20, 0, 80)
-copyButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-copyButton.BorderSizePixel = 0
-copyButton.Text = "Copy Link Discord"
-copyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-copyButton.TextScaled = true
-copyButton.Font = Enum.Font.SourceSansBold
-copyButton.Parent = mainFrame
-
--- Copy button corner
-local copyCorner = Instance.new("UICorner")
-copyCorner.CornerRadius = UDim.new(0, 5)
-copyCorner.Parent = copyButton
-
--- Exit Button
-local exitButton = Instance.new("TextButton")
-exitButton.Name = "ExitButton"
-exitButton.Size = UDim2.new(0, 180, 0, 40)
-exitButton.Position = UDim2.new(0, 200, 0, 80)
-exitButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-exitButton.BorderSizePixel = 0
-exitButton.Text = "Warning Delay Exit"
-exitButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-exitButton.TextScaled = true
-exitButton.Font = Enum.Font.SourceSans
-exitButton.Parent = mainFrame
-
--- Exit button corner
-local exitCorner = Instance.new("UICorner")
-exitCorner.CornerRadius = UDim.new(0, 5)
-exitCorner.Parent = exitButton
-
--- Discord info label
-local infoLabel = Instance.new("TextLabel")
-infoLabel.Name = "InfoLabel"
-infoLabel.Size = UDim2.new(1, -20, 0, 30)
-infoLabel.Position = UDim2.new(0, 10, 0, 140)
-infoLabel.BackgroundTransparency = 1
-infoLabel.Text = "Join our Discord community!"
-infoLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-infoLabel.TextScaled = true
-infoLabel.Font = Enum.Font.SourceSans
-infoLabel.Parent = mainFrame
 
 -- ========================================
 -- LOADING SCREEN CODE
@@ -284,123 +191,6 @@ for i = 1, 20 do
     table.insert(particles, particle)
 end
 
--- ADVERTISING ANIMATION FUNCTTIONS
-local function animateIn()
-    mainFrame.Size = UDim2.new(0, 0, 0, 0)
-    mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-    
-    local tween = TweenService:Create(
-        mainFrame,
-        TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
-        {
-            Size = UDim2.new(0, 400, 0, 200),
-            Position = UDim2.new(0.5, -200, 0.5, -100)
-        }
-    )
-    tween:Play()
-end
-
--- Copy button functionality
-copyButton.MouseButton1Click:Connect(function()
-    -- Visual feedback
-    copyButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-    copyButton.Text = "Copied!"
-    
-    -- Copy to clipboard (if supported)
-    if setclipboard then
-        setclipboard(DISCORD_LINK)
-    end
-    
-    -- Reset button after 1 second
-    wait(1)
-    copyButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-    copyButton.Text = "Copy Link Discord"
-end)
-
--- Exit button functionality with delay
-local exitClicked = false
-exitButton.MouseButton1Click:Connect(function()
-    if not exitClicked then
-        exitClicked = true
-        exitButton.Text = "Closing in " .. EXIT_DELAY .. "..."
-        exitButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-        
-        -- Countdown
-        for i = EXIT_DELAY, 1, -1 do
-            exitButton.Text = "Closing in " .. i .. "..."
-            wait(1)
-        end
-        
-        exitButton.Text = "Closing..."
-        screenGui:Destroy()
-    end
-end)
-
--- Hover effects
-copyButton.MouseEnter:Connect(function()
-    copyButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-end)
-
-copyButton.MouseLeave:Connect(function()
-    if copyButton.Text == "Copy Link Discord" then
-        copyButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-    end
-end)
-
-exitButton.MouseEnter:Connect(function()
-    if not exitClicked then
-        exitButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-    end
-end)
-
-exitButton.MouseLeave:Connect(function()
-    if not exitClicked then
-        exitButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    end
-end)
-
--- Make GUI draggable
-local dragging = false
-local dragStart = nil
-local startPos = nil
-
-local function updateInput(input)
-    local delta = input.Position - dragStart
-    local position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    mainFrame.Position = position
-end
-
-mainFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        startPos = mainFrame.Position
-        
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
-end)
-
-mainFrame.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
-        updateInput(input)
-    end
-end)
-
--- Add drag cursor visual feedback
-local dragIndicator = Instance.new("TextLabel")
-dragIndicator.Name = "DragIndicator"
-dragIndicator.Size = UDim2.new(0, 20, 0, 20)
-dragIndicator.Position = UDim2.new(1, -25, 0, 5)
-dragIndicator.BackgroundTransparency = 1
-dragIndicator.Text = "≡"
-dragIndicator.TextColor3 = Color3.fromRGB(150, 150, 150)
-dragIndicator.TextScaled = true
-dragIndicator.Font = Enum.Font.SourceSansBold
-dragIndicator.Parent = mainFrame
 
 -- Animation functions
 local function animateParticles()
@@ -468,9 +258,7 @@ local function playEntranceAnimations()
     loadingText.TextTransparency = 1
     mainFrame.BackgroundTransparency = 1
     contentFrame.BackgroundTransparency = 1
-    contentStroke.Transparency = 1
-    
-    
+    contentStroke.Transparency = 1   
     
     -- Animate content frame with scale effect
     contentFrame.Size = UDim2.new(0, 0, 0, 0)
@@ -647,7 +435,6 @@ coroutine.wrap(function()
     -- LOADING SCREEN EXECUTION
     -- ========================================
     
-    animateIn()
     playEntranceAnimations()
     animateParticles()
     animateTitlePulse()
