@@ -359,6 +359,49 @@ exitButton.MouseLeave:Connect(function()
     end
 end)
 
+-- Make GUI draggable
+local dragging = false
+local dragStart = nil
+local startPos = nil
+
+local function updateInput(input)
+    local delta = input.Position - dragStart
+    local position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    mainFrame.Position = position
+end
+
+mainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+mainFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
+        updateInput(input)
+    end
+end)
+
+-- Add drag cursor visual feedback
+local dragIndicator = Instance.new("TextLabel")
+dragIndicator.Name = "DragIndicator"
+dragIndicator.Size = UDim2.new(0, 20, 0, 20)
+dragIndicator.Position = UDim2.new(1, -25, 0, 5)
+dragIndicator.BackgroundTransparency = 1
+dragIndicator.Text = "≡"
+dragIndicator.TextColor3 = Color3.fromRGB(150, 150, 150)
+dragIndicator.TextScaled = true
+dragIndicator.Font = Enum.Font.SourceSansBold
+dragIndicator.Parent = mainFrame
+
 -- Animation functions
 local function animateParticles()
     for _, particle in pairs(particles) do
