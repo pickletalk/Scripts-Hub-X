@@ -10,32 +10,14 @@ local function checkGameSupport()
         return false, "Failed to connect to script server"
     end
     
-    -- Function to check if a PlaceId exists in a table that might have multiple PlaceIds as keys
-    local function findGameScript(placeId)
-        for key, scriptUrl in pairs(Games) do
-            if type(key) == "table" then
-                -- Handle multiple PlaceIds in one entry
-                for _, id in pairs(key) do
-                    if id == placeId then
-                        return scriptUrl
-                    end
-                end
-            elseif key == placeId then
-                -- Handle single PlaceId
-                return scriptUrl
-            end
-        end
-        return nil
-    end
-    
     -- Check if current game is supported
-    local scriptUrl = findGameScript(game.PlaceId)
-    
-    if scriptUrl then
-        return true, scriptUrl -- Game is supported, return the script URL
-    else
-        return false, "Sorry but this game doesn't support our script!"
+    for PlaceID, Execute in pairs(Games) do
+        if PlaceID == game.PlaceId then
+            return true, Execute -- Game is supported, return the script URL
+        end
     end
+    
+    return false, "Sorry but this game doesn't support our script!"
 end
 
 -- Function to load the actual script after loading screen
