@@ -53,7 +53,7 @@ screenGui.Parent = playerGui
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(1, 0, 1, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 30, 40)
-mainFrame.BackgroundTransparency = 0.2
+mainFrame.BackgroundTransparency = 0.5
 mainFrame.Parent = screenGui
 
 -- Content frame
@@ -62,6 +62,7 @@ contentFrame.Size = UDim2.new(0, 450, 0, 300)
 contentFrame.Position = UDim2.new(0.5, -225, 0.5, -150)
 contentFrame.BackgroundColor3 = Color3.fromRGB(30, 45, 65)
 contentFrame.BorderSizePixel = 0
+contentFrame.BackgroundTransparency = 0.3
 contentFrame.Parent = mainFrame
 
 -- Content frame corner
