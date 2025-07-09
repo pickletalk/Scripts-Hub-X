@@ -58,63 +58,91 @@ mainFrame.Parent = screenGui
 
 -- Content frame
 local contentFrame = Instance.new("Frame")
-contentFrame.Size = UDim2.new(0, 600, 0, 400)
-contentFrame.Position = UDim2.new(0.5, -300, 0.5, -200)
-contentFrame.BackgroundColor3 = Color3.fromRGB(30, 50, 70)
+contentFrame.Size = UDim2.new(0, 450, 0, 300)
+contentFrame.Position = UDim2.new(0.5, -225, 0.5, -150)
+contentFrame.BackgroundColor3 = Color3.fromRGB(30, 45, 65)
 contentFrame.BorderSizePixel = 0
 contentFrame.Parent = mainFrame
 
 -- Content frame corner
 local contentFrameCorner = Instance.new("UICorner")
-contentFrameCorner.CornerRadius = UDim.new(0, 15)
+contentFrameCorner.CornerRadius = UDim.new(0, 12)
 contentFrameCorner.Parent = contentFrame
 
 -- Content frame glow
 local contentStroke = Instance.new("UIStroke")
 contentStroke.Color = Color3.fromRGB(100, 200, 255)
-contentStroke.Thickness = 3
-contentStroke.Transparency = 0.2
+contentStroke.Thickness = 2
+contentStroke.Transparency = 0.3
 contentStroke.Parent = contentFrame
 
 -- Title label
 local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(1, -40, 0, 80)
-titleLabel.Position = UDim2.new(0, 20, 0, 30)
+titleLabel.Size = UDim2.new(1, -30, 0, 40)
+titleLabel.Position = UDim2.new(0, 15, 0, 20)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Text = "Scripts Hub X | Official"
 titleLabel.TextColor3 = Color3.fromRGB(150, 220, 255)
 titleLabel.TextScaled = true
+titleLabel.TextSize = 16
 titleLabel.Font = Enum.Font.SourceSansBold
 titleLabel.Parent = contentFrame
 
 -- Title glow
 local titleStroke = Instance.new("UIStroke")
 titleStroke.Color = Color3.fromRGB(100, 200, 255)
-titleStroke.Thickness = 2
+titleStroke.Thickness = 1.5
 titleStroke.Transparency = 0.4
 titleStroke.Parent = titleLabel
 
 -- Credits label
 local creditsLabel = Instance.new("TextLabel")
-creditsLabel.Size = UDim2.new(1, -40, 0, 30)
-creditsLabel.Position = UDim2.new(0, 20, 0, 120)
+creditsLabel.Size = UDim2.new(1, -30, 0, 20)
+creditsLabel.Position = UDim2.new(0, 15, 0, 60)
 creditsLabel.BackgroundTransparency = 1
 creditsLabel.Text = "Developed by Scripts Hub Team"
 creditsLabel.TextColor3 = Color3.fromRGB(180, 200, 220)
 creditsLabel.TextScaled = true
+creditsLabel.TextSize = 14
 creditsLabel.Font = Enum.Font.SourceSans
 creditsLabel.Parent = contentFrame
 
+-- Warning label
+local warningLabel = Instance.new("TextLabel")
+warningLabel.Size = UDim2.new(1, -30, 0, 30)
+warningLabel.Position = UDim2.new(0, 15, 0, 85)
+warningLabel.BackgroundTransparency = 1
+warningLabel.Text = "Warning: Don't use scripts from unknown developers, they might steal your pets and fruits."
+warningLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+warningLabel.TextScaled = true
+warningLabel.TextSize = 12
+warningLabel.Font = Enum.Font.SourceSans
+warningLabel.TextWrapped = true
+warningLabel.Parent = contentFrame
+
+-- Tip label
+local tipLabel = Instance.new("TextLabel")
+tipLabel.Size = UDim2.new(1, -30, 0, 30)
+tipLabel.Position = UDim2.new(0, 15, 0, 115)
+tipLabel.BackgroundTransparency = 1
+tipLabel.Text = "Tip: If you see a loading screen that covers the whole screen, leave immediately!"
+tipLabel.TextColor3 = Color3.fromRGB(180, 200, 220)
+tipLabel.TextScaled = true
+tipLabel.TextSize = 12
+tipLabel.Font = Enum.Font.SourceSans
+tipLabel.TextWrapped = true
+tipLabel.Parent = contentFrame
+
 -- Discord container
 local discordContainer = Instance.new("Frame")
-discordContainer.Size = UDim2.new(1, -60, 0, 50)
-discordContainer.Position = UDim2.new(0, 30, 0, 160)
+discordContainer.Size = UDim2.new(1, -40, 0, 40)
+discordContainer.Position = UDim2.new(0, 20, 0, 150)
 discordContainer.BackgroundColor3 = Color3.fromRGB(40, 60, 80)
 discordContainer.BorderSizePixel = 0
 discordContainer.Parent = contentFrame
 
 local discordCorner = Instance.new("UICorner")
-discordCorner.CornerRadius = UDim.new(0, 10)
+discordCorner.CornerRadius = UDim.new(0, 8)
 discordCorner.Parent = discordContainer
 
 -- Discord label
@@ -125,35 +153,37 @@ discordLabel.BackgroundTransparency = 1
 discordLabel.Text = "discord.gg/bpsNUH5sVb"
 discordLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
 discordLabel.TextScaled = true
+discordLabel.TextSize = 12
 discordLabel.Font = Enum.Font.SourceSans
 discordLabel.TextXAlignment = Enum.TextXAlignment.Left
 discordLabel.Parent = discordContainer
 
 -- Copy button
 local copyButton = Instance.new("TextButton")
-copyButton.Size = UDim2.new(0, 80, 0, 30)
-copyButton.Position = UDim2.new(0.75, 5, 0, 10)
+copyButton.Size = UDim2.new(0, 60, 0, 25)
+copyButton.Position = UDim2.new(0.75, 5, 0, 7)
 copyButton.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
-copyButton.Text = "Copy"
+copyButton.Text = "Copy discord link"
 copyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 copyButton.TextScaled = true
+copyButton.TextSize = 12
 copyButton.Font = Enum.Font.SourceSansBold
 copyButton.Parent = discordContainer
 
 local copyButtonCorner = Instance.new("UICorner")
-copyButtonCorner.CornerRadius = UDim.new(0, 8)
+copyButtonCorner.CornerRadius = UDim.new(0, 6)
 copyButtonCorner.Parent = copyButton
 
 -- Loading bar background
 local loadingBarBg = Instance.new("Frame")
-loadingBarBg.Size = UDim2.new(1, -60, 0, 12)
-loadingBarBg.Position = UDim2.new(0, 30, 0, 240)
+loadingBarBg.Size = UDim2.new(1, -40, 0, 10)
+loadingBarBg.Position = UDim2.new(0, 20, 0, 200)
 loadingBarBg.BackgroundColor3 = Color3.fromRGB(40, 60, 80)
 loadingBarBg.BorderSizePixel = 0
 loadingBarBg.Parent = contentFrame
 
 local loadingBarBgCorner = Instance.new("UICorner")
-loadingBarBgCorner.CornerRadius = UDim.new(0, 6)
+loadingBarBgCorner.CornerRadius = UDim.new(0, 5)
 loadingBarBgCorner.Parent = loadingBarBg
 
 -- Loading bar fill
@@ -164,7 +194,7 @@ loadingBarFill.BorderSizePixel = 0
 loadingBarFill.Parent = loadingBarBg
 
 local loadingBarFillCorner = Instance.new("UICorner")
-loadingBarFillCorner.CornerRadius = UDim.new(0, 6)
+loadingBarFillCorner.CornerRadius = UDim.new(0, 5)
 loadingBarFillCorner.Parent = loadingBarFill
 
 -- Loading bar gradient
@@ -178,12 +208,13 @@ loadingBarGradient.Parent = loadingBarFill
 
 -- Loading text
 local loadingText = Instance.new("TextLabel")
-loadingText.Size = UDim2.new(1, -40, 0, 40)
-loadingText.Position = UDim2.new(0, 20, 0, 280)
+loadingText.Size = UDim2.new(1, -30, 0, 30)
+loadingText.Position = UDim2.new(0, 15, 0, 220)
 loadingText.BackgroundTransparency = 1
 loadingText.Text = "Loading..."
 loadingText.TextColor3 = Color3.fromRGB(180, 200, 220)
 loadingText.TextScaled = true
+loadingText.TextSize = 14
 loadingText.Font = Enum.Font.SourceSans
 loadingText.Parent = contentFrame
 
@@ -195,9 +226,9 @@ particlesFrame.Parent = screenGui
 
 -- Create particles
 local particles = {}
-for i = 1, 30 do
+for i = 1, 20 do
     local particle = Instance.new("Frame")
-    particle.Size = UDim2.new(0, math.random(3, 8), 0, math.random(3, 8))
+    particle.Size = UDim2.new(0, math.random(2, 6), 0, math.random(2, 6))
     particle.Position = UDim2.new(math.random(), 0, math.random(), 0)
     particle.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
     particle.BackgroundTransparency = 0.6
@@ -283,6 +314,8 @@ local function playEntranceAnimations()
     contentStroke.Transparency = 1
     titleLabel.TextTransparency = 1
     creditsLabel.TextTransparency = 1
+    warningLabel.TextTransparency = 1
+    tipLabel.TextTransparency = 1
     discordLabel.TextTransparency = 1
     copyButton.TextTransparency = 1
     copyButton.BackgroundTransparency = 1
@@ -305,8 +338,8 @@ local function playEntranceAnimations()
         Enum.EasingStyle.Back,
         Enum.EasingDirection.Out
     ), {
-        Size = UDim2.new(0, 600, 0, 400),
-        Position = UDim2.new(0.5, -300, 0.5, -200),
+        Size = UDim2.new(0, 450, 0, 300),
+        Position = UDim2.new(0.5, -225, 0.5, -150),
         BackgroundTransparency = 0
     })
     
@@ -315,7 +348,7 @@ local function playEntranceAnimations()
         Enum.EasingStyle.Back,
         Enum.EasingDirection.Out
     ), {
-        Transparency = 0.2
+        Transparency = 0.3
     })
     
     mainFrameTween:Play()
@@ -343,6 +376,28 @@ local function playEntranceAnimations()
     })
     
     creditsTween:Play()
+    wait(0.2)
+    
+    local warningTween = TweenService:Create(warningLabel, TweenInfo.new(
+        0.5,
+        Enum.EasingStyle.Quad,
+        Enum.EasingDirection.Out
+    ), {
+        TextTransparency = 0
+    })
+    
+    warningTween:Play()
+    wait(0.2)
+    
+    local tipTween = TweenService:Create(tipLabel, TweenInfo.new(
+        0.5,
+        Enum.EasingStyle.Quad,
+        Enum.EasingDirection.Out
+    ), {
+        TextTransparency = 0
+    })
+    
+    tipTween:Play()
     wait(0.2)
     
     local discordTween = TweenService:Create(discordLabel, TweenInfo.new(
@@ -397,7 +452,7 @@ local function playExitAnimations()
         BackgroundTransparency = 1
     })
     
-    for _, element in pairs({titleLabel, creditsLabel, discordLabel, loadingText, copyButton}) do
+    for _, element in pairs({titleLabel, creditsLabel, warningLabel, tipLabel, discordLabel, loadingText, copyButton}) do
         TweenService:Create(element, TweenInfo.new(
             0.6,
             Enum.EasingStyle.Quad,
@@ -464,7 +519,7 @@ local function animatePulse()
         -1,
         true
     ), {
-        Transparency = 0
+        Transparency = 0.1
     })
     
     pulseTween:Play()
@@ -500,11 +555,3 @@ coroutine.wrap(function()
         print("Scripts Hub X | Official - Script loading failed!")
     end
 end)()
-
--- Skip loading with spacebar
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if not gameProcessed and input.KeyCode == Enum.KeyCode.Space then
-        screenGui:Destroy()
-        print("Loading skipped!")
-    end
-end)
