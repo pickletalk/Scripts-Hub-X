@@ -67,6 +67,7 @@ coroutine.wrap(function()
         LoadingScreen.setLoadingText("Checking game support...", Color3.fromRGB(150, 180, 200))
         wait(2)
         LoadingScreen.playExitAnimations()
+        wait(0.1) -- Brief delay to ensure loading screen is fully gone
         showErrorNotification()
         return
     end
