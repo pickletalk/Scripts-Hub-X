@@ -37,7 +37,7 @@ contentFrameCorner.Parent = contentFrame
 
 -- Content frame glow
 local contentStroke = Instance.new("UIStroke")
-contentStroke.Color = Color3.fromRGB tink(80, 160, 255)
+contentStroke.Color = Color3.fromRGB(80, 160, 255)
 contentStroke.Thickness = 1.5
 contentStroke.Transparency = 1 -- Hidden until animation completes
 contentStroke.Parent = contentFrame
