@@ -24,8 +24,8 @@ mainFrame.Parent = screenGui
 
 -- Content frame
 local contentFrame = Instance.new("Frame")
-contentFrame.Size = UDim2.new(0, 400, 0, 280)
-contentFrame.Position = UDim2.new(0.5, -200, 0.5, -140)
+contentFrame.Size = UDim2.new(0, 400, 0, 320)
+contentFrame.Position = UDim2.new(0.5, -200, 0.5, -160)
 contentFrame.BackgroundColor3 = Color3.fromRGB(20, 40, 60)
 contentFrame.BackgroundTransparency = 1 -- Hidden until animation completes
 contentFrame.BorderSizePixel = 0
@@ -71,17 +71,31 @@ subtitleLabel.Parent = contentFrame
 
 -- Warning label
 local warningLabel = Instance.new("TextLabel")
-warningLabel.Size = UDim2.new(1, -40, 0, 60)
+warningLabel.Size = UDim2.new(1, -40, 0, 40)
 warningLabel.Position = UDim2.new(0, 20, 0, 230)
 warningLabel.BackgroundTransparency = 1
-warningLabel.Text = "Warning: Don't use scripts from unknown developers, as they might steal your in-game items, pets, etc. Note: If you saw our script in a random YouTube or other advertising video, join our Discord for a loading screen showcase."
+warningLabel.Text = "Warning: Don't use scripts from unknown developers, as they might steal your in-game items, pets, etc."
 warningLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
 warningLabel.TextScaled = true
-warningLabel.TextSize = 12
+warningLabel.TextSize = 10
 warningLabel.Font = Enum.Font.Gotham
 warningLabel.TextTransparency = 1 -- Hidden until animation completes
 warningLabel.TextWrapped = true
 warningLabel.Parent = contentFrame
+
+-- Note label
+local noteLabel = Instance.new("TextLabel")
+noteLabel.Size = UDim2.new(1, -40, 0, 40)
+noteLabel.Position = UDim2.new(0, 20, 0, 270)
+noteLabel.BackgroundTransparency = 1
+noteLabel.Text = "Note: If you saw our script in a random YouTube or other advertising video, join our Discord for a loading screen showcase."
+noteLabel.TextColor3 = Color3.fromRGB(150, 180, 200)
+noteLabel.TextScaled = true
+noteLabel.TextSize = 10
+noteLabel.Font = Enum.Font.Gotham
+noteLabel.TextTransparency = 1 -- Hidden until animation completes
+noteLabel.TextWrapped = true
+noteLabel.Parent = contentFrame
 
 -- Discord container
 local discordContainer = Instance.new("Frame")
@@ -244,6 +258,7 @@ local function playEntranceAnimations()
     loadingBarBg.BackgroundTransparency = 1
     loadingText.TextTransparency = 1
     warningLabel.TextTransparency = 1
+    noteLabel.TextTransparency = 1
 
     -- Water drop fall animation with longer duration
     local dropFallTween = TweenService:Create(waterDropFrame, TweenInfo.new(
@@ -354,6 +369,14 @@ local function playEntranceAnimations()
             TextTransparency = 0
         })
 
+        local noteTween = TweenService:Create(noteLabel, TweenInfo.new(
+            0.5,
+            Enum.EasingStyle.Sine,
+            Enum.EasingDirection.Out
+        ), {
+            TextTransparency = 0
+        })
+
         mainFrameTween:Play()
         contentFrameTween:Play()
         contentStrokeTween:Play()
@@ -368,6 +391,8 @@ local function playEntranceAnimations()
         loadingTextTween:Play()
         wait(0.1)
         warningTween:Play()
+        wait(0.1)
+        noteTween:Play()
 
         loadingTextTween.Completed:Wait()
         waterDropFrame:Destroy() -- Remove water drop after animation
@@ -382,8 +407,8 @@ local function playExitAnimations()
         Enum.EasingDirection.In
     ), {
         BackgroundTransparency = 1,
-        Size = UDim2.new(0, 450, 0, 320), -- Slight scale up for evaporation effect
-        Position = UDim2.new(0.5, -225, 0.5, -160)
+        Size = UDim2.new(0, 450, 0, 360), -- Slight scale up for evaporation effect
+        Position = UDim2.new(0.5, -225, 0.5, -180)
     })
     
     local mainFrameTween = TweenService:Create(mainFrame, TweenInfo.new(
@@ -402,7 +427,7 @@ local function playExitAnimations()
         Transparency = 1
     })
     
-    for _, element in pairs({titleLabel, subtitleLabel, discordLabel, loadingText, copyButton, warningLabel}) do
+    for _, element in pairs({titleLabel, subtitleLabel, discordLabel, loadingText, copyButton, warningLabel, noteLabel}) do
         TweenService:Create(element, TweenInfo.new(
             0.5,
             Enum.EasingStyle.Quad,
