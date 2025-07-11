@@ -36,7 +36,7 @@ end
 -- Function to load and display error notification
 local function showErrorNotification()
     local success, ErrorNotification = pcall(function()
-        return loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/error_notification.lua"))()
+        return loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/errorloadingscreen.lua"))()
     end)
     
     if not success then
