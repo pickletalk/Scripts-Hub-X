@@ -59,7 +59,6 @@ coroutine.wrap(function()
     LoadingScreen.playEntranceAnimations()
     LoadingScreen.animateParticles()
     LoadingScreen.animatePulse()
-    LoadingScreen.animateLoadingBar()
     
     local isSupported, scriptUrlOrError = checkGameSupport()
     
@@ -72,6 +71,8 @@ coroutine.wrap(function()
         return
     end
     
+    -- For supported games, run the full loading bar animation
+    LoadingScreen.animateLoadingBar()
     print("Game supported! Loading Scripts Hub X...")
     
     wait(0.5)
