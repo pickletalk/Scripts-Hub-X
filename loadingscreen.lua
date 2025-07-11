@@ -173,7 +173,7 @@ for i = 1, 15 do
     particle.Parent = particlesFrame
     
     local particleCorner = Instance.new("UICorner")
-    particleCorner.CornerRadius = UDim.new(1, 0)
+    particleCorner.CornerRadius = UDim.new(10)
     particleCorner.Parent = particle
     
     table.insert(particles, particle)
@@ -254,84 +254,123 @@ local function playEntranceAnimations()
     copyButton.TextTransparency = 1
     copyButton.BackgroundTransparency = 1
     loadingBarBg.BackgroundTransparency = 1
-    loadingText.TextTransparency = 1
-    
-    contentFrame.Size = UDim2.new(0, 50, 0, 50)
-    contentFrame.Position = UDim2.new(0.5, -25, 0.3, -25)
-    
-    -- Water drop effect for content frame
-    local waterDropTween = TweenService:Create(contentFrame, TweenInfo.new(
-        0.8,
-        Enum.EasingStyle.Bounce,
-        Enum.EasingDirection.Out
-    ), {
-        Size = UDim2.new(0, 400, 0, 280),
-        Position = UDim2.new(0.5, -200, 0.5, -140),
-        BackgroundTransparency = 0.5
-    })
-    
-    local mainFrameTween = TweenService:Create(mainFrame, TweenInfo.new(
-        0.6,
-        Enum.EasingStyle.Quad,
-        Enum.EasingDirection.Out
-    ), {
-        BackgroundTransparency = 0.7
-    })
-    
-    local contentStrokeTween = TweenService:Create(contentStroke, TweenInfo.new(
-        0.8,
-        Enum.EasingStyle.Quad,
-        Enum.EasingDirection.Out
-    ), {
-        Transparency = 0.4
-    })
-    
-    mainFrameTween:Play()
-    waterDropTween:Play()
+
+
+-- Water drop effect for content frame
+local waterDropFrame = Instance.new("Frame")
+waterDropFrame.Size = UDim2.new(0, 20, 0, 20)
+waterDropFrame.Position = UDim2.new(0.5, 10, 0.2, -10)
+waterDropFrame.BackgroundColor3 = Color3.fromRGB(80, 160, 255)
+waterDropFrame.BackgroundTransparency = 0.3
+waterDropFrame.BorderSizePixel = 0
+waterDropFrame.Parent = mainFrame
+
+local waterDropCorner = Instance.new("UICorner")
+waterDropCorner.CornerRadius = UDim.new(1, 0)
+waterDropCorner.Parent = waterDropFrame
+
+-- Initial drop fall
+local dropFallTween = TweenService:Create(waterDropFrame, TweenInfo.new(
+    0.5,
+    Enum.EasingStyle.Bounce,
+    Enum.EasingDirection.In
+), {
+    Position = UDim2.new(0.5, -10, 0.5, -10),
+    Size = UDim2.new(0, 40, 0, 40)
+})
+
+-- Ripple expansion to form content frame
+local rippleTween = TweenService:Create(waterDropFrame, TweenInfo.new(
+    0.6,
+    Enum.EasingStyle.Sine,
+    Enum.EasingDirection.Out
+), {
+    Size = UDim2.new(0, 400, 0, 280),
+    Position = UDim2.new(0.5, -200, 0.5, -140),
+    BackgroundTransparency = 1
+})
+
+local mainFrameTween = TweenService:Create(mainFrame, TweenInfo.new(
+    0.6,
+    Enum.EasingStyle.Quad,
+    Enum.EasingDirection.Out
+), {
+    BackgroundTransparency = 0.7
+})
+
+local contentFrameTween = TweenService:Create(contentFrame, TweenInfo.new(
+    0.6,
+    Enum.EasingStyle.Sine,
+    Enum.EasingDirection.Out
+), {
+    BackgroundTransparency = 0.5
+})
+
+local contentStrokeTween = TweenService:Create(contentStroke, TweenInfo.new(
+    0.6,
+    Enum.EasingStyle.Sine,
+    Enum.EasingDirection.Out
+), {
+    Transparency = 0.4
+})
+
+-- Play water drop sequence
+dropFallTween:Play()
+mainFrameTween:Play()
+dropFallTween.Completed:Connect(function()
+    rippleTween:Play()
+    contentFrameTween:Play()
     contentStrokeTween:Play()
-    wait(0.3)
-    
-    -- Ripple effect for elements
-    local function createRippleTween(element, delay, duration)
-        return TweenService:Create(element, TweenInfo.new(
-            duration,
-            Enum.EasingStyle.Sine,
-            Enum.EasingDirection.Out
-        ), {
-            TextTransparency = 0
-        })
-    end
-    
-    local titleTween = createRippleTween(titleLabel, 0, 0.4)
-    local subtitleTween = createRippleTween(subtitleLabel, 0.2, 0.4)
-    local discordTween = createRippleTween(discordLabel, 0.4, 0.4)
-    local copyButtonTween = TweenService:Create(copyButton, TweenInfo.new(
-        0.4,
+end)
+
+wait(0.8)
+
+-- Ripple effect for elements
+local function createRippleTween(element, duration)
+    return TweenService:Create(element, TweenInfo.new(
+        duration,
         Enum.EasingStyle.Sine,
         Enum.EasingDirection.Out
     ), {
-        TextTransparency = 0,
-        BackgroundTransparency = 0.2
+        TextTransparency = 0
     })
-    local loadingBarBgTween = TweenService:Create(loadingBarBg, TweenInfo.new(
-        0.4,
-        Enum.EasingStyle.Sine,
-        Enum.EasingDirection.Out
-    ), {
-        BackgroundTransparency = 0.6
-    })
-    local loadingTextTween = createRippleTween(loadingText, 0.6, 0.4)
-    
-    titleTween:Play()
-    wait(0.1)
-    subtitleTween:Play()
-    wait(0.1)
-    discordTween:Play()
-    copyButtonTween:Play()
-    wait(0.1)
-    loadingBarBgTween:Play()
-    loadingTextTween:Play()
-    loadingTextTween.Completed:Wait()
+end
+
+local titleTween = createRippleTween(titleLabel, 0.4)
+local subtitleTween = createRippleTween(subtitleLabel, 0.4)
+local discordTween = createRippleTween(discordLabel, 0.4)
+local copyButtonTween = TweenService:Create(copyButton, TweenInfo.new(
+    0.4,
+    Enum.EasingStyle.Sine,
+    Enum.EasingDirection.Out
+), {
+    TextTransparency = 0,
+    BackgroundTransparency = 0.2
+})
+local loadingBarBgTween = TweenService:Create(loadingBarBg, TweenInfo.new(
+    0.4,
+    Enum.EasingStyle.Sine,
+    Enum.EasingDirection.Out
+), {
+    BackgroundTransparency = 0.6
+})
+local loadingTextTween = createRippleTween(loadingText, 0.4)
+
+titleTween:Play()
+wait(0.1)
+subtitleTween:Play()
+wait(0.1)
+discordTween:Play()
+copyButtonTween:Play()
+wait(0.1)
+loadingBarBgTween:Play()
+loadingTextTween:Play()
+
+rippleTween.Completed:Connect(function()
+    waterDropFrame:Destroy()
+end)
+
+loadingTextTween.Completed:Wait()
 end
 
 -- Evaporation exit animations
