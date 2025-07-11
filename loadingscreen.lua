@@ -15,11 +15,11 @@ screenGui.IgnoreGuiInset = true
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.Parent = playerGui
 
--- Main background frame
+-- Main background frame (hidden until animation completes)
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(1, 0, 1, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(10, 20, 30)
-mainFrame.BackgroundTransparency = 0.7
+mainFrame.BackgroundTransparency = 1 -- Hidden initially
 mainFrame.Parent = screenGui
 
 -- Content frame
@@ -190,17 +190,18 @@ local function animateParticles()
     -- Particle animation can be added if desired, currently minimal
 end
 
--- Animate loading bar
+-- Animate loading bar with extended duration and longer "Searching script" step
 local function animateLoadingBar()
     local loadingSteps = {
-        {progress = 0.3, text = "Initializing..."},
-        {progress = 0.5, text = "Verifying..."},
-        {progress = 0.8, text = "Loading assets..."},
-        {progress = 1.0, text = "Ready!"}
+        {progress = 0.2, text = "Initializing...", duration = 1.5},
+        {progress = 0.4, text = "Verifying...", duration = 1.5},
+        {progress = 0.6, text = "Searching script...", duration = 3.0}, -- Longer duration
+        {progress = 0.8, text = "Loading assets...", duration = 1.5},
+        {progress = 1.0, text = "Ready!", duration = 1.5}
     }
     
     for i, step in ipairs(loadingSteps) do
-        wait(math.random(0.5, 1))
+        wait(step.duration)
         loadingText.Text = step.text
         
         local barTween = TweenService:Create(loadingBarFill, TweenInfo.new(
@@ -216,7 +217,7 @@ local function animateLoadingBar()
     end
 end
 
--- Water drop entrance animations
+-- Water drop entrance animations with longer duration
 local function playEntranceAnimations()
     -- Ensure all elements are hidden during animation
     contentFrame.BackgroundTransparency = 1
@@ -229,18 +230,18 @@ local function playEntranceAnimations()
     loadingBarBg.BackgroundTransparency = 1
     loadingText.TextTransparency = 1
 
-    -- Water drop fall animation
+    -- Water drop fall animation with longer duration
     local dropFallTween = TweenService:Create(waterDropFrame, TweenInfo.new(
-        0.6,
+        1.0, -- Extended to 1.0 seconds
         Enum.EasingStyle.Quad,
         Enum.EasingDirection.In
     ), {
         Position = UDim2.new(0.5, -20, 0.5, -140) -- Falls to center
     })
 
-    -- Ripple expansion after drop
+    -- Ripple expansion after drop with longer duration
     local rippleTween = TweenService:Create(waterDropFrame, TweenInfo.new(
-        0.8,
+        1.2, -- Extended to 1.2 seconds
         Enum.EasingStyle.Sine,
         Enum.EasingDirection.Out
     ), {
@@ -249,16 +250,7 @@ local function playEntranceAnimations()
         BackgroundTransparency = 1 -- Fade out ripple
     })
 
-    local mainFrameTween = TweenService:Create(mainFrame, TweenInfo.new(
-        0.6,
-        Enum.EasingStyle.Quad,
-        Enum.EasingDirection.Out
-    ), {
-        BackgroundTransparency = 0.7
-    })
-
     -- Start animations
-    mainFrameTween:Play()
     dropFallTween:Play()
     dropFallTween.Completed:Connect(function()
         rippleTween:Play()
@@ -266,8 +258,16 @@ local function playEntranceAnimations()
 
     -- Reveal content frame and elements after ripple completes
     rippleTween.Completed:Connect(function()
+        local mainFrameTween = TweenService:Create(mainFrame, TweenInfo.new(
+            0.6,
+            Enum.EasingStyle.Quad,
+            Enum.EasingDirection.Out
+        ), {
+            BackgroundTransparency = 0.7
+        })
+
         local contentFrameTween = TweenService:Create(contentFrame, TweenInfo.new(
-            0.3,
+            0.5,
             Enum.EasingStyle.Sine,
             Enum.EasingDirection.Out
         ), {
@@ -275,7 +275,7 @@ local function playEntranceAnimations()
         })
         
         local contentStrokeTween = TweenService:Create(contentStroke, TweenInfo.new(
-            0.3,
+            0.5,
             Enum.EasingStyle.Sine,
             Enum.EasingDirection.Out
         ), {
@@ -283,7 +283,7 @@ local function playEntranceAnimations()
         })
         
         local titleTween = TweenService:Create(titleLabel, TweenInfo.new(
-            0.3,
+            0.5,
             Enum.EasingStyle.Sine,
             Enum.EasingDirection.Out
         ), {
@@ -291,7 +291,7 @@ local function playEntranceAnimations()
         })
         
         local subtitleTween = TweenService:Create(subtitleLabel, TweenInfo.new(
-            0.3,
+            0.5,
             Enum.EasingStyle.Sine,
             Enum.EasingDirection.Out
         ), {
@@ -299,7 +299,7 @@ local function playEntranceAnimations()
         })
         
         local discordTween = TweenService:Create(discordLabel, TweenInfo.new(
-            0.3,
+            0.5,
             Enum.EasingStyle.Sine,
             Enum.EasingDirection.Out
         ), {
@@ -307,7 +307,7 @@ local function playEntranceAnimations()
         })
         
         local copyButtonTween = TweenService:Create(copyButton, TweenInfo.new(
-            0.3,
+            0.5,
             Enum.EasingStyle.Sine,
             Enum.EasingDirection.Out
         ), {
@@ -316,7 +316,7 @@ local function playEntranceAnimations()
         })
         
         local loadingBarBgTween = TweenService:Create(loadingBarBg, TweenInfo.new(
-            0.3,
+            0.5,
             Enum.EasingStyle.Sine,
             Enum.EasingDirection.Out
         ), {
@@ -324,13 +324,14 @@ local function playEntranceAnimations()
         })
         
         local loadingTextTween = TweenService:Create(loadingText, TweenInfo.new(
-            0.3,
+            0.5,
             Enum.EasingStyle.Sine,
             Enum.EasingDirection.Out
         ), {
             TextTransparency = 0
         })
 
+        mainFrameTween:Play()
         contentFrameTween:Play()
         contentStrokeTween:Play()
         titleTween:Play()
