@@ -16,7 +16,7 @@ local function checkGameSupport()
         end
     end
     
-    return false, "Sorry, this game doesn't support our script!"
+    return false, nil -- Return nil for scriptUrlOrError when game is not supported
 end
 
 -- Function to load the actual script
@@ -33,6 +33,17 @@ local function loadGameScript(scriptUrl)
     return true
 end
 
+-- Function to load and display error notification
+local function showErrorNotification()
+    local success, ErrorNotification = pcall(function()
+        return loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/error_notification.lua"))()
+    end)
+    
+    if not success then
+        warn("Failed to load error notification: " .. tostring(ErrorNotification))
+    end
+end
+
 -- Main execution
 coroutine.wrap(function()
     -- Load the loading screen from GitHub
@@ -44,22 +55,24 @@ coroutine.wrap(function()
         warn("Failed to load loading screen: " .. tostring(LoadingScreen))
         return
     end
-
-    local isSupported, scriptUrlOrError = checkGameSupport()
-    
-    if not isSupported then
-        LoadingScreen.setLoadingText(scriptUrlOrError, Color3.fromRGB(255, 100, 100))
-        wait(3)
-        LoadingScreen.playExitAnimations()
-        return
-    end
-    
-    print("Game supported! Loading Scripts Hub X...")
     
     LoadingScreen.playEntranceAnimations()
     LoadingScreen.animateParticles()
     LoadingScreen.animatePulse()
     LoadingScreen.animateLoadingBar()
+    
+    local isSupported, scriptUrlOrError = checkGameSupport()
+    
+    if not isSupported then
+        LoadingScreen.setLoadingText("Checking game support...", Color3.fromRGB(150, 180, 200))
+        wait(2)
+        LoadingScreen.playExitAnimations()
+        showErrorNotification()
+        return
+    end
+    
+    print("Game supported! Loading Scripts Hub X...")
+    
     wait(0.5)
     LoadingScreen.playExitAnimations()
     
