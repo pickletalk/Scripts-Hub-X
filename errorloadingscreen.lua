@@ -269,5 +269,5 @@ end
 -- Execute animations
 playEntranceAnimations()
 animatePulse()
-wait(5) -- Display for 5 seconds
+wait(2) -- Display for 2 seconds
 playExitAnimations()
