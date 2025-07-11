@@ -160,50 +160,18 @@ loadingText.Font = Enum.Font.Gotham
 loadingText.TextTransparency = 1 -- Hidden until animation completes
 loadingText.Parent = contentFrame
 
--- Water drop frame (realistic teardrop)
+-- Water drop frame
 local waterDropFrame = Instance.new("Frame")
-waterDropFrame.Size = UDim2.new(0, 40, 0, 60) -- Teardrop shape
+waterDropFrame.Size = UDim2.new(0, 40, 0, 60) -- Teardrop shape approximation
 waterDropFrame.Position = UDim2.new(0.5, -20, 0, -60) -- Starts above screen
-waterDropFrame.BackgroundColor3 = Color3.fromRGB(0, 120, 180) -- Deeper blue for realism
-waterDropFrame.BackgroundTransparency = 0.2
+waterDropFrame.BackgroundColor3 = Color3.fromRGB(80, 160, 255)
+waterDropFrame.BackgroundTransparency = 0.3
 waterDropFrame.BorderSizePixel = 0
 waterDropFrame.Parent = mainFrame
 
 local waterDropCorner = Instance.new("UICorner")
-waterDropCorner.CornerRadius = UDim.new(0.5, 0) -- Rounded teardrop
+waterDropCorner.CornerRadius = UDim.new(0.5, 0) -- Rounded teardrop shape
 waterDropCorner.Parent = waterDropFrame
-
--- Glossy effect with UIStroke
-local waterDropStroke = Instance.new("UIStroke")
-waterDropStroke.Color = Color3.fromRGB(255, 255, 255) -- White highlight for gloss
-waterDropStroke.Thickness = 1.5
-waterDropStroke.Transparency = 0.5
-waterDropStroke.Parent = waterDropFrame
-
--- Ripple frames for realistic effect
-local ripple1 = Instance.new("Frame")
-ripple1.Size = UDim2.new(0, 0, 0, 0)
-ripple1.Position = UDim2.new(0.5, -20, 0.5, -140)
-ripple1.BackgroundColor3 = Color3.fromRGB(0, 120, 180)
-ripple1.BackgroundTransparency = 0.6
-ripple1.BorderSizePixel = 0
-ripple1.Parent = mainFrame
-
-local ripple1Corner = Instance.new("UICorner")
-ripple1Corner.CornerRadius = UDim.new(1, 0)
-ripple1Corner.Parent = ripple1
-
-local ripple2 = Instance.new("Frame")
-ripple2.Size = UDim2.new(0, 0, 0, 0)
-ripple2.Position = UDim2.new(0.5, -20, 0.5, -140)
-ripple2.BackgroundColor3 = Color3.fromRGB(0, 120, 180)
-ripple2.BackgroundTransparency = 0.7
-ripple2.BorderSizePixel = 0
-ripple2.Parent = mainFrame
-
-local ripple2Corner = Instance.new("UICorner")
-ripple2Corner.CornerRadius = UDim.new(1, 0)
-ripple2Corner.Parent = ripple2
 
 -- Copy button functionality
 copyButton.MouseButton1Click:Connect(function()
@@ -249,7 +217,7 @@ local function animateLoadingBar()
     end
 end
 
--- Water drop entrance animations with realistic effect
+-- Water drop entrance animations with longer duration
 local function playEntranceAnimations()
     -- Ensure all elements are hidden during animation
     contentFrame.BackgroundTransparency = 1
@@ -262,55 +230,34 @@ local function playEntranceAnimations()
     loadingBarBg.BackgroundTransparency = 1
     loadingText.TextTransparency = 1
 
-    -- Water drop fall with rotation and bounce
+    -- Water drop fall animation with longer duration
     local dropFallTween = TweenService:Create(waterDropFrame, TweenInfo.new(
-        1.2, -- Extended for realism
+        1.0, -- Extended to 1.0 seconds
         Enum.EasingStyle.Quad,
-        Enum.EasingDirection.Out
+        Enum.EasingDirection.In
     ), {
-        Position = UDim2.new(0.5, -20, 0.5, -140),
-        Rotation = 5 -- Slight rotation for realism
+        Position = UDim2.new(0.5, -20, 0.5, -140) -- Falls to center
     })
 
-    local bounceTween = TweenService:Create(waterDropFrame, TweenInfo.new(
-        0.3,
-        Enum.EasingStyle.Bounce,
-        Enum.EasingDirection.Out
-    ), {
-        Position = UDim2.new(0.5, -20, 0.5, -130),
-        Rotation = 0
-    })
-
-    -- Ripple animations
-    local ripple1Tween = TweenService:Create(ripple1, TweenInfo.new(
-        1.0,
+    -- Ripple expansion after drop with longer duration
+    local rippleTween = TweenService:Create(waterDropFrame, TweenInfo.new(
+        1.2, -- Extended to 1.2 seconds
         Enum.EasingStyle.Sine,
         Enum.EasingDirection.Out
     ), {
-        Size = UDim2.new(0, 200, 0, 200),
-        BackgroundTransparency = 0.9
-    })
-
-    local ripple2Tween = TweenService:Create(ripple2, TweenInfo.new(
-        1.2,
-        Enum.EasingStyle.Sine,
-        Enum.EasingDirection.Out
-    ), {
-        Size = UDim2.new(0, 300, 0, 300),
-        BackgroundTransparency = 0.95
+        Size = UDim2.new(0, 400, 0, 280),
+        Position = UDim2.new(0.5, -200, 0.5, -140),
+        BackgroundTransparency = 1 -- Fade out ripple
     })
 
     -- Start animations
     dropFallTween:Play()
     dropFallTween.Completed:Connect(function()
-        bounceTween:Play()
-        ripple1Tween:Play()
-        wait(0.1)
-        ripple2Tween:Play()
+        rippleTween:Play()
     end)
 
     -- Reveal content frame and elements after ripple completes
-    ripple2Tween.Completed:Connect(function()
+    rippleTween.Completed:Connect(function()
         local mainFrameTween = TweenService:Create(mainFrame, TweenInfo.new(
             0.6,
             Enum.EasingStyle.Quad,
@@ -398,9 +345,7 @@ local function playEntranceAnimations()
         loadingTextTween:Play()
 
         loadingTextTween.Completed:Wait()
-        waterDropFrame:Destroy()
-        ripple1:Destroy()
-        ripple2:Destroy() -- Remove all animation elements
+        waterDropFrame:Destroy() -- Remove water drop after animation
     end)
 end
 
