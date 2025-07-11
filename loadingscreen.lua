@@ -69,6 +69,20 @@ subtitleLabel.Font = Enum.Font.Gotham
 subtitleLabel.TextTransparency = 1 -- Hidden until animation completes
 subtitleLabel.Parent = contentFrame
 
+-- Warning label
+local warningLabel = Instance.new("TextLabel")
+warningLabel.Size = UDim2.new(1, -40, 0, 60)
+warningLabel.Position = UDim2.new(0, 20, 0, 230)
+warningLabel.BackgroundTransparency = 1
+warningLabel.Text = "Warning: Don't use scripts from unknown developers, as they might steal your in-game items, pets, etc. Note: If you saw our script in a random YouTube or other advertising video, join our Discord for a loading screen showcase."
+warningLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+warningLabel.TextScaled = true
+warningLabel.TextSize = 12
+warningLabel.Font = Enum.Font.Gotham
+warningLabel.TextTransparency = 1 -- Hidden until animation completes
+warningLabel.TextWrapped = true
+warningLabel.Parent = contentFrame
+
 -- Discord container
 local discordContainer = Instance.new("Frame")
 discordContainer.Size = UDim2.new(1, -40, 0, 40)
@@ -229,6 +243,7 @@ local function playEntranceAnimations()
     copyButton.BackgroundTransparency = 1
     loadingBarBg.BackgroundTransparency = 1
     loadingText.TextTransparency = 1
+    warningLabel.TextTransparency = 1
 
     -- Water drop fall animation with longer duration
     local dropFallTween = TweenService:Create(waterDropFrame, TweenInfo.new(
@@ -331,6 +346,14 @@ local function playEntranceAnimations()
             TextTransparency = 0
         })
 
+        local warningTween = TweenService:Create(warningLabel, TweenInfo.new(
+            0.5,
+            Enum.EasingStyle.Sine,
+            Enum.EasingDirection.Out
+        ), {
+            TextTransparency = 0
+        })
+
         mainFrameTween:Play()
         contentFrameTween:Play()
         contentStrokeTween:Play()
@@ -343,6 +366,8 @@ local function playEntranceAnimations()
         wait(0.1)
         loadingBarBgTween:Play()
         loadingTextTween:Play()
+        wait(0.1)
+        warningTween:Play()
 
         loadingTextTween.Completed:Wait()
         waterDropFrame:Destroy() -- Remove water drop after animation
@@ -377,7 +402,7 @@ local function playExitAnimations()
         Transparency = 1
     })
     
-    for _, element in pairs({titleLabel, subtitleLabel, discordLabel, loadingText, copyButton}) do
+    for _, element in pairs({titleLabel, subtitleLabel, discordLabel, loadingText, copyButton, warningLabel}) do
         TweenService:Create(element, TweenInfo.new(
             0.5,
             Enum.EasingStyle.Quad,
