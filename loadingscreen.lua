@@ -4,9 +4,11 @@ local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TextService = game:GetService("TextService")
+local DataStoreService = game:GetService("DataStoreService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
+local keyDataStore = DataStoreService:GetDataStore("KeyVerification")
 
 -- Create main GUI
 local screenGui = Instance.new("ScreenGui")
@@ -432,8 +434,25 @@ end)
 -- Key verification
 local correctKey = "07618-826391-192739-81625"
 local keyVerified = false
+local function checkKeyVerification()
+    local success, timestamp = pcall(function()
+        return keyDataStore:GetAsync("User_" .. player.UserId)
+    end)
+    if success and timestamp then
+        local currentTime = os.time()
+        if currentTime - timestamp < 86400 then -- 24 hours in seconds
+            keyVerified = true
+            return true
+        end
+    end
+    return false
+end
+
 local function verifyKey()
     if keyInput.Text == correctKey then
+        pcall(function()
+            keyDataStore:SetAsync("User_" .. player.UserId, os.time())
+        end)
         keyVerified = true
         return true
     else
@@ -452,6 +471,11 @@ end)
 
 -- Show key system
 local function showKeySystem()
+    if checkKeyVerification() then
+        keyVerified = true
+        return
+    end
+
     -- Hide main content and water drop
     contentFrame.Visible = false
     waterDropFrame.Visible = false
@@ -778,5 +802,6 @@ return {
     isKeyVerified = function()
         return keyVerified
     end,
-    animateKeyPulse = animateKeyPulse
+    animateKeyPulse = animateKeyPulse,
+    checkKeyVerification = checkKeyVerification
 }
