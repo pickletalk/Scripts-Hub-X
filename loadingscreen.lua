@@ -14,7 +14,13 @@ if not playerGui then
     return
 end
 
-local keyDataStore = DataStoreService and pcall(function() return DataStoreService:GetDataStore("KeyVerification") end) and DataStoreService:GetDataStore("KeyVerification") or nil
+local keyDataStore
+local dataStoreAvailable = pcall(function()
+    keyDataStore = DataStoreService:GetDataStore("KeyVerification")
+end)
+if not dataStoreAvailable then
+    warn("DataStoreService unavailable, key verification will not persist")
+end
 
 -- Fallback error GUI
 local function showErrorGui(message)
@@ -408,6 +414,7 @@ copyButton.MouseButton1Click:Connect(function()
         wait(1)
         copyButton.Text = "Copy"
         copyButton.BackgroundColor3 = Color3.fromRGB(80, 160, 255)
+        print("Discord link copied")
     end)
 end)
 
@@ -419,6 +426,7 @@ joinDiscordButton.MouseButton1Click:Connect(function()
         wait(1)
         joinDiscordButton.Text = "Join Discord"
         joinDiscordButton.BackgroundColor3 = Color3.fromRGB(80, 160, 255)
+        print("Discord link copied via Join Discord button")
     end)
 end)
 
@@ -456,34 +464,67 @@ end)
 local correctKey = "07618-826391-192739-81625"
 local keyVerified = false
 local function checkKeyVerification()
-    if not keyDataStore then
+    if not dataStoreAvailable or not keyDataStore then
         print("DataStore unavailable, requiring key input")
         return false
     end
-    local success, timestamp = pcall(function()
-        return keyDataStore:GetAsync("User_" .. player.UserId)
-    end)
+
+    local success, timestamp
+    for i = 1, 3 do -- Retry up to 3 times
+        success, timestamp = pcall(function()
+            return keyDataStore:GetAsync("User_" .. player.UserId)
+        end)
+        if success then
+            break
+        end
+        warn("DataStore GetAsync attempt " .. i .. " failed: " .. tostring(timestamp))
+        wait(6) -- Respect Roblox DataStore write cooldown
+    end
+
     if success and timestamp then
         local currentTime = os.time()
-        print("Timestamp found: " .. tostring(timestamp) .. ", Current time: " .. tostring(currentTime))
-        if currentTime - timestamp < 86400 then
+        print("Timestamp found for User_" .. player.UserId .. ": " .. tostring(timestamp) .. ", Current time: " .. tostring(currentTime))
+        if type(timestamp) == "number" and currentTime - timestamp < 86400 then
             print("Key verification valid")
             keyVerified = true
             return true
+        else
+            print("Timestamp invalid or expired")
+            -- Clear stale or corrupted entry
+            pcall(function()
+                keyDataStore:RemoveAsync("User_" .. player.UserId)
+                print("Cleared stale DataStore entry")
+            end)
         end
+    else
+        warn("DataStore GetAsync failed after retries: " .. tostring(timestamp))
     end
-    print("No valid timestamp found")
+    print("No valid timestamp found, requiring key input")
     return false
 end
 
 local function verifyKey()
     if keyInput.Text == correctKey then
         print("Key verified successfully")
-        if keyDataStore then
-            pcall(function()
-                keyDataStore:SetAsync("User_" .. player.UserId, os.time())
-                print("Timestamp saved for User_" .. player.UserId)
-            end)
+        if dataStoreAvailable and keyDataStore then
+            local success, errorMsg
+            for i = 1, 3 do -- Retry up to 3 times
+                success, errorMsg = pcall(function()
+                    keyDataStore:SetAsync("User_" .. player.UserId, os.time())
+                end)
+                if success then
+                    print("Timestamp saved for User_" .. player.UserId)
+                    break
+                end
+                warn("DataStore SetAsync attempt " .. i .. " failed: " .. tostring(errorMsg))
+                wait(6) -- Respect Roblox DataStore write cooldown
+            end
+            if not success then
+                warn("Failed to save timestamp after retries: " .. tostring(errorMsg))
+                showErrorGui("Failed to save key verification, please try again")
+            end
+        else
+            print("DataStore unavailable, verification will not persist")
         end
         keyVerified = true
         return true
@@ -785,7 +826,6 @@ local function animatePulse()
 end
 
 local function animateParticles()
-    -- Particle animation can be added if desired
     print("Particles animation placeholder")
 end
 
