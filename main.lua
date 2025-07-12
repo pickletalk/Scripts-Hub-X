@@ -56,20 +56,33 @@ coroutine.wrap(function()
         return
     end
     
-    LoadingScreen.playEntranceAnimations()
-    LoadingScreen.animateParticles()
-    LoadingScreen.animatePulse()
-    
     local isSupported, scriptUrlOrError = checkGameSupport()
     
     if not isSupported then
         LoadingScreen.setLoadingText("Checking game support...", Color3.fromRGB(150, 180, 200))
+        LoadingScreen.playEntranceAnimations()
+        LoadingScreen.animatePulse()
         wait(2)
         LoadingScreen.playExitAnimations()
         wait(0.1) -- Brief delay to ensure loading screen is fully gone
         showErrorNotification()
         return
     end
+    
+    -- Show key system for supported games
+    LoadingScreen.showKeySystem()
+    LoadingScreen.animatePulse()
+    
+    -- Wait for key verification
+    while not LoadingScreen.isKeyVerified() do
+        wait(0.1)
+    end
+    
+    -- Hide key system and proceed with full loading animation
+    LoadingScreen.hideKeySystem()
+    LoadingScreen.playEntranceAnimations()
+    LoadingScreen.animateParticles()
+    LoadingScreen.animatePulse()
     
     -- For supported games, run the full loading bar animation
     LoadingScreen.animateLoadingBar()
