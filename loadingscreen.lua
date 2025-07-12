@@ -1,21 +1,62 @@
 -- Scripts Hub X | Official Loading Screen
--- Services
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
-local TextService = game:GetService("TextService")
 local DataStoreService = game:GetService("DataStoreService")
 
 local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
-local keyDataStore = DataStoreService:GetDataStore("KeyVerification")
+local playerGui
+pcall(function()
+    playerGui = player:WaitForChild("PlayerGui", 5)
+end)
+if not playerGui then
+    warn("Failed to access PlayerGui")
+    return
+end
+
+local keyDataStore = DataStoreService and pcall(function() return DataStoreService:GetDataStore("KeyVerification") end) and DataStoreService:GetDataStore("KeyVerification") or nil
+
+-- Fallback error GUI
+local function showErrorGui(message)
+    local errorGui = Instance.new("ScreenGui")
+    errorGui.Name = "ScriptsHubXError"
+    errorGui.IgnoreGuiInset = true
+    errorGui.Parent = playerGui
+
+    local errorFrame = Instance.new("Frame")
+    errorFrame.Size = UDim2.new(0, 300, 0, 100)
+    errorFrame.Position = UDim2.new(0.5, -150, 0.5, -50)
+    errorFrame.BackgroundColor3 = Color3.fromRGB(20, 40, 60)
+    errorFrame.Parent = errorGui
+
+    local errorCorner = Instance.new("UICorner")
+    errorCorner.CornerRadius = UDim.new(0, 12)
+    errorCorner.Parent = errorFrame
+
+    local errorLabel = Instance.new("TextLabel")
+    errorLabel.Size = UDim2.new(1, -20, 1, -20)
+    errorLabel.Position = UDim2.new(0, 10, 0, 10)
+    errorLabel.BackgroundTransparency = 1
+    errorLabel.Text = message
+    errorLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+    errorLabel.TextScaled = true
+    errorLabel.TextSize = 14
+    errorLabel.Font = Enum.Font.Gotham
+    errorLabel.TextWrapped = true
+    errorLabel.Parent = errorFrame
+
+    wait(5)
+    errorGui:Destroy()
+end
 
 -- Create main GUI
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "ScriptsHubXLoading"
 screenGui.IgnoreGuiInset = true
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
+print("ScreenGui created")
 
 -- Main background frame
 local mainFrame = Instance.new("Frame")
@@ -34,12 +75,10 @@ contentFrame.BorderSizePixel = 0
 contentFrame.Visible = false
 contentFrame.Parent = mainFrame
 
--- Content frame corner
 local contentFrameCorner = Instance.new("UICorner")
 contentFrameCorner.CornerRadius = UDim.new(0, 16)
 contentFrameCorner.Parent = contentFrame
 
--- Content frame glow
 local contentStroke = Instance.new("UIStroke")
 contentStroke.Color = Color3.fromRGB(80, 160, 255)
 contentStroke.Thickness = 1.5
@@ -85,7 +124,6 @@ local discordCorner = Instance.new("UICorner")
 discordCorner.CornerRadius = UDim.new(0, 8)
 discordCorner.Parent = discordContainer
 
--- Discord label
 local discordLabel = Instance.new("TextLabel")
 discordLabel.Size = UDim2.new(0.7, -10, 1, -10)
 discordLabel.Position = UDim2.new(0, 10, 0, 5)
@@ -99,7 +137,6 @@ discordLabel.TextXAlignment = Enum.TextXAlignment.Left
 discordLabel.TextTransparency = 1
 discordLabel.Parent = discordContainer
 
--- Copy button
 local copyButton = Instance.new("TextButton")
 copyButton.Size = UDim2.new(0, 80, 0, 28)
 copyButton.Position = UDim2.new(0.73, 5, 0, 6)
@@ -117,7 +154,6 @@ local copyButtonCorner = Instance.new("UICorner")
 copyButtonCorner.CornerRadius = UDim.new(0, 6)
 copyButtonCorner.Parent = copyButton
 
--- Discord advertisement label
 local discordAdLabel = Instance.new("TextLabel")
 discordAdLabel.Size = UDim2.new(1, -40, 0, 40)
 discordAdLabel.Position = UDim2.new(0, 20, 0, 160)
@@ -131,7 +167,6 @@ discordAdLabel.TextTransparency = 1
 discordAdLabel.TextWrapped = true
 discordAdLabel.Parent = contentFrame
 
--- Loading bar background
 local loadingBarBg = Instance.new("Frame")
 loadingBarBg.Size = UDim2.new(1, -40, 0, 8)
 loadingBarBg.Position = UDim2.new(0, 20, 0, 210)
@@ -144,7 +179,6 @@ local loadingBarBgCorner = Instance.new("UICorner")
 loadingBarBgCorner.CornerRadius = UDim.new(0, 4)
 loadingBarBgCorner.Parent = loadingBarBg
 
--- Loading bar fill
 local loadingBarFill = Instance.new("Frame")
 loadingBarFill.Size = UDim2.new(0, 0, 1, 0)
 loadingBarFill.BackgroundColor3 = Color3.fromRGB(80, 160, 255)
@@ -155,7 +189,6 @@ local loadingBarFillCorner = Instance.new("UICorner")
 loadingBarFillCorner.CornerRadius = UDim.new(0, 4)
 loadingBarFillCorner.Parent = loadingBarFill
 
--- Loading bar gradient
 local loadingBarGradient = Instance.new("UIGradient")
 loadingBarGradient.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 160, 255)),
@@ -164,7 +197,6 @@ loadingBarGradient.Color = ColorSequence.new({
 })
 loadingBarGradient.Parent = loadingBarFill
 
--- Loading text
 local loadingText = Instance.new("TextLabel")
 loadingText.Size = UDim2.new(1, -40, 0, 30)
 loadingText.Position = UDim2.new(0, 20, 0, 230)
@@ -177,7 +209,6 @@ loadingText.Font = Enum.Font.Gotham
 loadingText.TextTransparency = 1
 loadingText.Parent = contentFrame
 
--- Warning label
 local warningLabel = Instance.new("TextLabel")
 warningLabel.Size = UDim2.new(1, -40, 0, 40)
 warningLabel.Position = UDim2.new(0, 20, 0, 270)
@@ -191,7 +222,6 @@ warningLabel.TextTransparency = 1
 warningLabel.TextWrapped = true
 warningLabel.Parent = contentFrame
 
--- Note label
 local noteLabel = Instance.new("TextLabel")
 noteLabel.Size = UDim2.new(1, -40, 0, 40)
 noteLabel.Position = UDim2.new(0, 20, 0, 310)
@@ -205,7 +235,6 @@ noteLabel.TextTransparency = 1
 noteLabel.TextWrapped = true
 noteLabel.Parent = contentFrame
 
--- Water drop frame (hidden during key system)
 local waterDropFrame = Instance.new("Frame")
 waterDropFrame.Size = UDim2.new(0, 40, 0, 60)
 waterDropFrame.Position = UDim2.new(0.5, -20, 0, -60)
@@ -219,7 +248,6 @@ local waterDropCorner = Instance.new("UICorner")
 waterDropCorner.CornerRadius = UDim.new(0.5, 0)
 waterDropCorner.Parent = waterDropFrame
 
--- Key system frame
 local keyFrame = Instance.new("Frame")
 keyFrame.Size = UDim2.new(0, 320, 0, 180)
 keyFrame.Position = UDim2.new(0.5, -160, 0.5, -90)
@@ -227,6 +255,7 @@ keyFrame.BackgroundColor3 = Color3.fromRGB(20, 40, 60)
 keyFrame.BackgroundTransparency = 1
 keyFrame.BorderSizePixel = 0
 keyFrame.Parent = mainFrame
+print("KeyFrame created")
 
 local keyFrameCorner = Instance.new("UICorner")
 keyFrameCorner.CornerRadius = UDim.new(0, 12)
@@ -238,7 +267,6 @@ keyFrameStroke.Thickness = 1.5
 keyFrameStroke.Transparency = 1
 keyFrameStroke.Parent = keyFrame
 
--- Key system title
 local keyTitleLabel = Instance.new("TextLabel")
 keyTitleLabel.Size = UDim2.new(1, -30, 0, 30)
 keyTitleLabel.Position = UDim2.new(0, 15, 0, 15)
@@ -251,7 +279,6 @@ keyTitleLabel.Font = Enum.Font.GothamMedium
 keyTitleLabel.TextTransparency = 1
 keyTitleLabel.Parent = keyFrame
 
--- Key input box
 local keyInput = Instance.new("TextBox")
 keyInput.Size = UDim2.new(1, -30, 0, 30)
 keyInput.Position = UDim2.new(0, 15, 0, 50)
@@ -270,7 +297,6 @@ local keyInputCorner = Instance.new("UICorner")
 keyInputCorner.CornerRadius = UDim.new(0, 6)
 keyInputCorner.Parent = keyInput
 
--- Key description label
 local keyDescLabel = Instance.new("TextLabel")
 keyDescLabel.Size = UDim2.new(1, -30, 0, 30)
 keyDescLabel.Position = UDim2.new(0, 15, 0, 85)
@@ -284,7 +310,6 @@ keyDescLabel.TextTransparency = 1
 keyDescLabel.TextWrapped = true
 keyDescLabel.Parent = keyFrame
 
--- Key system buttons
 local joinDiscordButton = Instance.new("TextButton")
 joinDiscordButton.Size = UDim2.new(0, 100, 0, 28)
 joinDiscordButton.Position = UDim2.new(0, 25, 0, 120)
@@ -319,7 +344,6 @@ local verifyButtonCorner = Instance.new("UICorner")
 verifyButtonCorner.CornerRadius = UDim.new(0, 6)
 verifyButtonCorner.Parent = verifyButton
 
--- Close button
 local closeButton = Instance.new("TextButton")
 closeButton.Size = UDim2.new(0, 24, 0, 24)
 closeButton.Position = UDim2.new(1, -32, 0, 8)
@@ -362,7 +386,6 @@ end
 addButtonHoverEffect(joinDiscordButton)
 addButtonHoverEffect(verifyButton)
 
--- Close button hover effect
 closeButton.MouseEnter:Connect(function()
     TweenService:Create(closeButton, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
         Rotation = 90,
@@ -377,7 +400,6 @@ closeButton.MouseLeave:Connect(function()
     }):Play()
 end)
 
--- Copy button functionality
 copyButton.MouseButton1Click:Connect(function()
     pcall(function()
         setclipboard("https://discord.gg/bpsNUH5sVb")
@@ -389,7 +411,6 @@ copyButton.MouseButton1Click:Connect(function()
     end)
 end)
 
--- Join Discord button functionality
 joinDiscordButton.MouseButton1Click:Connect(function()
     pcall(function()
         setclipboard("https://discord.gg/bpsNUH5sVb")
@@ -401,8 +422,8 @@ joinDiscordButton.MouseButton1Click:Connect(function()
     end)
 end)
 
--- Close button functionality
 closeButton.MouseButton1Click:Connect(function()
+    print("Close button clicked")
     local closeTween = TweenService:Create(keyFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
         BackgroundTransparency = 1,
         Size = UDim2.new(0, 340, 0, 190),
@@ -429,30 +450,41 @@ closeButton.MouseButton1Click:Connect(function()
     strokeTween:Play()
     closeTween.Completed:Wait()
     screenGui:Destroy()
+    print("ScreenGui destroyed")
 end)
 
--- Key verification
 local correctKey = "07618-826391-192739-81625"
 local keyVerified = false
 local function checkKeyVerification()
+    if not keyDataStore then
+        print("DataStore unavailable, requiring key input")
+        return false
+    end
     local success, timestamp = pcall(function()
         return keyDataStore:GetAsync("User_" .. player.UserId)
     end)
     if success and timestamp then
         local currentTime = os.time()
-        if currentTime - timestamp < 86400 then -- 24 hours in seconds
+        print("Timestamp found: " .. tostring(timestamp) .. ", Current time: " .. tostring(currentTime))
+        if currentTime - timestamp < 86400 then
+            print("Key verification valid")
             keyVerified = true
             return true
         end
     end
+    print("No valid timestamp found")
     return false
 end
 
 local function verifyKey()
     if keyInput.Text == correctKey then
-        pcall(function()
-            keyDataStore:SetAsync("User_" .. player.UserId, os.time())
-        end)
+        print("Key verified successfully")
+        if keyDataStore then
+            pcall(function()
+                keyDataStore:SetAsync("User_" .. player.UserId, os.time())
+                print("Timestamp saved for User_" .. player.UserId)
+            end)
+        end
         keyVerified = true
         return true
     else
@@ -461,26 +493,27 @@ local function verifyKey()
         wait(3)
         keyDescLabel.Text = "Join our Discord server to get the key!"
         keyDescLabel.TextColor3 = Color3.fromRGB(100, 160, 255)
+        print("Invalid key entered")
         return false
     end
 end
 
 verifyButton.MouseButton1Click:Connect(function()
+    print("Verify button clicked")
     verifyKey()
 end)
 
--- Show key system
 local function showKeySystem()
+    print("Attempting to show key system")
     if checkKeyVerification() then
+        print("Key already verified, skipping GUI")
         keyVerified = true
         return
     end
 
-    -- Hide main content and water drop
     contentFrame.Visible = false
     waterDropFrame.Visible = false
 
-    -- Show key frame with bounce effect
     local mainFrameTween = TweenService:Create(mainFrame, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
         BackgroundTransparency = 0.7
     })
@@ -522,6 +555,7 @@ local function showKeySystem()
         TextTransparency = 0
     })
 
+    print("Playing key system animations")
     mainFrameTween:Play()
     keyFrameTween:Play()
     keyStrokeTween:Play()
@@ -536,16 +570,16 @@ local function showKeySystem()
     closeButtonTween:Play()
 end
 
--- Key frame glow pulse
 local function animateKeyPulse()
     local pulseTween = TweenService:Create(keyFrameStroke, TweenInfo.new(1.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
         Transparency = 0.2
     })
     pulseTween:Play()
+    print("Key pulse animation started")
 end
 
--- Hide key system
 local function hideKeySystem()
+    print("Hiding key system")
     local keyFrameTween = TweenService:Create(keyFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
         BackgroundTransparency = 1,
         Size = UDim2.new(0, 340, 0, 190)
@@ -596,11 +630,10 @@ local function hideKeySystem()
     keyFrame:Destroy()
     contentFrame.Visible = true
     waterDropFrame.Visible = true
+    print("Key system hidden")
 end
 
--- Water drop entrance animations
 local function playEntranceAnimations()
-    -- Ensure all elements are hidden during animation
     contentFrame.BackgroundTransparency = 1
     contentStroke.Transparency = 1
     titleLabel.TextTransparency = 1
@@ -614,25 +647,22 @@ local function playEntranceAnimations()
     warningLabel.TextTransparency = 1
     noteLabel.TextTransparency = 1
 
-    -- Water drop fall animation
     local dropFallTween = TweenService:Create(waterDropFrame, TweenInfo.new(1.0, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
         Position = UDim2.new(0.5, -20, 0.5, -140)
     })
 
-    -- Ripple expansion after drop
     local rippleTween = TweenService:Create(waterDropFrame, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
         Size = UDim2.new(0, 400, 0, 280),
         Position = UDim2.new(0.5, -200, 0.5, -140),
         BackgroundTransparency = 1
     })
 
-    -- Start animations
+    print("Playing entrance animations")
     dropFallTween:Play()
     dropFallTween.Completed:Connect(function()
         rippleTween:Play()
     end)
 
-    -- Reveal content frame and elements after ripple completes
     rippleTween.Completed:Connect(function()
         local mainFrameTween = TweenService:Create(mainFrame, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             BackgroundTransparency = 0.7
@@ -704,10 +734,10 @@ local function playEntranceAnimations()
 
         loadingTextTween.Completed:Wait()
         waterDropFrame:Destroy()
+        print("Entrance animations completed")
     end)
 end
 
--- Evaporation exit animations
 local function playExitAnimations()
     local evaporateTween = TweenService:Create(contentFrame, TweenInfo.new(0.7, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
         BackgroundTransparency = 1,
@@ -743,22 +773,22 @@ local function playExitAnimations()
 
     evaporateTween.Completed:Wait()
     screenGui:Destroy()
+    print("Exit animations completed")
 end
 
--- Border pulse
 local function animatePulse()
     local borderPulseTween = TweenService:Create(contentStroke, TweenInfo.new(1.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
         Transparency = 0.2
     })
     borderPulseTween:Play()
+    print("Content pulse animation started")
 end
 
--- Animate particles (simplified for this context)
 local function animateParticles()
-    -- Particle animation can be added if desired, currently minimal
+    -- Particle animation can be added if desired
+    print("Particles animation placeholder")
 end
 
--- Animate loading bar
 local function animateLoadingBar()
     local loadingSteps = {
         {progress = 0.2, text = "Initializing...", duration = 1.0},
@@ -780,10 +810,10 @@ local function animateLoadingBar()
         
         barTween:Play()
         barTween.Completed:Wait()
+        print("Loading bar step " .. i .. " completed")
     end
 end
 
--- Expose loading screen functions
 return {
     playEntranceAnimations = playEntranceAnimations,
     playExitAnimations = playExitAnimations,
@@ -795,6 +825,7 @@ return {
         if color then
             loadingText.TextColor3 = color
         end
+        print("Loading text set to: " .. text)
     end,
     showKeySystem = showKeySystem,
     verifyKey = verifyKey,
