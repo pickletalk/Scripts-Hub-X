@@ -215,6 +215,106 @@ local waterDropCorner = Instance.new("UICorner")
 waterDropCorner.CornerRadius = UDim.new(0.5, 0) -- Rounded teardrop shape
 waterDropCorner.Parent = waterDropFrame
 
+-- Key system frame
+local keyFrame = Instance.new("Frame")
+keyFrame.Size = UDim2.new(0, 400, 0, 200)
+keyFrame.Position = UDim2.new(0.5, -200, 0.5, -100)
+keyFrame.BackgroundColor3 = Color3.fromRGB(20, 40, 60)
+keyFrame.BackgroundTransparency = 1 -- Hidden initially
+keyFrame.BorderSizePixel = 0
+keyFrame.Parent = mainFrame
+
+local keyFrameCorner = Instance.new("UICorner")
+keyFrameCorner.CornerRadius = UDim.new(0, 16)
+keyFrameCorner.Parent = keyFrame
+
+local keyFrameStroke = Instance.new("UIStroke")
+keyFrameStroke.Color = Color3.fromRGB(80, 160, 255)
+keyFrameStroke.Thickness = 1.5
+keyFrameStroke.Transparency = 1 -- Hidden initially
+keyFrameStroke.Parent = keyFrame
+
+-- Key system title
+local keyTitleLabel = Instance.new("TextLabel")
+keyTitleLabel.Size = UDim2.new(1, -40, 0, 40)
+keyTitleLabel.Position = UDim2.new(0, 20, 0, 20)
+keyTitleLabel.BackgroundTransparency = 1
+keyTitleLabel.Text = "Enter Key"
+keyTitleLabel.TextColor3 = Color3.fromRGB(120, 180, 255)
+keyTitleLabel.TextScaled = true
+keyTitleLabel.TextSize = 24
+keyTitleLabel.Font = Enum.Font.GothamBold
+keyTitleLabel.TextTransparency = 1
+keyTitleLabel.Parent = keyFrame
+
+-- Key input box
+local keyInput = Instance.new("TextBox")
+keyInput.Size = UDim2.new(1, -40, 0, 40)
+keyInput.Position = UDim2.new(0, 20, 0, 70)
+keyInput.BackgroundColor3 = Color3.fromRGB(30, 50, 70)
+keyInput.BackgroundTransparency = 1
+keyInput.Text = ""
+keyInput.PlaceholderText = "Enter your key here"
+keyInput.TextColor3 = Color3.fromRGB(150, 180, 200)
+keyInput.TextScaled = true
+keyInput.TextSize = 14
+keyInput.Font = Enum.Font.Gotham
+keyInput.TextTransparency = 1
+keyInput.Parent = keyFrame
+
+local keyInputCorner = Instance.new("UICorner")
+keyInputCorner.CornerRadius = UDim.new(0, 8)
+keyInputCorner.Parent = keyInput
+
+-- Key description label
+local keyDescLabel = Instance.new("TextLabel")
+keyDescLabel.Size = UDim2.new(1, -40, 0, 40)
+keyDescLabel.Position = UDim2.new(0, 20, 0, 120)
+keyDescLabel.BackgroundTransparency = 1
+keyDescLabel.Text = "Join our Discord server to get the key!"
+keyDescLabel.TextColor3 = Color3.fromRGB(100, 160, 255)
+keyDescLabel.TextScaled = true
+keyDescLabel.TextSize = 12
+keyDescLabel.Font = Enum.Font.Gotham
+keyDescLabel.TextTransparency = 1
+keyDescLabel.TextWrapped = true
+keyDescLabel.Parent = keyFrame
+
+-- Key system buttons
+local joinDiscordButton = Instance.new("TextButton")
+joinDiscordButton.Size = UDim2.new(0, 120, 0, 30)
+joinDiscordButton.Position = UDim2.new(0, 30, 0, 160)
+joinDiscordButton.BackgroundColor3 = Color3.fromRGB(80, 160, 255)
+joinDiscordButton.BackgroundTransparency = 1
+joinDiscordButton.Text = "Join Discord"
+joinDiscordButton.TextColor3 = Color3.fromRGB(230, 240, 255)
+joinDiscordButton.TextScaled = true
+joinDiscordButton.TextSize = 12
+joinDiscordButton.Font = Enum.Font.GothamBold
+joinDiscordButton.TextTransparency = 1
+joinDiscordButton.Parent = keyFrame
+
+local joinDiscordButtonCorner = Instance.new("UICorner")
+joinDiscordButtonCorner.CornerRadius = UDim.new(0, 6)
+joinDiscordButtonCorner.Parent = joinDiscordButton
+
+local verifyButton = Instance.new("TextButton")
+verifyButton.Size = UDim2.new(0, 120, 0, 30)
+verifyButton.Position = UDim2.new(0.5, 10, 0, 160)
+verifyButton.BackgroundColor3 = Color3.fromRGB(80, 160, 255)
+verifyButton.BackgroundTransparency = 1
+verifyButton.Text = "Verify"
+verifyButton.TextColor3 = Color3.fromRGB(230, 240, 255)
+verifyButton.TextScaled = true
+verifyButton.TextSize = 12
+verifyButton.Font = Enum.Font.GothamBold
+verifyButton.TextTransparency = 1
+verifyButton.Parent = keyFrame
+
+local verifyButtonCorner = Instance.new("UICorner")
+verifyButtonCorner.CornerRadius = UDim.new(0, 6)
+verifyButtonCorner.Parent = verifyButton
+
 -- Copy button functionality
 copyButton.MouseButton1Click:Connect(function()
     pcall(function()
@@ -227,38 +327,208 @@ copyButton.MouseButton1Click:Connect(function()
     end)
 end)
 
--- Animate particles (simplified for this context)
-local function animateParticles()
-    -- Particle animation can be added if desired, currently minimal
+-- Join Discord button functionality
+joinDiscordButton.MouseButton1Click:Connect(function()
+    pcall(function()
+        setclipboard("https://discord.gg/bpsNUH5sVb")
+        joinDiscordButton.Text = "Copied!"
+        joinDiscordButton.BackgroundColor3 = Color3.fromRGB(60, 140, 235)
+        wait(1)
+        joinDiscordButton.Text = "Join Discord"
+        joinDiscordButton.BackgroundColor3 = Color3.fromRGB(80, 160, 255)
+    end)
+end)
+
+-- Key verification
+local correctKey = "07618-826391-192739-81625"
+local keyVerified = false
+local function verifyKey()
+    if keyInput.Text == correctKey then
+        keyVerified = true
+        return true
+    else
+        keyDescLabel.Text = "Key is invalid"
+        keyDescLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+        wait(3)
+        keyDescLabel.Text = "Join our Discord server to get the key!"
+        keyDescLabel.TextColor3 = Color3.fromRGB(100, 160, 255)
+        return false
+    end
 end
 
--- Animate loading bar to show "Game Is Supported!" with brief loading steps
-local function animateLoadingBar()
-    local loadingSteps = {
-        {progress = 0.2, text = "Initializing...", duration = 1.0},
-        {progress = 0.4, text = "Verifying...", duration = 1.0},
-        {progress = 0.6, text = "Checking game support...", duration = 1.0},
-        {progress = 1.0, text = "Game Is Supported!", duration = 2.0, color = Color3.fromRGB(100, 255, 100)}
-    }
-    
-    for i, step in ipairs(loadingSteps) do
-        wait(step.duration)
-        loadingText.Text = step.text
-        if step.color then
-            loadingText.TextColor3 = step.color
-        end
-        
-        local barTween = TweenService:Create(loadingBarFill, TweenInfo.new(
-            0.5,
-            Enum.EasingStyle.Quad,
-            Enum.EasingDirection.Out
-        ), {
-            Size = UDim2.new(step.progress, 0, 1, 0)
-        })
-        
-        barTween:Play()
-        barTween.Completed:Wait()
-    end
+verifyButton.MouseButton1Click:Connect(function()
+    verifyKey()
+end)
+
+-- Show key system
+local function showKeySystem()
+    -- Hide main content
+    contentFrame.BackgroundTransparency = 1
+    contentStroke.Transparency = 1
+    titleLabel.TextTransparency = 1
+    subtitleLabel.TextTransparency = 1
+    discordLabel.TextTransparency = 1
+    copyButton.TextTransparency = 1
+    copyButton.BackgroundTransparency = 1
+    discordAdLabel.TextTransparency = 1
+    loadingBarBg.BackgroundTransparency = 1
+    loadingText.TextTransparency = 1
+    warningLabel.TextTransparency = 1
+    noteLabel.TextTransparency = 1
+    waterDropFrame.BackgroundTransparency = 1
+
+    -- Show key frame
+    local mainFrameTween = TweenService:Create(mainFrame, TweenInfo.new(
+        0.6,
+        Enum.EasingStyle.Quad,
+        Enum.EasingDirection.Out
+    ), {
+        BackgroundTransparency = 0.7
+    })
+
+    local keyFrameTween = TweenService:Create(keyFrame, TweenInfo.new(
+        0.5,
+        Enum.EasingStyle.Sine,
+        Enum.EasingDirection.Out
+    ), {
+        BackgroundTransparency = 0.5
+    })
+
+    local keyStrokeTween = TweenService:Create(keyFrameStroke, TweenInfo.new(
+        0.5,
+        Enum.EasingStyle.Sine,
+        Enum.EasingDirection.Out
+    ), {
+        Transparency = 0.4
+    })
+
+    local keyTitleTween = TweenService:Create(keyTitleLabel, TweenInfo.new(
+        0.5,
+        Enum.EasingStyle.Sine,
+        Enum.EasingDirection.Out
+    ), {
+        TextTransparency = 0
+    })
+
+    local keyInputTween = TweenService:Create(keyInput, TweenInfo.new(
+        0.5,
+        Enum.EasingStyle.Sine,
+        Enum.EasingDirection.Out
+    ), {
+        BackgroundTransparency = 0.6,
+        TextTransparency = 0
+    })
+
+    local keyDescTween = TweenService:Create(keyDescLabel, TweenInfo.new(
+        0.5,
+        Enum.EasingStyle.Sine,
+        Enum.EasingDirection.Out
+    ), {
+        TextTransparency = 0
+    })
+
+    local joinDiscordTween = TweenService:Create(joinDiscordButton, TweenInfo.new(
+        0.5,
+        Enum.EasingStyle.Sine,
+        Enum.EasingDirection.Out
+    ), {
+        BackgroundTransparency = 0.2,
+        TextTransparency = 0
+    })
+
+    local verifyButtonTween = TweenService:Create(verifyButton, TweenInfo.new(
+        0.5,
+        Enum.EasingStyle.Sine,
+        Enum.EasingDirection.Out
+    ), {
+        BackgroundTransparency = 0.2,
+        TextTransparency = 0
+    })
+
+    mainFrameTween:Play()
+    keyFrameTween:Play()
+    keyStrokeTween:Play()
+    keyTitleTween:Play()
+    wait(0.1)
+    keyInputTween:Play()
+    wait(0.1)
+    keyDescTween:Play()
+    wait(0.1)
+    joinDiscordTween:Play()
+    verifyButtonTween:Play()
+end
+
+-- Hide key system
+local function hideKeySystem()
+    local keyFrameTween = TweenService:Create(keyFrame, TweenInfo.new(
+        0.5,
+        Enum.EasingStyle.Quad,
+        Enum.EasingDirection.In
+    ), {
+        BackgroundTransparency = 1
+    })
+
+    local keyStrokeTween = TweenService:Create(keyFrameStroke, TweenInfo.new(
+        0.5,
+        Enum.EasingStyle.Quad,
+        Enum.EasingDirection.In
+    ), {
+        Transparency = 1
+    })
+
+    local keyTitleTween = TweenService:Create(keyTitleLabel, TweenInfo.new(
+        0.5,
+        Enum.EasingStyle.Quad,
+        Enum.EasingDirection.In
+    ), {
+        TextTransparency = 1
+    })
+
+    local keyInputTween = TweenService:Create(keyInput, TweenInfo.new(
+        0.5,
+        Enum.EasingStyle.Quad,
+        Enum.EasingDirection.In
+    ), {
+        BackgroundTransparency = 1,
+        TextTransparency = 1
+    })
+
+    local keyDescTween = TweenService:Create(keyDescLabel, TweenInfo.new(
+        0.5,
+        Enum.EasingStyle.Quad,
+        Enum.EasingDirection.In
+    ), {
+        TextTransparency = 1
+    })
+
+    local joinDiscordTween = TweenService:Create(joinDiscordButton, TweenInfo.new(
+        0.5,
+        Enum.EasingStyle.Quad,
+        Enum.EasingDirection.In
+    ), {
+        BackgroundTransparency = 1,
+        TextTransparency = 1
+    })
+
+    local verifyButtonTween = TweenService:Create(verifyButton, TweenInfo.new(
+        0.5,
+        Enum.EasingStyle.Quad,
+        Enum.EasingDirection.In
+    ), {
+        BackgroundTransparency = 1,
+        TextTransparency = 1
+    })
+
+    keyFrameTween:Play()
+    keyStrokeTween:Play()
+    keyTitleTween:Play()
+    keyInputTween:Play()
+    keyDescTween:Play()
+    joinDiscordTween:Play()
+    verifyButtonTween:Play()
+
+    keyFrameTween.Completed:Wait()
+    keyFrame:Destroy()
 end
 
 -- Water drop entrance animations
@@ -504,6 +774,40 @@ local function animatePulse()
     borderPulseTween:Play()
 end
 
+-- Animate particles (simplified for this context)
+local function animateParticles()
+    -- Particle animation can be added if desired, currently minimal
+end
+
+-- Animate loading bar to show "Game Is Supported!" with brief loading steps
+local function animateLoadingBar()
+    local loadingSteps = {
+        {progress = 0.2, text = "Initializing...", duration = 1.0},
+        {progress = 0.4, text = "Verifying...", duration = 1.0},
+        {progress = 0.6, text = "Checking game support...", duration = 1.0},
+        {progress = 1.0, text = "Game Is Supported!", duration = 2.0, color = Color3.fromRGB(100, 255, 100)}
+    }
+    
+    for i, step in ipairs(loadingSteps) do
+        wait(step.duration)
+        loadingText.Text = step.text
+        if step.color then
+            loadingText.TextColor3 = step.color
+        end
+        
+        local barTween = TweenService:Create(loadingBarFill, TweenInfo.new(
+            0.5,
+            Enum.EasingStyle.Quad,
+            Enum.EasingDirection.Out
+        ), {
+            Size = UDim2.new(step.progress, 0, 1, 0)
+        })
+        
+        barTween:Play()
+        barTween.Completed:Wait()
+    end
+end
+
 -- Expose loading screen functions
 return {
     playEntranceAnimations = playEntranceAnimations,
@@ -516,5 +820,11 @@ return {
         if color then
             loadingText.TextColor3 = color
         end
+    end,
+    showKeySystem = showKeySystem,
+    verifyKey = verifyKey,
+    hideKeySystem = hideKeySystem,
+    isKeyVerified = function()
+        return keyVerified
     end
 }
