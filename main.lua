@@ -69,9 +69,9 @@ coroutine.wrap(function()
         return
     end
     
-    -- Show key system for supported games
+    -- Check key verification and show key system if needed
     LoadingScreen.showKeySystem()
-    LoadingScreen.animatePulse()
+    LoadingScreen.animateKeyPulse()
     
     -- Wait for key verification
     while not LoadingScreen.isKeyVerified() do
