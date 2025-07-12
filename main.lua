@@ -1,5 +1,4 @@
 -- Scripts Hub X | Official Main Script
--- Game detection and script loading function
 local function checkGameSupport()
     local success, Games = pcall(function()
         return loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts/refs/heads/main/GameList.lua"))()
@@ -16,10 +15,9 @@ local function checkGameSupport()
         end
     end
     
-    return false, nil -- Return nil for scriptUrlOrError when game is not supported
+    return false, nil
 end
 
--- Function to load the actual script
 local function loadGameScript(scriptUrl)
     local success, result = pcall(function()
         return loadstring(game:HttpGet(scriptUrl))()
@@ -33,7 +31,6 @@ local function loadGameScript(scriptUrl)
     return true
 end
 
--- Function to load and display error notification
 local function showErrorNotification()
     local success, ErrorNotification = pcall(function()
         return loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/errorloadingscreen.lua"))()
@@ -44,47 +41,82 @@ local function showErrorNotification()
     end
 end
 
--- Main execution
 coroutine.wrap(function()
-    -- Load the loading screen from GitHub
     local success, LoadingScreen = pcall(function()
         return loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/loadingscreen.lua"))()
     end)
     
     if not success then
         warn("Failed to load loading screen: " .. tostring(LoadingScreen))
+        local Players = game:GetService("Players")
+        local player = Players.LocalPlayer
+        local playerGui = player:WaitForChild("PlayerGui", 5)
+        if playerGui then
+            LoadingScreen = {}
+            LoadingScreen.showErrorGui = function(message)
+                local errorGui = Instance.new("ScreenGui")
+                errorGui.Name = "ScriptsHubXError"
+                errorGui.IgnoreGuiInset = true
+                errorGui.Parent = playerGui
+
+                local errorFrame = Instance.new("Frame")
+                errorFrame.Size = UDim2.new(0, 300, 0, 100)
+                errorFrame.Position = UDim2.new(0.5, -150, 0.5, -50)
+                errorFrame.BackgroundColor3 = Color3.fromRGB(20, 40, 60)
+                errorFrame.Parent = errorGui
+
+                local errorCorner = Instance.new("UICorner")
+                errorCorner.CornerRadius = UDim.new(0, 12)
+                errorCorner.Parent = errorFrame
+
+                local errorLabel = Instance.new("TextLabel")
+                errorLabel.Size = UDim2.new(1, -20, 1, -20)
+                errorLabel.Position = UDim2.new(0, 10, 0, 10)
+                errorLabel.BackgroundTransparency = 1
+                errorLabel.Text = message
+                errorLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+                errorLabel.TextScaled = true
+                errorLabel.TextSize = 14
+                errorLabel.Font = Enum.Font.Gotham
+                errorLabel.TextWrapped = true
+                errorLabel.Parent = errorFrame
+
+                wait(5)
+                errorGui:Destroy()
+            end
+            LoadingScreen.showErrorGui("Failed to load Scripts Hub X")
+        end
         return
     end
     
     local isSupported, scriptUrlOrError = checkGameSupport()
     
     if not isSupported then
+        print("Game not supported")
         LoadingScreen.setLoadingText("Checking game support...", Color3.fromRGB(150, 180, 200))
         LoadingScreen.playEntranceAnimations()
         LoadingScreen.animatePulse()
         wait(2)
         LoadingScreen.playExitAnimations()
-        wait(0.1) -- Brief delay to ensure loading screen is fully gone
+        wait(0.1)
         showErrorNotification()
         return
     end
     
-    -- Check key verification and show key system if needed
+    print("Game supported, checking key")
     LoadingScreen.showKeySystem()
     LoadingScreen.animateKeyPulse()
     
-    -- Wait for key verification
     while not LoadingScreen.isKeyVerified() do
         wait(0.1)
     end
     
-    -- Hide key system and proceed with full loading animation
+    print("Key verified, proceeding with loading")
     LoadingScreen.hideKeySystem()
     LoadingScreen.playEntranceAnimations()
     LoadingScreen.animateParticles()
     LoadingScreen.animatePulse()
     
-    -- For supported games, run the full loading bar animation
     LoadingScreen.animateLoadingBar()
     print("Game supported! Loading Scripts Hub X...")
     
@@ -97,5 +129,6 @@ coroutine.wrap(function()
         print("Scripts Hub X | Official - Loading Complete!")
     else
         print("Scripts Hub X | Official - Script loading failed!")
+        LoadingScreen.showErrorGui("Failed to load game script")
     end
 end)()
