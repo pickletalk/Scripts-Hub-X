@@ -6,11 +6,13 @@ local TextService = game:GetService("TextService")
 
 -- Ensure player and PlayerGui are available
 local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui", 10) -- Wait up to 10 seconds for PlayerGui
-
--- Check if PlayerGui was found
+if not player then
+    warn("Error: Player not found. Script must run in a valid Roblox environment.")
+    return
+end
+local playerGui = player:WaitForChild("PlayerGui", 10) -- Wait up to 10 seconds
 if not playerGui then
-    warn("Error: PlayerGui not found. Ensure the script is running in a valid Roblox environment.")
+    warn("Error: PlayerGui not found after 10 seconds.")
     return
 end
 
@@ -19,17 +21,17 @@ local savedPosition = nil
 
 -- Create main GUI
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "ScriptsHubX"
+screenGui.Name = "ScriptsHubXWindow"
 screenGui.IgnoreGuiInset = true
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-screenGui.ResetOnSpawn = false -- Prevent GUI from resetting on player respawn
+screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
 -- Main background frame
-local main(AbstractButton) mainFrame = Instance.new("Frame")
+local mainFrame = Instance.new("Frame") -- Corrected typo
 mainFrame.Size = UDim2.new(1, 0, 1, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(10, 20, 30)
-mainFrame.BackgroundTransparency = 0.7 -- Immediately visible
+mainFrame.BackgroundTransparency = 0.7
 mainFrame.Parent = screenGui
 
 -- Content frame
@@ -37,7 +39,7 @@ local contentFrame = Instance.new("Frame")
 contentFrame.Size = UDim2.new(0, 400, 0, 300)
 contentFrame.Position = UDim2.new(0.5, -200, 0.5, -150)
 contentFrame.BackgroundColor3 = Color3.fromRGB(20, 40, 60)
-contentFrame.BackgroundTransparency = 0.5 -- Immediately visible
+contentFrame.BackgroundTransparency = 0.5
 contentFrame.BorderSizePixel = 0
 contentFrame.Parent = mainFrame
 
@@ -50,7 +52,7 @@ contentFrameCorner.Parent = contentFrame
 local contentStroke = Instance.new("UIStroke")
 contentStroke.Color = Color3.fromRGB(80, 160, 255)
 contentStroke.Thickness = 1.5
-contentStroke.Transparency = 0.4 -- Immediately visible
+contentStroke.Transparency = 0.4
 contentStroke.Parent = contentFrame
 
 -- Title label
@@ -58,12 +60,12 @@ local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(1, -40, 0, 50)
 titleLabel.Position = UDim2.new(0, 20, 0, 20)
 titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "Scripts Hub X | Official"
+titleLabel.Text = "Scripts Hub X"
 titleLabel.TextColor3 = Color3.fromRGB(120, 180, 255)
 titleLabel.TextScaled = true
 titleLabel.TextSize = 24
-titleLabel.Font = Enum.Font.GothamBold
-titleLabel.TextTransparency = 0 -- Immediately visible
+titleLabel.Font = Enum.Font.SourceSansBold -- Changed to avoid font issues
+titleLabel.TextTransparency = 0
 titleLabel.Parent = contentFrame
 
 -- Subtitle label
@@ -71,12 +73,12 @@ local subtitleLabel = Instance.new("TextLabel")
 subtitleLabel.Size = UDim2.new(1, -40, 0, 30)
 subtitleLabel.Position = UDim2.new(0, 20, 0, 70)
 subtitleLabel.BackgroundTransparency = 1
-subtitleLabel.Text = "by pickletalk"
+subtitleLabel.Text = "Official Window"
 subtitleLabel.TextColor3 = Color3.fromRGB(150, 180, 200)
 subtitleLabel.TextScaled = true
 subtitleLabel.TextSize = 16
-subtitleLabel.Font = Enum.Font.Gotham
-subtitleLabel.TextTransparency = 0 -- Immediately visible
+subtitleLabel.Font = Enum.Font.SourceSans
+subtitleLabel.TextTransparency = 0
 subtitleLabel.Parent = contentFrame
 
 -- Discord container
@@ -84,7 +86,7 @@ local discordContainer = Instance.new("Frame")
 discordContainer.Size = UDim2.new(1, -40, 0, 40)
 discordContainer.Position = UDim2.new(0, 20, 0, 110)
 discordContainer.BackgroundColor3 = Color3.fromRGB(30, 50, 70)
-discordContainer.BackgroundTransparency = 0 -- Immediately visible
+discordContainer.BackgroundTransparency = 0
 discordContainer.BorderSizePixel = 0
 discordContainer.Parent = contentFrame
 
@@ -101,9 +103,9 @@ discordLabel.Text = "discord.gg/bpsNUH5sVb"
 discordLabel.TextColor3 = Color3.fromRGB(100, 160, 255)
 discordLabel.TextScaled = true
 discordLabel.TextSize = 12
-discordLabel.Font = Enum.Font.Gotham
+discordLabel.Font = Enum.Font.SourceSans
 discordLabel.TextXAlignment = Enum.TextXAlignment.Left
-discordLabel.TextTransparency = 0 -- Immediately visible
+discordLabel.TextTransparency = 0
 discordLabel.Parent = discordContainer
 
 -- Copy button
@@ -111,13 +113,13 @@ local copyButton = Instance.new("TextButton")
 copyButton.Size = UDim2.new(0, 80, 0, 28)
 copyButton.Position = UDim2.new(0.73, 5, 0, 6)
 copyButton.BackgroundColor3 = Color3.fromRGB(80, 160, 255)
-copyButton.BackgroundTransparency = 0.2 -- Immediately visible
+copyButton.BackgroundTransparency = 0.2
 copyButton.Text = "Copy"
 copyButton.TextColor3 = Color3.fromRGB(230, 240, 255)
 copyButton.TextScaled = true
 copyButton.TextSize = 12
-copyButton.Font = Enum.Font.GothamBold
-copyButton.TextTransparency = 0 -- Immediately visible
+copyButton.Font = Enum.Font.SourceSansBold
+copyButton.TextTransparency = 0
 copyButton.Parent = discordContainer
 
 local copyButtonCorner = Instance.new("UICorner")
@@ -133,8 +135,8 @@ teleportSectionLabel.Text = "Teleport System by PickleTalk"
 teleportSectionLabel.TextColor3 = Color3.fromRGB(120, 180, 255)
 teleportSectionLabel.TextScaled = true
 teleportSectionLabel.TextSize = 16
-teleportSectionLabel.Font = Enum.Font.GothamBold
-teleportSectionLabel.TextTransparency = 0 -- Immediately visible
+teleportSectionLabel.Font = Enum.Font.SourceSansBold
+teleportSectionLabel.TextTransparency = 0
 teleportSectionLabel.Parent = contentFrame
 
 -- Save Position button
@@ -142,13 +144,13 @@ local saveButton = Instance.new("TextButton")
 saveButton.Size = UDim2.new(0.45, -25, 0, 40)
 saveButton.Position = UDim2.new(0, 20, 0, 200)
 saveButton.BackgroundColor3 = Color3.fromRGB(80, 160, 255)
-saveButton.BackgroundTransparency = 0.2 -- Immediately visible
+saveButton.BackgroundTransparency = 0.2
 saveButton.Text = "Save Position"
 saveButton.TextColor3 = Color3.fromRGB(230, 240, 255)
 saveButton.TextScaled = true
 saveButton.TextSize = 14
-saveButton.Font = Enum.Font.GothamBold
-saveButton.TextTransparency = 0 -- Immediately visible
+saveButton.Font = Enum.Font.SourceSansBold
+saveButton.TextTransparency = 0
 saveButton.Parent = contentFrame
 
 local saveButtonCorner = Instance.new("UICorner")
@@ -160,13 +162,13 @@ local teleportButton = Instance.new("TextButton")
 teleportButton.Size = UDim2.new(0.45, -25, 0, 40)
 teleportButton.Position = UDim2.new(0.55, 5, 0, 200)
 teleportButton.BackgroundColor3 = Color3.fromRGB(80, 160, 255)
-teleportButton.BackgroundTransparency = 0.2 -- Immediately visible
+teleportButton.BackgroundTransparency = 0.2
 teleportButton.Text = "Teleport"
 teleportButton.TextColor3 = Color3.fromRGB(230, 240, 255)
 teleportButton.TextScaled = true
 teleportButton.TextSize = 14
-teleportButton.Font = Enum.Font.GothamBold
-teleportButton.TextTransparency = 0 -- Immediately visible
+teleportButton.Font = Enum.Font.SourceSansBold
+teleportButton.TextTransparency = 0
 teleportButton.Parent = contentFrame
 
 local teleportButtonCorner = Instance.new("UICorner")
@@ -182,9 +184,9 @@ statusLabel.Text = ""
 statusLabel.TextColor3 = Color3.fromRGB(150, 180, 200)
 statusLabel.TextScaled = true
 statusLabel.TextSize = 12
-statusLabel.Font = Enum.Font.Gotham
+statusLabel.Font = Enum.Font.SourceSans
 statusLabel.TextWrapped = true
-statusLabel.TextTransparency = 0 -- Immediately visible
+statusLabel.TextTransparency = 0
 statusLabel.Parent = contentFrame
 
 -- Copy button functionality
