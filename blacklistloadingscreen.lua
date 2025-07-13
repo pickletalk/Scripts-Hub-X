@@ -35,7 +35,7 @@ mainStroke.Transparency = 1
 mainStroke.Parent = mainFrame
 
 local messageLabel = Instance.new("TextLabel")
-messageLabel.Size = UDim2.new(1, -20, 1, -20)
+messageLabel.Size = UDim2.new(1, -20, 0.8, 0)
 messageLabel.Position = UDim2.new(0, 10, 0, 10)
 messageLabel.BackgroundTransparency = 1
 messageLabel.Text = "You are blacklisted from using this script."
