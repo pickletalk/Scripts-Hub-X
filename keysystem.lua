@@ -10,33 +10,33 @@ screenGui.IgnoreGuiInset = true
 screenGui.Parent = playerGui
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 300, 0, 250) -- Compact size
-mainFrame.Position = UDim2.new(0.5, -150, 0.5, -125)
-mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+mainFrame.Size = UDim2.new(0, 250, 0, 200) -- Smaller, cleaner size
+mainFrame.Position = UDim2.new(0.5, -125, 0.5, -100)
+mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30) -- Dark gradient base
 mainFrame.BackgroundTransparency = 1
 mainFrame.BorderSizePixel = 0
 mainFrame.Parent = screenGui
 
 local uiCorner = Instance.new("UICorner")
-uiCorner.CornerRadius = UDim.new(0, 12)
+uiCorner.CornerRadius = UDim.new(0, 15) -- Softer, modern corners
 uiCorner.Parent = mainFrame
 
 local uiStroke = Instance.new("UIStroke")
-uiStroke.Color = Color3.fromRGB(0, 150, 255)
-uiStroke.Thickness = 2
+uiStroke.Color = Color3.fromRGB(0, 100, 200) -- Deep blue stroke
+uiStroke.Thickness = 1.5
 uiStroke.Transparency = 1
 uiStroke.Parent = mainFrame
 
 -- Close Button (X)
 local closeButton = Instance.new("TextButton")
-closeButton.Size = UDim2.new(0, 30, 0, 30)
-closeButton.Position = UDim2.new(1, -35, 0, 5)
-closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-closeButton.BackgroundTransparency = 1
+closeButton.Size = UDim2.new(0, 25, 0, 25)
+closeButton.Position = UDim2.new(1, -30, 0, 5)
+closeButton.BackgroundColor3 = Color3.fromRGB(150, 40, 40) -- Subtle red
+closeButton.BackgroundTransparency = 0.8
 closeButton.Text = "X"
 closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-closeButton.TextSize = 16
-closeButton.Font = Enum.Font.SourceSansBold
+closeButton.TextSize = 14
+closeButton.Font = Enum.Font.GothamBold
 closeButton.TextTransparency = 1
 closeButton.Parent = mainFrame
 
@@ -46,63 +46,63 @@ closeCorner.Parent = closeButton
 
 -- Title
 local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(1, -20, 0, 40)
+titleLabel.Size = UDim2.new(1, -20, 0, 30)
 titleLabel.Position = UDim2.new(0, 10, 0, 10)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Text = "Key System"
-titleLabel.TextColor3 = Color3.fromRGB(0, 150, 255)
-titleLabel.TextSize = 20
-titleLabel.Font = Enum.Font.SourceSansBold
+titleLabel.TextColor3 = Color3.fromRGB(0, 120, 220) -- Bright blue
+titleLabel.TextSize = 18
+titleLabel.Font = Enum.Font.GothamBold
 titleLabel.TextTransparency = 1
 titleLabel.Parent = mainFrame
 
 -- Key Input
 local keyInput = Instance.new("TextBox")
-keyInput.Size = UDim2.new(1, -40, 0, 40)
-keyInput.Position = UDim2.new(0, 20, 0, 60)
-keyInput.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+keyInput.Size = UDim2.new(1, -30, 0, 35)
+keyInput.Position = UDim2.new(0, 15, 0, 50)
+keyInput.BackgroundColor3 = Color3.fromRGB(30, 30, 40) -- Dark input
 keyInput.BackgroundTransparency = 1
 keyInput.PlaceholderText = "Enter Key Here"
-keyInput.TextColor3 = Color3.fromRGB(200, 200, 200)
-keyInput.TextSize = 14
-keyInput.Font = Enum.Font.SourceSans
+keyInput.TextColor3 = Color3.fromRGB(180, 180, 200)
+keyInput.TextSize = 12
+keyInput.Font = Enum.Font.Gotham
 keyInput.TextTransparency = 1
 keyInput.Parent = mainFrame
 
 local inputCorner = Instance.new("UICorner")
-inputCorner.CornerRadius = UDim.new(0, 8)
+inputCorner.CornerRadius = UDim.new(0, 10)
 inputCorner.Parent = keyInput
 
 -- Status Label
 local statusLabel = Instance.new("TextLabel")
-statusLabel.Size = UDim2.new(1, -40, 0, 40)
-statusLabel.Position = UDim2.new(0, 20, 0, 110)
+statusLabel.Size = UDim2.new(1, -30, 0, 30)
+statusLabel.Position = UDim2.new(0, 15, 0, 90)
 statusLabel.BackgroundTransparency = 1
 statusLabel.Text = "Enter the valid key to proceed!"
-statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-statusLabel.TextSize = 12
-statusLabel.Font = Enum.Font.SourceSans
+statusLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
+statusLabel.TextSize = 11
+statusLabel.Font = Enum.Font.Gotham
 statusLabel.TextWrapped = true
 statusLabel.TextTransparency = 1
 statusLabel.Parent = mainFrame
 
 -- Buttons Frame
 local buttonsFrame = Instance.new("Frame")
-buttonsFrame.Size = UDim2.new(1, -40, 0, 80) -- Adjusted for smaller buttons
-buttonsFrame.Position = UDim2.new(0, 20, 0, 160)
+buttonsFrame.Size = UDim2.new(1, -30, 0, 60)
+buttonsFrame.Position = UDim2.new(0, 15, 0, 130)
 buttonsFrame.BackgroundTransparency = 1
 buttonsFrame.Parent = mainFrame
 
 -- Verify Button
 local verifyButton = Instance.new("TextButton")
-verifyButton.Size = UDim2.new(0, 70, 0, 25) -- Smaller button
+verifyButton.Size = UDim2.new(0, 60, 0, 25) -- Smaller, fits layout
 verifyButton.Position = UDim2.new(0, 0, 0, 0)
-verifyButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-verifyButton.BackgroundTransparency = 1
+verifyButton.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
+verifyButton.BackgroundTransparency = 0.7
 verifyButton.Text = "Verify"
 verifyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-verifyButton.TextSize = 12 -- Adjusted text size
-verifyButton.Font = Enum.Font.SourceSansBold
+verifyButton.TextSize = 11
+verifyButton.Font = Enum.Font.GothamBold
 verifyButton.TextTransparency = 1
 verifyButton.Parent = buttonsFrame
 
@@ -112,14 +112,14 @@ verifyCorner.Parent = verifyButton
 
 -- Get Key Button
 local getKeyButton = Instance.new("TextButton")
-getKeyButton.Size = UDim2.new(0, 70, 0, 25) -- Smaller button
-getKeyButton.Position = UDim2.new(0, 75, 0, 0) -- Side by side
-getKeyButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-getKeyButton.BackgroundTransparency = 1
+getKeyButton.Size = UDim2.new(0, 60, 0, 25)
+getKeyButton.Position = UDim2.new(0, 65, 0, 0) -- Side by side
+getKeyButton.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
+getKeyButton.BackgroundTransparency = 0.7
 getKeyButton.Text = "Get Key"
 getKeyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-getKeyButton.TextSize = 12
-getKeyButton.Font = Enum.Font.SourceSansBold
+getKeyButton.TextSize = 11
+getKeyButton.Font = Enum.Font.GothamBold
 getKeyButton.TextTransparency = 1
 getKeyButton.Parent = buttonsFrame
 
@@ -129,14 +129,14 @@ getKeyCorner.Parent = getKeyButton
 
 -- Join Discord Button
 local joinButton = Instance.new("TextButton")
-joinButton.Size = UDim2.new(0, 70, 0, 25) -- Smaller button
-joinButton.Position = UDim2.new(0, 115, 0, 30) -- Below the other two, centered
-joinButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-joinButton.BackgroundTransparency = 1
+joinButton.Size = UDim2.new(0, 60, 0, 25)
+joinButton.Position = UDim2.new(0, 95, 0, 30) -- Centered below
+joinButton.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
+joinButton.BackgroundTransparency = 0.7
 joinButton.Text = "Join Discord"
 joinButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-joinButton.TextSize = 12
-joinButton.Font = Enum.Font.SourceSansBold
+joinButton.TextSize = 11
+joinButton.Font = Enum.Font.GothamBold
 joinButton.TextTransparency = 1
 joinButton.Parent = buttonsFrame
 
@@ -257,33 +257,32 @@ local function VerifyKey()
         keyInput.Text = ""
         wait(2)
         statusLabel.Text = "Enter the valid key to proceed!"
-        statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+        statusLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
     end
 end
 
 getKeyButton.MouseButton1Click:Connect(function()
     setclipboard("https://rekonise.com/scripts-hub-x-or-official-3i64w")
     getKeyButton.Text = "Copied!"
-    getKeyButton.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+    getKeyButton.BackgroundColor3 = Color3.fromRGB(0, 80, 160)
     wait(1)
     getKeyButton.Text = "Get Key"
-    getKeyButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+    getKeyButton.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
 end)
 
 joinButton.MouseButton1Click:Connect(function()
     setclipboard("https://discord.gg/bpsNUH5sVb") -- Replace with your actual invite link
     joinButton.Text = "Copied!"
-    joinButton.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+    joinButton.BackgroundColor3 = Color3.fromRGB(0, 80, 160)
     wait(1)
     joinButton.Text = "Join Discord"
-    joinButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+    joinButton.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
 end)
 
 closeButton.MouseButton1Click:Connect(HideKeySystem)
 
 verifyButton.MouseButton1Click:Connect(VerifyKey)
 
--- No initial verification check needed
 return {
     ShowKeySystem = ShowKeySystem,
     HideKeySystem = HideKeySystem,
