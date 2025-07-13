@@ -55,6 +55,38 @@ local function showErrorGui(message)
     errorGui:Destroy()
 end
 
+-- On-screen error label for DataStore issues
+local lastErrorLabel = Instance.new("TextLabel")
+lastErrorLabel.Size = UDim2.new(0, 300, 0, 50)
+lastErrorLabel.Position = UDim2.new(0.5, -150, 0, 10)
+lastErrorLabel.BackgroundColor3 = Color3.fromRGB(20, 40, 60)
+lastErrorLabel.BackgroundTransparency = 0.5
+lastErrorLabel.Text = "No error"
+lastErrorLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+lastErrorLabel.TextScaled = true
+lastErrorLabel.TextSize = 12
+lastErrorLabel.Font = Enum.Font.Gotham
+lastErrorLabel.TextTransparency = 1
+lastErrorLabel.Parent = playerGui
+local errorShown = false
+
+local function showLastError(errorMsg)
+    if not errorShown then
+        lastErrorLabel.Text = "Error: " .. tostring(errorMsg)
+        TweenService:Create(lastErrorLabel, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            TextTransparency = 0
+        }):Play()
+        errorShown = true
+        wait(10)
+        TweenService:Create(lastErrorLabel, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+            TextTransparency = 1
+        }):Play()
+        wait(0.5)
+        errorShown = false
+        print("Displayed error on screen: " .. tostring(errorMsg))
+    end
+end
+
 -- Create main GUI
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "ScriptsHubXLoading"
@@ -463,70 +495,88 @@ end)
 
 local correctKey = "07618-826391-192739-81625"
 local keyVerified = false
+local localVerificationTime = 0 -- Fallback local timestamp
+
 local function checkKeyVerification()
     if not dataStoreAvailable or not keyDataStore then
-        print("DataStore unavailable, requiring key input")
+        print("DataStore unavailable, checking local verification")
+        local currentTime = os.time()
+        print("Local current time: " .. tostring(currentTime))
+        if currentTime - localVerificationTime < 86400 and localVerificationTime > 0 then
+            print("Local verification valid: " .. tostring(currentTime - localVerificationTime) .. " seconds ago")
+            keyVerified = true
+            return true
+        end
+        print("Local verification failed or expired")
         return false
     end
 
     local success, timestamp
     for i = 1, 3 do -- Retry up to 3 times
+        print("Attempting DataStore GetAsync for User_" .. player.UserId .. ", attempt " .. i)
         success, timestamp = pcall(function()
             return keyDataStore:GetAsync("User_" .. player.UserId)
         end)
         if success then
+            print("DataStore GetAsync succeeded, timestamp: " .. tostring(timestamp))
             break
         end
         warn("DataStore GetAsync attempt " .. i .. " failed: " .. tostring(timestamp))
+        showLastError("GetAsync failed: " .. tostring(timestamp))
         wait(6) -- Respect Roblox DataStore write cooldown
     end
 
     if success and timestamp then
         local currentTime = os.time()
-        print("Timestamp found for User_" .. player.UserId .. ": " .. tostring(timestamp) .. ", Current time: " .. tostring(currentTime))
+        print("DataStore current time: " .. tostring(currentTime) .. ", retrieved timestamp: " .. tostring(timestamp))
         if type(timestamp) == "number" and currentTime - timestamp < 86400 then
-            print("Key verification valid")
+            print("DataStore verification valid, time difference: " .. tostring(currentTime - timestamp))
             keyVerified = true
             return true
         else
-            print("Timestamp invalid or expired")
-            -- Clear stale or corrupted entry
+            print("DataStore timestamp invalid or expired, difference: " .. tostring(currentTime - timestamp))
             pcall(function()
+                print("Attempting to clear stale DataStore entry for User_" .. player.UserId)
                 keyDataStore:RemoveAsync("User_" .. player.UserId)
-                print("Cleared stale DataStore entry")
+                print("Stale DataStore entry cleared")
             end)
         end
     else
         warn("DataStore GetAsync failed after retries: " .. tostring(timestamp))
+        showLastError("GetAsync failed after retries: " .. tostring(timestamp))
     end
-    print("No valid timestamp found, requiring key input")
+    print("No valid DataStore timestamp, falling back to local check")
     return false
 end
 
 local function verifyKey()
     if keyInput.Text == correctKey then
-        print("Key verified successfully")
+        print("Key verified successfully with input: " .. keyInput.Text)
+        keyVerified = true
+        localVerificationTime = os.time() -- Update local timestamp
+        print("Local verification time set to: " .. tostring(localVerificationTime))
         if dataStoreAvailable and keyDataStore then
             local success, errorMsg
             for i = 1, 3 do -- Retry up to 3 times
+                print("Attempting DataStore SetAsync for User_" .. player.UserId .. ", attempt " .. i)
                 success, errorMsg = pcall(function()
                     keyDataStore:SetAsync("User_" .. player.UserId, os.time())
                 end)
                 if success then
-                    print("Timestamp saved for User_" .. player.UserId)
+                    print("DataStore SetAsync succeeded, saved time: " .. tostring(os.time()))
                     break
                 end
                 warn("DataStore SetAsync attempt " .. i .. " failed: " .. tostring(errorMsg))
+                showLastError("SetAsync failed: " .. tostring(errorMsg))
                 wait(6) -- Respect Roblox DataStore write cooldown
             end
             if not success then
                 warn("Failed to save timestamp after retries: " .. tostring(errorMsg))
-                showErrorGui("Failed to save key verification, please try again")
+                showErrorGui("Failed to save key verification, using local persistence")
             end
         else
-            print("DataStore unavailable, verification will not persist")
+            print("DataStore unavailable, using local persistence")
         end
-        keyVerified = true
         return true
     else
         keyDescLabel.Text = "Key is invalid"
@@ -534,7 +584,7 @@ local function verifyKey()
         wait(3)
         keyDescLabel.Text = "Join our Discord server to get the key!"
         keyDescLabel.TextColor3 = Color3.fromRGB(100, 160, 255)
-        print("Invalid key entered")
+        print("Invalid key entered: " .. keyInput.Text)
         return false
     end
 end
