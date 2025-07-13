@@ -245,7 +245,7 @@ local isVerified = false
 
 local function VerifyKey()
     local inputKey = keyInput.Text:upper()
-    if inputKey == "07618-826391-192739-81625" then
+    if inputKey == "Pickle Hub" then
         statusLabel.Text = "Key accepted! Loading..."
         statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
         isVerified = true
