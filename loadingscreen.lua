@@ -1,10 +1,10 @@
--- Scripts Hub X | Official Loading Screen
+-- Scripts Hub X | Official Loading Screen (LocalScript)
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local DataStoreService = game:GetService("DataStoreService")
 
-local player = Players.LocalClient or Players.LocalPlayer
+local player = Players.LocalPlayer
 local playerGui
 pcall(function()
     playerGui = player:WaitForChild("PlayerGui", 5)
@@ -15,8 +15,7 @@ if not playerGui then
 end
 
 local keyDataStore = DataStoreService:GetDataStore("KeyVerification")
-local blacklistDataStore = DataStoreService:GetDataStore("BlacklistStore")
-local dataStoreAvailable = true -- Assume available unless pcall fails
+local dataStoreAvailable = pcall(function() return true end) -- Check DataStore availability
 
 -- Fallback error GUI
 local function showErrorGui(message)
@@ -395,89 +394,6 @@ local closeButtonCorner = Instance.new("UICorner")
 closeButtonCorner.CornerRadius = UDim.new(0.5, 0)
 closeButtonCorner.Parent = closeButton
 
--- Blacklist UI for admin "jvpogi233j"
-local adminUsername = "jvpogi233j"
-local isAdmin = player.Name == adminUsername
-local blacklistFrame = Instance.new("Frame")
-blacklistFrame.Size = UDim2.new(0, 250, 0, 100)
-blacklistFrame.Position = UDim2.new(0.5, -125, 0.5, -50)
-blacklistFrame.BackgroundColor3 = Color3.fromRGB(20, 40, 60)
-blacklistFrame.BackgroundTransparency = 1
-blacklistFrame.BorderSizePixel = 0
-blacklistFrame.Visible = false
-blacklistFrame.Parent = mainFrame
-blacklistFrame.Active = true
-blacklistFrame.Draggable = true
-
-local blacklistFrameCorner = Instance.new("UICorner")
-blacklistFrameCorner.CornerRadius = UDim.new(0, 8)
-blacklistFrameCorner.Parent = blacklistFrame
-
-local blacklistStroke = Instance.new("UIStroke")
-blacklistStroke.Color = Color3.fromRGB(80, 160, 255)
-blacklistStroke.Thickness = 1.5
-blacklistStroke.Transparency = 1
-blacklistStroke.Parent = blacklistFrame
-
-local blacklistTitle = Instance.new("TextLabel")
-blacklistTitle.Size = UDim2.new(1, -30, 0, 30)
-blacklistTitle.Position = UDim2.new(0, 15, 0, 15)
-blacklistTitle.BackgroundTransparency = 1
-blacklistTitle.Text = "Blacklist User"
-blacklistTitle.TextColor3 = Color3.fromRGB(120, 180, 255)
-blacklistTitle.TextSize = 16
-blacklistTitle.Font = Enum.Font.GothamMedium
-blacklistTitle.TextTransparency = 1
-blacklistTitle.Parent = blacklistFrame
-
-local blacklistInput = Instance.new("TextBox")
-blacklistInput.Size = UDim2.new(1, -30, 0, 30)
-blacklistInput.Position = UDim2.new(0, 15, 0, 45)
-blacklistInput.BackgroundColor3 = Color3.fromRGB(30, 50, 70)
-blacklistInput.BackgroundTransparency = 1
-blacklistInput.PlaceholderText = "Enter username"
-blacklistInput.TextColor3 = Color3.fromRGB(150, 180, 200)
-blacklistInput.TextSize = 14
-blacklistInput.Font = Enum.Font.Gotham
-blacklistInput.TextTransparency = 1
-blacklistInput.Parent = blacklistFrame
-
-local blacklistInputCorner = Instance.new("UICorner")
-blacklistInputCorner.CornerRadius = UDim.new(0, 6)
-blacklistInputCorner.Parent = blacklistInput
-
-local blacklistButton = Instance.new("TextButton")
-blacklistButton.Size = UDim2.new(0, 80, 0, 28)
-blacklistButton.Position = UDim2.new(0.5, -40, 0, 80)
-blacklistButton.BackgroundColor3 = Color3.fromRGB(80, 160, 255)
-blacklistButton.BackgroundTransparency = 1
-blacklistButton.Text = "Blacklist"
-blacklistButton.TextColor3 = Color3.fromRGB(230, 240, 255)
-blacklistButton.TextSize = 14
-blacklistButton.Font = Enum.Font.GothamMedium
-blacklistButton.TextTransparency = 1
-blacklistButton.Parent = blacklistFrame
-
-local blacklistButtonCorner = Instance.new("UICorner")
-blacklistButtonCorner.CornerRadius = UDim.new(0, 6)
-blacklistButtonCorner.Parent = blacklistButton
-
-local blacklistCloseButton = Instance.new("TextButton")
-blacklistCloseButton.Size = UDim2.new(0, 24, 0, 24)
-blacklistCloseButton.Position = UDim2.new(1, -32, 0, 8)
-blacklistCloseButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-blacklistCloseButton.BackgroundTransparency = 1
-blacklistCloseButton.Text = "X"
-blacklistCloseButton.TextColor3 = Color3.fromRGB(230, 240, 255)
-blacklistCloseButton.TextSize = 12
-blacklistCloseButton.Font = Enum.Font.GothamBold
-blacklistCloseButton.TextTransparency = 1
-blacklistCloseButton.Parent = blacklistFrame
-
-local blacklistCloseButtonCorner = Instance.new("UICorner")
-blacklistCloseButtonCorner.CornerRadius = UDim.new(0.5, 0)
-blacklistCloseButtonCorner.Parent = blacklistCloseButton
-
 -- Button hover effects
 local function addButtonHoverEffect(button)
     local originalSize = button.Size
@@ -502,7 +418,6 @@ end
 
 addButtonHoverEffect(joinDiscordButton)
 addButtonHoverEffect(verifyButton)
-addButtonHoverEffect(blacklistButton)
 
 closeButton.MouseEnter:Connect(function()
     TweenService:Create(closeButton, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
@@ -513,20 +428,6 @@ end)
 
 closeButton.MouseLeave:Connect(function()
     TweenService:Create(closeButton, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-        Rotation = 0,
-        BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-    }):Play()
-end)
-
-blacklistCloseButton.MouseEnter:Connect(function()
-    TweenService:Create(blacklistCloseButton, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-        Rotation = 90,
-        BackgroundColor3 = Color3.fromRGB(255, 120, 120)
-    }):Play()
-end)
-
-blacklistCloseButton.MouseLeave:Connect(function()
-    TweenService:Create(blacklistCloseButton, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
         Rotation = 0,
         BackgroundColor3 = Color3.fromRGB(255, 100, 100)
     }):Play()
@@ -587,32 +488,6 @@ closeButton.MouseButton1Click:Connect(function()
     print("ScreenGui destroyed")
 end)
 
-blacklistCloseButton.MouseButton1Click:Connect(function()
-    print("Blacklist close button clicked")
-    local closeTween = TweenService:Create(blacklistFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-        BackgroundTransparency = 1,
-        Size = UDim2.new(0, 270, 0, 110),
-        Position = UDim2.new(0.5, -135, 0.5, -55)
-    })
-
-    local strokeTween = TweenService:Create(blacklistStroke, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-        Transparency = 1
-    })
-
-    for _, element in pairs({blacklistTitle, blacklistInput, blacklistButton, blacklistCloseButton}) do
-        TweenService:Create(element, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-            TextTransparency = 1,
-            BackgroundTransparency = 1
-        }):Play()
-    end
-
-    closeTween:Play()
-    strokeTween:Play()
-    closeTween.Completed:Wait()
-    blacklistFrame.Visible = false
-    print("Blacklist UI destroyed")
-end)
-
 local correctKey = "07618-826391-192739-81625"
 local premiumKey = "$PREMIUM$"
 local keyVerified = false
@@ -638,27 +513,21 @@ local function checkKeyVerification()
         wait(6)
     end
 
-    if success and storedKey then
-        if storedKey == premiumKey then
-            print("Premium key verified permanently")
-            keyVerified = true
-            return true
-        end
+    if success and storedKey == premiumKey then
+        print("Premium key verified permanently")
+        keyVerified = true
+        return true
     end
-    print("No valid stored key or not premium, requiring re-entry")
+    print("No valid stored key, requiring re-entry")
     return false
 end
 
 local function verifyKey()
     local inputKey = keyInput.Text
-    if inputKey == correctKey then
-        print("Temporary key verified: " .. inputKey)
+    if inputKey == correctKey or inputKey == premiumKey then
+        print("Key verified: " .. inputKey)
         keyVerified = true
-        return true
-    elseif inputKey == premiumKey then
-        print("Premium key verified: " .. inputKey)
-        keyVerified = true
-        if dataStoreAvailable and keyDataStore then
+        if inputKey == premiumKey and dataStoreAvailable and keyDataStore then
             local success, errorMsg
             for i = 1, 3 do
                 print("Attempting DataStore SetAsync for User_" .. player.UserId .. ", attempt " .. i)
@@ -678,6 +547,7 @@ local function verifyKey()
                 showErrorGui("Failed to save premium key, please re-enter")
             end
         end
+        hideKeySystem()
         return true
     else
         keyDescLabel.Text = "Key is invalid"
@@ -826,90 +696,9 @@ local function hideKeySystem()
     print("Key system hidden")
 end
 
-local function showBlacklistUI()
-    if not isAdmin then return end
-    print("Showing blacklist UI for admin " .. adminUsername)
-    blacklistFrame.Visible = true
-
-    local frameTween = TweenService:Create(blacklistFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-        BackgroundTransparency = 0.5,
-        Size = UDim2.new(0, 250, 0, 100)
-    })
-
-    local strokeTween = TweenService:Create(blacklistStroke, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-        Transparency = 0.4
-    })
-
-    local titleTween = TweenService:Create(blacklistTitle, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-        TextTransparency = 0
-    })
-
-    local inputTween = TweenService:Create(blacklistInput, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-        BackgroundTransparency = 0.6,
-        TextTransparency = 0
-    })
-
-    local buttonTween = TweenService:Create(blacklistButton, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-        BackgroundTransparency = 0.2,
-        TextTransparency = 0
-    })
-
-    local closeTween = TweenService:Create(blacklistCloseButton, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-        BackgroundTransparency = 0.2,
-        TextTransparency = 0
-    })
-
-    frameTween:Play()
-    strokeTween:Play()
-    titleTween:Play()
-    wait(0.1)
-    inputTween:Play()
-    wait(0.1)
-    buttonTween:Play()
-    closeTween:Play()
-end
-
-blacklistButton.MouseButton1Click:Connect(function()
-    if not isAdmin then return end
-    local username = blacklistInput.Text
-    if username and username ~= "" then
-        print("Attempting to blacklist user: " .. username)
-        if dataStoreAvailable and blacklistDataStore then
-            local success, errorMsg = pcall(function()
-                blacklistDataStore:SetAsync("Blacklist_" .. username, true)
-            end)
-            if success then
-                print("User " .. username .. " blacklisted successfully")
-                blacklistInput.Text = ""
-                blacklistFrame.Visible = false
-            else
-                warn("Failed to blacklist user: " .. tostring(errorMsg))
-                showLastError("Blacklist failed: " .. tostring(errorMsg))
-            end
-        end
-    end
-end)
-
-local function checkBlacklist()
-    if not dataStoreAvailable or not blacklistDataStore then
-        print("DataStore unavailable, skipping blacklist check")
-        return false
-    end
-    local success, isBlacklisted = pcall(function()
-        return blacklistDataStore:GetAsync("Blacklist_" .. player.Name)
-    end)
-    if success and isBlacklisted then
-        print(player.Name .. " is blacklisted")
-        return true
-    end
-    print(player.Name .. " is not blacklisted")
-    return false
-end
-
 local function playEntranceAnimations()
-    if checkBlacklist() then
-        require(script.Parent:WaitForChild("blacklistloadingscreen")).playBlacklistScreen()
-        screenGui:Destroy()
+    if checkKeyVerification() then
+        hideKeySystem()
         return
     end
     contentFrame.BackgroundTransparency = 1
@@ -1012,9 +801,6 @@ local function playEntranceAnimations()
 
         loadingTextTween.Completed:Wait()
         waterDropFrame:Destroy()
-        if isAdmin then
-            showBlacklistUI()
-        end
         print("Entrance animations completed")
     end)
 end
@@ -1094,25 +880,7 @@ local function animateLoadingBar()
     end
 end
 
-return {
-    playEntranceAnimations = playEntranceAnimations,
-    playExitAnimations = playExitAnimations,
-    animateParticles = animateParticles,
-    animatePulse = animatePulse,
-    animateLoadingBar = animateLoadingBar,
-    setLoadingText = function(text, color)
-        loadingText.Text = text
-        if color then
-            loadingText.TextColor3 = color
-        end
-        print("Loading text set to: " .. text)
-    end,
-    showKeySystem = showKeySystem,
-    verifyKey = verifyKey,
-    hideKeySystem = hideKeySystem,
-    isKeyVerified = function()
-        return keyVerified
-    end,
-    animateKeyPulse = animateKeyPulse,
-    checkKeyVerification = checkKeyVerification
-}
+-- Start the loading screen
+playEntranceAnimations()
+animatePulse()
+animateLoadingBar()
