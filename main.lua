@@ -94,7 +94,6 @@ coroutine.wrap(function()
         end
 
         LoadingScreen.playEntranceAnimations()
-        LoadingScreen.setLoadingText("Awaiting key verification...", Color3.fromRGB(150, 180, 200))
         KeySystem.showKeySystem()
 
         while not KeySystem.isKeyVerified() do
@@ -102,7 +101,7 @@ coroutine.wrap(function()
         end
 
         KeySystem.hideKeySystem()
-        LoadingScreen.setLoadingText("Key verified, loading game...", Color3.fromRGB(150, 180, 200))
+        LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
         wait(1)
 
         LoadingScreen.animateLoadingBar()
