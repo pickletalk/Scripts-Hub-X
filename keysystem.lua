@@ -217,15 +217,8 @@ local function fadeOut()
 end
 
 -- Key verification logic
-local DataStoreService = game:GetService("DataStoreService")
-local playerDataStore = DataStoreService:GetDataStore("PlayerKeyStatus_" .. player.UserId)
-local isVerified = playerDataStore:GetAsync("IsPremium") or false
-local isPremium = isVerified
-
-if isPremium then
-    fadeOut()
-    return
-end
+local isVerified = false
+local isPremium = false
 
 local function verifyKey()
     local inputKey = keyInput.Text:upper()
@@ -241,7 +234,6 @@ local function verifyKey()
         descLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
         isVerified = true
         isPremium = true
-        playerDataStore:SetAsync("IsPremium", true)
         wait(2)
         descLabel.Text = "Join our Discord server to get the key."
         descLabel.TextColor3 = Color3.fromRGB(100, 160, 255)
@@ -252,9 +244,6 @@ local function verifyKey()
         wait(3)
         descLabel.Text = "Join our Discord server to get the key."
         descLabel.TextColor3 = Color3.fromRGB(100, 160, 255)
-    end
-    if isVerified or isPremium then
-        fadeOut()
     end
 end
 
