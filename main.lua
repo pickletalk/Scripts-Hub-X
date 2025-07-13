@@ -88,13 +88,13 @@ coroutine.wrap(function()
             return
         end
 
-        KeySystem.showKeySystem()
-
-        while not KeySystem.isKeyVerified() do
-            wait(0.1)
+        if not KeySystem.isKeyVerified() then
+            KeySystem.showKeySystem()
+            while not KeySystem.isKeyVerified() do
+                wait(0.1)
+            end
+            KeySystem.hideKeySystem()
         end
-
-        KeySystem.hideKeySystem()
 
         local success, LoadingScreen = loadLoadingScreen()
         if not success then
