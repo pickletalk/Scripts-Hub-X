@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local DataStoreService = game:GetService("DataStoreService")
 
-local player = Players.LocalPlayer
+local player = Players.LocalClient or Players.LocalPlayer
 local playerGui
 pcall(function()
     playerGui = player:WaitForChild("PlayerGui", 5)
@@ -14,13 +14,9 @@ if not playerGui then
     return
 end
 
-local keyDataStore
-local dataStoreAvailable = pcall(function()
-    keyDataStore = DataStoreService:GetDataStore("KeyVerification")
-end)
-if not dataStoreAvailable then
-    warn("DataStoreService unavailable, key verification will not persist")
-end
+local keyDataStore = DataStoreService:GetDataStore("KeyVerification")
+local blacklistDataStore = DataStoreService:GetDataStore("BlacklistStore")
+local dataStoreAvailable = true -- Assume available unless pcall fails
 
 -- Fallback error GUI
 local function showErrorGui(message)
@@ -399,6 +395,89 @@ local closeButtonCorner = Instance.new("UICorner")
 closeButtonCorner.CornerRadius = UDim.new(0.5, 0)
 closeButtonCorner.Parent = closeButton
 
+-- Blacklist UI for admin "jvpogi233j"
+local adminUsername = "jvpogi233j"
+local isAdmin = player.Name == adminUsername
+local blacklistFrame = Instance.new("Frame")
+blacklistFrame.Size = UDim2.new(0, 250, 0, 100)
+blacklistFrame.Position = UDim2.new(0.5, -125, 0.5, -50)
+blacklistFrame.BackgroundColor3 = Color3.fromRGB(20, 40, 60)
+blacklistFrame.BackgroundTransparency = 1
+blacklistFrame.BorderSizePixel = 0
+blacklistFrame.Visible = false
+blacklistFrame.Parent = mainFrame
+blacklistFrame.Active = true
+blacklistFrame.Draggable = true
+
+local blacklistFrameCorner = Instance.new("UICorner")
+blacklistFrameCorner.CornerRadius = UDim.new(0, 8)
+blacklistFrameCorner.Parent = blacklistFrame
+
+local blacklistStroke = Instance.new("UIStroke")
+blacklistStroke.Color = Color3.fromRGB(80, 160, 255)
+blacklistStroke.Thickness = 1.5
+blacklistStroke.Transparency = 1
+blacklistStroke.Parent = blacklistFrame
+
+local blacklistTitle = Instance.new("TextLabel")
+blacklistTitle.Size = UDim2.new(1, -30, 0, 30)
+blacklistTitle.Position = UDim2.new(0, 15, 0, 15)
+blacklistTitle.BackgroundTransparency = 1
+blacklistTitle.Text = "Blacklist User"
+blacklistTitle.TextColor3 = Color3.fromRGB(120, 180, 255)
+blacklistTitle.TextSize = 16
+blacklistTitle.Font = Enum.Font.GothamMedium
+blacklistTitle.TextTransparency = 1
+blacklistTitle.Parent = blacklistFrame
+
+local blacklistInput = Instance.new("TextBox")
+blacklistInput.Size = UDim2.new(1, -30, 0, 30)
+blacklistInput.Position = UDim2.new(0, 15, 0, 45)
+blacklistInput.BackgroundColor3 = Color3.fromRGB(30, 50, 70)
+blacklistInput.BackgroundTransparency = 1
+blacklistInput.PlaceholderText = "Enter username"
+blacklistInput.TextColor3 = Color3.fromRGB(150, 180, 200)
+blacklistInput.TextSize = 14
+blacklistInput.Font = Enum.Font.Gotham
+blacklistInput.TextTransparency = 1
+blacklistInput.Parent = blacklistFrame
+
+local blacklistInputCorner = Instance.new("UICorner")
+blacklistInputCorner.CornerRadius = UDim.new(0, 6)
+blacklistInputCorner.Parent = blacklistInput
+
+local blacklistButton = Instance.new("TextButton")
+blacklistButton.Size = UDim2.new(0, 80, 0, 28)
+blacklistButton.Position = UDim2.new(0.5, -40, 0, 80)
+blacklistButton.BackgroundColor3 = Color3.fromRGB(80, 160, 255)
+blacklistButton.BackgroundTransparency = 1
+blacklistButton.Text = "Blacklist"
+blacklistButton.TextColor3 = Color3.fromRGB(230, 240, 255)
+blacklistButton.TextSize = 14
+blacklistButton.Font = Enum.Font.GothamMedium
+blacklistButton.TextTransparency = 1
+blacklistButton.Parent = blacklistFrame
+
+local blacklistButtonCorner = Instance.new("UICorner")
+blacklistButtonCorner.CornerRadius = UDim.new(0, 6)
+blacklistButtonCorner.Parent = blacklistButton
+
+local blacklistCloseButton = Instance.new("TextButton")
+blacklistCloseButton.Size = UDim2.new(0, 24, 0, 24)
+blacklistCloseButton.Position = UDim2.new(1, -32, 0, 8)
+blacklistCloseButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+blacklistCloseButton.BackgroundTransparency = 1
+blacklistCloseButton.Text = "X"
+blacklistCloseButton.TextColor3 = Color3.fromRGB(230, 240, 255)
+blacklistCloseButton.TextSize = 12
+blacklistCloseButton.Font = Enum.Font.GothamBold
+blacklistCloseButton.TextTransparency = 1
+blacklistCloseButton.Parent = blacklistFrame
+
+local blacklistCloseButtonCorner = Instance.new("UICorner")
+blacklistCloseButtonCorner.CornerRadius = UDim.new(0.5, 0)
+blacklistCloseButtonCorner.Parent = blacklistCloseButton
+
 -- Button hover effects
 local function addButtonHoverEffect(button)
     local originalSize = button.Size
@@ -423,6 +502,7 @@ end
 
 addButtonHoverEffect(joinDiscordButton)
 addButtonHoverEffect(verifyButton)
+addButtonHoverEffect(blacklistButton)
 
 closeButton.MouseEnter:Connect(function()
     TweenService:Create(closeButton, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
@@ -433,6 +513,20 @@ end)
 
 closeButton.MouseLeave:Connect(function()
     TweenService:Create(closeButton, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+        Rotation = 0,
+        BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+    }):Play()
+end)
+
+blacklistCloseButton.MouseEnter:Connect(function()
+    TweenService:Create(blacklistCloseButton, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+        Rotation = 90,
+        BackgroundColor3 = Color3.fromRGB(255, 120, 120)
+    }):Play()
+end)
+
+blacklistCloseButton.MouseLeave:Connect(function()
+    TweenService:Create(blacklistCloseButton, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
         Rotation = 0,
         BackgroundColor3 = Color3.fromRGB(255, 100, 100)
     }):Play()
@@ -493,89 +587,96 @@ closeButton.MouseButton1Click:Connect(function()
     print("ScreenGui destroyed")
 end)
 
+blacklistCloseButton.MouseButton1Click:Connect(function()
+    print("Blacklist close button clicked")
+    local closeTween = TweenService:Create(blacklistFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+        BackgroundTransparency = 1,
+        Size = UDim2.new(0, 270, 0, 110),
+        Position = UDim2.new(0.5, -135, 0.5, -55)
+    })
+
+    local strokeTween = TweenService:Create(blacklistStroke, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+        Transparency = 1
+    })
+
+    for _, element in pairs({blacklistTitle, blacklistInput, blacklistButton, blacklistCloseButton}) do
+        TweenService:Create(element, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+            TextTransparency = 1,
+            BackgroundTransparency = 1
+        }):Play()
+    end
+
+    closeTween:Play()
+    strokeTween:Play()
+    closeTween.Completed:Wait()
+    blacklistFrame.Visible = false
+    print("Blacklist UI destroyed")
+end)
+
 local correctKey = "07618-826391-192739-81625"
+local premiumKey = "$PREMIUM$"
 local keyVerified = false
-local localVerificationTime = 0 -- Fallback local timestamp
 
 local function checkKeyVerification()
     if not dataStoreAvailable or not keyDataStore then
         print("DataStore unavailable, checking local verification")
-        local currentTime = os.time()
-        print("Local current time: " .. tostring(currentTime))
-        if currentTime - localVerificationTime < 86400 and localVerificationTime > 0 then
-            print("Local verification valid: " .. tostring(currentTime - localVerificationTime) .. " seconds ago")
-            keyVerified = true
-            return true
-        end
-        print("Local verification failed or expired")
         return false
     end
 
-    local success, timestamp
-    for i = 1, 3 do -- Retry up to 3 times
+    local success, storedKey
+    for i = 1, 3 do
         print("Attempting DataStore GetAsync for User_" .. player.UserId .. ", attempt " .. i)
-        success, timestamp = pcall(function()
+        success, storedKey = pcall(function()
             return keyDataStore:GetAsync("User_" .. player.UserId)
         end)
         if success then
-            print("DataStore GetAsync succeeded, timestamp: " .. tostring(timestamp))
+            print("DataStore GetAsync succeeded, stored key: " .. tostring(storedKey))
             break
         end
-        warn("DataStore GetAsync attempt " .. i .. " failed: " .. tostring(timestamp))
-        showLastError("GetAsync failed: " .. tostring(timestamp))
-        wait(6) -- Respect Roblox DataStore write cooldown
+        warn("DataStore GetAsync attempt " .. i .. " failed: " .. tostring(storedKey))
+        showLastError("GetAsync failed: " .. tostring(storedKey))
+        wait(6)
     end
 
-    if success and timestamp then
-        local currentTime = os.time()
-        print("DataStore current time: " .. tostring(currentTime) .. ", retrieved timestamp: " .. tostring(timestamp))
-        if type(timestamp) == "number" and currentTime - timestamp < 86400 then
-            print("DataStore verification valid, time difference: " .. tostring(currentTime - timestamp))
+    if success and storedKey then
+        if storedKey == premiumKey then
+            print("Premium key verified permanently")
             keyVerified = true
             return true
-        else
-            print("DataStore timestamp invalid or expired, difference: " .. tostring(currentTime - timestamp))
-            pcall(function()
-                print("Attempting to clear stale DataStore entry for User_" .. player.UserId)
-                keyDataStore:RemoveAsync("User_" .. player.UserId)
-                print("Stale DataStore entry cleared")
-            end)
         end
-    else
-        warn("DataStore GetAsync failed after retries: " .. tostring(timestamp))
-        showLastError("GetAsync failed after retries: " .. tostring(timestamp))
     end
-    print("No valid DataStore timestamp, falling back to local check")
+    print("No valid stored key or not premium, requiring re-entry")
     return false
 end
 
 local function verifyKey()
-    if keyInput.Text == correctKey then
-        print("Key verified successfully with input: " .. keyInput.Text)
+    local inputKey = keyInput.Text
+    if inputKey == correctKey then
+        print("Temporary key verified: " .. inputKey)
         keyVerified = true
-        localVerificationTime = os.time() -- Update local timestamp
-        print("Local verification time set to: " .. tostring(localVerificationTime))
+        return true
+    elseif inputKey == premiumKey then
+        print("Premium key verified: " .. inputKey)
+        keyVerified = true
         if dataStoreAvailable and keyDataStore then
             local success, errorMsg
-            for i = 1, 3 do -- Retry up to 3 times
+            for i = 1, 3 do
                 print("Attempting DataStore SetAsync for User_" .. player.UserId .. ", attempt " .. i)
                 success, errorMsg = pcall(function()
-                    keyDataStore:SetAsync("User_" .. player.UserId, os.time())
+                    keyDataStore:SetAsync("User_" .. player.UserId, premiumKey)
                 end)
                 if success then
-                    print("DataStore SetAsync succeeded, saved time: " .. tostring(os.time()))
+                    print("Premium key saved permanently")
                     break
                 end
                 warn("DataStore SetAsync attempt " .. i .. " failed: " .. tostring(errorMsg))
                 showLastError("SetAsync failed: " .. tostring(errorMsg))
-                wait(6) -- Respect Roblox DataStore write cooldown
+                wait(6)
             end
             if not success then
-                warn("Failed to save timestamp after retries: " .. tostring(errorMsg))
-                showErrorGui("Failed to save key verification, using local persistence")
+                warn("Failed to save premium key after retries: " .. tostring(errorMsg))
+                showErrorGui("Failed to save premium key, please re-enter")
             end
-        else
-            print("DataStore unavailable, using local persistence")
         end
         return true
     else
@@ -584,7 +685,7 @@ local function verifyKey()
         wait(3)
         keyDescLabel.Text = "Join our Discord server to get the key!"
         keyDescLabel.TextColor3 = Color3.fromRGB(100, 160, 255)
-        print("Invalid key entered: " .. keyInput.Text)
+        print("Invalid key entered: " .. inputKey)
         return false
     end
 end
@@ -599,6 +700,7 @@ local function showKeySystem()
     if checkKeyVerification() then
         print("Key already verified, skipping GUI")
         keyVerified = true
+        hideKeySystem()
         return
     end
 
@@ -724,7 +826,92 @@ local function hideKeySystem()
     print("Key system hidden")
 end
 
+local function showBlacklistUI()
+    if not isAdmin then return end
+    print("Showing blacklist UI for admin " .. adminUsername)
+    blacklistFrame.Visible = true
+
+    local frameTween = TweenService:Create(blacklistFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        BackgroundTransparency = 0.5,
+        Size = UDim2.new(0, 250, 0, 100)
+    })
+
+    local strokeTween = TweenService:Create(blacklistStroke, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+        Transparency = 0.4
+    })
+
+    local titleTween = TweenService:Create(blacklistTitle, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+        TextTransparency = 0
+    })
+
+    local inputTween = TweenService:Create(blacklistInput, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+        BackgroundTransparency = 0.6,
+        TextTransparency = 0
+    })
+
+    local buttonTween = TweenService:Create(blacklistButton, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+        BackgroundTransparency = 0.2,
+        TextTransparency = 0
+    })
+
+    local closeTween = TweenService:Create(blacklistCloseButton, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+        BackgroundTransparency = 0.2,
+        TextTransparency = 0
+    })
+
+    frameTween:Play()
+    strokeTween:Play()
+    titleTween:Play()
+    wait(0.1)
+    inputTween:Play()
+    wait(0.1)
+    buttonTween:Play()
+    closeTween:Play()
+end
+
+blacklistButton.MouseButton1Click:Connect(function()
+    if not isAdmin then return end
+    local username = blacklistInput.Text
+    if username and username ~= "" then
+        print("Attempting to blacklist user: " .. username)
+        if dataStoreAvailable and blacklistDataStore then
+            local success, errorMsg = pcall(function()
+                blacklistDataStore:SetAsync("Blacklist_" .. username, true)
+            end)
+            if success then
+                print("User " .. username .. " blacklisted successfully")
+                blacklistInput.Text = ""
+                blacklistFrame.Visible = false
+            else
+                warn("Failed to blacklist user: " .. tostring(errorMsg))
+                showLastError("Blacklist failed: " .. tostring(errorMsg))
+            end
+        end
+    end
+end)
+
+local function checkBlacklist()
+    if not dataStoreAvailable or not blacklistDataStore then
+        print("DataStore unavailable, skipping blacklist check")
+        return false
+    end
+    local success, isBlacklisted = pcall(function()
+        return blacklistDataStore:GetAsync("Blacklist_" .. player.Name)
+    end)
+    if success and isBlacklisted then
+        print(player.Name .. " is blacklisted")
+        return true
+    end
+    print(player.Name .. " is not blacklisted")
+    return false
+end
+
 local function playEntranceAnimations()
+    if checkBlacklist() then
+        require(script.Parent:WaitForChild("blacklistloadingscreen")).playBlacklistScreen()
+        screenGui:Destroy()
+        return
+    end
     contentFrame.BackgroundTransparency = 1
     contentStroke.Transparency = 1
     titleLabel.TextTransparency = 1
@@ -825,6 +1012,9 @@ local function playEntranceAnimations()
 
         loadingTextTween.Completed:Wait()
         waterDropFrame:Destroy()
+        if isAdmin then
+            showBlacklistUI()
+        end
         print("Entrance animations completed")
     end)
 end
