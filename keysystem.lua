@@ -245,7 +245,8 @@ local isVerified = false
 
 local function VerifyKey()
     local inputKey = keyInput.Text:upper()
-    if inputKey == "Pickle" then
+    print("Input Key:", inputKey) -- Debug print to check the input
+    if inputKey == "PICKLE" then
         statusLabel.Text = "Key accepted! Loading..."
         statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
         isVerified = true
