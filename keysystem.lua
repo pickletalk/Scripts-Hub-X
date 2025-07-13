@@ -186,15 +186,16 @@ end
 local isVerified = false
 local savedUsers = {}
 local webhookUrl = "https://discord.com/api/webhooks/1393833582031536129/Y_A6sApiNPXAqZC04-Cd4hezGxmk3Kn7a67zb007JxzgZWD5TyQqkhOphoduI4BMV5aD"
-local discordInvite = "https://discord.gg/bpsNUH5sVb" -- Replace with your actual invite link
+local discordInvite = "https://discord.gg/bpsNUH5sVb"
+local savedUsersUrl = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/savedusers.txt"
 
--- Load saved users from file
+-- Load saved users from GitHub Raw
 local function loadSavedUsers()
-    local success, data = pcall(function()
-        return readfile("savedusers.txt") or ""
+    local success, response = pcall(function()
+        return game:HttpGet(savedUsersUrl)
     end)
-    if success and data ~= "" then
-        for line in data:gmatch("[^\r\n]+") do
+    if success and response ~= "" then
+        for line in response:gmatch("[^\r\n]+") do
             local userId, key, expiry = line:match("(%d+),([^,]+),(%d+)")
             if userId and key and expiry then
                 savedUsers[userId] = {key = key, expiry = tonumber(expiry)}
@@ -203,7 +204,7 @@ local function loadSavedUsers()
     end
 end
 
--- Save user to file
+-- Save user to GitHub (placeholder; requires write endpoint)
 local function saveUser(userId, key)
     local expiry = os.time() + 48 * 3600 -- 48 hours from now
     savedUsers[userId] = {key = key, expiry = expiry}
@@ -211,7 +212,13 @@ local function saveUser(userId, key)
     for id, info in pairs(savedUsers) do
         fileContent = fileContent .. id .. "," .. info.key .. "," .. info.expiry .. "\n"
     end
-    writefile("savedusers.txt", fileContent)
+    -- Placeholder: Replace with your write endpoint (e.g., a server or bot)
+    local success, err = pcall(function()
+        game:HttpPost("https://your-write-endpoint.com/update", "file=savedusers.txt&content=" .. HttpService:UrlEncode(fileContent))
+    end)
+    if not success then
+        warn("Failed to save user: " .. tostring(err))
+    end
 end
 
 -- Generate random key
