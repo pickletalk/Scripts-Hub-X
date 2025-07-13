@@ -10,8 +10,8 @@ screenGui.IgnoreGuiInset = true
 screenGui.Parent = playerGui
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 300, 0, 300) -- Increased height for extra button
-mainFrame.Position = UDim2.new(0.5, -150, 0.5, -150)
+mainFrame.Size = UDim2.new(0, 300, 0, 250) -- Compact size
+mainFrame.Position = UDim2.new(0.5, -150, 0.5, -125)
 mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 mainFrame.BackgroundTransparency = 1
 mainFrame.BorderSizePixel = 0
@@ -88,20 +88,20 @@ statusLabel.Parent = mainFrame
 
 -- Buttons Frame
 local buttonsFrame = Instance.new("Frame")
-buttonsFrame.Size = UDim2.new(1, -40, 0, 110) -- Increased for three buttons
+buttonsFrame.Size = UDim2.new(1, -40, 0, 80) -- Adjusted for smaller buttons
 buttonsFrame.Position = UDim2.new(0, 20, 0, 160)
 buttonsFrame.BackgroundTransparency = 1
 buttonsFrame.Parent = mainFrame
 
 -- Verify Button
 local verifyButton = Instance.new("TextButton")
-verifyButton.Size = UDim2.new(0, 90, 0, 30)
+verifyButton.Size = UDim2.new(0, 70, 0, 25) -- Smaller button
 verifyButton.Position = UDim2.new(0, 0, 0, 0)
 verifyButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
 verifyButton.BackgroundTransparency = 1
 verifyButton.Text = "Verify"
 verifyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-verifyButton.TextSize = 14
+verifyButton.TextSize = 12 -- Adjusted text size
 verifyButton.Font = Enum.Font.SourceSansBold
 verifyButton.TextTransparency = 1
 verifyButton.Parent = buttonsFrame
@@ -112,13 +112,13 @@ verifyCorner.Parent = verifyButton
 
 -- Get Key Button
 local getKeyButton = Instance.new("TextButton")
-getKeyButton.Size = UDim2.new(0, 90, 0, 30)
-getKeyButton.Position = UDim2.new(0, 100, 0, 0)
+getKeyButton.Size = UDim2.new(0, 70, 0, 25) -- Smaller button
+getKeyButton.Position = UDim2.new(0, 75, 0, 0) -- Side by side
 getKeyButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
 getKeyButton.BackgroundTransparency = 1
 getKeyButton.Text = "Get Key"
 getKeyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-getKeyButton.TextSize = 14
+getKeyButton.TextSize = 12
 getKeyButton.Font = Enum.Font.SourceSansBold
 getKeyButton.TextTransparency = 1
 getKeyButton.Parent = buttonsFrame
@@ -129,13 +129,13 @@ getKeyCorner.Parent = getKeyButton
 
 -- Join Discord Button
 local joinButton = Instance.new("TextButton")
-joinButton.Size = UDim2.new(0, 90, 0, 30)
-joinButton.Position = UDim2.new(0, 105, 0, 40) -- Below the other two
+joinButton.Size = UDim2.new(0, 70, 0, 25) -- Smaller button
+joinButton.Position = UDim2.new(0, 115, 0, 30) -- Below the other two, centered
 joinButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
 joinButton.BackgroundTransparency = 1
 joinButton.Text = "Join Discord"
 joinButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-joinButton.TextSize = 14
+joinButton.TextSize = 12
 joinButton.Font = Enum.Font.SourceSansBold
 joinButton.TextTransparency = 1
 joinButton.Parent = buttonsFrame
@@ -195,7 +195,7 @@ end
 local function HideKeySystem()
     local frameTween = TweenService:Create(mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
         BackgroundTransparency = 1,
-        Size = UDim2.new(0, 0, 0, 0) -- Evaporate effect with scaling
+        Size = UDim2.new(0, 0, 0, 0) -- Evaporate effect
     })
     local strokeTween = TweenService:Create(uiStroke, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
         Transparency = 1
@@ -283,12 +283,7 @@ closeButton.MouseButton1Click:Connect(HideKeySystem)
 
 verifyButton.MouseButton1Click:Connect(VerifyKey)
 
--- Check if user already has a valid key on load (not applicable now, but kept for consistency)
-if false then -- Removed logic since no saved users
-    isVerified = true
-    HideKeySystem()
-end
-
+-- No initial verification check needed
 return {
     ShowKeySystem = ShowKeySystem,
     HideKeySystem = HideKeySystem,
