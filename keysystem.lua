@@ -2,160 +2,134 @@
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui", 5)
+local playerGui = player:WaitForChild("PlayerGui")
+local HttpService = game:GetService("HttpService")
+local userId = player.UserId
+local username = player.Name
 
--- Create key system GUI
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "ScriptsHubXKeySystem"
+screenGui.Name = "KeySystemGUI"
 screenGui.IgnoreGuiInset = true
 screenGui.Parent = playerGui
 
-local keyFrame = Instance.new("Frame")
-keyFrame.Size = UDim2.new(0, 300, 0, 200)
-keyFrame.Position = UDim2.new(0.5, -150, 0.5, -100)
-keyFrame.BackgroundColor3 = Color3.fromRGB(20, 40, 60)
-keyFrame.BackgroundTransparency = 1
-keyFrame.BorderSizePixel = 0
-keyFrame.Parent = screenGui
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 300, 0, 200)
+mainFrame.Position = UDim2.new(0.5, -150, 0.5, -100)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.BackgroundTransparency = 1
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = screenGui
 
-local keyCorner = Instance.new("UICorner")
-keyCorner.CornerRadius = UDim.new(0, 10)
-keyCorner.Parent = keyFrame
+local uiCorner = Instance.new("UICorner")
+uiCorner.CornerRadius = UDim.new(0, 10)
+uiCorner.Parent = mainFrame
 
-local keyStroke = Instance.new("UIStroke")
-keyStroke.Color = Color3.fromRGB(80, 160, 255)
-keyStroke.Thickness = 1
-keyStroke.Transparency = 1
-keyStroke.Parent = keyFrame
+local uiStroke = Instance.new("UIStroke")
+uiStroke.Color = Color3.fromRGB(0, 170, 255)
+uiStroke.Thickness = 2
+uiStroke.Transparency = 1
+uiStroke.Parent = mainFrame
 
--- Title
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(1, -20, 0, 40)
 titleLabel.Position = UDim2.new(0, 10, 0, 10)
 titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "Key Verification"
-titleLabel.TextColor3 = Color3.fromRGB(120, 180, 255)
-titleLabel.TextSize = 18
-titleLabel.Font = Enum.Font.GothamBold
+titleLabel.Text = "Key System"
+titleLabel.TextColor3 = Color3.fromRGB(0, 170, 255)
+titleLabel.TextSize = 20
+titleLabel.Font = Enum.Font.SourceSansBold
 titleLabel.TextTransparency = 1
-titleLabel.Parent = keyFrame
+titleLabel.Parent = mainFrame
 
--- Key Input
 local keyInput = Instance.new("TextBox")
 keyInput.Size = UDim2.new(1, -40, 0, 40)
 keyInput.Position = UDim2.new(0, 20, 0, 60)
-keyInput.BackgroundColor3 = Color3.fromRGB(30, 50, 70)
+keyInput.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 keyInput.BackgroundTransparency = 1
-keyInput.PlaceholderText = "Enter key here"
-keyInput.TextColor3 = Color3.fromRGB(150, 180, 200)
+keyInput.PlaceholderText = "Enter Key Here"
+keyInput.TextColor3 = Color3.fromRGB(255, 255, 255)
 keyInput.TextSize = 14
-keyInput.Font = Enum.Font.Gotham
+keyInput.Font = Enum.Font.SourceSans
 keyInput.TextTransparency = 1
-keyInput.Parent = keyFrame
+keyInput.Parent = mainFrame
 
 local inputCorner = Instance.new("UICorner")
-inputCorner.CornerRadius = UDim.new(0, 8)
+inputCorner.CornerRadius = UDim.new(0, 5)
 inputCorner.Parent = keyInput
 
--- Description
-local descLabel = Instance.new("TextLabel")
-descLabel.Size = UDim2.new(1, -40, 0, 40)
-descLabel.Position = UDim2.new(0, 20, 0, 110)
-descLabel.BackgroundTransparency = 1
-descLabel.Text = "Join our Discord server to get the key."
-descLabel.TextColor3 = Color3.fromRGB(100, 160, 255)
-descLabel.TextSize = 12
-descLabel.Font = Enum.Font.Gotham
-descLabel.TextWrapped = true
-descLabel.TextTransparency = 1
-descLabel.Parent = keyFrame
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Size = UDim2.new(1, -40, 0, 40)
+statusLabel.Position = UDim2.new(0, 20, 0, 110)
+statusLabel.BackgroundTransparency = 1
+statusLabel.Text = "Join our Discord for a key!"
+statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+statusLabel.TextSize = 14
+statusLabel.Font = Enum.Font.SourceSans
+statusLabel.TextWrapped = true
+statusLabel.TextTransparency = 1
+statusLabel.Parent = mainFrame
 
--- Buttons Frame
 local buttonsFrame = Instance.new("Frame")
 buttonsFrame.Size = UDim2.new(1, -40, 0, 40)
 buttonsFrame.Position = UDim2.new(0, 20, 0, 160)
 buttonsFrame.BackgroundTransparency = 1
-buttonsFrame.Parent = keyFrame
+buttonsFrame.Parent = mainFrame
 
--- Verify Button
 local verifyButton = Instance.new("TextButton")
-verifyButton.Size = UDim2.new(0.45, 0, 1, 0)
+verifyButton.Size = UDim2.new(0.48, -5, 1, 0)
 verifyButton.Position = UDim2.new(0, 0, 0, 0)
-verifyButton.BackgroundColor3 = Color3.fromRGB(80, 160, 255)
+verifyButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
 verifyButton.BackgroundTransparency = 1
 verifyButton.Text = "Verify"
-verifyButton.TextColor3 = Color3.fromRGB(230, 240, 255)
+verifyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 verifyButton.TextSize = 14
-verifyButton.Font = Enum.Font.GothamBold
+verifyButton.Font = Enum.Font.SourceSansBold
 verifyButton.TextTransparency = 1
 verifyButton.Parent = buttonsFrame
 
 local verifyCorner = Instance.new("UICorner")
-verifyCorner.CornerRadius = UDim.new(0, 8)
+verifyCorner.CornerRadius = UDim.new(0, 5)
 verifyCorner.Parent = verifyButton
 
--- Join Discord Button
 local joinButton = Instance.new("TextButton")
-joinButton.Size = UDim2.new(0.45, 0, 1, 0)
-joinButton.Position = UDim2.new(0.55, 0, 0, 0)
-joinButton.BackgroundColor3 = Color3.fromRGB(80, 160, 255)
+joinButton.Size = UDim2.new(0.48, -5, 1, 0)
+joinButton.Position = UDim2.new(0.52, 0, 0, 0)
+joinButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
 joinButton.BackgroundTransparency = 1
-joinButton.Text = "Join Discord"
-joinButton.TextColor3 = Color3.fromRGB(230, 240, 255)
+joinButton.Text = "Get Key"
+joinButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 joinButton.TextSize = 14
-joinButton.Font = Enum.Font.GothamBold
+joinButton.Font = Enum.Font.SourceSansBold
 joinButton.TextTransparency = 1
 joinButton.Parent = buttonsFrame
 
 local joinCorner = Instance.new("UICorner")
-joinCorner.CornerRadius = UDim.new(0, 8)
+joinCorner.CornerRadius = UDim.new(0, 5)
 joinCorner.Parent = joinButton
 
--- Close Button
-local closeButton = Instance.new("TextButton")
-closeButton.Size = UDim2.new(0, 30, 0, 30)
-closeButton.Position = UDim2.new(1, -40, 0, 5)
-closeButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-closeButton.BackgroundTransparency = 1
-closeButton.Text = "X"
-closeButton.TextColor3 = Color3.fromRGB(230, 240, 255)
-closeButton.TextSize = 16
-closeButton.Font = Enum.Font.GothamBold
-closeButton.TextTransparency = 1
-closeButton.Parent = keyFrame
-
-local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(0, 5)
-closeCorner.Parent = closeButton
-
--- Fade-in animation
-local function fadeIn()
-    local frameTween = TweenService:Create(keyFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        BackgroundTransparency = 0.5
+local function ShowKeySystem()
+    local frameTween = TweenService:Create(mainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        BackgroundTransparency = 0.2
     })
-    local strokeTween = TweenService:Create(keyStroke, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        Transparency = 0.4
+    local strokeTween = TweenService:Create(uiStroke, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        Transparency = 0
     })
     local titleTween = TweenService:Create(titleLabel, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
         TextTransparency = 0
     })
     local inputTween = TweenService:Create(keyInput, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        BackgroundTransparency = 0.6,
+        BackgroundTransparency = 0.3,
         TextTransparency = 0
     })
-    local descTween = TweenService:Create(descLabel, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+    local statusTween = TweenService:Create(statusLabel, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
         TextTransparency = 0
     })
     local verifyTween = TweenService:Create(verifyButton, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        BackgroundTransparency = 0.2,
+        BackgroundTransparency = 0.3,
         TextTransparency = 0
     })
     local joinTween = TweenService:Create(joinButton, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        BackgroundTransparency = 0.2,
-        TextTransparency = 0
-    })
-    local closeTween = TweenService:Create(closeButton, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        BackgroundTransparency = 0.2,
+        BackgroundTransparency = 0.3,
         TextTransparency = 0
     })
 
@@ -165,19 +139,17 @@ local function fadeIn()
     wait(0.1)
     inputTween:Play()
     wait(0.1)
-    descTween:Play()
+    statusTween:Play()
     wait(0.1)
     verifyTween:Play()
     joinTween:Play()
-    closeTween:Play()
 end
 
--- Fade-out animation
-local function fadeOut()
-    local frameTween = TweenService:Create(keyFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+local function HideKeySystem()
+    local frameTween = TweenService:Create(mainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
         BackgroundTransparency = 1
     })
-    local strokeTween = TweenService:Create(keyStroke, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+    local strokeTween = TweenService:Create(uiStroke, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
         Transparency = 1
     })
     local titleTween = TweenService:Create(titleLabel, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
@@ -187,7 +159,7 @@ local function fadeOut()
         BackgroundTransparency = 1,
         TextTransparency = 1
     })
-    local descTween = TweenService:Create(descLabel, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+    local statusTween = TweenService:Create(statusLabel, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
         TextTransparency = 1
     })
     local verifyTween = TweenService:Create(verifyButton, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
@@ -198,71 +170,122 @@ local function fadeOut()
         BackgroundTransparency = 1,
         TextTransparency = 1
     })
-    local closeTween = TweenService:Create(closeButton, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-        BackgroundTransparency = 1,
-        TextTransparency = 1
-    })
 
     frameTween:Play()
     strokeTween:Play()
     titleTween:Play()
     inputTween:Play()
-    descTween:Play()
+    statusTween:Play()
     verifyTween:Play()
     joinTween:Play()
-    closeTween:Play()
 
     frameTween.Completed:Wait()
     screenGui:Destroy()
 end
 
--- Key verification logic
 local isVerified = false
-local isPremium = false
+local savedUsers = {}
+local webhookUrl = "https://discord.com/api/webhooks/1393833582031536129/Y_A6sApiNPXAqZC04-Cd4hezGxmk3Kn7a67zb007JxzgZWD5TyQqkhOphoduI4BMV5aD"
+local discordInvite = "https://discord.gg/bpsNUH5sVb" -- Replace with your actual invite link
 
-local function verifyKey()
-    local inputKey = keyInput.Text:upper()
-    if inputKey == "07618-826391-192739-81625" then
-        descLabel.Text = "Temporary key accepted. Re-enter next time."
-        descLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-        isVerified = true
-        wait(2)
-        descLabel.Text = "Join our Discord server to get the key."
-        descLabel.TextColor3 = Color3.fromRGB(100, 160, 255)
-    elseif inputKey == "$PREMIUM$" then
-        descLabel.Text = "Premium key accepted. No further verification needed."
-        descLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-        isVerified = true
-        isPremium = true
-        wait(2)
-        descLabel.Text = "Join our Discord server to get the key."
-        descLabel.TextColor3 = Color3.fromRGB(100, 160, 255)
-    else
-        descLabel.Text = "Invalid key. Try again or join Discord for help."
-        descLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-        keyInput.Text = ""
-        wait(3)
-        descLabel.Text = "Join our Discord server to get the key."
-        descLabel.TextColor3 = Color3.fromRGB(100, 160, 255)
+-- Load saved users from file
+local function loadSavedUsers()
+    local success, data = pcall(function()
+        return readfile("savedusers.txt") or ""
+    end)
+    if success and data ~= "" then
+        for line in data:gmatch("[^\r\n]+") do
+            local userId, key, expiry = line:match("(%d+),([^,]+),(%d+)")
+            if userId and key and expiry then
+                savedUsers[userId] = {key = key, expiry = tonumber(expiry)}
+            end
+        end
     end
 end
 
--- Button functions
-verifyButton.MouseButton1Click:Connect(verifyKey)
+-- Save user to file
+local function saveUser(userId, key)
+    local expiry = os.time() + 48 * 3600 -- 48 hours from now
+    savedUsers[userId] = {key = key, expiry = expiry}
+    local fileContent = ""
+    for id, info in pairs(savedUsers) do
+        fileContent = fileContent .. id .. "," .. info.key .. "," .. info.expiry .. "\n"
+    end
+    writefile("savedusers.txt", fileContent)
+end
+
+-- Generate random key
+local function generateRandomKey()
+    local chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    local key = "Key="
+    for i = 1, 8 do
+        key = key .. chars:sub(math.random(1, #chars), math.random(1, #chars))
+    end
+    return key
+end
+
+-- Send webhook message
+local function sendWebhookMessage(username, key)
+    local message = username .. " here's your " .. key
+    local success, err = pcall(function()
+        game:HttpPost(webhookUrl, message)
+    end)
+    if not success then
+        warn("Failed to send webhook: " .. tostring(err))
+    end
+end
+
+-- Check if user has valid key
+local function checkUserKey(userId, inputKey)
+    local userData = savedUsers[userId]
+    if userData and userData.key == inputKey and userData.expiry > os.time() then
+        return true
+    end
+    return false
+end
+
+local function VerifyKey()
+    local inputKey = keyInput.Text:upper()
+    if checkUserKey(userId, inputKey) then
+        statusLabel.Text = "Key accepted! Loading..."
+        statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+        isVerified = true
+        wait(1)
+        HideKeySystem()
+    else
+        statusLabel.Text = "Invalid key! Try again."
+        statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+        keyInput.Text = ""
+        wait(2)
+        statusLabel.Text = "Join our Discord for a key!"
+        statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    end
+end
+
 joinButton.MouseButton1Click:Connect(function()
-    setclipboard("https://discord.gg/bpsNUH5sVb")
-    joinButton.Text = "Copied!"
-    joinButton.BackgroundColor3 = Color3.fromRGB(60, 140, 235)
-    wait(1)
-    joinButton.Text = "Join Discord"
-    joinButton.BackgroundColor3 = Color3.fromRGB(80, 160, 255)
+    game:HttpGet(discordInvite) -- Redirect to Discord invite
+    local randomKey = generateRandomKey()
+    sendWebhookMessage(username, randomKey)
+    saveUser(userId, randomKey)
+    statusLabel.Text = "Check Discord for your key!"
+    statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+    wait(2)
+    statusLabel.Text = "Join our Discord for a key!"
+    statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 end)
 
-closeButton.MouseButton1Click:Connect(fadeOut)
+verifyButton.MouseButton1Click:Connect(VerifyKey)
 
--- Public functions
+loadSavedUsers()
+
+-- Check if user already has a valid key on load
+if savedUsers[userId] and savedUsers[userId].expiry > os.time() then
+    isVerified = true
+    HideKeySystem()
+end
+
 return {
-    showKeySystem = fadeIn,
-    hideKeySystem = fadeOut,
-    isKeyVerified = function() return isVerified or isPremium end
+    ShowKeySystem = ShowKeySystem,
+    HideKeySystem = HideKeySystem,
+    IsKeyVerified = function() return isVerified end
 }
