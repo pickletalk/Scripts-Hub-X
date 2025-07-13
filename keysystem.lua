@@ -10,7 +10,7 @@ screenGui.IgnoreGuiInset = true
 screenGui.Parent = playerGui
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 250, 0, 200) -- Smaller, cleaner size
+mainFrame.Size = UDim2.new(0, 250, 0, 200) -- Compact size
 mainFrame.Position = UDim2.new(0.5, -125, 0.5, -100)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30) -- Dark gradient base
 mainFrame.BackgroundTransparency = 1
@@ -88,15 +88,15 @@ statusLabel.Parent = mainFrame
 
 -- Buttons Frame
 local buttonsFrame = Instance.new("Frame")
-buttonsFrame.Size = UDim2.new(1, -30, 0, 60)
+buttonsFrame.Size = UDim2.new(1, -30, 0, 30) -- Adjusted for single row
 buttonsFrame.Position = UDim2.new(0, 15, 0, 130)
 buttonsFrame.BackgroundTransparency = 1
 buttonsFrame.Parent = mainFrame
 
 -- Verify Button
 local verifyButton = Instance.new("TextButton")
-verifyButton.Size = UDim2.new(0, 60, 0, 25) -- Smaller, fits layout
-verifyButton.Position = UDim2.new(0, 0, 0, 0)
+verifyButton.Size = UDim2.new(0, 60, 0, 25) -- Clean size
+verifyButton.Position = UDim2.new(0, 15, 0, 0) -- Left-aligned with padding
 verifyButton.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
 verifyButton.BackgroundTransparency = 0.7
 verifyButton.Text = "Verify"
@@ -110,27 +110,10 @@ local verifyCorner = Instance.new("UICorner")
 verifyCorner.CornerRadius = UDim.new(0, 8)
 verifyCorner.Parent = verifyButton
 
--- Get Key Button
-local getKeyButton = Instance.new("TextButton")
-getKeyButton.Size = UDim2.new(0, 60, 0, 25)
-getKeyButton.Position = UDim2.new(0, 65, 0, 0) -- Side by side
-getKeyButton.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
-getKeyButton.BackgroundTransparency = 0.7
-getKeyButton.Text = "Get Key"
-getKeyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-getKeyButton.TextSize = 11
-getKeyButton.Font = Enum.Font.GothamBold
-getKeyButton.TextTransparency = 1
-getKeyButton.Parent = buttonsFrame
-
-local getKeyCorner = Instance.new("UICorner")
-getKeyCorner.CornerRadius = UDim.new(0, 8)
-getKeyCorner.Parent = getKeyButton
-
 -- Join Discord Button
 local joinButton = Instance.new("TextButton")
 joinButton.Size = UDim2.new(0, 60, 0, 25)
-joinButton.Position = UDim2.new(0, 95, 0, 30) -- Centered below
+joinButton.Position = UDim2.new(0, 85, 0, 0) -- Between Verify and Get Key
 joinButton.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
 joinButton.BackgroundTransparency = 0.7
 joinButton.Text = "Join Discord"
@@ -143,6 +126,23 @@ joinButton.Parent = buttonsFrame
 local joinCorner = Instance.new("UICorner")
 joinCorner.CornerRadius = UDim.new(0, 8)
 joinCorner.Parent = joinButton
+
+-- Get Key Button
+local getKeyButton = Instance.new("TextButton")
+getKeyButton.Size = UDim2.new(0, 60, 0, 25)
+getKeyButton.Position = UDim2.new(0, 155, 0, 0) -- Right-aligned with padding
+getKeyButton.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
+getKeyButton.BackgroundTransparency = 0.7
+getKeyButton.Text = "Get Key"
+getKeyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+getKeyButton.TextSize = 11
+getKeyButton.Font = Enum.Font.GothamBold
+getKeyButton.TextTransparency = 1
+getKeyButton.Parent = buttonsFrame
+
+local getKeyCorner = Instance.new("UICorner")
+getKeyCorner.CornerRadius = UDim.new(0, 8)
+getKeyCorner.Parent = getKeyButton
 
 local function ShowKeySystem()
     local frameTween = TweenService:Create(mainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
