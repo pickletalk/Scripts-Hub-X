@@ -1,4 +1,4 @@
--- Scripts Hub X | Official Loading Screen (LocalScript)
+-- Scripts Hub X | Official Loading Screen
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -14,8 +14,13 @@ if not playerGui then
     return
 end
 
-local keyDataStore = DataStoreService:GetDataStore("KeyVerification")
-local dataStoreAvailable = pcall(function() return true end) -- Check DataStore availability
+local keyDataStore
+local dataStoreAvailable = pcall(function()
+    keyDataStore = DataStoreService:GetDataStore("KeyVerification")
+end)
+if not dataStoreAvailable then
+    warn("DataStoreService unavailable, key verification will not persist")
+end
 
 -- Fallback error GUI
 local function showErrorGui(message)
@@ -499,7 +504,7 @@ local function checkKeyVerification()
     end
 
     local success, storedKey
-    for i = 1, 3 do
+    for i = 1, 3 do -- Retry up to 3 times
         print("Attempting DataStore GetAsync for User_" .. player.UserId .. ", attempt " .. i)
         success, storedKey = pcall(function()
             return keyDataStore:GetAsync("User_" .. player.UserId)
@@ -510,44 +515,49 @@ local function checkKeyVerification()
         end
         warn("DataStore GetAsync attempt " .. i .. " failed: " .. tostring(storedKey))
         showLastError("GetAsync failed: " .. tostring(storedKey))
-        wait(6)
+        wait(6) -- Respect Roblox DataStore write cooldown
     end
 
-    if success and storedKey == premiumKey then
-        print("Premium key verified permanently")
-        keyVerified = true
-        return true
+    if success and storedKey then
+        if storedKey == premiumKey then
+            print("Premium key verified permanently")
+            keyVerified = true
+            return true
+        end
     end
-    print("No valid stored key, requiring re-entry")
+    print("No valid stored key or not premium, requiring re-entry")
     return false
 end
 
 local function verifyKey()
     local inputKey = keyInput.Text
-    if inputKey == correctKey or inputKey == premiumKey then
-        print("Key verified: " .. inputKey)
+    if inputKey == correctKey then
+        print("Temporary key verified: " .. inputKey)
         keyVerified = true
-        if inputKey == premiumKey and dataStoreAvailable and keyDataStore then
+        return true
+    elseif inputKey == premiumKey then
+        print("Premium key verified: " .. inputKey)
+        keyVerified = true
+        if dataStoreAvailable and keyDataStore then
             local success, errorMsg
-            for i = 1, 3 do
+            for i = 1, 3 do -- Retry up to 3 times
                 print("Attempting DataStore SetAsync for User_" .. player.UserId .. ", attempt " .. i)
                 success, errorMsg = pcall(function()
                     keyDataStore:SetAsync("User_" .. player.UserId, premiumKey)
-                end)
+                end
                 if success then
                     print("Premium key saved permanently")
                     break
                 end
                 warn("DataStore SetAsync attempt " .. i .. " failed: " .. tostring(errorMsg))
                 showLastError("SetAsync failed: " .. tostring(errorMsg))
-                wait(6)
+                wait(6) -- Respect Roblox DataStore write cooldown
             end
             if not success then
                 warn("Failed to save premium key after retries: " .. tostring(errorMsg))
                 showErrorGui("Failed to save premium key, please re-enter")
             end
         end
-        hideKeySystem()
         return true
     else
         keyDescLabel.Text = "Key is invalid"
@@ -697,10 +707,6 @@ local function hideKeySystem()
 end
 
 local function playEntranceAnimations()
-    if checkKeyVerification() then
-        hideKeySystem()
-        return
-    end
     contentFrame.BackgroundTransparency = 1
     contentStroke.Transparency = 1
     titleLabel.TextTransparency = 1
@@ -880,7 +886,25 @@ local function animateLoadingBar()
     end
 end
 
--- Start the loading screen
-playEntranceAnimations()
-animatePulse()
-animateLoadingBar()
+return {
+    playEntranceAnimations = playEntranceAnimations,
+    playExitAnimations = playExitAnimations,
+    animateParticles = animateParticles,
+    animatePulse = animatePulse,
+    animateLoadingBar = animateLoadingBar,
+    setLoadingText = function(text, color)
+        loadingText.Text = text
+        if color then
+            loadingText.TextColor3 = color
+        end
+        print("Loading text set to: " .. text)
+    end,
+    showKeySystem = showKeySystem,
+    verifyKey = verifyKey,
+    hideKeySystem = hideKeySystem,
+    isKeyVerified = function()
+        return keyVerified
+    end,
+    animateKeyPulse = animateKeyPulse,
+    checkKeyVerification = checkKeyVerification
+}
