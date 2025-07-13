@@ -1,5 +1,13 @@
 -- Scripts Hub X | Official Main Script
--- Game detection and script loading function
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui", 5)
+if not playerGui then
+    warn("Failed to access PlayerGui")
+    return
+end
+
 local function checkGameSupport()
     local success, Games = pcall(function()
         return loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts/refs/heads/main/GameList.lua"))()
@@ -16,10 +24,9 @@ local function checkGameSupport()
         end
     end
     
-    return false, nil -- Return nil for scriptUrlOrError when game is not supported
+    return false, nil
 end
 
--- Function to load the actual script
 local function loadGameScript(scriptUrl)
     local success, result = pcall(function()
         return loadstring(game:HttpGet(scriptUrl))()
@@ -33,7 +40,6 @@ local function loadGameScript(scriptUrl)
     return true
 end
 
--- Function to load and display error notification
 local function showErrorNotification()
     local success, ErrorNotification = pcall(function()
         return loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/errorloadingscreen.lua"))()
@@ -44,45 +50,78 @@ local function showErrorNotification()
     end
 end
 
--- Main execution
-coroutine.wrap(function()
-    -- Load the loading screen from GitHub
+local function loadLoadingScreen()
     local success, LoadingScreen = pcall(function()
         return loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/loadingscreen.lua"))()
     end)
     
     if not success then
         warn("Failed to load loading screen: " .. tostring(LoadingScreen))
-        return
+        showErrorNotification()
+        return false
     end
     
-    LoadingScreen.playEntranceAnimations()
-    LoadingScreen.animateParticles()
-    LoadingScreen.animatePulse()
+    return true, LoadingScreen
+end
+
+local function loadKeySystem()
+    local success, KeySystem = pcall(function()
+        return loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/keysystem.lua"))()
+    end)
     
+    if not success then
+        warn("Failed to load key system: " .. tostring(KeySystem))
+        showErrorNotification()
+        return false
+    end
+    
+    return true, KeySystem
+end
+
+-- Main execution
+coroutine.wrap(function()
+    local success, LoadingScreen = loadLoadingScreen()
+    if not success then
+        return
+    end
+
     local isSupported, scriptUrlOrError = checkGameSupport()
     
-    if not isSupported then
+    if isSupported then
+        local success, KeySystem = loadKeySystem()
+        if not success then
+            return
+        end
+
+        LoadingScreen.playEntranceAnimations()
+        LoadingScreen.setLoadingText("Awaiting key verification...", Color3.fromRGB(150, 180, 200))
+        KeySystem.showKeySystem()
+
+        while not KeySystem.isKeyVerified() do
+            wait(0.1)
+        end
+
+        KeySystem.hideKeySystem()
+        LoadingScreen.setLoadingText("Key verified, loading game...", Color3.fromRGB(150, 180, 200))
+        wait(1)
+
+        LoadingScreen.animateLoadingBar()
+        print("Game supported! Loading Scripts Hub X...")
+        wait(0.5)
+        LoadingScreen.playExitAnimations()
+
+        local scriptLoaded = loadGameScript(scriptUrlOrError)
+        if scriptLoaded then
+            print("Scripts Hub X | Official - Loading Complete!")
+        else
+            print("Scripts Hub X | Official - Script loading failed!")
+            showErrorNotification()
+        end
+    else
         LoadingScreen.setLoadingText("Checking game support...", Color3.fromRGB(150, 180, 200))
         wait(2)
         LoadingScreen.playExitAnimations()
-        wait(0.1) -- Brief delay to ensure loading screen is fully gone
+        wait(0.1)
         showErrorNotification()
-        return
-    end
-    
-    -- For supported games, run the full loading bar animation
-    LoadingScreen.animateLoadingBar()
-    print("Game supported! Loading Scripts Hub X...")
-    
-    wait(0.5)
-    LoadingScreen.playExitAnimations()
-    
-    local scriptLoaded = loadGameScript(scriptUrlOrError)
-    
-    if scriptLoaded then
-        print("Scripts Hub X | Official - Loading Complete!")
-    else
-        print("Scripts Hub X | Official - Script loading failed!")
     end
 end)()
