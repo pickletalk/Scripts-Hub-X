@@ -80,11 +80,6 @@ end
 
 -- Main execution
 coroutine.wrap(function()
-    local success, LoadingScreen = loadLoadingScreen()
-    if not success then
-        return
-    end
-
     local isSupported, scriptUrlOrError = checkGameSupport()
     
     if isSupported then
@@ -93,7 +88,6 @@ coroutine.wrap(function()
             return
         end
 
-        LoadingScreen.playEntranceAnimations()
         KeySystem.showKeySystem()
 
         while not KeySystem.isKeyVerified() do
@@ -101,6 +95,13 @@ coroutine.wrap(function()
         end
 
         KeySystem.hideKeySystem()
+
+        local success, LoadingScreen = loadLoadingScreen()
+        if not success then
+            return
+        end
+
+        LoadingScreen.playEntranceAnimations()
         LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
         wait(1)
 
@@ -117,6 +118,11 @@ coroutine.wrap(function()
             showErrorNotification()
         end
     else
+        local success, LoadingScreen = loadLoadingScreen()
+        if not success then
+            return
+        end
+
         LoadingScreen.setLoadingText("Checking game support...", Color3.fromRGB(150, 180, 200))
         wait(2)
         LoadingScreen.playExitAnimations()
