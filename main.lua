@@ -2,11 +2,7 @@
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui", 5)
-if not playerGui then
-    warn("Failed to access PlayerGui")
-    return
-end
+local playerGui = player:WaitForChild("PlayerGui")
 
 local function checkGameSupport()
     local success, Games = pcall(function()
@@ -15,7 +11,7 @@ local function checkGameSupport()
     
     if not success then
         warn("Failed to load game list: " .. tostring(Games))
-        return false, "Failed to connect to script server"
+        return false, nil
     end
     
     for PlaceID, Execute in pairs(Games) do
@@ -88,13 +84,13 @@ coroutine.wrap(function()
             return
         end
 
-        KeySystem.showKeySystem()
+        KeySystem.ShowKeySystem()
 
-        while not KeySystem.isKeyVerified() do
+        while not KeySystem.IsKeyVerified() do
             wait(0.1)
         end
 
-        KeySystem.hideKeySystem()
+        KeySystem.HideKeySystem()
 
         local success, LoadingScreen = loadLoadingScreen()
         if not success then
