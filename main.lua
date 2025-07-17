@@ -97,7 +97,7 @@ local function checkPremiumUser()
         return false
     end
     
-    print("Fetched premium users list: " .. response)
+    print("Fetched premium users list:\n" .. response)
     local success, premiumUsers = pcall(function()
         return loadstring(response)()
     end)
@@ -107,6 +107,7 @@ local function checkPremiumUser()
         return false
     end
     
+    print("Parsed premium users: " .. table.concat(premiumUsers, ", "))
     for _, id in ipairs(premiumUsers) do
         if id == userId then
             print("Premium user verified: " .. userId)
@@ -145,6 +146,7 @@ coroutine.wrap(function()
         local success, LoadingScreen = loadLoadingScreen()
         if not success then
             print("Failed to load loading screen for premium user")
+            showErrorNotification()
             return
         end
         LoadingScreen.playEntranceAnimations()
@@ -152,7 +154,7 @@ coroutine.wrap(function()
         wait(2) -- Ensure notification is visible
         LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
         LoadingScreen.animateLoadingBar()
-        print("Game supported! Loading Scripts Hub X for premium user...")
+        print("Loading Scripts Hub X for premium user...")
         wait(0.5)
         LoadingScreen.playExitAnimations()
         
@@ -180,12 +182,13 @@ coroutine.wrap(function()
         end
 
         KeySystem.ShowKeySystem()
+        print("Waiting for key verification")
         while not KeySystem.IsKeyVerified() do
             wait(0.1)
         end
+        print("Key verified")
         KeySystem.HideKeySystem()
 
-        print("Key verified, proceeding to loading screen")
         local success, LoadingScreen = loadLoadingScreen()
         if not success then
             print("Failed to load loading screen after key verification")
@@ -197,7 +200,7 @@ coroutine.wrap(function()
         LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
         wait(1)
         LoadingScreen.animateLoadingBar()
-        print("Game supported! Loading Scripts Hub X...")
+        print("Loading Scripts Hub X...")
         wait(0.5)
         LoadingScreen.playExitAnimations()
 
