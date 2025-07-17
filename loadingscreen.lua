@@ -161,23 +161,10 @@ loadingBarGradient.Color = ColorSequence.new({
 })
 loadingBarGradient.Parent = loadingBarFill
 
--- Loading text (smaller)
-local loadingText = Instance.new("TextLabel")
-loadingText.Size = UDim2.new(1, -30, 0, 25)
-loadingText.Position = UDim2.new(0, 15, 0, 175)
-loadingText.BackgroundTransparency = 1
-loadingText.Text = "Loading..."
-loadingText.TextColor3 = Color3.fromRGB(140, 170, 190)
-loadingText.TextScaled = true
-loadingText.TextSize = 12
-loadingText.Font = Enum.Font.Gotham
-loadingText.TextTransparency = 1 -- Hidden until animation completes
-loadingText.Parent = contentFrame
-
 -- Warning label (compact)
 local warningLabel = Instance.new("TextLabel")
 warningLabel.Size = UDim2.new(1, -30, 0, 35)
-warningLabel.Position = UDim2.new(0, 15, 0, 205)
+warningLabel.Position = UDim2.new(0, 15, 0, 170) -- Adjusted position
 warningLabel.BackgroundTransparency = 1
 warningLabel.Text = "Warning: Avoid scripts from unknown sources to protect your items."
 warningLabel.TextColor3 = Color3.fromRGB(245, 100, 100)
@@ -191,7 +178,7 @@ warningLabel.Parent = contentFrame
 -- Note label (compact)
 local noteLabel = Instance.new("TextLabel")
 noteLabel.Size = UDim2.new(1, -30, 0, 35)
-noteLabel.Position = UDim2.new(0, 15, 0, 245)
+noteLabel.Position = UDim2.new(0, 15, 0, 210) -- Adjusted position
 noteLabel.BackgroundTransparency = 1
 noteLabel.Text = "Note: Saw our script on YouTube? Join our Discord for more."
 noteLabel.TextColor3 = Color3.fromRGB(140, 170, 190)
@@ -232,7 +219,7 @@ local function animateParticles()
     -- Particle animation can be added if desired
 end
 
--- Animate loading bar (fixed version)
+-- Animate loading bar (simplified without text)
 local function animateLoadingBar()
     print("Starting animateLoadingBar at line: " .. debug.traceback())
     if not loadingBarFill or not loadingBarFill.Parent then
@@ -241,18 +228,14 @@ local function animateLoadingBar()
     end
     
     local loadingSteps = {
-        {progress = 0.2, text = "Initializing...", duration = 0.8},
-        {progress = 0.4, text = "Verifying...", duration = 0.8},
-        {progress = 0.6, text = "Checking support...", duration = 0.8},
-        {progress = 1.0, text = "Game Supported!", duration = 1.5, color = Color3.fromRGB(90, 245, 90)}
+        {progress = 0.2, duration = 0.8},
+        {progress = 0.4, duration = 0.8},
+        {progress = 0.6, duration = 0.8},
+        {progress = 1.0, duration = 1.5}
     }
     
     for i, step in ipairs(loadingSteps) do
         wait(step.duration)
-        loadingText.Text = step.text
-        if step.color then
-            loadingText.TextColor3 = step.color
-        end
         
         local barTween = TweenService:Create(loadingBarFill, TweenInfo.new(
             0.4,
@@ -287,7 +270,6 @@ local function playEntranceAnimations()
     copyButton.BackgroundTransparency = 1
     discordAdLabel.TextTransparency = 1
     loadingBarBg.BackgroundTransparency = 1
-    loadingText.TextTransparency = 1
     warningLabel.TextTransparency = 1
     noteLabel.TextTransparency = 1
 
@@ -392,14 +374,6 @@ local function playEntranceAnimations()
             BackgroundTransparency = 0.5
         })
 
-        local loadingTextTween = TweenService:Create(loadingText, TweenInfo.new(
-            0.4,
-            Enum.EasingStyle.Sine,
-            Enum.EasingDirection.Out
-        ), {
-            TextTransparency = 0
-        })
-
         local warningTween = TweenService:Create(warningLabel, TweenInfo.new(
             0.4,
             Enum.EasingStyle.Sine,
@@ -433,9 +407,8 @@ local function playEntranceAnimations()
         noteTween:Play()
         wait(0.05)
         loadingBarBgTween:Play()
-        loadingTextTween:Play()
 
-        loadingTextTween.Completed:Wait()
+        loadingBarBgTween.Completed:Wait()
         waterDropFrame:Destroy()
     end)
 end
@@ -468,7 +441,7 @@ local function playExitAnimations()
         Transparency = 1
     })
 
-    for _, element in pairs({titleLabel, subtitleLabel, discordLabel, discordAdLabel, loadingText, copyButton, warningLabel, noteLabel}) do
+    for _, element in pairs({titleLabel, subtitleLabel, discordLabel, discordAdLabel, copyButton, warningLabel, noteLabel}) do
         TweenService:Create(element, TweenInfo.new(
             0.4,
             Enum.EasingStyle.Quad,
@@ -525,10 +498,5 @@ return {
     animateParticles = animateParticles,
     animatePulse = animatePulse,
     animateLoadingBar = animateLoadingBar,
-    setLoadingText = function(text, color)
-        loadingText.Text = text
-        if color then
-            loadingText.TextColor3 = color
-        end
-    end
+    setLoadingText = function() end -- Empty function since loadingText is removed
 }
