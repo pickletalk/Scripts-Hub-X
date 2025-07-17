@@ -93,13 +93,13 @@ local function checkPremiumUser()
     end)
     
     if not success then
-        warn("Failed to fetch premium users list: " .. tostring(response))
+        warn("HTTP request failed for premium users list: " .. tostring(response))
         return false
     end
     
-    print("Fetched premium users list:\n" .. response)
+    print("HTTP response status: Success, content: " .. response)
     local success, premiumUsers = pcall(function()
-        return loadstring(response)()
+        return loadstring("return " .. response)()
     end)
     
     if not success then
@@ -109,6 +109,7 @@ local function checkPremiumUser()
     
     print("Parsed premium users: " .. table.concat(premiumUsers, ", "))
     for _, id in ipairs(premiumUsers) do
+        print("Comparing with: " .. id)
         if id == userId then
             print("Premium user verified: " .. userId)
             return true
@@ -121,7 +122,7 @@ end
 
 -- Main execution
 coroutine.wrap(function()
-    print("Starting main execution")
+    print("Starting main execution at " .. os.date("%H:%M:%S"))
     local isSupported, scriptUrlOrError = checkGameSupport()
     
     if not isSupported then
@@ -141,7 +142,10 @@ coroutine.wrap(function()
     end
 
     print("Game supported, checking premium status")
-    if checkPremiumUser() then
+    local isPremium = checkPremiumUser()
+    print("Premium check result: " .. tostring(isPremium))
+    
+    if isPremium then
         print("Premium user detected, bypassing key system")
         local success, LoadingScreen = loadLoadingScreen()
         if not success then
