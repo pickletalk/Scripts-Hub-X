@@ -5,12 +5,10 @@ local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
 -- Blank premium users list (add UserIDs like {"2784109194"} later)
-local PremiumUsers = {
-    "2341777244"
-}
+local PremiumUsers = nil
 
 -- Blank owner UserID (add your UserID like "2784109194" later)
-local OwnerUserId = nil
+local OwnerUserId = "2341777244"
 
 local function checkGameSupport()
     print("Checking game support for PlaceID: " .. game.PlaceId)
