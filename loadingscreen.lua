@@ -188,7 +188,7 @@ local function animateParticles()
 end
 
 -- Animate loading text (text-based sequence with safeguard and color change)
-local function animateLoadingBar()
+local function animateLoadingBar(callback)
     print("Starting animateLoadingBar at line: " .. debug.traceback())
     if not loadingText or not loadingText.Parent then
         warn("loadingText is invalid or not parented: " .. tostring(loadingText) .. ", Parent: " .. tostring(loadingText.Parent))
@@ -217,7 +217,11 @@ local function animateLoadingBar()
             if stage == "Successful" then
                 print("Loading sequence completed with Successful")
                 wait(1) -- Additional 1-second delay after "Successful"
-                return true -- Signal completion
+                isComplete = true
+                if callback then
+                    callback()
+                end
+                return true
             end
         end
         attempt = attempt + 1
@@ -226,7 +230,11 @@ local function animateLoadingBar()
     loadingText.Text = "Successful"
     loadingText.TextColor3 = Color3.fromRGB(0, 150, 0) -- Change to green
     wait(1)
-    return true -- Signal completion on timeout
+    isComplete = true
+    if callback then
+        callback()
+    end
+    return true
 end
 
 -- Water drop entrance animations
@@ -369,81 +377,30 @@ local function playEntranceAnimations()
 
         loadingTextTween.Completed:Wait()
         waterDropFrame:Destroy()
-        animateLoadingBar() -- Start the loading sequence after entrance
+        animateLoadingBar(function()
+            print("Loading bar completed, ready for exit")
+        end) -- Start the loading sequence with callback
     end)
 end
 
--- Evaporation exit animations
-local function playExitAnimations(callback)
+-- Simplified exit animations
+local function playExitAnimations()
     print("Starting playExitAnimations at line: " .. debug.traceback())
-    local evaporateTween = TweenService:Create(contentFrame, TweenInfo.new(
-        0.6,
+    local fadeTween = TweenService:Create(mainFrame, TweenInfo.new(
+        0.5,
         Enum.EasingStyle.Quad,
-        Enum.EasingDirection.In
-    ), {
-        BackgroundTransparency = 1,
-        Size = UDim2.new(0, 360, 0, 240),
-        Position = UDim2.new(0.5, -180, 0.5, -120)
-    })
-
-    local mainFrameTween = TweenService:Create(mainFrame, TweenInfo.new(
-        0.6,
-        Enum.EasingStyle.Quad,
-        Enum.EasingDirection.In
+        Enum.EasingDirection.Out
     ), {
         BackgroundTransparency = 1
     })
 
-    local contentStrokeTween = TweenService:Create(contentStroke, TweenInfo.new(
-        0.6,
-        Enum.EasingStyle.Quad,
-        Enum.EasingDirection.In
-    ), {
-        Transparency = 1
-    })
-
-    for _, element in pairs({titleLabel, subtitleLabel, discordLabel, discordAdLabel, copyButton, loadingText, warningLabel}) do
-        local tween = TweenService:Create(element, TweenInfo.new(
-            0.4,
-            Enum.EasingStyle.Quad,
-            Enum.EasingDirection.In
-        ), {
-            TextTransparency = 1
-        })
-        tween:Play()
-    end
-
-    local copyButtonTween = TweenService:Create(copyButton, TweenInfo.new(
-        0.4,
-        Enum.EasingStyle.Quad,
-        Enum.EasingDirection.In
-    ), {
-        BackgroundTransparency = 1
-    })
-    copyButtonTween:Play()
-
-    evaporateTween:Play()
-    mainFrameTween:Play()
-    contentStrokeTween:Play()
-
-    local success, err = pcall(function()
-        evaporateTween.Completed:Wait()
+    fadeTween:Play()
+    fadeTween.Completed:Connect(function()
+        if screenGui and screenGui.Parent then
+            screenGui:Destroy()
+            print("ScreenGui destroyed after fade")
+        end
     end)
-    if not success then
-        warn("Exit animation failed: " .. tostring(err))
-        if screenGui and screenGui.Parent then
-            screenGui:Destroy()
-        end
-    else
-        if screenGui and screenGui.Parent then
-            screenGui:Destroy()
-        end
-    end
-    print("ScreenGui destroyed, signaling completion")
-    if callback then
-        callback() -- Trigger callback when done
-    end
-    isComplete = true
 end
 
 -- Border pulse (subtler)
