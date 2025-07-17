@@ -62,7 +62,7 @@ end
 
 local function loadKeySystem()
     local success, KeySystem = pcall(function()
-        return loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/keysystem.lua"))()
+        return loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/premiumusers.lua"))()
     end)
     
     if not success then
