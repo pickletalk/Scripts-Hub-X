@@ -1,9 +1,13 @@
 -- Scripts Hub X | Official Main Script
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
-local HttpService = game:GetService("HttpService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
+
+-- Hardcoded premium users list
+local PremiumUsers = {
+    "2341777244" -- Jvpogi233j ( Owner )
+}
 
 local function checkGameSupport()
     print("Checking game support for PlaceID: " .. game.PlaceId)
@@ -89,33 +93,7 @@ local function checkPremiumUser()
     local userId = tostring(player.UserId)
     print("Checking premium user status for UserID: " .. userId)
     
-    local success, response = pcall(function()
-        return HttpService:GetAsync("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/premiumusers.lua")
-    end)
-    
-    if not success then
-        warn("HTTP request failed: " .. tostring(response))
-        print("Error Details: HTTP fetch error, defaulting to non-premium. Check URL or network.")
-        return false
-    end
-    
-    print("HTTP response received: " .. response)
-    local func, loadErr = loadstring("return " .. response)
-    if not func then
-        warn("Parsing failed: " .. tostring(loadErr))
-        print("Error Details: Invalid Lua syntax in premiumusers.lua. Expected 'local PremiumUsers = {...}; return PremiumUsers'.")
-        return false
-    end
-    
-    local success, premiumUsers = pcall(func)
-    if not success or type(premiumUsers) ~= "table" then
-        warn("Execution failed or invalid result: " .. tostring(premiumUsers))
-        print("Error Details: Parsed result is not a table. Check premiumusers.lua content.")
-        return false
-    end
-    
-    print("Parsed premium users: " .. table.concat(premiumUsers, ", "))
-    for _, id in ipairs(premiumUsers) do
+    for _, id in ipairs(PremiumUsers) do
         print("Comparing " .. userId .. " with " .. id)
         if id == userId then
             print("Premium user verified: " .. userId)
@@ -124,10 +102,7 @@ local function checkPremiumUser()
     end
     
     print("User not in premium list: " .. userId)
-    print("Error Details: UserID not found in premium list. Verify UserID in premiumusers.lua.")
-    -- Debug fallback: Force premium flow to test bypass (remove after testing)
-    print("Debug: Forcing premium flow for testing (change to 'return false' after testing)")
-    return true -- Change to 'return false' to rely on UserID check
+    return false
 end
 
 -- Main execution
