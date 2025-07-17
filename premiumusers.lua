@@ -1,3 +1,4 @@
-return {
-    "2341777244", -- Owner ( jvpogi233j )
+local PremiumUsers = {
+    "2341777244" -- Jvpogi233j ( Owner )
 }
+return PremiumUsers
