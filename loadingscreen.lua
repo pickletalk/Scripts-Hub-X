@@ -211,8 +211,14 @@ local function animateLoadingBar()
             if stage == "Successful" then
                 print("Loading sequence completed with Successful")
                 wait(1) -- Additional 1-second delay after "Successful"
-                playExitAnimations()
-                print("Exit animation triggered, script load assumed")
+                if playExitAnimations and type(playExitAnimations) == "function" then
+                    playExitAnimations()
+                    print("Exit animation triggered successfully")
+                else
+                    warn("playExitAnimations is not a function: " .. tostring(playExitAnimations))
+                    screenGui:Destroy()
+                    print("Forced ScreenGui destruction")
+                end
                 return
             end
         end
@@ -221,8 +227,14 @@ local function animateLoadingBar()
     warn("Loading sequence timed out after " .. maxAttempts .. " attempts, forcing exit")
     loadingText.Text = "Successful"
     wait(1)
-    playExitAnimations()
-    print("Forced exit animation triggered")
+    if playExitAnimations and type(playExitAnimations) == "function" then
+        playExitAnimations()
+        print("Forced exit animation triggered")
+    else
+        warn("playExitAnimations is not a function, forcing destruction")
+        screenGui:Destroy()
+        print("Forced ScreenGui destruction")
+    end
 end
 
 -- Water drop entrance animations
@@ -371,6 +383,7 @@ end
 
 -- Evaporation exit animations
 local function playExitAnimations()
+    print("Starting playExitAnimations at line: " .. debug.traceback())
     local evaporateTween = TweenService:Create(contentFrame, TweenInfo.new(
         0.6,
         Enum.EasingStyle.Quad,
