@@ -166,7 +166,7 @@ coroutine.wrap(function()
             warn("Entrance animations failed, skipping to next step")
         end
         print("Showing premium notification")
-        LoadingScreen.showNotification("Premium User Has Been Verified")
+        LoadingScreen.setLoadingText("Premium User Has Been Verified", Color3.fromRGB(0, 150, 0))
         wait(2) -- Ensure notification is visible
         print("Setting loading text")
         LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
@@ -177,25 +177,22 @@ coroutine.wrap(function()
         if not animateBarSuccess then
             warn("Loading bar animation failed, proceeding without animation")
         end
-        print("Waiting for animation (5 seconds timeout)")
-        local timeout = 5
-        while timeout > 0 do -- Simplified timeout
-            wait(0.1)
-            timeout = timeout - 0.1
-        end
-        if timeout <= 0 then
-            warn("Loading bar animation timed out, forcing proceed")
-        end
-        print("Loading Scripts Hub X for premium user...")
-        wait(0.5)
+        print("Waiting for loading bar completion")
+        repeat wait(0.1) until loadingText.Text == "Successful" or not screenGui or screenGui.Parent == nil
+        print("Loading bar completed or timed out")
         print("Playing exit animations")
         local exitSuccess = pcall(function()
             LoadingScreen.playExitAnimations()
         end)
         if not exitSuccess then
-            warn("Exit animations failed, skipping")
+            warn("Exit animations failed, forcing GUI destruction")
+            if screenGui and screenGui.Parent then
+                screenGui:Destroy()
+            end
         end
-        
+        print("Waiting for GUI destruction")
+        repeat wait(0.1) until not screenGui or screenGui.Parent == nil
+        print("Loading Scripts Hub X for premium user...")
         local scriptLoaded = loadGameScript(scriptUrlOrError)
         if scriptLoaded then
             print("Scripts Hub X | Official - Loading Complete!")
@@ -238,10 +235,22 @@ coroutine.wrap(function()
         LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
         wait(1)
         LoadingScreen.animateLoadingBar()
+        print("Waiting for loading bar completion")
+        repeat wait(0.1) until loadingText.Text == "Successful" or not screenGui or screenGui.Parent == nil
+        print("Loading bar completed or timed out")
+        print("Playing exit animations")
+        local exitSuccess = pcall(function()
+            LoadingScreen.playExitAnimations()
+        end)
+        if not exitSuccess then
+            warn("Exit animations failed, forcing GUI destruction")
+            if screenGui and screenGui.Parent then
+                screenGui:Destroy()
+            end
+        end
+        print("Waiting for GUI destruction")
+        repeat wait(0.1) until not screenGui or screenGui.Parent == nil
         print("Loading Scripts Hub X...")
-        wait(0.5)
-        LoadingScreen.playExitAnimations()
-
         local scriptLoaded = loadGameScript(scriptUrlOrError)
         if scriptLoaded then
             print("Scripts Hub X | Official - Loading Complete!")
