@@ -109,12 +109,14 @@ end
 
 -- Main execution
 coroutine.wrap(function()
+    print("Starting main execution")
     local isSupported, scriptUrlOrError = checkGameSupport()
     
     if not isSupported then
         print("Game not supported, showing error")
         local success, LoadingScreen = loadLoadingScreen()
         if not success then
+            print("Failed to load loading screen for unsupported game")
             return
         end
         LoadingScreen.playEntranceAnimations()
@@ -126,19 +128,15 @@ coroutine.wrap(function()
         return
     end
 
-    -- Load loading screen first
-    local success, LoadingScreen = loadLoadingScreen()
-    if not success then
-        print("Loading screen failed to load")
-        return
-    end
-
-    LoadingScreen.playEntranceAnimations()
-    LoadingScreen.setLoadingText("Verifying user...", Color3.fromRGB(150, 180, 200))
-
-    -- Check if user is premium
+    print("Game supported, checking premium status")
     if checkPremiumUser() then
-        print("Premium user flow")
+        print("Premium user detected, bypassing key system")
+        local success, LoadingScreen = loadLoadingScreen()
+        if not success then
+            print("Failed to load loading screen for premium user")
+            return
+        end
+        LoadingScreen.playEntranceAnimations()
         LoadingScreen.showNotification("Premium User Has Been Verified")
         wait(2) -- Ensure notification is visible
         LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
@@ -155,28 +153,30 @@ coroutine.wrap(function()
             showErrorNotification()
         end
     else
-        print("Non-premium user flow")
+        print("Non-premium user, loading key system")
         local success, KeySystem = loadKeySystem()
         if not success then
-            LoadingScreen.playExitAnimations()
+            print("Failed to load key system")
+            local success, LoadingScreen = loadLoadingScreen()
+            if success then
+                LoadingScreen.playEntranceAnimations()
+                LoadingScreen.setLoadingText("Failed to load key system", Color3.fromRGB(245, 100, 100))
+                wait(2)
+                LoadingScreen.playExitAnimations()
+            end
             return
         end
 
-        LoadingScreen.setLoadingText("Awaiting key verification...", Color3.fromRGB(150, 180, 200))
-        wait(1)
-        LoadingScreen.playExitAnimations()
-
         KeySystem.ShowKeySystem()
-
         while not KeySystem.IsKeyVerified() do
             wait(0.1)
         end
-
         KeySystem.HideKeySystem()
 
-        -- Reload loading screen for consistency
+        print("Key verified, loading game")
         local success, LoadingScreen = loadLoadingScreen()
         if not success then
+            print("Failed to load loading screen after key verification")
             return
         end
 
