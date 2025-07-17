@@ -94,22 +94,29 @@ local function checkPremiumUser()
     
     if not success then
         warn("HTTP request failed for premium users list: " .. tostring(response))
+        print("Debug: HTTP response unavailable, forcing non-premium flow")
         return false
     end
     
-    print("HTTP response status: Success, content: " .. response)
+    print("HTTP response content: " .. response)
     local success, premiumUsers = pcall(function()
-        return loadstring("return " .. response)()
+        local func, err = loadstring("return " .. response)
+        if not func then
+            warn("Loadstring error: " .. tostring(err))
+            return nil
+        end
+        return func()
     end)
     
-    if not success then
+    if not success or not premiumUsers then
         warn("Failed to parse premium users list: " .. tostring(premiumUsers))
+        print("Debug: Parsed result invalid, forcing non-premium flow")
         return false
     end
     
     print("Parsed premium users: " .. table.concat(premiumUsers, ", "))
     for _, id in ipairs(premiumUsers) do
-        print("Comparing with: " .. id)
+        print("Comparing UserID " .. userId .. " with " .. id)
         if id == userId then
             print("Premium user verified: " .. userId)
             return true
@@ -117,7 +124,9 @@ local function checkPremiumUser()
     end
     
     print("User not in premium list: " .. userId)
-    return false
+    -- Temporary debug override: Force premium if check fails
+    print("Debug: Forcing premium flow for testing (remove this line after testing)")
+    return false -- Change to 'true' to test premium bypass
 end
 
 -- Main execution
