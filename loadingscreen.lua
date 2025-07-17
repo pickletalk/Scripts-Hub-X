@@ -3,7 +3,6 @@
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
-local TextService = game:GetService("TextService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -24,8 +23,8 @@ mainFrame.Parent = screenGui
 
 -- Content frame (smaller size)
 local contentFrame = Instance.new("Frame")
-contentFrame.Size = UDim2.new(0, 320, 0, 300) -- Reduced size
-contentFrame.Position = UDim2.new(0.5, -160, 0.5, -150)
+contentFrame.Size = UDim2.new(0, 320, 0, 240) -- Adjusted height for warning and notification
+contentFrame.Position = UDim2.new(0.5, -160, 0.5, -120)
 contentFrame.BackgroundColor3 = Color3.fromRGB(25, 45, 65)
 contentFrame.BackgroundTransparency = 1 -- Hidden until animation completes
 contentFrame.BorderSizePixel = 0
@@ -161,12 +160,12 @@ loadingBarGradient.Color = ColorSequence.new({
 })
 loadingBarGradient.Parent = loadingBarFill
 
--- Warning label (compact)
+-- Warning label (below loading bar)
 local warningLabel = Instance.new("TextLabel")
 warningLabel.Size = UDim2.new(1, -30, 0, 35)
-warningLabel.Position = UDim2.new(0, 15, 0, 170) -- Adjusted position
+warningLabel.Position = UDim2.new(0, 15, 0, 170)
 warningLabel.BackgroundTransparency = 1
-warningLabel.Text = "Warning: Avoid scripts from unknown sources to protect your items."
+warningLabel.Text = "Warning: Don't use scripts from unknown developers because it might steal your ingame items!"
 warningLabel.TextColor3 = Color3.fromRGB(245, 100, 100)
 warningLabel.TextScaled = true
 warningLabel.TextSize = 9
@@ -175,19 +174,26 @@ warningLabel.TextTransparency = 1 -- Hidden until animation completes
 warningLabel.TextWrapped = true
 warningLabel.Parent = contentFrame
 
--- Note label (compact)
-local noteLabel = Instance.new("TextLabel")
-noteLabel.Size = UDim2.new(1, -30, 0, 35)
-noteLabel.Position = UDim2.new(0, 15, 0, 210) -- Adjusted position
-noteLabel.BackgroundTransparency = 1
-noteLabel.Text = "Note: Saw our script on YouTube? Join our Discord for more."
-noteLabel.TextColor3 = Color3.fromRGB(140, 170, 190)
-noteLabel.TextScaled = true
-noteLabel.TextSize = 9
-noteLabel.Font = Enum.Font.Gotham
-noteLabel.TextTransparency = 1 -- Hidden until animation completes
-noteLabel.TextWrapped = true
-noteLabel.Parent = contentFrame
+-- Notification bar (small, green, under loading bar)
+local notificationBar = Instance.new("Frame")
+notificationBar.Size = UDim2.new(1, -30, 0, 20) -- Super small height
+notificationBar.Position = UDim2.new(0, 15, 0, 210) -- Just below warning
+notificationBar.BackgroundColor3 = Color3.fromRGB(0, 150, 0) -- Green
+notificationBar.BackgroundTransparency = 1 -- Hidden initially
+notificationBar.BorderSizePixel = 0
+notificationBar.Parent = contentFrame
+
+local notificationText = Instance.new("TextLabel")
+notificationText.Size = UDim2.new(1, -10, 1, -5)
+notificationText.Position = UDim2.new(0, 5, 0, 2)
+notificationText.BackgroundTransparency = 1
+notificationText.Text = "Script is loading...√"
+notificationText.TextColor3 = Color3.fromRGB(220, 245, 220)
+notificationText.TextScaled = true
+notificationText.TextSize = 10
+notificationText.Font = Enum.Font.Gotham
+notificationText.TextTransparency = 1 -- Hidden initially
+notificationText.Parent = notificationBar
 
 -- Water drop frame (smaller)
 local waterDropFrame = Instance.new("Frame")
@@ -219,7 +225,7 @@ local function animateParticles()
     -- Particle animation can be added if desired
 end
 
--- Animate loading bar (simplified without text)
+-- Animate loading bar (smooth 2-second fill)
 local function animateLoadingBar()
     print("Starting animateLoadingBar at line: " .. debug.traceback())
     if not loadingBarFill or not loadingBarFill.Parent then
@@ -227,35 +233,28 @@ local function animateLoadingBar()
         return
     end
     
-    local loadingSteps = {
-        {progress = 0.2, duration = 0.8},
-        {progress = 0.4, duration = 0.8},
-        {progress = 0.6, duration = 0.8},
-        {progress = 1.0, duration = 1.5}
-    }
+    local barTween = TweenService:Create(loadingBarFill, TweenInfo.new(
+        2.0, -- 2-second smooth fill
+        Enum.EasingStyle.Quad,
+        Enum.EasingDirection.Out
+    ), {
+        Size = UDim2.new(1, 0, 1, 0) -- Full bar
+    })
     
-    for i, step in ipairs(loadingSteps) do
-        wait(step.duration)
-        
-        local barTween = TweenService:Create(loadingBarFill, TweenInfo.new(
-            0.4,
-            Enum.EasingStyle.Quad,
-            Enum.EasingDirection.Out
-        ), {
-            Size = UDim2.new(step.progress, 0, 1, 0)
-        })
-        
-        barTween:Play()
-        local success, err = pcall(function()
-            barTween.Completed:Wait(0.5) -- Timeout after 0.5 seconds
-        end)
-        if not success then
-            warn("Tween failed or timed out: " .. tostring(err))
-            break
-        end
-        print("Completed step " .. i .. " of loading bar animation")
+    barTween:Play()
+    local success, err = pcall(function()
+        barTween.Completed:Wait(2.5) -- Timeout after 2.5 seconds
+    end)
+    if not success then
+        warn("Tween failed or timed out: " .. tostring(err))
+        return
     end
-    print("animateLoadingBar completed")
+    print("Loading bar filled completely")
+
+    -- Show notification bar (no pop animation)
+    notificationBar.BackgroundTransparency = 0
+    notificationText.TextTransparency = 0
+    wait(1.5) -- Display for 1.5 seconds
 end
 
 -- Water drop entrance animations
@@ -271,7 +270,8 @@ local function playEntranceAnimations()
     discordAdLabel.TextTransparency = 1
     loadingBarBg.BackgroundTransparency = 1
     warningLabel.TextTransparency = 1
-    noteLabel.TextTransparency = 1
+    notificationBar.BackgroundTransparency = 1
+    notificationText.TextTransparency = 1
 
     -- Water drop fall animation
     local dropFallTween = TweenService:Create(waterDropFrame, TweenInfo.new(
@@ -382,14 +382,6 @@ local function playEntranceAnimations()
             TextTransparency = 0
         })
 
-        local noteTween = TweenService:Create(noteLabel, TweenInfo.new(
-            0.4,
-            Enum.EasingStyle.Sine,
-            Enum.EasingDirection.Out
-        ), {
-            TextTransparency = 0
-        })
-
         mainFrameTween:Play()
         contentFrameTween:Play()
         contentStrokeTween:Play()
@@ -402,11 +394,8 @@ local function playEntranceAnimations()
         wait(0.05)
         discordAdTween:Play()
         wait(0.05)
-        warningTween:Play()
-        wait(0.05)
-        noteTween:Play()
-        wait(0.05)
         loadingBarBgTween:Play()
+        warningTween:Play()
 
         loadingBarBgTween.Completed:Wait()
         waterDropFrame:Destroy()
@@ -421,8 +410,8 @@ local function playExitAnimations()
         Enum.EasingDirection.In
     ), {
         BackgroundTransparency = 1,
-        Size = UDim2.new(0, 360, 0, 340),
-        Position = UDim2.new(0.5, -180, 0.5, -170)
+        Size = UDim2.new(0, 360, 0, 240),
+        Position = UDim2.new(0.5, -180, 0.5, -120)
     })
 
     local mainFrameTween = TweenService:Create(mainFrame, TweenInfo.new(
@@ -441,7 +430,7 @@ local function playExitAnimations()
         Transparency = 1
     })
 
-    for _, element in pairs({titleLabel, subtitleLabel, discordLabel, discordAdLabel, copyButton, warningLabel, noteLabel}) do
+    for _, element in pairs({titleLabel, subtitleLabel, discordLabel, discordAdLabel, copyButton, warningLabel}) do
         TweenService:Create(element, TweenInfo.new(
             0.4,
             Enum.EasingStyle.Quad,
@@ -465,6 +454,22 @@ local function playExitAnimations()
         Enum.EasingDirection.In
     ), {
         BackgroundTransparency = 1
+    }):Play()
+
+    TweenService:Create(notificationBar, TweenInfo.new(
+        0.4,
+        Enum.EasingStyle.Quad,
+        Enum.EasingDirection.In
+    ), {
+        BackgroundTransparency = 1
+    }):Play()
+
+    TweenService:Create(notificationText, TweenInfo.new(
+        0.4,
+        Enum.EasingStyle.Quad,
+        Enum.EasingDirection.In
+    ), {
+        TextTransparency = 1
     }):Play()
 
     evaporateTween:Play()
@@ -498,5 +503,5 @@ return {
     animateParticles = animateParticles,
     animatePulse = animatePulse,
     animateLoadingBar = animateLoadingBar,
-    setLoadingText = function() end -- Empty function since loadingText is removed
+    setLoadingText = function() end -- Empty function
 }
