@@ -130,7 +130,7 @@ coroutine.wrap(function()
         LoadingScreen.playEntranceAnimations()
         LoadingScreen.setLoadingText("Game not supported", Color3.fromRGB(245, 100, 100))
         wait(2)
-        LoadingScreen.playExitAnimations(function() end)
+        LoadingScreen.playExitAnimations()
         wait(0.1)
         showErrorNotification()
         return
@@ -172,35 +172,31 @@ coroutine.wrap(function()
         LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
         print("Attempting to animate loading bar")
         local animateBarSuccess = pcall(function()
-            LoadingScreen.animateLoadingBar()
+            LoadingScreen.animateLoadingBar(function()
+                print("Loading bar completed, triggering exit")
+                local exitSuccess = pcall(function()
+                    LoadingScreen.playExitAnimations()
+                end)
+                if not exitSuccess then
+                    warn("Exit animations failed, forcing GUI destruction")
+                    if screenGui and screenGui.Parent then
+                        screenGui:Destroy()
+                    end
+                end
+                print("Waiting for GUI destruction")
+                repeat wait(0.1) until not screenGui or screenGui.Parent == nil
+                print("Loading Scripts Hub X for premium user...")
+                local scriptLoaded = loadGameScript(scriptUrlOrError)
+                if scriptLoaded then
+                    print("Scripts Hub X | Official - Loading Complete!")
+                else
+                    print("Scripts Hub X | Official - Script loading failed!")
+                    showErrorNotification()
+                end
+            end)
         end)
         if not animateBarSuccess then
             warn("Loading bar animation failed, proceeding without animation")
-        end
-        print("Waiting for loading bar completion")
-        repeat wait(0.1) until LoadingScreen.isComplete()
-        print("Loading bar completed")
-        print("Playing exit animations")
-        local exitSuccess = pcall(function()
-            LoadingScreen.playExitAnimations(function()
-                print("Exit animation callback triggered")
-            end)
-        end)
-        if not exitSuccess then
-            warn("Exit animations failed, forcing GUI destruction")
-            if screenGui and screenGui.Parent then
-                screenGui:Destroy()
-            end
-        end
-        print("Waiting for GUI destruction")
-        repeat wait(0.1) until not screenGui or screenGui.Parent == nil
-        print("Loading Scripts Hub X for premium user...")
-        local scriptLoaded = loadGameScript(scriptUrlOrError)
-        if scriptLoaded then
-            print("Scripts Hub X | Official - Loading Complete!")
-        else
-            print("Scripts Hub X | Official - Script loading failed!")
-            showErrorNotification()
         end
     else
         print("Non-premium user, loading key system")
@@ -212,7 +208,7 @@ coroutine.wrap(function()
                 LoadingScreen.playEntranceAnimations()
                 LoadingScreen.setLoadingText("Failed to load key system", Color3.fromRGB(245, 100, 100))
                 wait(2)
-                LoadingScreen.playExitAnimations(function() end)
+                LoadingScreen.playExitAnimations()
             end
             showErrorNotification()
             return
@@ -236,31 +232,33 @@ coroutine.wrap(function()
         LoadingScreen.playEntranceAnimations()
         LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
         wait(1)
-        LoadingScreen.animateLoadingBar()
-        print("Waiting for loading bar completion")
-        repeat wait(0.1) until LoadingScreen.isComplete()
-        print("Loading bar completed")
-        print("Playing exit animations")
-        local exitSuccess = pcall(function()
-            LoadingScreen.playExitAnimations(function()
-                print("Exit animation callback triggered")
+        print("Attempting to animate loading bar")
+        local animateBarSuccess = pcall(function()
+            LoadingScreen.animateLoadingBar(function()
+                print("Loading bar completed, triggering exit")
+                local exitSuccess = pcall(function()
+                    LoadingScreen.playExitAnimations()
+                end)
+                if not exitSuccess then
+                    warn("Exit animations failed, forcing GUI destruction")
+                    if screenGui and screenGui.Parent then
+                        screenGui:Destroy()
+                    end
+                end
+                print("Waiting for GUI destruction")
+                repeat wait(0.1) until not screenGui or screenGui.Parent == nil
+                print("Loading Scripts Hub X...")
+                local scriptLoaded = loadGameScript(scriptUrlOrError)
+                if scriptLoaded then
+                    print("Scripts Hub X | Official - Loading Complete!")
+                else
+                    print("Scripts Hub X | Official - Script loading failed!")
+                    showErrorNotification()
+                end
             end)
         end)
-        if not exitSuccess then
-            warn("Exit animations failed, forcing GUI destruction")
-            if screenGui and screenGui.Parent then
-                screenGui:Destroy()
-            end
-        end
-        print("Waiting for GUI destruction")
-        repeat wait(0.1) until not screenGui or screenGui.Parent == nil
-        print("Loading Scripts Hub X...")
-        local scriptLoaded = loadGameScript(scriptUrlOrError)
-        if scriptLoaded then
-            print("Scripts Hub X | Official - Loading Complete!")
-        else
-            print("Scripts Hub X | Official - Script loading failed!")
-            showErrorNotification()
+        if not animateBarSuccess then
+            warn("Loading bar animation failed, proceeding without animation")
         end
     end
 end)()
