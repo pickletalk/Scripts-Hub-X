@@ -5,7 +5,9 @@ local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
 -- Blank premium users list (add UserIDs like {"2784109194"} later)
-local PremiumUsers = nil
+local PremiumUsers = {
+    "2341777244"
+}
 
 -- Blank owner UserID (add your UserID like "2784109194" later)
 local OwnerUserId = nil
