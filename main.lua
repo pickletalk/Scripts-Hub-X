@@ -4,10 +4,11 @@ local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Hardcoded premium users list (replace with your UserIDs)
-local PremiumUsers = {
-    "2341777244" -- Owner ( Pickle(jvpogi233j) )
-}
+-- Blank premium users list (add UserIDs like {"2784109194"} later)
+local PremiumUsers = nil
+
+-- Blank owner UserID (add your UserID like "2784109194" later)
+local OwnerUserId = "2341777244"
 
 local function checkGameSupport()
     print("Checking game support for PlaceID: " .. game.PlaceId)
@@ -93,15 +94,22 @@ local function checkPremiumUser()
     local userId = tostring(player.UserId)
     print("Checking premium user status for UserID: " .. userId)
     
-    for _, id in ipairs(PremiumUsers) do
-        print("Comparing " .. userId .. " with " .. id)
-        if id == userId then
-            print("Premium user verified: " .. userId)
-            return true
+    if OwnerUserId and userId == tostring(OwnerUserId) then
+        print("Owner detected: " .. userId)
+        return true
+    end
+    
+    if PremiumUsers and #PremiumUsers > 0 then
+        for _, id in ipairs(PremiumUsers) do
+            print("Comparing " .. userId .. " with " .. id)
+            if id == userId then
+                print("Premium user verified: " .. userId)
+                return true
+            end
         end
     end
     
-    print("User not in premium list: " .. userId)
+    print("User not in premium or owner list: " .. userId)
     return false
 end
 
@@ -126,11 +134,24 @@ coroutine.wrap(function()
         return
     end
 
-    print("Game supported, checking premium status")
+    print("Game supported, checking user status")
     local isPremium = checkPremiumUser()
-    print("Premium check result: " .. tostring(isPremium))
+    print("User status check result: " .. tostring(isPremium))
     
     if isPremium then
+        local userId = tostring(player.UserId)
+        if OwnerUserId and userId == tostring(OwnerUserId) then
+            print("Owner detected, skipping all steps and loading script directly")
+            local scriptLoaded = loadGameScript(scriptUrlOrError)
+            if scriptLoaded then
+                print("Scripts Hub X | Official - Loading Complete for Owner!")
+            else
+                print("Scripts Hub X | Official - Script loading failed for Owner!")
+                showErrorNotification()
+            end
+            return
+        end
+        
         print("Premium user detected, bypassing key system")
         local success, LoadingScreen = loadLoadingScreen()
         if not success then
@@ -139,32 +160,42 @@ coroutine.wrap(function()
             return
         end
         print("Playing entrance animations")
-        LoadingScreen.playEntranceAnimations()
+        local animateSuccess = pcall(function()
+            LoadingScreen.playEntranceAnimations()
+        end)
+        if not animateSuccess then
+            warn("Entrance animations failed, skipping to next step")
+        end
         print("Showing premium notification")
         LoadingScreen.showNotification("Premium User Has Been Verified")
         wait(2) -- Ensure notification is visible
         print("Setting loading text")
         LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
-        print("Animating loading bar")
-        local animateSuccess = pcall(function()
+        print("Attempting to animate loading bar")
+        local animateBarSuccess = pcall(function()
             LoadingScreen.animateLoadingBar()
         end)
-        if not animateSuccess then
-            warn("Loading bar animation failed")
+        if not animateBarSuccess then
+            warn("Loading bar animation failed, proceeding without animation")
         end
         print("Waiting for animation (5 seconds timeout)")
         local timeout = 5
-        while timeout > 0 and not LoadingScreen.isLoadingComplete() do -- Assuming isLoadingComplete exists
+        while timeout > 0 do -- Simplified timeout without isLoadingComplete
             wait(0.1)
             timeout = timeout - 0.1
         end
         if timeout <= 0 then
-            warn("Loading bar animation timed out")
+            warn("Loading bar animation timed out, forcing proceed")
         end
         print("Loading Scripts Hub X for premium user...")
         wait(0.5)
         print("Playing exit animations")
-        LoadingScreen.playExitAnimations()
+        local exitSuccess = pcall(function()
+            LoadingScreen.playExitAnimations()
+        end)
+        if not exitSuccess then
+            warn("Exit animations failed, skipping")
+        end
         
         local scriptLoaded = loadGameScript(scriptUrlOrError)
         if scriptLoaded then
