@@ -14,6 +14,9 @@ screenGui.IgnoreGuiInset = true
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.Parent = playerGui
 
+-- Completion flag
+local isComplete = false
+
 -- Main background frame (hidden until animation completes)
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(1, 0, 1, 0)
@@ -214,7 +217,7 @@ local function animateLoadingBar()
             if stage == "Successful" then
                 print("Loading sequence completed with Successful")
                 wait(1) -- Additional 1-second delay after "Successful"
-                return -- Signal completion to main.lua
+                return true -- Signal completion
             end
         end
         attempt = attempt + 1
@@ -223,7 +226,7 @@ local function animateLoadingBar()
     loadingText.Text = "Successful"
     loadingText.TextColor3 = Color3.fromRGB(0, 150, 0) -- Change to green
     wait(1)
-    return -- Signal completion on timeout
+    return true -- Signal completion on timeout
 end
 
 -- Water drop entrance animations
@@ -371,7 +374,7 @@ local function playEntranceAnimations()
 end
 
 -- Evaporation exit animations
-local function playExitAnimations()
+local function playExitAnimations(callback)
     print("Starting playExitAnimations at line: " .. debug.traceback())
     local evaporateTween = TweenService:Create(contentFrame, TweenInfo.new(
         0.6,
@@ -428,15 +431,19 @@ local function playExitAnimations()
     end)
     if not success then
         warn("Exit animation failed: " .. tostring(err))
-        screenGui:Destroy()
+        if screenGui and screenGui.Parent then
+            screenGui:Destroy()
+        end
     else
-        screenGui:Destroy()
+        if screenGui and screenGui.Parent then
+            screenGui:Destroy()
+        end
     end
     print("ScreenGui destroyed, signaling completion")
-    -- Signal completion (to be checked by main.lua)
-    if screenGui.Parent == nil then
-        print("Exit animation completed, ready for script load")
+    if callback then
+        callback() -- Trigger callback when done
     end
+    isComplete = true
 end
 
 -- Border pulse (subtler)
@@ -466,5 +473,8 @@ return {
             loadingText.Text = text or "loading"
             loadingText.TextColor3 = color or Color3.fromRGB(70, 140, 240)
         end
+    end,
+    isComplete = function()
+        return isComplete
     end
 }
