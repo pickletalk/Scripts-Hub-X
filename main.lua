@@ -6,6 +6,7 @@ local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
 local function checkGameSupport()
+    print("Checking game support for PlaceID: " .. game.PlaceId)
     local success, Games = pcall(function()
         return loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts/refs/heads/main/GameList.lua"))()
     end)
@@ -17,14 +18,17 @@ local function checkGameSupport()
     
     for PlaceID, Execute in pairs(Games) do
         if PlaceID == game.PlaceId then
+            print("Game supported, script URL: " .. Execute)
             return true, Execute
         end
     end
     
+    print("Game not supported")
     return false, nil
 end
 
 local function loadGameScript(scriptUrl)
+    print("Loading game script from URL: " .. scriptUrl)
     local success, result = pcall(function()
         return loadstring(game:HttpGet(scriptUrl))()
     end)
@@ -34,10 +38,12 @@ local function loadGameScript(scriptUrl)
         return false
     end
     
+    print("Game script loaded successfully")
     return true
 end
 
 local function showErrorNotification()
+    print("Showing error notification")
     local success, ErrorNotification = pcall(function()
         return loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/errorloadingscreen.lua"))()
     end)
@@ -48,6 +54,7 @@ local function showErrorNotification()
 end
 
 local function loadLoadingScreen()
+    print("Loading loading screen")
     local success, LoadingScreen = pcall(function()
         return loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/loadingscreen.lua"))()
     end)
@@ -58,10 +65,12 @@ local function loadLoadingScreen()
         return false, nil
     end
     
+    print("Loading screen loaded successfully")
     return true, LoadingScreen
 end
 
 local function loadKeySystem()
+    print("Loading key system")
     local success, KeySystem = pcall(function()
         return loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/keysystem.lua"))()
     end)
@@ -72,6 +81,7 @@ local function loadKeySystem()
         return false, nil
     end
     
+    print("Key system loaded successfully")
     return true, KeySystem
 end
 
@@ -87,6 +97,7 @@ local function checkPremiumUser()
         return false
     end
     
+    print("Fetched premium users list: " .. response)
     local success, premiumUsers = pcall(function()
         return loadstring(response)()
     end)
@@ -120,7 +131,7 @@ coroutine.wrap(function()
             return
         end
         LoadingScreen.playEntranceAnimations()
-        LoadingScreen.setLoadingText("Checking game support...", Color3.fromRGB(150, 180, 200))
+        LoadingScreen.setLoadingText("Game not supported", Color3.fromRGB(245, 100, 100))
         wait(2)
         LoadingScreen.playExitAnimations()
         wait(0.1)
@@ -164,6 +175,7 @@ coroutine.wrap(function()
                 wait(2)
                 LoadingScreen.playExitAnimations()
             end
+            showErrorNotification()
             return
         end
 
@@ -173,10 +185,11 @@ coroutine.wrap(function()
         end
         KeySystem.HideKeySystem()
 
-        print("Key verified, loading game")
+        print("Key verified, proceeding to loading screen")
         local success, LoadingScreen = loadLoadingScreen()
         if not success then
             print("Failed to load loading screen after key verification")
+            showErrorNotification()
             return
         end
 
