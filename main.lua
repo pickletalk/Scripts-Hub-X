@@ -9,7 +9,7 @@ local PremiumUsers = {
     "2341777244"
 }
 
--- Blank owner UserID (add your UserID like "2784109194" later)
+-- Blank owner UserID (add your UserId like "2784109194" later)
 local OwnerUserId = nil
 
 local function checkGameSupport()
@@ -130,7 +130,7 @@ coroutine.wrap(function()
         LoadingScreen.playEntranceAnimations()
         LoadingScreen.setLoadingText("Game not supported", Color3.fromRGB(245, 100, 100))
         wait(2)
-        LoadingScreen.playExitAnimations()
+        LoadingScreen.playExitAnimations(function() end)
         wait(0.1)
         showErrorNotification()
         return
@@ -178,11 +178,13 @@ coroutine.wrap(function()
             warn("Loading bar animation failed, proceeding without animation")
         end
         print("Waiting for loading bar completion")
-        repeat wait(0.1) until loadingText.Text == "Successful" or not screenGui or screenGui.Parent == nil
-        print("Loading bar completed or timed out")
+        repeat wait(0.1) until LoadingScreen.isComplete()
+        print("Loading bar completed")
         print("Playing exit animations")
         local exitSuccess = pcall(function()
-            LoadingScreen.playExitAnimations()
+            LoadingScreen.playExitAnimations(function()
+                print("Exit animation callback triggered")
+            end)
         end)
         if not exitSuccess then
             warn("Exit animations failed, forcing GUI destruction")
@@ -210,7 +212,7 @@ coroutine.wrap(function()
                 LoadingScreen.playEntranceAnimations()
                 LoadingScreen.setLoadingText("Failed to load key system", Color3.fromRGB(245, 100, 100))
                 wait(2)
-                LoadingScreen.playExitAnimations()
+                LoadingScreen.playExitAnimations(function() end)
             end
             showErrorNotification()
             return
@@ -236,11 +238,13 @@ coroutine.wrap(function()
         wait(1)
         LoadingScreen.animateLoadingBar()
         print("Waiting for loading bar completion")
-        repeat wait(0.1) until loadingText.Text == "Successful" or not screenGui or screenGui.Parent == nil
-        print("Loading bar completed or timed out")
+        repeat wait(0.1) until LoadingScreen.isComplete()
+        print("Loading bar completed")
         print("Playing exit animations")
         local exitSuccess = pcall(function()
-            LoadingScreen.playExitAnimations()
+            LoadingScreen.playExitAnimations(function()
+                print("Exit animation callback triggered")
+            end)
         end)
         if not exitSuccess then
             warn("Exit animations failed, forcing GUI destruction")
