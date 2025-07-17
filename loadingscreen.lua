@@ -232,8 +232,14 @@ local function animateParticles()
     -- Particle animation can be added if desired
 end
 
--- Animate loading bar
+-- Animate loading bar (fixed version)
 local function animateLoadingBar()
+    print("Starting animateLoadingBar at line: " .. debug.traceback())
+    if not loadingBarFill or not loadingBarFill.Parent then
+        warn("loadingBarFill is invalid or not parented")
+        return
+    end
+    
     local loadingSteps = {
         {progress = 0.2, text = "Initializing...", duration = 0.8},
         {progress = 0.4, text = "Verifying...", duration = 0.8},
@@ -257,8 +263,16 @@ local function animateLoadingBar()
         })
         
         barTween:Play()
-        barTween.Completed:Wait()
+        local success, err = pcall(function()
+            barTween.Completed:Wait(0.5) -- Timeout after 0.5 seconds
+        end)
+        if not success then
+            warn("Tween failed or timed out: " .. tostring(err))
+            break
+        end
+        print("Completed step " .. i .. " of loading bar animation")
     end
+    print("animateLoadingBar completed")
 end
 
 -- Water drop entrance animations
