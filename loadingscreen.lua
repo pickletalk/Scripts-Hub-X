@@ -214,17 +214,7 @@ local function animateLoadingBar()
             if stage == "Successful" then
                 print("Loading sequence completed with Successful")
                 wait(1) -- Additional 1-second delay after "Successful"
-                if playExitAnimations and type(playExitAnimations) == "function" then
-                    playExitAnimations()
-                    print("Exit animation triggered successfully")
-                else
-                    warn("playExitAnimations is not a function: " .. tostring(playExitAnimations))
-                    screenGui:Destroy()
-                    print("Forced ScreenGui destruction")
-                end
-                -- Placeholder for script load (to be implemented in main.lua)
-                print("Script load triggered (placeholder)")
-                return
+                return -- Signal completion to main.lua
             end
         end
         attempt = attempt + 1
@@ -233,15 +223,7 @@ local function animateLoadingBar()
     loadingText.Text = "Successful"
     loadingText.TextColor3 = Color3.fromRGB(0, 150, 0) -- Change to green
     wait(1)
-    if playExitAnimations and type(playExitAnimations) == "function" then
-        playExitAnimations()
-        print("Forced exit animation triggered")
-    else
-        warn("playExitAnimations is not a function, forcing destruction")
-        screenGui:Destroy()
-        print("Forced ScreenGui destruction")
-    end
-    print("Script load triggered (placeholder) after timeout")
+    return -- Signal completion on timeout
 end
 
 -- Water drop entrance animations
@@ -450,7 +432,11 @@ local function playExitAnimations()
     else
         screenGui:Destroy()
     end
-    print("ScreenGui destroyed, script load should proceed")
+    print("ScreenGui destroyed, signaling completion")
+    -- Signal completion (to be checked by main.lua)
+    if screenGui.Parent == nil then
+        print("Exit animation completed, ready for script load")
+    end
 end
 
 -- Border pulse (subtler)
@@ -475,5 +461,10 @@ return {
     animateParticles = animateParticles,
     animatePulse = animatePulse,
     animateLoadingBar = animateLoadingBar,
-    setLoadingText = function() end -- Empty function
+    setLoadingText = function(text, color)
+        if loadingText and loadingText.Parent then
+            loadingText.Text = text or "loading"
+            loadingText.TextColor3 = color or Color3.fromRGB(70, 140, 240)
+        end
+    end
 }
