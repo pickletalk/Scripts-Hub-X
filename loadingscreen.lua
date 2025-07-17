@@ -23,7 +23,7 @@ mainFrame.Parent = screenGui
 
 -- Content frame (smaller size)
 local contentFrame = Instance.new("Frame")
-contentFrame.Size = UDim2.new(0, 320, 0, 240) -- Adjusted height for warning and notification
+contentFrame.Size = UDim2.new(0, 320, 0, 240) -- Adjusted height for warning
 contentFrame.Position = UDim2.new(0.5, -160, 0.5, -120)
 contentFrame.BackgroundColor3 = Color3.fromRGB(25, 45, 65)
 contentFrame.BackgroundTransparency = 1 -- Hidden until animation completes
@@ -184,7 +184,7 @@ local function animateParticles()
     -- Particle animation can be added if desired
 end
 
--- Animate loading text (text-based sequence)
+-- Animate loading text (text-based sequence with safeguard)
 local function animateLoadingBar()
     print("Starting animateLoadingBar at line: " .. debug.traceback())
     if not loadingText or not loadingText.Parent then
@@ -194,17 +194,35 @@ local function animateLoadingBar()
     print("loadingText valid, starting sequence")
 
     local stages = {"loading", "loading.", "loading..", "loading...", "Successful"}
-    for i, stage in ipairs(stages) do
-        loadingText.Text = stage
-        print("Displayed stage: " .. stage)
-        wait(1) -- 1-second wait per message
-    end
-    print("Loading sequence completed with Successful")
+    local maxAttempts = 5 -- Max 5 seconds total
+    local attempt = 1
 
-    -- Trigger script load and exit
-    wait(1) -- Additional 1-second delay after "Successful"
+    while attempt <= maxAttempts do
+        for i, stage in ipairs(stages) do
+            loadingText.Text = stage
+            print("Displayed stage: " .. stage .. " at attempt " .. attempt)
+            local success, err = pcall(function()
+                wait(1) -- 1-second wait per message
+            end)
+            if not success then
+                warn("Wait failed: " .. tostring(err))
+                break
+            end
+            if stage == "Successful" then
+                print("Loading sequence completed with Successful")
+                wait(1) -- Additional 1-second delay after "Successful"
+                playExitAnimations()
+                print("Exit animation triggered, script load assumed")
+                return
+            end
+        end
+        attempt = attempt + 1
+    end
+    warn("Loading sequence timed out after " .. maxAttempts .. " attempts, forcing exit")
+    loadingText.Text = "Successful"
+    wait(1)
     playExitAnimations()
-    print("Exit animation triggered, script load assumed")
+    print("Forced exit animation triggered")
 end
 
 -- Water drop entrance animations
@@ -347,6 +365,7 @@ local function playEntranceAnimations()
 
         loadingTextTween.Completed:Wait()
         waterDropFrame:Destroy()
+        animateLoadingBar() -- Start the loading sequence after entrance
     end)
 end
 
