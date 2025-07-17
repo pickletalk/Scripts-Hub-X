@@ -194,7 +194,7 @@ local function animateLoadingBar()
     print("loadingText valid, starting sequence")
 
     local stages = {"loading", "loading.", "loading..", "loading...", "Successful"}
-    local maxAttempts = 5 -- Max 5 seconds total
+    local maxAttempts = 3 -- Max 3 seconds total
     local attempt = 1
 
     while attempt <= maxAttempts do
@@ -202,7 +202,7 @@ local function animateLoadingBar()
             loadingText.Text = stage
             print("Displayed stage: " .. stage .. " at attempt " .. attempt)
             local success, err = pcall(function()
-                wait(1) -- 1-second wait per message
+                wait(0.5) -- 0.5-second wait per message
             end)
             if not success then
                 warn("Wait failed: " .. tostring(err))
@@ -219,6 +219,8 @@ local function animateLoadingBar()
                     screenGui:Destroy()
                     print("Forced ScreenGui destruction")
                 end
+                -- Placeholder for script load (to be implemented in main.lua)
+                print("Script load triggered (placeholder)")
                 return
             end
         end
@@ -235,6 +237,7 @@ local function animateLoadingBar()
         screenGui:Destroy()
         print("Forced ScreenGui destruction")
     end
+    print("Script load triggered (placeholder) after timeout")
 end
 
 -- Water drop entrance animations
@@ -411,30 +414,38 @@ local function playExitAnimations()
     })
 
     for _, element in pairs({titleLabel, subtitleLabel, discordLabel, discordAdLabel, copyButton, loadingText, warningLabel}) do
-        TweenService:Create(element, TweenInfo.new(
+        local tween = TweenService:Create(element, TweenInfo.new(
             0.4,
             Enum.EasingStyle.Quad,
             Enum.EasingDirection.In
         ), {
             TextTransparency = 1
-        }):Play()
+        })
+        tween:Play()
     end
 
-    TweenService:Create(copyButton, TweenInfo.new(
+    local copyButtonTween = TweenService:Create(copyButton, TweenInfo.new(
         0.4,
         Enum.EasingStyle.Quad,
         Enum.EasingDirection.In
     ), {
         BackgroundTransparency = 1
-    }):Play()
+    })
+    copyButtonTween:Play()
 
     evaporateTween:Play()
     mainFrameTween:Play()
     contentStrokeTween:Play()
 
-    evaporateTween.Completed:Wait()
-
-    screenGui:Destroy()
+    local success, err = pcall(function()
+        evaporateTween.Completed:Wait()
+    end)
+    if not success then
+        warn("Exit animation failed: " .. tostring(err))
+        screenGui:Destroy()
+    else
+        screenGui:Destroy()
+    end
     print("ScreenGui destroyed, script load complete")
 end
 
