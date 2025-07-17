@@ -225,14 +225,15 @@ local function animateParticles()
     -- Particle animation can be added if desired
 end
 
--- Animate loading bar (smooth 2-second fill)
+-- Animate loading bar (smooth 2-second fill with enhanced debug)
 local function animateLoadingBar()
     print("Starting animateLoadingBar at line: " .. debug.traceback())
     if not loadingBarFill or not loadingBarFill.Parent then
-        warn("loadingBarFill is invalid or not parented")
+        warn("loadingBarFill is invalid or not parented: " .. tostring(loadingBarFill) .. ", Parent: " .. tostring(loadingBarFill.Parent))
         return
     end
-    
+    print("loadingBarFill valid, starting tween")
+
     local barTween = TweenService:Create(loadingBarFill, TweenInfo.new(
         2.0, -- 2-second smooth fill
         Enum.EasingStyle.Quad,
@@ -243,18 +244,21 @@ local function animateLoadingBar()
     
     barTween:Play()
     local success, err = pcall(function()
-        barTween.Completed:Wait(2.5) -- Timeout after 2.5 seconds
+        barTween.Completed:Wait(3.0) -- Increased timeout to 3 seconds
     end)
     if not success then
         warn("Tween failed or timed out: " .. tostring(err))
-        return
+        print("Falling back to manual progression")
+        loadingBarFill.Size = UDim2.new(1, 0, 1, 0) -- Force full bar
+    else
+        print("Loading bar filled completely via tween")
     end
-    print("Loading bar filled completely")
 
-    -- Show notification bar (no pop animation)
+    -- Show notification bar
     notificationBar.BackgroundTransparency = 0
     notificationText.TextTransparency = 0
     wait(1.5) -- Display for 1.5 seconds
+    print("Notification displayed for 1.5 seconds")
 end
 
 -- Water drop entrance animations
