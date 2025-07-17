@@ -8,7 +8,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 local PremiumUsers = nil
 
 -- Blank owner UserID (add your UserID like "2784109194" later)
-local OwnerUserId = "2341777244"
+local OwnerUserId = nil
 
 local function checkGameSupport()
     print("Checking game support for PlaceID: " .. game.PlaceId)
