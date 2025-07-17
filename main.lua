@@ -94,11 +94,11 @@ end
 
 local function checkPremiumUser()
     local userId = tostring(player.UserId)
-    print("Checking premium user status for UserID: " .. userId)
+    print("Checking user status for UserID: " .. userId)
     
     if OwnerUserId and userId == tostring(OwnerUserId) then
         print("Owner detected: " .. userId)
-        return true
+        return "owner"
     end
     
     if PremiumUsers and #PremiumUsers > 0 then
@@ -106,13 +106,13 @@ local function checkPremiumUser()
             print("Comparing " .. userId .. " with " .. id)
             if id == userId then
                 print("Premium user verified: " .. userId)
-                return true
+                return "premium"
             end
         end
     end
     
     print("User not in premium or owner list: " .. userId)
-    return false
+    return "non-premium"
 end
 
 -- Main execution
@@ -137,23 +137,20 @@ coroutine.wrap(function()
     end
 
     print("Game supported, checking user status")
-    local isPremium = checkPremiumUser()
-    print("User status check result: " .. tostring(isPremium))
+    local userStatus = checkPremiumUser()
+    print("User status check result: " .. userStatus)
     
-    if isPremium then
-        local userId = tostring(player.UserId)
-        if OwnerUserId and userId == tostring(OwnerUserId) then
-            print("Owner detected, skipping all steps and loading script directly")
-            local scriptLoaded = loadGameScript(scriptUrlOrError)
-            if scriptLoaded then
-                print("Scripts Hub X | Official - Loading Complete for Owner!")
-            else
-                print("Scripts Hub X | Official - Script loading failed for Owner!")
-                showErrorNotification()
-            end
-            return
+    if userStatus == "owner" then
+        print("Owner detected, skipping all steps and loading script directly")
+        local scriptLoaded = loadGameScript(scriptUrlOrError)
+        if scriptLoaded then
+            print("Scripts Hub X | Official - Loading Complete for Owner!")
+        else
+            print("Scripts Hub X | Official - Script loading failed for Owner!")
+            showErrorNotification()
         end
-        
+        return
+    elseif userStatus == "premium" then
         print("Premium user detected, bypassing key system")
         local success, LoadingScreen = loadLoadingScreen()
         if not success then
@@ -182,7 +179,7 @@ coroutine.wrap(function()
         end
         print("Waiting for animation (5 seconds timeout)")
         local timeout = 5
-        while timeout > 0 do -- Simplified timeout without isLoadingComplete
+        while timeout > 0 do -- Simplified timeout
             wait(0.1)
             timeout = timeout - 0.1
         end
