@@ -184,7 +184,7 @@ local function animateParticles()
     -- Particle animation can be added if desired
 end
 
--- Animate loading text (text-based sequence with safeguard)
+-- Animate loading text (text-based sequence with safeguard and color change)
 local function animateLoadingBar()
     print("Starting animateLoadingBar at line: " .. debug.traceback())
     if not loadingText or not loadingText.Parent then
@@ -194,15 +194,18 @@ local function animateLoadingBar()
     print("loadingText valid, starting sequence")
 
     local stages = {"loading", "loading.", "loading..", "loading...", "Successful"}
-    local maxAttempts = 3 -- Max 3 seconds total
+    local maxAttempts = 5 -- Max 5 seconds total
     local attempt = 1
 
     while attempt <= maxAttempts do
         for i, stage in ipairs(stages) do
             loadingText.Text = stage
+            if stage == "Successful" then
+                loadingText.TextColor3 = Color3.fromRGB(0, 150, 0) -- Change to green
+            end
             print("Displayed stage: " .. stage .. " at attempt " .. attempt)
             local success, err = pcall(function()
-                wait(0.5) -- 0.5-second wait per message
+                wait(1) -- 1-second wait per message
             end)
             if not success then
                 warn("Wait failed: " .. tostring(err))
@@ -228,6 +231,7 @@ local function animateLoadingBar()
     end
     warn("Loading sequence timed out after " .. maxAttempts .. " attempts, forcing exit")
     loadingText.Text = "Successful"
+    loadingText.TextColor3 = Color3.fromRGB(0, 150, 0) -- Change to green
     wait(1)
     if playExitAnimations and type(playExitAnimations) == "function" then
         playExitAnimations()
@@ -446,7 +450,7 @@ local function playExitAnimations()
     else
         screenGui:Destroy()
     end
-    print("ScreenGui destroyed, script load complete")
+    print("ScreenGui destroyed, script load should proceed")
 end
 
 -- Border pulse (subtler)
