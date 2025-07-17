@@ -4,9 +4,9 @@ local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Hardcoded premium users list
+-- Hardcoded premium users list (replace with your UserIDs)
 local PremiumUsers = {
-    "2341777244" -- Jvpogi233j ( Owner )
+    "2341777244" -- Owner ( Pickle(jvpogi233j) )
 }
 
 local function checkGameSupport()
@@ -32,7 +32,7 @@ local function checkGameSupport()
 end
 
 local function loadGameScript(scriptUrl)
-    print("Loading game script from URL: " .. scriptUrl)
+    print("Attempting to load game script from URL: " .. scriptUrl)
     local success, result = pcall(function()
         return loadstring(game:HttpGet(scriptUrl))()
     end)
@@ -58,7 +58,7 @@ local function showErrorNotification()
 end
 
 local function loadLoadingScreen()
-    print("Loading loading screen")
+    print("Attempting to load loading screen")
     local success, LoadingScreen = pcall(function()
         return loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/loadingscreen.lua"))()
     end)
@@ -134,17 +134,36 @@ coroutine.wrap(function()
         print("Premium user detected, bypassing key system")
         local success, LoadingScreen = loadLoadingScreen()
         if not success then
-            print("Failed to load loading screen for premium user")
+            print("Failed to load loading screen for premium user: " .. tostring(LoadingScreen))
             showErrorNotification()
             return
         end
+        print("Playing entrance animations")
         LoadingScreen.playEntranceAnimations()
+        print("Showing premium notification")
         LoadingScreen.showNotification("Premium User Has Been Verified")
         wait(2) -- Ensure notification is visible
+        print("Setting loading text")
         LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
-        LoadingScreen.animateLoadingBar()
+        print("Animating loading bar")
+        local animateSuccess = pcall(function()
+            LoadingScreen.animateLoadingBar()
+        end)
+        if not animateSuccess then
+            warn("Loading bar animation failed")
+        end
+        print("Waiting for animation (5 seconds timeout)")
+        local timeout = 5
+        while timeout > 0 and not LoadingScreen.isLoadingComplete() do -- Assuming isLoadingComplete exists
+            wait(0.1)
+            timeout = timeout - 0.1
+        end
+        if timeout <= 0 then
+            warn("Loading bar animation timed out")
+        end
         print("Loading Scripts Hub X for premium user...")
         wait(0.5)
+        print("Playing exit animations")
         LoadingScreen.playExitAnimations()
         
         local scriptLoaded = loadGameScript(scriptUrlOrError)
