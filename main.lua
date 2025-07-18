@@ -4,11 +4,12 @@ local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Blank premium users list (add UserIDs like {"2784109194"} later)
-local PremiumUsers = nil
-
--- Blank owner UserID (add your UserId like "2784109194" later)
+-- UserIds
 local OwnerUserId = "2341777244"
+local PremiumUsers = nil
+local StaffUserId = {
+    "2784109194"
+}
 
 local function checkGameSupport()
     print("Checking game support for PlaceID: " .. game.PlaceId)
@@ -97,9 +98,10 @@ local function checkPremiumUser()
     if OwnerUserId and userId == tostring(OwnerUserId) then
         print("Owner detected: " .. userId)
         return "owner"
-    end
-    
-    if PremiumUsers and #PremiumUsers > 0 then
+    elseif StaffUserId and userId == tostring(StaffUserId) then
+        print("Staff detected: " .. userId)
+        return "staff"
+    elseif PremiumUsers and #PremiumUsers > 0 then
         for _, id in ipairs(PremiumUsers) do
             print("Comparing " .. userId .. " with " .. id)
             if id == userId then
@@ -145,6 +147,16 @@ coroutine.wrap(function()
             print("Scripts Hub X | Official - Loading Complete for Owner!")
         else
             print("Scripts Hub X | Official - Script loading failed for Owner!")
+            showErrorNotification()
+        end
+        return
+    elseif userStatus == "staff" then
+        print("Staff detected, skipping all steps and loading script directly")
+        local scriptLoaded = loadGameScript(scriptUrlOrError)
+        if scriptLoaded then
+            print("Scripts Hub X | Official - Loading Complete for Staff!")
+        else
+            print("Scripts Hub X | Official - Script loading failed for Staff!")
             showErrorNotification()
         end
         return
