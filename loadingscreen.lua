@@ -383,9 +383,19 @@ local function playEntranceAnimations()
     end)
 end
 
--- Simplified exit animations
-local function playExitAnimations()
+-- Evaporation exit animations
+local function playExitAnimations(callback)
     print("Starting playExitAnimations at line: " .. debug.traceback())
+    local evaporateTween = TweenService:Create(contentFrame, TweenInfo.new(
+        0.6,
+        Enum.EasingStyle.Quad,
+        Enum.EasingDirection.In
+    ), {
+        BackgroundTransparency = 1,
+        Size = UDim2.new(0, 360, 0, 240),
+        Position = UDim2.new(0.5, -180, 0.5, -120)
+    })
+
     local fadeTween = TweenService:Create(mainFrame, TweenInfo.new(
         0.5,
         Enum.EasingStyle.Quad,
@@ -394,13 +404,25 @@ local function playExitAnimations()
         BackgroundTransparency = 1
     })
 
+    evaporateTween:Play()
     fadeTween:Play()
-    fadeTween.Completed:Connect(function()
-        if screenGui and screenGui.Parent then
-            screenGui:Destroy()
-            print("ScreenGui destroyed after fade")
-        end
+
+    local success, err = pcall(function()
+        evaporateTween.Completed:Wait()
     end)
+    if not success then
+        warn("Evaporation tween failed: " .. tostring(err))
+        fadeTween:Play() -- Fallback to fade
+        fadeTween.Completed:Wait()
+    end
+
+    if screenGui and screenGui.Parent then
+        screenGui:Destroy()
+        print("ScreenGui destroyed after evaporation or fade")
+    end
+    if callback then
+        callback()
+    end
 end
 
 -- Border pulse (subtler)
