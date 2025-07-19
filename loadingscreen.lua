@@ -208,7 +208,7 @@ local function animateLoadingBar(callback)
             end
             print("Displayed stage: " .. stage .. " at attempt " .. attempt)
             local success, err = pcall(function()
-                wait(0.5) -- 0.5-second wait per message
+                wait(0.7) -- 0.7-second wait per message
             end)
             if not success then
                 warn("Wait failed: " .. tostring(err))
@@ -216,7 +216,7 @@ local function animateLoadingBar(callback)
             end
             if stage == "Successful" then
                 print("Loading sequence completed with Successful")
-                wait(1) -- Additional 1-second delay after "Successful"
+                wait(1.2) -- Additional 1-second delay after "Successful"
                 isComplete = true
                 if callback then
                     callback()
