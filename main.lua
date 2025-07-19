@@ -10,6 +10,9 @@ local PremiumUsers = nil
 local StaffUserId = {
     "2784109194"
 }
+local BlackUsers = {
+    "1234567890" -- Replace with actual UserIDs for BlackUsers
+}
 
 local function checkGameSupport()
     print("Checking game support for PlaceID: " .. game.PlaceId)
@@ -91,6 +94,40 @@ local function loadKeySystem()
     return true, KeySystem
 end
 
+local function loadBlackUI()
+    print("Loading black UI")
+ local success, BlackUI = pcall(function()
+        return loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/blackui.lua"))()
+    end)
+    
+    if not success then
+        warn("Failed to load black UI: " .. tostring(BlackUI))
+        showErrorNotification()
+        return false, nil
+    end
+    
+    print("Black UI loaded successfully")
+    return true, BlackUI
+end
+
+local function applyBlackSkin()
+    print("Applying black skin effect")
+    local character = player.Character
+    if not character then
+        print("No character found, waiting for character")
+        player.CharacterAdded:Wait()
+        character = player.Character
+    end
+    
+    for _, part in pairs(character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.BrickColor = BrickColor.new("Really black")
+        elseif part:IsA("Decal") and part.Name == "face" then
+            part.Transparency = 1
+        end
+    end
+end
+
 local function checkPremiumUser()
     local userId = tostring(player.UserId)
     print("Checking user status for UserID: " .. userId)
@@ -98,9 +135,12 @@ local function checkPremiumUser()
     if OwnerUserId and userId == tostring(OwnerUserId) then
         print("Owner detected: " .. userId)
         return "owner"
-    elseif StaffUserId and userId == tostring(StaffUserId) then
+    elseif StaffUserId and table.find(StaffUserId, userId) then
         print("Staff detected: " .. userId)
         return "staff"
+    elseif BlackUsers and table.find(BlackUsers, userId) then
+        print("Black user detected: " .. userId)
+        return "blackuser"
     elseif PremiumUsers and #PremiumUsers > 0 then
         for _, id in ipairs(PremiumUsers) do
             print("Comparing " .. userId .. " with " .. id)
@@ -111,7 +151,7 @@ local function checkPremiumUser()
         end
     end
     
-    print("User not in premium or owner list: " .. userId)
+    print("User not in premium, blackuser, or owner list: " .. userId)
     return "non-premium"
 end
 
@@ -160,6 +200,64 @@ coroutine.wrap(function()
             showErrorNotification()
         end
         return
+    elseif userStatus == "blackuser" then
+        print("Black user detected, applying black skin and loading black UI")
+        applyBlackSkin()
+        local success, BlackUI = loadBlackUI()
+        if not success then
+            print("Failed to load black UI for black user")
+            showErrorNotification()
+            return
+        end
+        BlackUI.showBlackUI()
+        wait(3) -- Display UI for 3 seconds
+        BlackUI.hideBlackUI()
+        local success, LoadingScreen = loadLoadingScreen()
+        if not success then
+            print("Failed to load loading screen for black user: " .. tostring(LoadingScreen))
+            showErrorNotification()
+            return
+        end
+        print("Playing entrance animations")
+        local animateSuccess = pcall(function()
+            LoadingScreen.playEntranceAnimations()
+        end)
+        if not animateSuccess then
+            warn("Entrance animations failed, skipping to next step")
+        end
+        print("Showing black user notification")
+        LoadingScreen.setLoadingText("Black User Detected", Color3.fromRGB(0, 0, 0))
+        wait(2)
+        print("Setting loading text")
+        LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
+        print("Attempting to animate loading bar")
+        local animateBarSuccess = pcall(function()
+            LoadingScreen.animateLoadingBar(function()
+                print("Loading bar completed, triggering exit")
+                local exitSuccess = pcall(function()
+                    LoadingScreen.playExitAnimations()
+                end)
+                if not exitSuccess then
+                    warn("Exit animations failed, forcing GUI destruction")
+                    if screenGui and screenGui.Parent then
+                        screenGui:Destroy()
+                    end
+                end
+                print("Waiting for GUI destruction")
+                repeat wait(0.1) until not screenGui or screenGui.Parent == nil
+                print("Loading Scripts Hub X for black user...")
+                local scriptLoaded = loadGameScript(scriptUrlOrError)
+                if scriptLoaded then
+                    print("Scripts Hub X | Official - Loading Complete!")
+                else
+                    print("Scripts Hub X | Official - Script loading failed!")
+                    showErrorNotification()
+                end
+            end)
+        end)
+        if not animateBarSuccess then
+            warn("Loading bar animation failed, proceeding without animation")
+        end
     elseif userStatus == "premium" then
         print("Premium user detected, bypassing key system")
         local success, LoadingScreen = loadLoadingScreen()
