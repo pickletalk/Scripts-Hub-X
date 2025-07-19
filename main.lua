@@ -5,14 +5,15 @@ local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 local SoundService = game:GetService("SoundService")
 
--- UserIds
-local OwnerUserId = "2341777244"
+-- UserIds ( userid shouldn't been put double )
+local OwnerUserId = 
 local PremiumUsers = nil
 local StaffUserId = {
     "2784109194"
 }
 local BlackUsers = {
-    "8342200727"
+    "8342200727",
+    "2341777244"
 }
 
 local function checkGameSupport()
