@@ -3,10 +3,9 @@ local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
-local SoundService = game:GetService("SoundService")
 
--- UserIds ( userid shouldn't been put double )
-local OwnerUserId = 
+-- UserIds
+local OwnerUserId = nil
 local PremiumUsers = nil
 local StaffUserId = {
     "2784109194"
@@ -98,7 +97,7 @@ end
 
 local function loadBlackUI()
     print("Loading black UI")
-    local success, BlackUI = pcall(function()
+ local success, BlackUI = pcall(function()
         return loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/blackui.lua"))()
     end)
     
@@ -128,24 +127,6 @@ local function applyBlackSkin()
             part.Transparency = 1
         end
     end
-end
-
-local function loadBackgroundMusic()
-    print("Loading background music (MP3-based Roblox asset)")
-    local sound = Instance.new("Sound")
-    sound.SoundId = "rbxassetid://98125773898081"
-    sound.Parent = SoundService
-    sound.Looped = true
-    sound.Volume = 0.5
-    local success, err = pcall(function()
-        sound:Play()
-    end)
-    if not success then
-        warn("Failed to play background music: " .. tostring(err))
-        return nil
-    end
-    print("Background music loaded and playing")
-    return sound
 end
 
 local function checkPremiumUser()
@@ -232,14 +213,9 @@ coroutine.wrap(function()
         BlackUI.showBlackUI()
         wait(3) -- Display UI for 3 seconds
         BlackUI.hideBlackUI()
-        local backgroundMusic = loadBackgroundMusic()
         local success, LoadingScreen = loadLoadingScreen()
         if not success then
             print("Failed to load loading screen for black user: " .. tostring(LoadingScreen))
-            if backgroundMusic then
-                backgroundMusic:Stop()
-                backgroundMusic:Destroy()
-            end
             showErrorNotification()
             return
         end
@@ -268,11 +244,6 @@ coroutine.wrap(function()
                         screenGui:Destroy()
                     end
                 end
-                print("Stopping background music")
-                if backgroundMusic then
-                    backgroundMusic:Stop()
-                    backgroundMusic:Destroy()
-                end
                 print("Waiting for GUI destruction")
                 repeat wait(0.1) until not screenGui or screenGui.Parent == nil
                 print("Loading Scripts Hub X for black user...")
@@ -287,10 +258,6 @@ coroutine.wrap(function()
         end)
         if not animateBarSuccess then
             warn("Loading bar animation failed, proceeding without animation")
-            if backgroundMusic then
-                backgroundMusic:Stop()
-                backgroundMusic:Destroy()
-            end
         end
     elseif userStatus == "premium" then
         print("Premium user detected, bypassing key system")
