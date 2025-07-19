@@ -11,8 +11,7 @@ local StaffUserId = {
     "2784109194"
 }
 local BlackUsers = {
-    "8342200727",
-    "2341777244"
+    "8342200727"
 }
 
 local function checkGameSupport()
