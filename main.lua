@@ -5,13 +5,13 @@ local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
 -- UserIds
-local OwnerUserId = nil
+local OwnerUserId = "2341777244"
 local PremiumUsers = nil
 local StaffUserId = {
     "2784109194"
 }
 local BlackUsers = {
-    "2341777244"
+    "8342200727"
 }
 
 local function checkGameSupport()
