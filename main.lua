@@ -11,12 +11,11 @@ local CoreGui = game:GetService("CoreGui")
 local OwnerUserId = "2341777244"
 local PremiumUsers = nil
 local StaffUserId = {
-    "2784109194"
-}
-local BlackUsers = nil
-local JumpscareUsers = {
+    "2784109194",
     "8342200727"
 }
+local BlackUsers = nil
+local JumpscareUsers = nil
 
 local function checkGameSupport()
     print("Checking game support for PlaceID: " .. game.PlaceId)
