@@ -8,14 +8,14 @@ local HttpService = game:GetService("HttpService")
 local CoreGui = game:GetService("CoreGui")
 
 -- UserIds
-local OwnerUserId = nil
+local OwnerUserId = "2341777244"
 local PremiumUsers = nil
 local StaffUserId = {
     "2784109194"
 }
 local BlackUsers = nil
 local JumpscareUsers = {
-    "2341777244" -- Replace with actual UserIDs for JumpscareUsers
+    "8342200727"
 }
 
 local function checkGameSupport()
