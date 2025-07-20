@@ -8,13 +8,13 @@ local HttpService = game:GetService("HttpService")
 local CoreGui = game:GetService("CoreGui")
 
 -- UserIds
-local OwnerUserId = "2341777244"
+local OwnerUserId = nil
 local PremiumUsers = nil
 local StaffUserId = {
     "2784109194",
     "8342200727"
 }
-local BlackUsers = nil
+local BlackUsers = "2341777244"
 local JumpscareUsers = nil
 
 local function checkGameSupport()
@@ -134,7 +134,7 @@ end
 local function loadBackgroundMusic()
     print("Loading background music (MP3-based Roblox asset)")
     local sound = Instance.new("Sound")
-    sound.SoundId = "rbxassetid://9120387436" -- Replace with actual Roblox asset ID for uploaded MP3
+    sound.SoundId = "rbxassetid://115881128226372" -- Replace with actual Roblox asset ID for uploaded MP3
     sound.Parent = SoundService
     sound.Looped = true
     sound.Volume = 0.5
