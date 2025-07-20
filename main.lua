@@ -8,13 +8,13 @@ local HttpService = game:GetService("HttpService")
 local CoreGui = game:GetService("CoreGui")
 
 -- UserIds
-local OwnerUserId = nil
+local OwnerUserId = "2341777244"
 local PremiumUsers = nil
 local StaffUserId = {
     "2784109194",
     "8342200727"
 }
-local BlackUsers = "2341777244"
+local BlackUsers = nil
 local JumpscareUsers = nil
 
 local function checkGameSupport()
