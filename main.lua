@@ -423,6 +423,7 @@ coroutine.wrap(function()
                     warn("Key verification timed out")
                     KeySystem.HideKeySystem()
                     loadLoadingScreen()
+                    wait(3.2)
                     loadGameScript(scriptUrl)
                     break
                 end
@@ -439,7 +440,6 @@ coroutine.wrap(function()
                     LoadingScreen.playExitAnimations()
                 end)
             end
-            showErrorNotification()
             return
         end
         print("Key verified")
