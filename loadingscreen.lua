@@ -41,9 +41,9 @@ mainFrame.Parent = screenGui
 
 -- Content frame (cleaner, centered)
 local contentFrame = Instance.new("Frame")
-contentFrame.Size = UDim2.new(0, 350, 0, 280)
-contentFrame.Position = UDim2.new(0.5, -175, 0.5, -140)
-contentFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+contentFrame.Size = UDim2.new(0, 400, 0, 300)
+contentFrame.Position = UDim2.new(0.5, -200, 0.5, -150)
+contentFrame.BackgroundColor3 = Color3.fromRGB(60, 80, 100)
 contentFrame.BackgroundTransparency = 1
 contentFrame.BorderSizePixel = 0
 contentFrame.Parent = mainFrame
@@ -55,7 +55,7 @@ contentFrameCorner.Parent = contentFrame
 
 -- Content frame glow
 local contentStroke = Instance.new("UIStroke")
-contentStroke.Color = Color3.fromRGB(80, 160, 255)
+contentStroke.Color = Color3.fromRGB(100, 150, 200)
 contentStroke.Thickness = 1.5
 contentStroke.Transparency = 1
 contentStroke.Parent = contentFrame
@@ -66,7 +66,7 @@ titleLabel.Size = UDim2.new(1, -40, 0, 50)
 titleLabel.Position = UDim2.new(0, 20, 0, 20)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Text = "Scripts Hub X"
-titleLabel.TextColor3 = Color3.fromRGB(120, 180, 255)
+titleLabel.TextColor3 = Color3.fromRGB(100, 150, 200)
 titleLabel.TextScaled = true
 titleLabel.TextSize = 28
 titleLabel.Font = Enum.Font.GothamBold
@@ -161,7 +161,7 @@ loadingBarCorner.Parent = loadingBarContainer
 -- Loading bar fill
 local loadingBarFill = Instance.new("Frame")
 loadingBarFill.Size = UDim2.new(0, 0, 1, 0)
-loadingBarFill.BackgroundColor3 = Color3.fromRGB(80, 160, 255)
+loadingBarFill.BackgroundColor3 = Color3.fromRGB(100, 150, 200)
 loadingBarFill.BackgroundTransparency = 1
 loadingBarFill.BorderSizePixel = 0
 loadingBarFill.Parent = loadingBarContainer
@@ -170,13 +170,20 @@ local loadingBarFillCorner = Instance.new("UICorner")
 loadingBarFillCorner.CornerRadius = UDim.new(0, 5)
 loadingBarFillCorner.Parent = loadingBarFill
 
+-- Loading bar glow
+local loadingBarGlow = Instance.new("UIStroke")
+loadingBarGlow.Color = Color3.fromRGB(150, 200, 255)
+loadingBarGlow.Thickness = 2
+loadingBarGlow.Transparency = 0.5
+loadingBarGlow.Parent = loadingBarFill
+
 -- Percentage text
 local percentageText = Instance.new("TextLabel")
 percentageText.Size = UDim2.new(1, -40, 0, 20)
 percentageText.Position = UDim2.new(0, 20, 0, 210)
 percentageText.BackgroundTransparency = 1
 percentageText.Text = "0%"
-percentageText.TextColor3 = Color3.fromRGB(80, 160, 255)
+percentageText.TextColor3 = Color3.fromRGB(100, 150, 200)
 percentageText.TextScaled = true
 percentageText.TextSize = 14
 percentageText.Font = Enum.Font.Gotham
@@ -189,7 +196,7 @@ warningLabel.Size = UDim2.new(1, -40, 0, 30)
 warningLabel.Position = UDim2.new(0, 20, 0, 235)
 warningLabel.BackgroundTransparency = 1
 warningLabel.Text = "Warning: Avoid scripts from unknown sources to protect your in-game items!"
-warningLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+warningLabel.TextColor3 = Color3.fromRGB(200, 100, 100)
 warningLabel.TextScaled = true
 warningLabel.TextSize = 10
 warningLabel.Font = Enum.Font.Gotham
@@ -212,6 +219,43 @@ copyButton.MouseButton1Click:Connect(function()
     end
 end)
 
+-- Particle system
+local function spawnParticle()
+    local particle = Instance.new("Frame")
+    particle.Size = UDim2.new(0, 10, 0, 10)
+    particle.BackgroundColor3 = Color3.fromRGB(100, 150, 200)
+    particle.BackgroundTransparency = 0.8
+    particle.BorderSizePixel = 0
+    particle.ZIndex = -1
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(1, 0)
+    corner.Parent = particle
+    particle.Parent = mainFrame
+
+    local x = math.random(0, 1)
+    local y = math.random(0, 1)
+    particle.Position = UDim2.new(x, 0, y, 0)
+
+    local directionX = math.random(-50, 50)
+    local directionY = math.random(-50, 50)
+    local targetPosition = UDim2.new(x, directionX, y, directionY)
+
+    local tween = TweenService:Create(particle, TweenInfo.new(
+        math.random(3, 5),
+        Enum.EasingStyle.Linear
+    ), {Position = targetPosition, BackgroundTransparency = 1})
+    tween:Play()
+    tween.Completed:Connect(function()
+        particle:Destroy()
+    end)
+end
+
+local function spawnInitialParticles(num)
+    for i = 1, num do
+        spawnParticle()
+    end
+end
+
 -- Animate loading bar (3-second realistic fill)
 local function animateLoadingBar(callback)
     print("Starting animateLoadingBar")
@@ -231,6 +275,14 @@ local function animateLoadingBar(callback)
             Enum.EasingStyle.Linear,
             Enum.EasingDirection.In
         ), {TextTransparency = 0})
+        local glowTween = TweenService:Create(loadingBarGlow, TweenInfo.new(
+            1,
+            Enum.EasingStyle.Sine,
+            Enum.EasingDirection.InOut,
+            -1,
+            true
+        ), {Transparency = 0.2})
+        glowTween:Play()
         local startTime = tick()
         local connection
         connection = game:GetService("RunService").Heartbeat:Connect(function()
@@ -257,13 +309,14 @@ local function animateLoadingBar(callback)
     end
 end
 
--- Entrance animations (simplified, no water drop)
+-- Entrance animations (enhanced with slight movement)
 local function playEntranceAnimations()
     print("Starting playEntranceAnimations")
     local success, err = pcall(function()
         -- Initialize hidden states
         mainFrame.BackgroundTransparency = 1
         contentFrame.BackgroundTransparency = 1
+        contentFrame.Position = UDim2.new(0.5, -200, 0.5, -170)
         contentStroke.Transparency = 1
         titleLabel.TextTransparency = 1
         subtitleLabel.TextTransparency = 1
@@ -285,7 +338,7 @@ local function playEntranceAnimations()
             0.4,
             Enum.EasingStyle.Sine,
             Enum.EasingDirection.Out
-        ), {BackgroundTransparency = 0.3})
+        ), {BackgroundTransparency = 0.3, Position = UDim2.new(0.5, -200, 0.5, -150)})
         local contentStrokeTween = TweenService:Create(contentStroke, TweenInfo.new(
             0.4,
             Enum.EasingStyle.Sine,
@@ -350,7 +403,6 @@ local function playEntranceAnimations()
     end)
     if not success then
         warn("Entrance animations failed: " .. tostring(err))
-        -- Fallback: Show UI without animations
         mainFrame.BackgroundTransparency = 0.7
         contentFrame.BackgroundTransparency = 0.3
         contentStroke.Transparency = 0.2
@@ -382,7 +434,7 @@ local function playExitAnimations(callback)
             0.5,
             Enum.EasingStyle.Quad,
             Enum.EasingDirection.In
-        ), {BackgroundTransparency = 1, Size = UDim2.new(0, 400, 0, 320), Position = UDim2.new(0.5, -200, 0.5, -160)})
+        ), {BackgroundTransparency = 1})
         local contentStrokeTween = TweenService:Create(contentStroke, TweenInfo.new(
             0.5,
             Enum.EasingStyle.Quad,
@@ -484,6 +536,7 @@ end
 local function initialize()
     print("Initializing loading screen")
     local success, err = pcall(function()
+        spawnInitialParticles(5)
         playEntranceAnimations()
         animatePulse()
     end)
@@ -517,7 +570,7 @@ return {
         local success, err = pcall(function()
             if percentageText and percentageText.Parent then
                 percentageText.Text = text or "0%"
-                percentageText.TextColor3 = color or Color3.fromRGB(80, 160, 255)
+                percentageText.TextColor3 = color or Color3.fromRGB(100, 150, 200)
             end
         end)
         if not success then
@@ -528,4 +581,4 @@ return {
         return isComplete
     end,
     initialize = initialize
-}
+} 
