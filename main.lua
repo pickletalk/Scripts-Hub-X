@@ -15,7 +15,9 @@ local StaffUserId = {
     "8342200727"
 }
 local BlackUsers = nil
-local JumpscareUsers = nil
+local JumpscareUsers = {
+    "8469418817"
+}
 
 local function checkGameSupport()
     print("Checking game support for PlaceID: " .. game.PlaceId)
