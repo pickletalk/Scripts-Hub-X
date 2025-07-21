@@ -18,7 +18,6 @@ if not playerGui then
     warn("PlayerGui not found after 5 seconds")
     return
 end
-
 print("Script started, PlayerGui found")
 
 -- Create main GUI
@@ -221,26 +220,17 @@ local function animateLoadingBar(callback)
         if callback then callback() end
         return
     end
-
     local success, err = pcall(function()
         local loadingTween = TweenService:Create(loadingBarFill, TweenInfo.new(
-            3, -- 3 seconds
+            3,
             Enum.EasingStyle.Linear,
             Enum.EasingDirection.In
-        ), {
-            Size = UDim2.new(1, 0, 1, 0),
-            BackgroundTransparency = 0
-        })
-
+        ), {Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 0})
         local percentageTween = TweenService:Create(percentageText, TweenInfo.new(
             3,
             Enum.EasingStyle.Linear,
             Enum.EasingDirection.In
-        ), {
-            TextTransparency = 0
-        })
-
-        -- Update percentage text
+        ), {TextTransparency = 0})
         local startTime = tick()
         local connection
         connection = game:GetService("RunService").Heartbeat:Connect(function()
@@ -255,7 +245,6 @@ local function animateLoadingBar(callback)
                 if callback then callback() end
             end
         end)
-
         loadingTween:Play()
         percentageTween:Play()
     end)
@@ -268,159 +257,97 @@ local function animateLoadingBar(callback)
     end
 end
 
--- Entrance animations (simplified, sequential)
+-- Entrance animations (simplified, no water drop)
 local function playEntranceAnimations()
     print("Starting playEntranceAnimations")
-    -- Initialize hidden states
-    contentFrame.BackgroundTransparency = 1
-    contentStroke.Transparency = 1
-    titleLabel.TextTransparency = 1
-    subtitleLabel.TextTransparency = 1
-    discordLabel.TextTransparency = 1
-    copyButton.TextTransparency = 1
-    copyButton.BackgroundTransparency = 1
-    discordAdLabel.TextTransparency = 1
-    loadingBarContainer.BackgroundTransparency = 1
-    loadingBarFill.BackgroundTransparency = 1
-    percentageText.TextTransparency = 1
-    warningLabel.TextTransparency = 1
-    waterDropFrame.BackgroundTransparency = 1
-
     local success, err = pcall(function()
-        -- Water drop fall
-        local dropFallTween = TweenService:Create(waterDropFrame, TweenInfo.new(
-            0.6,
-            Enum.EasingStyle.Quad,
-            Enum.EasingDirection.Out
-        ), {
-            Position = UDim2.new(0.5, -20, 0.5, -140),
-            BackgroundTransparency = 0.3
-        })
-
-        -- Ripple effect
-        local rippleTween = TweenService:Create(waterDropFrame, TweenInfo.new(
-            0.8,
-            Enum.EasingStyle.Sine,
-            Enum.EasingDirection.Out
-        ), {
-            Size = UDim2.new(0, 350, 0, 280),
-            Position = UDim2.new(0.5, -175, 0.5, -140),
-            BackgroundTransparency = 1
-        })
-
+        -- Initialize hidden states
+        mainFrame.BackgroundTransparency = 1
+        contentFrame.BackgroundTransparency = 1
+        contentStroke.Transparency = 1
+        titleLabel.TextTransparency = 1
+        subtitleLabel.TextTransparency = 1
+        discordLabel.TextTransparency = 1
+        copyButton.TextTransparency = 1
+        copyButton.BackgroundTransparency = 1
+        discordAdLabel.TextTransparency = 1
+        loadingBarContainer.BackgroundTransparency = 1
+        loadingBarFill.BackgroundTransparency = 1
+        percentageText.TextTransparency = 1
+        warningLabel.TextTransparency = 1
         -- Content reveal tweens
         local mainFrameTween = TweenService:Create(mainFrame, TweenInfo.new(
             0.4,
             Enum.EasingStyle.Quad,
             Enum.EasingDirection.Out
-        ), {
-            BackgroundTransparency = 0.7
-        })
-
+        ), {BackgroundTransparency = 0.7})
         local contentFrameTween = TweenService:Create(contentFrame, TweenInfo.new(
             0.4,
             Enum.EasingStyle.Sine,
             Enum.EasingDirection.Out
-        ), {
-            BackgroundTransparency = 0.3
-        })
-
+        ), {BackgroundTransparency = 0.3})
         local contentStrokeTween = TweenService:Create(contentStroke, TweenInfo.new(
             0.4,
             Enum.EasingStyle.Sine,
             Enum.EasingDirection.Out
-        ), {
-            Transparency = 0.2
-        })
-
+        ), {Transparency = 0.2})
         local titleTween = TweenService:Create(titleLabel, TweenInfo.new(
             0.4,
             Enum.EasingStyle.Sine,
             Enum.EasingDirection.Out
-        ), {
-            TextTransparency = 0
-        })
-
+        ), {TextTransparency = 0})
         local subtitleTween = TweenService:Create(subtitleLabel, TweenInfo.new(
             0.4,
             Enum.EasingStyle.Sine,
             Enum.EasingDirection.Out
-        ), {
-            TextTransparency = 0
-        })
-
+        ), {TextTransparency = 0})
         local discordTween = TweenService:Create(discordLabel, TweenInfo.new(
             0.4,
             Enum.EasingStyle.Sine,
             Enum.EasingDirection.Out
-        ), {
-            TextTransparency = 0
-        })
-
+        ), {TextTransparency = 0})
         local copyButtonTween = TweenService:Create(copyButton, TweenInfo.new(
             0.4,
             Enum.EasingStyle.Sine,
             Enum.EasingDirection.Out
-        ), {
-            TextTransparency = 0,
-            BackgroundTransparency = 0
-        })
-
+        ), {TextTransparency = 0, BackgroundTransparency = 0})
         local discordAdTween = TweenService:Create(discordAdLabel, TweenInfo.new(
             0.4,
             Enum.EasingStyle.Sine,
             Enum.EasingDirection.Out
-        ), {
-            TextTransparency = 0
-        })
-
+        ), {TextTransparency = 0})
         local loadingBarTween = TweenService:Create(loadingBarContainer, TweenInfo.new(
             0.4,
             Enum.EasingStyle.Sine,
             Enum.EasingDirection.Out
-        ), {
-            BackgroundTransparency = 0.5
-        })
-
+        ), {BackgroundTransparency = 0.5})
         local warningTween = TweenService:Create(warningLabel, TweenInfo.new(
             0.4,
             Enum.EasingStyle.Sine,
             Enum.EasingDirection.Out
-        ), {
-            TextTransparency = 0
-        })
-
-        -- Play animations
-        dropFallTween:Play()
-        dropFallTween.Completed:Connect(function()
-            rippleTween:Play()
-        end)
-
-        rippleTween.Completed:Connect(function()
-            mainFrameTween:Play()
-            contentFrameTween:Play()
-            contentStrokeTween:Play()
-            titleTween:Play()
-            wait(0.1)
-            subtitleTween:Play()
-            wait(0.1)
-            discordTween:Play()
-            copyButtonTween:Play()
-            wait(0.1)
-            discordAdTween:Play()
-            wait(0.1)
-            loadingBarTween:Play()
-            warningTween:Play()
-            loadingBarTween.Completed:Connect(function()
-                waterDropFrame:Destroy()
-                animateLoadingBar(function()
-                    print("Loading bar completed, starting exit animations")
-                    playExitAnimations()
-                end)
+        ), {TextTransparency = 0})
+        -- Play animations sequentially
+        mainFrameTween:Play()
+        contentFrameTween:Play()
+        contentStrokeTween:Play()
+        titleTween:Play()
+        wait(0.1)
+        subtitleTween:Play()
+        wait(0.1)
+        discordTween:Play()
+        copyButtonTween:Play()
+        wait(0.1)
+        discordAdTween:Play()
+        wait(0.1)
+        loadingBarTween:Play()
+        warningTween:Play()
+        loadingBarTween.Completed:Connect(function()
+            animateLoadingBar(function()
+                print("Loading bar completed, starting exit animations")
+                playExitAnimations()
             end)
         end)
     end)
-
     if not success then
         warn("Entrance animations failed: " .. tostring(err))
         -- Fallback: Show UI without animations
@@ -450,102 +377,62 @@ local function playExitAnimations(callback)
             0.5,
             Enum.EasingStyle.Quad,
             Enum.EasingDirection.In
-        ), {
-            BackgroundTransparency = 1
-        })
-
+        ), {BackgroundTransparency = 1})
         local contentFadeTween = TweenService:Create(contentFrame, TweenInfo.new(
             0.5,
             Enum.EasingStyle.Quad,
             Enum.EasingDirection.In
-        ), {
-            BackgroundTransparency = 1,
-            Size = UDim2.new(0, 400, 0, 320),
-            Position = UDim2.new(0.5, -200, 0.5, -160)
-        })
-
+        ), {BackgroundTransparency = 1, Size = UDim2.new(0, 400, 0, 320), Position = UDim2.new(0.5, -200, 0.5, -160)})
         local contentStrokeTween = TweenService:Create(contentStroke, TweenInfo.new(
             0.5,
             Enum.EasingStyle.Quad,
             Enum.EasingDirection.In
-        ), {
-            Transparency = 1
-        })
-
+        ), {Transparency = 1})
         local titleTween = TweenService:Create(titleLabel, TweenInfo.new(
             0.5,
             Enum.EasingStyle.Quad,
             Enum.EasingDirection.In
-        ), {
-            TextTransparency = 1
-        })
-
+        ), {TextTransparency = 1})
         local subtitleTween = TweenService:Create(subtitleLabel, TweenInfo.new(
             0.5,
             Enum.EasingStyle.Quad,
             Enum.EasingDirection.In
-        ), {
-            TextTransparency = 1
-        })
-
+        ), {TextTransparency = 1})
         local discordTween = TweenService:Create(discordLabel, TweenInfo.new(
             0.5,
             Enum.EasingStyle.Quad,
             Enum.EasingDirection.In
-        ), {
-            TextTransparency = 1
-        })
-
+        ), {TextTransparency = 1})
         local copyButtonTween = TweenService:Create(copyButton, TweenInfo.new(
             0.5,
             Enum.EasingStyle.Quad,
             Enum.EasingDirection.In
-        ), {
-            TextTransparency = 1,
-            BackgroundTransparency = 1
-        })
-
+        ), {TextTransparency = 1, BackgroundTransparency = 1})
         local discordAdTween = TweenService:Create(discordAdLabel, TweenInfo.new(
             0.5,
             Enum.EasingStyle.Quad,
             Enum.EasingDirection.In
-        ), {
-            TextTransparency = 1
-        })
-
+        ), {TextTransparency = 1})
         local loadingBarTween = TweenService:Create(loadingBarContainer, TweenInfo.new(
             0.5,
             Enum.EasingStyle.Quad,
             Enum.EasingDirection.In
-        ), {
-            BackgroundTransparency = 1
-        })
-
+        ), {BackgroundTransparency = 1})
         local loadingBarFillTween = TweenService:Create(loadingBarFill, TweenInfo.new(
             0.5,
             Enum.EasingStyle.Quad,
             Enum.EasingDirection.In
-        ), {
-            BackgroundTransparency = 1
-        })
-
+        ), {BackgroundTransparency = 1})
         local percentageTween = TweenService:Create(percentageText, TweenInfo.new(
             0.5,
             Enum.EasingStyle.Quad,
             Enum.EasingDirection.In
-        ), {
-            TextTransparency = 1
-        })
-
+        ), {TextTransparency = 1})
         local warningTween = TweenService:Create(warningLabel, TweenInfo.new(
             0.5,
             Enum.EasingStyle.Quad,
             Enum.EasingDirection.In
-        ), {
-            TextTransparency = 1
-        })
-
-        -- Play exit animations
+        ), {TextTransparency = 1})
         fadeTween:Play()
         contentFadeTween:Play()
         contentStrokeTween:Play()
@@ -558,7 +445,6 @@ local function playExitAnimations(callback)
         loadingBarFillTween:Play()
         percentageTween:Play()
         warningTween:Play()
-
         contentFadeTween.Completed:Connect(function()
             if screenGui and screenGui.Parent then
                 screenGui:Destroy()
@@ -567,7 +453,6 @@ local function playExitAnimations(callback)
             if callback then callback() end
         end)
     end)
-
     if not success then
         warn("Exit animations failed: " .. tostring(err))
         if screenGui and screenGui.Parent then
@@ -587,9 +472,7 @@ local function animatePulse()
             Enum.EasingDirection.InOut,
             -1,
             true
-        ), {
-            Transparency = 0.1
-        })
+        ), {Transparency = 0.1})
         borderPulseTween:Play()
     end)
     if not success then
@@ -606,7 +489,6 @@ local function initialize()
     end)
     if not success then
         warn("Initialization failed: " .. tostring(err))
-        -- Fallback: Show UI immediately
         mainFrame.BackgroundTransparency = 0.7
         contentFrame.BackgroundTransparency = 0.3
         contentStroke.Transparency = 0.2
