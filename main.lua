@@ -422,9 +422,18 @@ coroutine.wrap(function()
                 if tick() - startTime > 20 then
                     warn("Key verification timed out")
                     KeySystem.HideKeySystem()
-                    loadLoadingScreen()
-                    wait(3.2)
-                    loadGameScript(scriptUrl)
+                    if successLS then
+                        pcall(function()
+                            LoadingScreen.initialize()
+                            LoadingScreen.setLoadingText("Key verification timed out", Color3.fromRGB(245, 100, 100))
+                            wait(3)
+                            LoadingScreen.playExitAnimations(function()
+                                loadGameScript(scriptUrl)
+                            end)
+                        end)
+                    else
+                        loadGameScript(scriptUrl)
+                    end
                     break
                 end
             end
