@@ -1,9 +1,8 @@
--- Scripts Hub X | Enhanced Loading Screen
+-- Scripts Hub X | Official Loading Screen
 -- Services
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -18,437 +17,442 @@ screenGui.Parent = playerGui
 -- Completion flag
 local isComplete = false
 
--- Main background frame
+-- Main background frame (hidden until animation completes)
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(1, 0, 1, 0)
-mainFrame.BackgroundColor3 = Color3.fromRGB(8, 12, 18)
-mainFrame.BackgroundTransparency = 0
-mainFrame.BorderSizePixel = 0
+mainFrame.BackgroundColor3 = Color3.fromRGB(15, 25, 35)
+mainFrame.BackgroundTransparency = 1 -- Hidden initially
 mainFrame.Parent = screenGui
 
--- Background gradient
-local backgroundGradient = Instance.new("UIGradient")
-backgroundGradient.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(8, 12, 18)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(12, 18, 28)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 12, 18))
-}
-backgroundGradient.Rotation = 45
-backgroundGradient.Parent = mainFrame
+-- Content frame (smaller size)
+local contentFrame = Instance.new("Frame")
+contentFrame.Size = UDim2.new(0, 320, 0, 240) -- Adjusted height for warning
+contentFrame.Position = UDim2.new(0.5, -160, 0.5, -120)
+contentFrame.BackgroundColor3 = Color3.fromRGB(25, 45, 65)
+contentFrame.BackgroundTransparency = 1 -- Hidden until animation completes
+contentFrame.BorderSizePixel = 0
+contentFrame.Parent = mainFrame
 
--- Content container (cleaner positioning)
-local contentContainer = Instance.new("Frame")
-contentContainer.Size = UDim2.new(0, 400, 0, 280)
-contentContainer.Position = UDim2.new(0.5, -200, 0.5, -140)
-contentContainer.BackgroundColor3 = Color3.fromRGB(18, 25, 35)
-contentContainer.BackgroundTransparency = 0.1
-contentContainer.BorderSizePixel = 0
-contentContainer.Parent = mainFrame
+-- Content frame corner
+local contentFrameCorner = Instance.new("UICorner")
+contentFrameCorner.CornerRadius = UDim.new(0, 12)
+contentFrameCorner.Parent = contentFrame
 
--- Container corner and shadow
-local containerCorner = Instance.new("UICorner")
-containerCorner.CornerRadius = UDim.new(0, 16)
-containerCorner.Parent = contentContainer
+-- Content frame glow
+local contentStroke = Instance.new("UIStroke")
+contentStroke.Color = Color3.fromRGB(70, 140, 240)
+contentStroke.Thickness = 1
+contentStroke.Transparency = 1 -- Hidden until animation completes
+contentStroke.Parent = contentFrame
 
-local containerStroke = Instance.new("UIStroke")
-containerStroke.Color = Color3.fromRGB(45, 85, 140)
-containerStroke.Thickness = 1
-containerStroke.Transparency = 0.4
-containerStroke.Parent = contentContainer
-
--- Drop shadow effect
-local shadowFrame = Instance.new("Frame")
-shadowFrame.Size = UDim2.new(1, 20, 1, 20)
-shadowFrame.Position = UDim2.new(0, -10, 0, -10)
-shadowFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-shadowFrame.BackgroundTransparency = 0.8
-shadowFrame.BorderSizePixel = 0
-shadowFrame.ZIndex = contentContainer.ZIndex - 1
-shadowFrame.Parent = contentContainer
-
-local shadowCorner = Instance.new("UICorner")
-shadowCorner.CornerRadius = UDim.new(0, 20)
-shadowCorner.Parent = shadowFrame
-
--- Logo/Brand section
-local logoSection = Instance.new("Frame")
-logoSection.Size = UDim2.new(1, -40, 0, 80)
-logoSection.Position = UDim2.new(0, 20, 0, 20)
-logoSection.BackgroundTransparency = 1
-logoSection.Parent = contentContainer
-
--- Main title
+-- Title label (smaller and refined)
 local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(1, 0, 0, 35)
-titleLabel.Position = UDim2.new(0, 0, 0, 0)
+titleLabel.Size = UDim2.new(1, -30, 0, 40)
+titleLabel.Position = UDim2.new(0, 15, 0, 15)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Text = "Scripts Hub X"
-titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleLabel.TextScaled = false
-titleLabel.TextSize = 28
+titleLabel.TextColor3 = Color3.fromRGB(110, 170, 245)
+titleLabel.TextScaled = true
+titleLabel.TextSize = 20
 titleLabel.Font = Enum.Font.GothamBold
-titleLabel.TextXAlignment = Enum.TextXAlignment.Center
-titleLabel.Parent = logoSection
+titleLabel.TextTransparency = 1 -- Hidden until animation completes
+titleLabel.Parent = contentFrame
 
--- Subtitle
+-- Subtitle label (smaller)
 local subtitleLabel = Instance.new("TextLabel")
-subtitleLabel.Size = UDim2.new(1, 0, 0, 20)
-subtitleLabel.Position = UDim2.new(0, 0, 0, 40)
+subtitleLabel.Size = UDim2.new(1, -30, 0, 25)
+subtitleLabel.Position = UDim2.new(0, 15, 0, 55)
 subtitleLabel.BackgroundTransparency = 1
-subtitleLabel.Text = "Premium Script Hub"
-subtitleLabel.TextColor3 = Color3.fromRGB(120, 160, 220)
-subtitleLabel.TextScaled = false
+subtitleLabel.Text = "Official Loading"
+subtitleLabel.TextColor3 = Color3.fromRGB(140, 170, 190)
+subtitleLabel.TextScaled = true
 subtitleLabel.TextSize = 14
 subtitleLabel.Font = Enum.Font.Gotham
-subtitleLabel.TextXAlignment = Enum.TextXAlignment.Center
-subtitleLabel.Parent = logoSection
+subtitleLabel.TextTransparency = 1 -- Hidden until animation completes
+subtitleLabel.Parent = contentFrame
 
--- Version label
-local versionLabel = Instance.new("TextLabel")
-versionLabel.Size = UDim2.new(1, 0, 0, 16)
-versionLabel.Position = UDim2.new(0, 0, 0, 62)
-versionLabel.BackgroundTransparency = 1
-versionLabel.Text = "v2.4.1"
-versionLabel.TextColor3 = Color3.fromRGB(80, 120, 180)
-versionLabel.TextScaled = false
-versionLabel.TextSize = 12
-versionLabel.Font = Enum.Font.Gotham
-versionLabel.TextXAlignment = Enum.TextXAlignment.Center
-versionLabel.Parent = logoSection
-
--- Loading section
-local loadingSection = Instance.new("Frame")
-loadingSection.Size = UDim2.new(1, -40, 0, 60)
-loadingSection.Position = UDim2.new(0, 20, 0, 120)
-loadingSection.BackgroundTransparency = 1
-loadingSection.Parent = contentContainer
-
--- Loading text
-local loadingText = Instance.new("TextLabel")
-loadingText.Size = UDim2.new(1, 0, 0, 20)
-loadingText.Position = UDim2.new(0, 0, 0, 0)
-loadingText.BackgroundTransparency = 1
-loadingText.Text = "Initializing..."
-loadingText.TextColor3 = Color3.fromRGB(180, 200, 230)
-loadingText.TextScaled = false
-loadingText.TextSize = 13
-loadingText.Font = Enum.Font.Gotham
-loadingText.TextXAlignment = Enum.TextXAlignment.Left
-loadingText.Parent = loadingSection
-
--- Progress percentage
-local progressText = Instance.new("TextLabel")
-progressText.Size = UDim2.new(1, 0, 0, 20)
-progressText.Position = UDim2.new(0, 0, 0, 0)
-progressText.BackgroundTransparency = 1
-progressText.Text = "0%"
-progressText.TextColor3 = Color3.fromRGB(45, 140, 255)
-progressText.TextScaled = false
-progressText.TextSize = 13
-progressText.Font = Enum.Font.GothamBold
-progressText.TextXAlignment = Enum.TextXAlignment.Right
-progressText.Parent = loadingSection
-
--- Loading bar background
-local loadingBarBg = Instance.new("Frame")
-loadingBarBg.Size = UDim2.new(1, 0, 0, 6)
-loadingBarBg.Position = UDim2.new(0, 0, 0, 30)
-loadingBarBg.BackgroundColor3 = Color3.fromRGB(25, 35, 50)
-loadingBarBg.BorderSizePixel = 0
-loadingBarBg.Parent = loadingSection
-
-local loadingBarBgCorner = Instance.new("UICorner")
-loadingBarBgCorner.CornerRadius = UDim.new(0, 3)
-loadingBarBgCorner.Parent = loadingBarBg
-
--- Loading bar fill
-local loadingBarFill = Instance.new("Frame")
-loadingBarFill.Size = UDim2.new(0, 0, 1, 0)
-loadingBarFill.Position = UDim2.new(0, 0, 0, 0)
-loadingBarFill.BackgroundColor3 = Color3.fromRGB(45, 140, 255)
-loadingBarFill.BorderSizePixel = 0
-loadingBarFill.Parent = loadingBarBg
-
-local loadingBarFillCorner = Instance.new("UICorner")
-loadingBarFillCorner.CornerRadius = UDim.new(0, 3)
-loadingBarFillCorner.Parent = loadingBarFill
-
--- Loading bar gradient
-local loadingBarGradient = Instance.new("UIGradient")
-loadingBarGradient.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(25, 120, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(45, 140, 255)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(65, 160, 255))
-}
-loadingBarGradient.Parent = loadingBarFill
-
--- Loading bar glow effect
-local glowFrame = Instance.new("Frame")
-glowFrame.Size = UDim2.new(1, 4, 1, 4)
-glowFrame.Position = UDim2.new(0, -2, 0, -2)
-glowFrame.BackgroundColor3 = Color3.fromRGB(45, 140, 255)
-glowFrame.BackgroundTransparency = 0.7
-glowFrame.BorderSizePixel = 0
-glowFrame.ZIndex = loadingBarFill.ZIndex - 1
-glowFrame.Parent = loadingBarFill
-
-local glowCorner = Instance.new("UICorner")
-glowCorner.CornerRadius = UDim.new(0, 5)
-glowCorner.Parent = glowFrame
-
--- Discord section
-local discordSection = Instance.new("Frame")
-discordSection.Size = UDim2.new(1, -40, 0, 45)
-discordSection.Position = UDim2.new(0, 20, 0, 200)
-discordSection.BackgroundColor3 = Color3.fromRGB(30, 40, 55)
-discordSection.BackgroundTransparency = 0.3
-discordSection.BorderSizePixel = 0
-discordSection.Parent = contentContainer
+-- Discord container (compact)
+local discordContainer = Instance.new("Frame")
+discordContainer.Size = UDim2.new(1, -30, 0, 35)
+discordContainer.Position = UDim2.new(0, 15, 0, 85)
+discordContainer.BackgroundColor3 = Color3.fromRGB(35, 55, 75)
+discordContainer.BackgroundTransparency = 1 -- Hidden until animation completes
+discordContainer.BorderSizePixel = 0
+discordContainer.Parent = contentFrame
 
 local discordCorner = Instance.new("UICorner")
-discordCorner.CornerRadius = UDim.new(0, 8)
-discordCorner.Parent = discordSection
+discordCorner.CornerRadius = UDim.new(0, 6)
+discordCorner.Parent = discordContainer
 
--- Discord label
+-- Discord label (smaller font)
 local discordLabel = Instance.new("TextLabel")
-discordLabel.Size = UDim2.new(0.7, -10, 1, -10)
-discordLabel.Position = UDim2.new(0, 15, 0, 5)
+discordLabel.Size = UDim2.new(0.68, -10, 1, -8)
+discordLabel.Position = UDim2.new(0, 8, 0, 4)
 discordLabel.BackgroundTransparency = 1
 discordLabel.Text = "discord.gg/bpsNUH5sVb"
-discordLabel.TextColor3 = Color3.fromRGB(120, 180, 255)
-discordLabel.TextScaled = false
-discordLabel.TextSize = 12
-discordLabel.Font = Enum.Font.GothamBold
+discordLabel.TextColor3 = Color3.fromRGB(90, 150, 245)
+discordLabel.TextScaled = true
+discordLabel.TextSize = 11
+discordLabel.Font = Enum.Font.Gotham
 discordLabel.TextXAlignment = Enum.TextXAlignment.Left
-discordLabel.TextYAlignment = Enum.TextYAlignment.Center
-discordLabel.Parent = discordSection
+discordLabel.TextTransparency = 1 -- Hidden until animation completes
+discordLabel.Parent = discordContainer
 
--- Copy button
+-- Copy button (smaller)
 local copyButton = Instance.new("TextButton")
-copyButton.Size = UDim2.new(0, 80, 0, 28)
-copyButton.Position = UDim2.new(1, -90, 0.5, -14)
-copyButton.BackgroundColor3 = Color3.fromRGB(45, 140, 255)
-copyButton.BackgroundTransparency = 0.1
-copyButton.Text = "COPY"
-copyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-copyButton.TextScaled = false
+copyButton.Size = UDim2.new(0, 70, 0, 24)
+copyButton.Position = UDim2.new(0.72, 5, 0, 5)
+copyButton.BackgroundColor3 = Color3.fromRGB(70, 140, 240)
+copyButton.BackgroundTransparency = 1 -- Hidden until animation completes
+copyButton.Text = "Copy"
+copyButton.TextColor3 = Color3.fromRGB(220, 230, 245)
+copyButton.TextScaled = true
 copyButton.TextSize = 11
 copyButton.Font = Enum.Font.GothamBold
-copyButton.Parent = discordSection
+copyButton.TextTransparency = 1 -- Hidden until animation completes
+copyButton.Parent = discordContainer
 
 local copyButtonCorner = Instance.new("UICorner")
-copyButtonCorner.CornerRadius = UDim.new(0, 6)
+copyButtonCorner.CornerRadius = UDim.new(0, 5)
 copyButtonCorner.Parent = copyButton
 
--- Warning section
-local warningSection = Instance.new("Frame")
-warningSection.Size = UDim2.new(1, -40, 0, 20)
-warningSection.Position = UDim2.new(0, 20, 0, 255)
-warningSection.BackgroundTransparency = 1
-warningSection.Parent = contentContainer
+-- Discord advertisement label (compact)
+local discordAdLabel = Instance.new("TextLabel")
+discordAdLabel.Size = UDim2.new(1, -30, 0, 30)
+discordAdLabel.Position = UDim2.new(0, 15, 0, 125)
+discordAdLabel.BackgroundTransparency = 1
+discordAdLabel.Text = "Join our Discord for updates!"
+discordAdLabel.TextColor3 = Color3.fromRGB(90, 150, 245)
+discordAdLabel.TextScaled = true
+discordAdLabel.TextSize = 11
+discordAdLabel.Font = Enum.Font.Gotham
+discordAdLabel.TextTransparency = 1 -- Hidden until animation completes
+discordAdLabel.TextWrapped = true
+discordAdLabel.Parent = contentFrame
 
+-- Loading text (replaces loading bar)
+local loadingText = Instance.new("TextLabel")
+loadingText.Size = UDim2.new(1, -30, 0, 25)
+loadingText.Position = UDim2.new(0, 15, 0, 160)
+loadingText.BackgroundTransparency = 1
+loadingText.Text = "loading"
+loadingText.TextColor3 = Color3.fromRGB(70, 140, 240)
+loadingText.TextScaled = true
+loadingText.TextSize = 14
+loadingText.Font = Enum.Font.Gotham
+loadingText.TextTransparency = 1 -- Hidden until animation completes
+loadingText.Parent = contentFrame
+
+-- Warning label (below loading text)
 local warningLabel = Instance.new("TextLabel")
-warningLabel.Size = UDim2.new(1, 0, 1, 0)
-warningLabel.Position = UDim2.new(0, 0, 0, 0)
+warningLabel.Size = UDim2.new(1, -30, 0, 35)
+warningLabel.Position = UDim2.new(0, 15, 0, 190)
 warningLabel.BackgroundTransparency = 1
-warningLabel.Text = "⚠️ Only use scripts from trusted developers"
-warningLabel.TextColor3 = Color3.fromRGB(255, 180, 80)
-warningLabel.TextScaled = false
-warningLabel.TextSize = 11
+warningLabel.Text = "Warning: Don't use scripts from unknown developers because it might steal your ingame items!"
+warningLabel.TextColor3 = Color3.fromRGB(245, 100, 100)
+warningLabel.TextScaled = true
+warningLabel.TextSize = 9
 warningLabel.Font = Enum.Font.Gotham
-warningLabel.TextXAlignment = Enum.TextXAlignment.Center
-warningLabel.Parent = warningSection
+warningLabel.TextTransparency = 1 -- Hidden until animation completes
+warningLabel.TextWrapped = true
+warningLabel.Parent = contentFrame
+
+-- Water drop frame (smaller)
+local waterDropFrame = Instance.new("Frame")
+waterDropFrame.Size = UDim2.new(0, 30, 0, 45) -- Smaller teardrop
+waterDropFrame.Position = UDim2.new(0.5, -15, 0, -50) -- Starts above screen
+waterDropFrame.BackgroundColor3 = Color3.fromRGB(70, 140, 240)
+waterDropFrame.BackgroundTransparency = 0.4
+waterDropFrame.BorderSizePixel = 0
+waterDropFrame.Parent = mainFrame
+
+local waterDropCorner = Instance.new("UICorner")
+waterDropCorner.CornerRadius = UDim.new(0.5, 0) -- Rounded teardrop shape
+waterDropCorner.Parent = waterDropFrame
 
 -- Copy button functionality
 copyButton.MouseButton1Click:Connect(function()
     pcall(function()
         setclipboard("https://discord.gg/bpsNUH5sVb")
-        copyButton.Text = "COPIED!"
-        copyButton.BackgroundColor3 = Color3.fromRGB(40, 180, 80)
-        
-        wait(1.5)
-        
-        copyButton.Text = "COPY"
-        copyButton.BackgroundColor3 = Color3.fromRGB(45, 140, 255)
+        copyButton.Text = "Copied!"
+        copyButton.BackgroundColor3 = Color3.fromRGB(50, 120, 220)
+        wait(1)
+        copyButton.Text = "Copy"
+        copyButton.BackgroundColor3 = Color3.fromRGB(70, 140, 240)
     end)
 end)
 
--- Realistic loading function
-local function animateRealisticLoading(callback)
-    local startTime = tick()
-    local duration = 3 -- 3 seconds total
-    local currentProgress = 0
-    
-    -- Loading stages with realistic text and timing
-    local loadingStages = {
-        {progress = 0, text = "Initializing...", delay = 0},
-        {progress = 15, text = "Loading modules...", delay = 0.3},
-        {progress = 35, text = "Connecting to servers...", delay = 0.6},
-        {progress = 55, text = "Authenticating user...", delay = 0.9},
-        {progress = 75, text = "Loading scripts...", delay = 1.4},
-        {progress = 90, text = "Finalizing setup...", delay = 2.2},
-        {progress = 100, text = "Complete!", delay = 2.8}
-    }
-    
-    local stageIndex = 1
-    
-    -- Create smooth progress animation
-    local connection
-    connection = RunService.Heartbeat:Connect(function()
-        local elapsed = tick() - startTime
-        local targetProgress = math.min((elapsed / duration) * 100, 100)
-        
-        -- Smooth interpolation with slight randomness for realism
-        local lerp = 0.05 + (math.random() * 0.02) -- Variable speed for realism
-        currentProgress = currentProgress + (targetProgress - currentProgress) * lerp
-        
-        -- Update progress bar with easing
-        local progressScale = math.max(0, math.min(1, currentProgress / 100))
-        loadingBarFill.Size = UDim2.new(progressScale, 0, 1, 0)
-        progressText.Text = math.floor(currentProgress) .. "%"
-        
-        -- Update loading text at specific stages
-        if stageIndex <= #loadingStages and elapsed >= loadingStages[stageIndex].delay then
-            loadingText.Text = loadingStages[stageIndex].text
-            if loadingStages[stageIndex].text == "Complete!" then
-                loadingText.TextColor3 = Color3.fromRGB(80, 220, 120)
-                progressText.TextColor3 = Color3.fromRGB(80, 220, 120)
-            end
-            stageIndex = stageIndex + 1
-        end
-        
-        -- Complete when progress reaches 100%
-        if currentProgress >= 99.8 then
-            connection:Disconnect()
-            loadingBarFill.Size = UDim2.new(1, 0, 1, 0)
-            progressText.Text = "100%"
-            loadingText.Text = "Complete!"
-            loadingText.TextColor3 = Color3.fromRGB(80, 220, 120)
-            progressText.TextColor3 = Color3.fromRGB(80, 220, 120)
-            
-            wait(0.5)
-            isComplete = true
-            if callback then
-                callback()
-            end
-        end
-    end)
+-- Animate particles (simplified)
+local function animateParticles()
+    -- Particle animation can be added if desired
 end
 
--- Smooth entrance animation
-local function playEntranceAnimation()
-    -- Hide all elements initially
-    contentContainer.BackgroundTransparency = 1
-    containerStroke.Transparency = 1
-    shadowFrame.BackgroundTransparency = 1
+-- Animate loading text (text-based sequence with safeguard and color change)
+local function animateLoadingBar(callback)
+    print("Starting animateLoadingBar at line: " .. debug.traceback())
+    if not loadingText or not loadingText.Parent then
+        warn("loadingText is invalid or not parented: " .. tostring(loadingText) .. ", Parent: " .. tostring(loadingText.Parent))
+        return
+    end
+    print("loadingText valid, starting sequence")
+
+    local stages = {"loading", "loading.", "loading..", "loading...", "Successful"}
+    local maxAttempts = 5 -- Max 5 seconds total
+    local attempt = 1
+
+    while attempt <= maxAttempts do
+        for i, stage in ipairs(stages) do
+            loadingText.Text = stage
+            if stage == "Successful" then
+                loadingText.TextColor3 = Color3.fromRGB(0, 150, 0) -- Change to green
+            end
+            print("Displayed stage: " .. stage .. " at attempt " .. attempt)
+            local success, err = pcall(function()
+                wait(0.7) -- 0.7-second wait per message
+            end)
+            if not success then
+                warn("Wait failed: " .. tostring(err))
+                break
+            end
+            if stage == "Successful" then
+                print("Loading sequence completed with Successful")
+                wait(1.2) -- Additional 1-second delay after "Successful"
+                isComplete = true
+                if callback then
+                    callback()
+                end
+                return true
+            end
+        end
+        attempt = attempt + 1
+    end
+    warn("Loading sequence timed out after " .. maxAttempts .. " attempts, forcing exit")
+    loadingText.Text = "Successful"
+    loadingText.TextColor3 = Color3.fromRGB(0, 150, 0) -- Change to green
+    wait(1)
+    isComplete = true
+    if callback then
+        callback()
+    end
+    return true
+end
+
+-- Water drop entrance animations
+local function playEntranceAnimations()
+    -- Ensure all elements are hidden
+    contentFrame.BackgroundTransparency = 1
+    contentStroke.Transparency = 1
     titleLabel.TextTransparency = 1
     subtitleLabel.TextTransparency = 1
-    versionLabel.TextTransparency = 1
-    loadingText.TextTransparency = 1
-    progressText.TextTransparency = 1
-    loadingBarBg.BackgroundTransparency = 1
-    loadingBarFill.BackgroundTransparency = 1
     discordLabel.TextTransparency = 1
     copyButton.TextTransparency = 1
     copyButton.BackgroundTransparency = 1
+    discordAdLabel.TextTransparency = 1
+    loadingText.TextTransparency = 1
     warningLabel.TextTransparency = 1
-    
-    -- Scale and fade in main container
-    contentContainer.Size = UDim2.new(0, 350, 0, 250)
-    contentContainer.Position = UDim2.new(0.5, -175, 0.5, -125)
-    
-    local containerTween = TweenService:Create(contentContainer, TweenInfo.new(
-        0.8,
-        Enum.EasingStyle.Back,
-        Enum.EasingDirection.Out
-    ), {
-        Size = UDim2.new(0, 400, 0, 280),
-        Position = UDim2.new(0.5, -200, 0.5, -140),
-        BackgroundTransparency = 0.1
-    })
-    
-    containerTween:Play()
-    
-    -- Fade in elements sequentially
-    wait(0.3)
-    
-    local fadeElements = {
-        {element = containerStroke, property = "Transparency", target = 0.4, delay = 0},
-        {element = shadowFrame, property = "BackgroundTransparency", target = 0.8, delay = 0.05},
-        {element = titleLabel, property = "TextTransparency", target = 0, delay = 0.1},
-        {element = subtitleLabel, property = "TextTransparency", target = 0, delay = 0.15},
-        {element = versionLabel, property = "TextTransparency", target = 0, delay = 0.2},
-        {element = loadingText, property = "TextTransparency", target = 0, delay = 0.3},
-        {element = progressText, property = "TextTransparency", target = 0, delay = 0.35},
-        {element = loadingBarBg, property = "BackgroundTransparency", target = 0, delay = 0.4},
-        {element = discordLabel, property = "TextTransparency", target = 0, delay = 0.5},
-        {element = copyButton, property = "TextTransparency", target = 0, delay = 0.55},
-        {element = copyButton, property = "BackgroundTransparency", target = 0.1, delay = 0.55},
-        {element = warningLabel, property = "TextTransparency", target = 0, delay = 0.6}
-    }
-    
-    for _, fadeData in ipairs(fadeElements) do
-        spawn(function()
-            wait(fadeData.delay)
-            local tween = TweenService:Create(fadeData.element, TweenInfo.new(
-                0.4,
-                Enum.EasingStyle.Sine,
-                Enum.EasingDirection.Out
-            ), {
-                [fadeData.property] = fadeData.target
-            })
-            tween:Play()
-        end)
-    end
-    
-    wait(0.8)
-    animateRealisticLoading(function()
-        print("Loading completed")
-    end)
-end
 
--- Smooth exit animation
-local function playExitAnimation(callback)
-    local exitTween = TweenService:Create(contentContainer, TweenInfo.new(
-        0.6,
-        Enum.EasingStyle.Back,
+    -- Water drop fall animation
+    local dropFallTween = TweenService:Create(waterDropFrame, TweenInfo.new(
+        0.8,
+        Enum.EasingStyle.Quad,
         Enum.EasingDirection.In
     ), {
-        Size = UDim2.new(0, 350, 0, 250),
-        Position = UDim2.new(0.5, -175, 0.5, -125),
-        BackgroundTransparency = 1
+        Position = UDim2.new(0.5, -15, 0.5, -120) -- Adjusted for smaller size
     })
-    
-    local fadeTween = TweenService:Create(mainFrame, TweenInfo.new(
-        0.8,
+
+    -- Ripple expansion
+    local rippleTween = TweenService:Create(waterDropFrame, TweenInfo.new(
+        1.0,
         Enum.EasingStyle.Sine,
         Enum.EasingDirection.Out
     ), {
+        Size = UDim2.new(0, 320, 0, 240),
+        Position = UDim2.new(0.5, -160, 0.5, -120),
         BackgroundTransparency = 1
     })
-    
-    exitTween:Play()
+
+    -- Start animations
+    dropFallTween:Play()
+    dropFallTween.Completed:Connect(function()
+        rippleTween:Play()
+    end)
+
+    -- Reveal content frame and elements
+    rippleTween.Completed:Connect(function()
+        local mainFrameTween = TweenService:Create(mainFrame, TweenInfo.new(
+            0.5,
+            Enum.EasingStyle.Quad,
+            Enum.EasingDirection.Out
+        ), {
+            BackgroundTransparency = 0.8
+        })
+
+        local contentFrameTween = TweenService:Create(contentFrame, TweenInfo.new(
+            0.4,
+            Enum.EasingStyle.Sine,
+            Enum.EasingDirection.Out
+        ), {
+            BackgroundTransparency = 0.4
+        })
+
+        local contentStrokeTween = TweenService:Create(contentStroke, TweenInfo.new(
+            0.4,
+            Enum.EasingStyle.Sine,
+            Enum.EasingDirection.Out
+        ), {
+            Transparency = 0.3
+        })
+
+        local titleTween = TweenService:Create(titleLabel, TweenInfo.new(
+            0.4,
+            Enum.EasingStyle.Sine,
+            Enum.EasingDirection.Out
+        ), {
+            TextTransparency = 0
+        })
+
+        local subtitleTween = TweenService:Create(subtitleLabel, TweenInfo.new(
+            0.4,
+            Enum.EasingStyle.Sine,
+            Enum.EasingDirection.Out
+        ), {
+            TextTransparency = 0
+        })
+
+        local discordTween = TweenService:Create(discordLabel, TweenInfo.new(
+            0.4,
+            Enum.EasingStyle.Sine,
+            Enum.EasingDirection.Out
+        ), {
+            TextTransparency = 0
+        })
+
+        local copyButtonTween = TweenService:Create(copyButton, TweenInfo.new(
+            0.4,
+            Enum.EasingStyle.Sine,
+            Enum.EasingDirection.Out
+        ), {
+            TextTransparency = 0,
+            BackgroundTransparency = 0.1
+        })
+
+        local discordAdTween = TweenService:Create(discordAdLabel, TweenInfo.new(
+            0.4,
+            Enum.EasingStyle.Sine,
+            Enum.EasingDirection.Out
+        ), {
+            TextTransparency = 0
+        })
+
+        local loadingTextTween = TweenService:Create(loadingText, TweenInfo.new(
+            0.4,
+            Enum.EasingStyle.Sine,
+            Enum.EasingDirection.Out
+        ), {
+            TextTransparency = 0
+        })
+
+        local warningTween = TweenService:Create(warningLabel, TweenInfo.new(
+            0.4,
+            Enum.EasingStyle.Sine,
+            Enum.EasingDirection.Out
+        ), {
+            TextTransparency = 0
+        })
+
+        mainFrameTween:Play()
+        contentFrameTween:Play()
+        contentStrokeTween:Play()
+        titleTween:Play()
+        wait(0.05)
+        subtitleTween:Play()
+        wait(0.05)
+        discordTween:Play()
+        copyButtonTween:Play()
+        wait(0.05)
+        discordAdTween:Play()
+        wait(0.05)
+        loadingTextTween:Play()
+        warningTween:Play()
+
+        loadingTextTween.Completed:Wait()
+        waterDropFrame:Destroy()
+        animateLoadingBar(function()
+            print("Loading bar completed, ready for exit")
+        end) -- Start the loading sequence with callback
+    end)
+end
+
+-- Evaporation exit animations
+local function playExitAnimations(callback)
+    print("Starting playExitAnimations at line: " .. debug.traceback())
+    local evaporateTween = TweenService:Create(contentFrame, TweenInfo.new(
+        0.6,
+        Enum.EasingStyle.Quad,
+        Enum.EasingDirection.In
+    ), {
+        BackgroundTransparency = 1,
+        Size = UDim2.new(0, 360, 0, 240),
+        Position = UDim2.new(0.5, -180, 0.5, -120)
+    })
+
+    local fadeTween = TweenService:Create(mainFrame, TweenInfo.new(
+        0.5,
+        Enum.EasingStyle.Quad,
+        Enum.EasingDirection.Out
+    ), {
+        BackgroundTransparency = 1
+    })
+
+    evaporateTween:Play()
     fadeTween:Play()
-    
-    exitTween.Completed:Wait()
-    
+
+    local success, err = pcall(function()
+        evaporateTween.Completed:Wait()
+    end)
+    if not success then
+        warn("Evaporation tween failed: " .. tostring(err))
+        fadeTween:Play() -- Fallback to fade
+        fadeTween.Completed:Wait()
+    end
+
     if screenGui and screenGui.Parent then
         screenGui:Destroy()
+        print("ScreenGui destroyed after evaporation or fade")
     end
-    
     if callback then
         callback()
     end
 end
 
--- Start the loading sequence
-playEntranceAnimation()
+-- Border pulse (subtler)
+local function animatePulse()
+    local borderPulseTween = TweenService:Create(contentStroke, TweenInfo.new(
+        1.5,
+        Enum.EasingStyle.Sine,
+        Enum.EasingDirection.InOut,
+        -1,
+        true
+    ), {
+        Transparency = 0.1
+    })
 
--- Return the loading screen API
+    borderPulseTween:Play()
+end
+
+-- Expose loading screen functions
 return {
-    playEntranceAnimation = playEntranceAnimation,
-    playExitAnimation = playExitAnimation,
-    animateRealisticLoading = animateRealisticLoading,
+    playEntranceAnimations = playEntranceAnimations,
+    playExitAnimations = playExitAnimations,
+    animateParticles = animateParticles,
+    animatePulse = animatePulse,
+    animateLoadingBar = animateLoadingBar,
+    setLoadingText = function(text, color)
+        if loadingText and loadingText.Parent then
+            loadingText.Text = text or "loading"
+            loadingText.TextColor3 = color or Color3.fromRGB(70, 140, 240)
+        end
+    end,
     isComplete = function()
         return isComplete
     end
