@@ -245,14 +245,10 @@ coroutine.wrap(function()
     local userStatus = checkPremiumUser()
     sendWebhookNotification(userStatus, scriptUrl)
 
-    if userStatus == "owner" then
-        print("Owner detected, loading script")
+    if userStatus == "owner" or userStatus == "staff" then
+        print("Owner/Staff detected, loading script")
             loadGameScript(scriptUrl)
         end
-    elseif userStatus == "staff" then
-        print("Staff detected, loading script")
-        loadGameScript(scriptUrl)
-    end
     elseif userStatus == "blackuser" then
         print("Black user detected")
         applyBlackSkin()
