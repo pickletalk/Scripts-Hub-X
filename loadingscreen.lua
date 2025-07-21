@@ -1,4 +1,4 @@
--- Scripts Hub X | Enhanced Loading Screen with Debugging
+-- Scripts Hub X | Enhanced Loading Screen
 -- Services
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
@@ -35,28 +35,28 @@ local isComplete = false
 -- Main background frame
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(1, 0, 1, 0)
-mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+mainFrame.BackgroundColor3 = Color3.fromRGB(25, 28, 35) -- Darker, desaturated blue
 mainFrame.BackgroundTransparency = 1
 mainFrame.Parent = screenGui
 
 -- Content frame (cleaner, centered)
 local contentFrame = Instance.new("Frame")
-contentFrame.Size = UDim2.new(0, 400, 0, 300)
-contentFrame.Position = UDim2.new(0.5, -200, 0.5, -150)
-contentFrame.BackgroundColor3 = Color3.fromRGB(60, 80, 100)
+contentFrame.Size = UDim2.new(0, 450, 0, 320) -- Slightly larger
+contentFrame.Position = UDim2.new(0.5, -225, 0.5, -160)
+contentFrame.BackgroundColor3 = Color3.fromRGB(40, 50, 65) -- Deeper blue
 contentFrame.BackgroundTransparency = 1
 contentFrame.BorderSizePixel = 0
 contentFrame.Parent = mainFrame
 
 -- Content frame corner
 local contentFrameCorner = Instance.new("UICorner")
-contentFrameCorner.CornerRadius = UDim.new(0, 8)
+contentFrameCorner.CornerRadius = UDim.new(0, 12) -- Smoother corners
 contentFrameCorner.Parent = contentFrame
 
 -- Content frame glow
 local contentStroke = Instance.new("UIStroke")
-contentStroke.Color = Color3.fromRGB(100, 150, 200)
-contentStroke.Thickness = 1.5
+contentStroke.Color = Color3.fromRGB(80, 180, 220) -- Brighter, more vibrant blue
+contentStroke.Thickness = 2
 contentStroke.Transparency = 1
 contentStroke.Parent = contentFrame
 
@@ -66,9 +66,9 @@ titleLabel.Size = UDim2.new(1, -40, 0, 50)
 titleLabel.Position = UDim2.new(0, 20, 0, 20)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Text = "Scripts Hub X"
-titleLabel.TextColor3 = Color3.fromRGB(100, 150, 200)
+titleLabel.TextColor3 = Color3.fromRGB(210, 220, 240) -- Softer white
 titleLabel.TextScaled = true
-titleLabel.TextSize = 28
+titleLabel.TextSize = 32
 titleLabel.Font = Enum.Font.GothamBold
 titleLabel.TextTransparency = 1
 titleLabel.Parent = contentFrame
@@ -76,12 +76,12 @@ titleLabel.Parent = contentFrame
 -- Subtitle label
 local subtitleLabel = Instance.new("TextLabel")
 subtitleLabel.Size = UDim2.new(1, -40, 0, 30)
-subtitleLabel.Position = UDim2.new(0, 20, 0, 70)
+subtitleLabel.Position = UDim2.new(0, 20, 0, 75)
 subtitleLabel.BackgroundTransparency = 1
-subtitleLabel.Text = "Official Loading"
-subtitleLabel.TextColor3 = Color3.fromRGB(150, 180, 200)
+subtitleLabel.Text = "Enhanced Loading Experience"
+subtitleLabel.TextColor3 = Color3.fromRGB(160, 170, 190) -- Lighter gray
 subtitleLabel.TextScaled = true
-subtitleLabel.TextSize = 16
+subtitleLabel.TextSize = 18
 subtitleLabel.Font = Enum.Font.Gotham
 subtitleLabel.TextTransparency = 1
 subtitleLabel.Parent = contentFrame
@@ -89,25 +89,25 @@ subtitleLabel.Parent = contentFrame
 -- Discord container
 local discordContainer = Instance.new("Frame")
 discordContainer.Size = UDim2.new(1, -40, 0, 40)
-discordContainer.Position = UDim2.new(0, 20, 0, 110)
-discordContainer.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+discordContainer.Position = UDim2.new(0, 20, 0, 120)
+discordContainer.BackgroundColor3 = Color3.fromRGB(30, 35, 45) -- Darker container
 discordContainer.BackgroundTransparency = 1
 discordContainer.BorderSizePixel = 0
 discordContainer.Parent = contentFrame
 
 local discordCorner = Instance.new("UICorner")
-discordCorner.CornerRadius = UDim.new(0, 6)
+discordCorner.CornerRadius = UDim.new(0, 8)
 discordCorner.Parent = discordContainer
 
 -- Discord label
 local discordLabel = Instance.new("TextLabel")
 discordLabel.Size = UDim2.new(0.65, -10, 1, -6)
-discordLabel.Position = UDim2.new(0, 10, 0, 3)
+discordLabel.Position = UDim2.new(0, 15, 0, 3)
 discordLabel.BackgroundTransparency = 1
 discordLabel.Text = "discord.gg/bpsNUH5sVb"
-discordLabel.TextColor3 = Color3.fromRGB(100, 160, 255)
+discordLabel.TextColor3 = Color3.fromRGB(100, 180, 255) -- Vibrant blue
 discordLabel.TextScaled = true
-discordLabel.TextSize = 12
+discordLabel.TextSize = 14
 discordLabel.Font = Enum.Font.Gotham
 discordLabel.TextXAlignment = Enum.TextXAlignment.Left
 discordLabel.TextTransparency = 1
@@ -115,31 +115,31 @@ discordLabel.Parent = discordContainer
 
 -- Copy button
 local copyButton = Instance.new("TextButton")
-copyButton.Size = UDim2.new(0, 80, 0, 28)
-copyButton.Position = UDim2.new(0.7, 5, 0, 6)
-copyButton.BackgroundColor3 = Color3.fromRGB(80, 160, 255)
+copyButton.Size = UDim2.new(0, 90, 0, 30)
+copyButton.Position = UDim2.new(0.7, 0, 0, 5)
+copyButton.BackgroundColor3 = Color3.fromRGB(80, 190, 230) -- Teal accent
 copyButton.BackgroundTransparency = 1
 copyButton.Text = "Copy"
-copyButton.TextColor3 = Color3.fromRGB(230, 240, 255)
+copyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 copyButton.TextScaled = true
-copyButton.TextSize = 12
+copyButton.TextSize = 14
 copyButton.Font = Enum.Font.GothamBold
 copyButton.TextTransparency = 1
 copyButton.Parent = discordContainer
 
 local copyButtonCorner = Instance.new("UICorner")
-copyButtonCorner.CornerRadius = UDim.new(0, 5)
+copyButtonCorner.CornerRadius = UDim.new(0, 6)
 copyButtonCorner.Parent = copyButton
 
 -- Discord advertisement label
 local discordAdLabel = Instance.new("TextLabel")
 discordAdLabel.Size = UDim2.new(1, -40, 0, 30)
-discordAdLabel.Position = UDim2.new(0, 20, 0, 155)
+discordAdLabel.Position = UDim2.new(0, 20, 0, 165)
 discordAdLabel.BackgroundTransparency = 1
-discordAdLabel.Text = "Join our Discord for updates!"
-discordAdLabel.TextColor3 = Color3.fromRGB(100, 160, 255)
+discordAdLabel.Text = "Join our Discord for the latest updates and scripts!"
+discordAdLabel.TextColor3 = Color3.fromRGB(120, 190, 255) -- Softer blue
 discordAdLabel.TextScaled = true
-discordAdLabel.TextSize = 12
+discordAdLabel.TextSize = 14
 discordAdLabel.Font = Enum.Font.Gotham
 discordAdLabel.TextTransparency = 1
 discordAdLabel.TextWrapped = true
@@ -147,45 +147,45 @@ discordAdLabel.Parent = contentFrame
 
 -- Loading bar container
 local loadingBarContainer = Instance.new("Frame")
-loadingBarContainer.Size = UDim2.new(1, -40, 0, 10)
-loadingBarContainer.Position = UDim2.new(0, 20, 0, 195)
-loadingBarContainer.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+loadingBarContainer.Size = UDim2.new(1, -40, 0, 12)
+loadingBarContainer.Position = UDim2.new(0, 20, 0, 210)
+loadingBarContainer.BackgroundColor3 = Color3.fromRGB(30, 35, 45)
 loadingBarContainer.BackgroundTransparency = 1
 loadingBarContainer.BorderSizePixel = 0
 loadingBarContainer.Parent = contentFrame
 
 local loadingBarCorner = Instance.new("UICorner")
-loadingBarCorner.CornerRadius = UDim.new(0, 5)
+loadingBarCorner.CornerRadius = UDim.new(0, 6)
 loadingBarCorner.Parent = loadingBarContainer
 
 -- Loading bar fill
 local loadingBarFill = Instance.new("Frame")
 loadingBarFill.Size = UDim2.new(0, 0, 1, 0)
-loadingBarFill.BackgroundColor3 = Color3.fromRGB(100, 150, 200)
+loadingBarFill.BackgroundColor3 = Color3.fromRGB(80, 180, 220) -- Vibrant blue
 loadingBarFill.BackgroundTransparency = 1
 loadingBarFill.BorderSizePixel = 0
 loadingBarFill.Parent = loadingBarContainer
 
 local loadingBarFillCorner = Instance.new("UICorner")
-loadingBarFillCorner.CornerRadius = UDim.new(0, 5)
+loadingBarFillCorner.CornerRadius = UDim.new(0, 6)
 loadingBarFillCorner.Parent = loadingBarFill
 
 -- Loading bar glow
 local loadingBarGlow = Instance.new("UIStroke")
-loadingBarGlow.Color = Color3.fromRGB(150, 200, 255)
-loadingBarGlow.Thickness = 2
-loadingBarGlow.Transparency = 0.5
+loadingBarGlow.Color = Color3.fromRGB(180, 230, 255) -- Bright glow
+loadingBarGlow.Thickness = 3
+loadingBarGlow.Transparency = 0.6
 loadingBarGlow.Parent = loadingBarFill
 
 -- Percentage text
 local percentageText = Instance.new("TextLabel")
 percentageText.Size = UDim2.new(1, -40, 0, 20)
-percentageText.Position = UDim2.new(0, 20, 0, 210)
+percentageText.Position = UDim2.new(0, 20, 0, 230)
 percentageText.BackgroundTransparency = 1
 percentageText.Text = "0%"
-percentageText.TextColor3 = Color3.fromRGB(100, 150, 200)
+percentageText.TextColor3 = Color3.fromRGB(180, 220, 240) -- Softer white
 percentageText.TextScaled = true
-percentageText.TextSize = 14
+percentageText.TextSize = 16
 percentageText.Font = Enum.Font.Gotham
 percentageText.TextTransparency = 1
 percentageText.Parent = contentFrame
@@ -193,12 +193,12 @@ percentageText.Parent = contentFrame
 -- Warning label
 local warningLabel = Instance.new("TextLabel")
 warningLabel.Size = UDim2.new(1, -40, 0, 30)
-warningLabel.Position = UDim2.new(0, 20, 0, 235)
+warningLabel.Position = UDim2.new(0, 20, 0, 265)
 warningLabel.BackgroundTransparency = 1
-warningLabel.Text = "Warning: Avoid scripts from unknown sources to protect your in-game items!"
-warningLabel.TextColor3 = Color3.fromRGB(200, 100, 100)
+warningLabel.Text = "Warning: For your safety, only use scripts from trusted developers."
+warningLabel.TextColor3 = Color3.fromRGB(220, 120, 120) -- Slightly more vibrant red
 warningLabel.TextScaled = true
-warningLabel.TextSize = 10
+warningLabel.TextSize = 12
 warningLabel.Font = Enum.Font.Gotham
 warningLabel.TextTransparency = 1
 warningLabel.TextWrapped = true
@@ -209,10 +209,10 @@ copyButton.MouseButton1Click:Connect(function()
     local success, err = pcall(function()
         setclipboard("https://discord.gg/bpsNUH5sVb")
         copyButton.Text = "Copied!"
-        copyButton.BackgroundColor3 = Color3.fromRGB(60, 140, 235)
-        wait(1)
+        copyButton.BackgroundColor3 = Color3.fromRGB(60, 160, 210) -- Darker teal on click
+        wait(1.5)
         copyButton.Text = "Copy"
-        copyButton.BackgroundColor3 = Color3.fromRGB(80, 160, 255)
+        copyButton.BackgroundColor3 = Color3.fromRGB(80, 190, 230)
     end)
     if not success then
         warn("Copy button failed: " .. tostring(err))
@@ -222,9 +222,9 @@ end)
 -- Particle system
 local function spawnParticle()
     local particle = Instance.new("Frame")
-    particle.Size = UDim2.new(0, 10, 0, 10)
-    particle.BackgroundColor3 = Color3.fromRGB(100, 150, 200)
-    particle.BackgroundTransparency = 0.8
+    particle.Size = UDim2.new(0, 12, 0, 12)
+    particle.BackgroundColor3 = Color3.fromRGB(100, 180, 255)
+    particle.BackgroundTransparency = 0.7
     particle.BorderSizePixel = 0
     particle.ZIndex = -1
     local corner = Instance.new("UICorner")
@@ -232,18 +232,19 @@ local function spawnParticle()
     corner.Parent = particle
     particle.Parent = mainFrame
 
-    local x = math.random(0, 1)
-    local y = math.random(0, 1)
+    local x = math.random()
+    local y = math.random()
     particle.Position = UDim2.new(x, 0, y, 0)
 
-    local directionX = math.random(-50, 50)
-    local directionY = math.random(-50, 50)
+    local directionX = math.random(-60, 60)
+    local directionY = math.random(-60, 60)
     local targetPosition = UDim2.new(x, directionX, y, directionY)
 
     local tween = TweenService:Create(particle, TweenInfo.new(
-        math.random(3, 5),
-        Enum.EasingStyle.Linear
-    ), {Position = targetPosition, BackgroundTransparency = 1})
+        math.random(4, 6),
+        Enum.EasingStyle.Quint,
+        Enum.EasingDirection.Out
+    ), {Position = targetPosition, BackgroundTransparency = 1, Size = UDim2.new(0, 0, 0, 0)})
     tween:Play()
     tween.Completed:Connect(function()
         particle:Destroy()
@@ -267,21 +268,21 @@ local function animateLoadingBar(callback)
     local success, err = pcall(function()
         local loadingTween = TweenService:Create(loadingBarFill, TweenInfo.new(
             3,
-            Enum.EasingStyle.Linear,
-            Enum.EasingDirection.In
+            Enum.EasingStyle.Quint, -- More energetic easing
+            Enum.EasingDirection.Out
         ), {Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 0})
         local percentageTween = TweenService:Create(percentageText, TweenInfo.new(
             3,
-            Enum.EasingStyle.Linear,
-            Enum.EasingDirection.In
+            Enum.EasingStyle.Quint,
+            Enum.EasingDirection.Out
         ), {TextTransparency = 0})
         local glowTween = TweenService:Create(loadingBarGlow, TweenInfo.new(
-            1,
+            1.5,
             Enum.EasingStyle.Sine,
             Enum.EasingDirection.InOut,
             -1,
             true
-        ), {Transparency = 0.2})
+        ), {Transparency = 0.3, Thickness = 4})
         glowTween:Play()
         local startTime = tick()
         local connection
@@ -291,7 +292,7 @@ local function animateLoadingBar(callback)
             percentageText.Text = string.format("%d%%", math.floor(percentage))
             if percentage >= 100 then
                 connection:Disconnect()
-                percentageText.TextColor3 = Color3.fromRGB(0, 200, 0)
+                percentageText.TextColor3 = Color3.fromRGB(100, 220, 180) -- Greenish-teal for complete
                 isComplete = true
                 wait(0.5)
                 if callback then callback() end
@@ -303,7 +304,7 @@ local function animateLoadingBar(callback)
     if not success then
         warn("Loading bar animation failed: " .. tostring(err))
         percentageText.Text = "100%"
-        percentageText.TextColor3 = Color3.fromRGB(0, 200, 0)
+        percentageText.TextColor3 = Color3.fromRGB(100, 220, 180)
         isComplete = true
         if callback then callback() end
     end
@@ -316,7 +317,7 @@ local function playEntranceAnimations()
         -- Initialize hidden states
         mainFrame.BackgroundTransparency = 1
         contentFrame.BackgroundTransparency = 1
-        contentFrame.Position = UDim2.new(0.5, -200, 0.5, -170)
+        contentFrame.Position = UDim2.new(0.5, -225, 0.5, -150) -- Start slightly lower
         contentStroke.Transparency = 1
         titleLabel.TextTransparency = 1
         subtitleLabel.TextTransparency = 1
@@ -328,68 +329,32 @@ local function playEntranceAnimations()
         loadingBarFill.BackgroundTransparency = 1
         percentageText.TextTransparency = 1
         warningLabel.TextTransparency = 1
-        -- Content reveal tweens
-        local mainFrameTween = TweenService:Create(mainFrame, TweenInfo.new(
-            0.4,
-            Enum.EasingStyle.Quad,
-            Enum.EasingDirection.Out
-        ), {BackgroundTransparency = 0.7})
-        local contentFrameTween = TweenService:Create(contentFrame, TweenInfo.new(
-            0.4,
-            Enum.EasingStyle.Sine,
-            Enum.EasingDirection.Out
-        ), {BackgroundTransparency = 0.3, Position = UDim2.new(0.5, -200, 0.5, -150)})
-        local contentStrokeTween = TweenService:Create(contentStroke, TweenInfo.new(
-            0.4,
-            Enum.EasingStyle.Sine,
-            Enum.EasingDirection.Out
-        ), {Transparency = 0.2})
-        local titleTween = TweenService:Create(titleLabel, TweenInfo.new(
-            0.4,
-            Enum.EasingStyle.Sine,
-            Enum.EasingDirection.Out
-        ), {TextTransparency = 0})
-        local subtitleTween = TweenService:Create(subtitleLabel, TweenInfo.new(
-            0.4,
-            Enum.EasingStyle.Sine,
-            Enum.EasingDirection.Out
-        ), {TextTransparency = 0})
-        local discordTween = TweenService:Create(discordLabel, TweenInfo.new(
-            0.4,
-            Enum.EasingStyle.Sine,
-            Enum.EasingDirection.Out
-        ), {TextTransparency = 0})
-        local copyButtonTween = TweenService:Create(copyButton, TweenInfo.new(
-            0.4,
-            Enum.EasingStyle.Sine,
-            Enum.EasingDirection.Out
-        ), {TextTransparency = 0, BackgroundTransparency = 0})
-        local discordAdTween = TweenService:Create(discordAdLabel, TweenInfo.new(
-            0.4,
-            Enum.EasingStyle.Sine,
-            Enum.EasingDirection.Out
-        ), {TextTransparency = 0})
-        local loadingBarTween = TweenService:Create(loadingBarContainer, TweenInfo.new(
-            0.4,
-            Enum.EasingStyle.Sine,
-            Enum.EasingDirection.Out
-        ), {BackgroundTransparency = 0.5})
-        local warningTween = TweenService:Create(warningLabel, TweenInfo.new(
-            0.4,
-            Enum.EasingStyle.Sine,
-            Enum.EasingDirection.Out
-        ), {TextTransparency = 0})
-        -- Play animations sequentially
+
+        -- Staggered animation timings
+        local mainFrameTween = TweenService:Create(mainFrame, TweenInfo.new(0.6, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundTransparency = 0.6})
+        local contentFrameTween = TweenService:Create(contentFrame, TweenInfo.new(0.6, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundTransparency = 0.2, Position = UDim2.new(0.5, -225, 0.5, -160)})
+        local contentStrokeTween = TweenService:Create(contentStroke, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {Transparency = 0.3})
+        local titleTween = TweenService:Create(titleLabel, TweenInfo.new(0.7, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {TextTransparency = 0})
+        local subtitleTween = TweenService:Create(subtitleLabel, TweenInfo.new(0.7, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {TextTransparency = 0})
+        local discordTween = TweenService:Create(discordLabel, TweenInfo.new(0.7, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {TextTransparency = 0})
+        local copyButtonTween = TweenService:Create(copyButton, TweenInfo.new(0.7, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {TextTransparency = 0, BackgroundTransparency = 0})
+        local discordAdTween = TweenService:Create(discordAdLabel, TweenInfo.new(0.7, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {TextTransparency = 0})
+        local loadingBarTween = TweenService:Create(loadingBarContainer, TweenInfo.new(0.7, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundTransparency = 0.5})
+        local warningTween = TweenService:Create(warningLabel, TweenInfo.new(0.7, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {TextTransparency = 0})
+
+        -- Play animations with delays
         mainFrameTween:Play()
+        wait(0.1)
         contentFrameTween:Play()
         contentStrokeTween:Play()
+        wait(0.15)
         titleTween:Play()
-        wait(0.1)
+        wait(0.05)
         subtitleTween:Play()
         wait(0.1)
         discordTween:Play()
         copyButtonTween:Play()
-        wait(0.1)
+        wait(0.05)
         discordAdTween:Play()
         wait(0.1)
         loadingBarTween:Play()
@@ -403,9 +368,10 @@ local function playEntranceAnimations()
     end)
     if not success then
         warn("Entrance animations failed: " .. tostring(err))
-        mainFrame.BackgroundTransparency = 0.7
-        contentFrame.BackgroundTransparency = 0.3
-        contentStroke.Transparency = 0.2
+        -- Fallback to ensure UI is visible
+        mainFrame.BackgroundTransparency = 0.6
+        contentFrame.BackgroundTransparency = 0.2
+        contentStroke.Transparency = 0.3
         titleLabel.TextTransparency = 0
         subtitleLabel.TextTransparency = 0
         discordLabel.TextTransparency = 0
@@ -425,78 +391,24 @@ end
 local function playExitAnimations(callback)
     print("Starting playExitAnimations")
     local success, err = pcall(function()
-        local fadeTween = TweenService:Create(mainFrame, TweenInfo.new(
-            0.5,
-            Enum.EasingStyle.Quad,
-            Enum.EasingDirection.In
-        ), {BackgroundTransparency = 1})
-        local contentFadeTween = TweenService:Create(contentFrame, TweenInfo.new(
-            0.5,
-            Enum.EasingStyle.Quad,
-            Enum.EasingDirection.In
-        ), {BackgroundTransparency = 1})
-        local contentStrokeTween = TweenService:Create(contentStroke, TweenInfo.new(
-            0.5,
-            Enum.EasingStyle.Quad,
-            Enum.EasingDirection.In
-        ), {Transparency = 1})
-        local titleTween = TweenService:Create(titleLabel, TweenInfo.new(
-            0.5,
-            Enum.EasingStyle.Quad,
-            Enum.EasingDirection.In
-        ), {TextTransparency = 1})
-        local subtitleTween = TweenService:Create(subtitleLabel, TweenInfo.new(
-            0.5,
-            Enum.EasingStyle.Quad,
-            Enum.EasingDirection.In
-        ), {TextTransparency = 1})
-        local discordTween = TweenService:Create(discordLabel, TweenInfo.new(
-            0.5,
-            Enum.EasingStyle.Quad,
-            Enum.EasingDirection.In
-        ), {TextTransparency = 1})
-        local copyButtonTween = TweenService:Create(copyButton, TweenInfo.new(
-            0.5,
-            Enum.EasingStyle.Quad,
-            Enum.EasingDirection.In
-        ), {TextTransparency = 1, BackgroundTransparency = 1})
-        local discordAdTween = TweenService:Create(discordAdLabel, TweenInfo.new(
-            0.5,
-            Enum.EasingStyle.Quad,
-            Enum.EasingDirection.In
-        ), {TextTransparency = 1})
-        local loadingBarTween = TweenService:Create(loadingBarContainer, TweenInfo.new(
-            0.5,
-            Enum.EasingStyle.Quad,
-            Enum.EasingDirection.In
-        ), {BackgroundTransparency = 1})
-        local loadingBarFillTween = TweenService:Create(loadingBarFill, TweenInfo.new(
-            0.5,
-            Enum.EasingStyle.Quad,
-            Enum.EasingDirection.In
-        ), {BackgroundTransparency = 1})
-        local percentageTween = TweenService:Create(percentageText, TweenInfo.new(
-            0.5,
-            Enum.EasingStyle.Quad,
-            Enum.EasingDirection.In
-        ), {TextTransparency = 1})
-        local warningTween = TweenService:Create(warningLabel, TweenInfo.new(
-            0.5,
-            Enum.EasingStyle.Quad,
-            Enum.EasingDirection.In
-        ), {TextTransparency = 1})
+        local tweenInfo = TweenInfo.new(0.6, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
+        local fadeTween = TweenService:Create(mainFrame, tweenInfo, {BackgroundTransparency = 1})
+        local contentFadeTween = TweenService:Create(contentFrame, tweenInfo, {BackgroundTransparency = 1, Position = UDim2.new(0.5, -225, 0.5, -150)})
+
+        -- Play all fades simultaneously
         fadeTween:Play()
         contentFadeTween:Play()
-        contentStrokeTween:Play()
-        titleTween:Play()
-        subtitleTween:Play()
-        discordTween:Play()
-        copyButtonTween:Play()
-        discordAdTween:Play()
-        loadingBarTween:Play()
-        loadingBarFillTween:Play()
-        percentageTween:Play()
-        warningTween:Play()
+        TweenService:Create(contentStroke, tweenInfo, {Transparency = 1}):Play()
+        TweenService:Create(titleLabel, tweenInfo, {TextTransparency = 1}):Play()
+        TweenService:Create(subtitleLabel, tweenInfo, {TextTransparency = 1}):Play()
+        TweenService:Create(discordLabel, tweenInfo, {TextTransparency = 1}):Play()
+        TweenService:Create(copyButton, tweenInfo, {TextTransparency = 1, BackgroundTransparency = 1}):Play()
+        TweenService:Create(discordAdLabel, tweenInfo, {TextTransparency = 1}):Play()
+        TweenService:Create(loadingBarContainer, tweenInfo, {BackgroundTransparency = 1}):Play()
+        TweenService:Create(loadingBarFill, tweenInfo, {BackgroundTransparency = 1}):Play()
+        TweenService:Create(percentageText, tweenInfo, {TextTransparency = 1}):Play()
+        TweenService:Create(warningLabel, tweenInfo, {TextTransparency = 1}):Play()
+        
         contentFadeTween.Completed:Connect(function()
             if screenGui and screenGui.Parent then
                 screenGui:Destroy()
@@ -519,12 +431,12 @@ end
 local function animatePulse()
     local success, err = pcall(function()
         local borderPulseTween = TweenService:Create(contentStroke, TweenInfo.new(
-            2,
+            2.5,
             Enum.EasingStyle.Sine,
             Enum.EasingDirection.InOut,
             -1,
             true
-        ), {Transparency = 0.1})
+        ), {Transparency = 0.1, Thickness = 2.5})
         borderPulseTween:Play()
     end)
     if not success then
@@ -536,15 +448,16 @@ end
 local function initialize()
     print("Initializing loading screen")
     local success, err = pcall(function()
-        spawnInitialParticles(5)
+        spawnInitialParticles(8) -- More particles for a richer effect
         playEntranceAnimations()
         animatePulse()
     end)
     if not success then
         warn("Initialization failed: " .. tostring(err))
-        mainFrame.BackgroundTransparency = 0.7
-        contentFrame.BackgroundTransparency = 0.3
-        contentStroke.Transparency = 0.2
+        -- Fallback initialization
+        mainFrame.BackgroundTransparency = 0.6
+        contentFrame.BackgroundTransparency = 0.2
+        contentStroke.Transparency = 0.3
         titleLabel.TextTransparency = 0
         subtitleLabel.TextTransparency = 0
         discordLabel.TextTransparency = 0
@@ -570,7 +483,7 @@ return {
         local success, err = pcall(function()
             if percentageText and percentageText.Parent then
                 percentageText.Text = text or "0%"
-                percentageText.TextColor3 = color or Color3.fromRGB(100, 150, 200)
+                percentageText.TextColor3 = color or Color3.fromRGB(180, 220, 240)
             end
         end)
         if not success then
@@ -581,4 +494,4 @@ return {
         return isComplete
     end,
     initialize = initialize
-} 
+}
