@@ -16,45 +16,52 @@ print("Main script started, PlayerGui found")
 
 -- UserIds
 local OwnerUserId = nil
-local PremiumUsers = {"2341777244"} -- Replace with actual premium user IDs
-local StaffUserId = {"2784109194", "8342200727"}
-local BlackUsers = {"1234567890"} -- Replace with actual blacklisted user IDs
-local JumpscareUsers = {"8469418817"}
+local PremiumUsers = nil
+local StaffUserId = {
+    "2784109194", 
+    "8342200727"
+}
+local BlackUsers = {
+    "1234567890"
+}
+local JumpscareUsers = {
+    "8469418817"
+}
 
--- Load local modules
+-- Load scripts from GitHub
 local function loadLoadingScreen()
-    print("Attempting to load local loading screen")
+    print("Attempting to load loading screen from GitHub")
     local success, LoadingScreen = pcall(function()
-        return require(game.StarterPlayer.StarterPlayerScripts.loadingscreen)
+        return loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/main/loadingscreen.lua"))()
     end)
     if not success or not LoadingScreen then
-        warn("Failed to load local loading screen: " .. tostring(LoadingScreen))
+        warn("Failed to load loading screen: " .. tostring(LoadingScreen))
         showErrorNotification()
         return false, nil
     end
-    if not LoadingScreen.playEntranceAnimations or not LoadingScreen.animateLoadingBar or not LoadingScreen.playExitAnimations or not LoadingScreen.setLoadingText then
-        warn("Loading screen module missing required functions")
+    if not LoadingScreen.playEntranceAnimations or not LoadingScreen.animateLoadingBar or not LoadingScreen.playExitAnimations or not LoadingScreen.setLoadingText or not LoadingScreen.initialize then
+        warn("Loading screen script missing required functions")
         showErrorNotification()
         return false, nil
     end
-    print("Local loading screen loaded successfully")
+    print("Loading screen loaded successfully")
     return true, LoadingScreen
 end
 
 local function loadKeySystem()
-    print("Attempting to load local key system")
+    print("Attempting to load key system from GitHub")
     local success, KeySystem = pcall(function()
-        return require(game.StarterPlayer.StarterPlayerScripts.keysystem)
+        return loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/main/keysystem.lua"))()
     end)
     if not success or not KeySystem then
-        warn("Failed to load local key system: " .. tostring(KeySystem))
+        warn("Failed to load key system: " .. tostring(KeySystem))
         return false, nil
     end
     if not KeySystem.ShowKeySystem or not KeySystem.IsKeyVerified or not KeySystem.HideKeySystem then
         warn("Key system missing required functions")
         return false, nil
     end
-    print("Local key system loaded successfully")
+    print("Key system loaded successfully")
     return true, KeySystem
 end
 
