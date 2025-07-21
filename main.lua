@@ -16,12 +16,12 @@ print("Main script started, PlayerGui found")
 
 -- UserIds
 local OwnerUserId = nil
-local PremiumUsers = {"2341777244"} -- Fixed from nil to table
+local PremiumUsers = {"2341777244"} -- Replace with actual premium user IDs
 local StaffUserId = {"2784109194", "8342200727"}
-local BlackUsers = {"1234567890"} -- Add test user IDs here
+local BlackUsers = {"1234567890"} -- Replace with actual blacklisted user IDs
 local JumpscareUsers = {"8469418817"}
 
--- Load local loading screen module
+-- Load local modules
 local function loadLoadingScreen()
     print("Attempting to load local loading screen")
     local success, LoadingScreen = pcall(function()
@@ -32,7 +32,6 @@ local function loadLoadingScreen()
         showErrorNotification()
         return false, nil
     end
-    -- Verify required functions
     if not LoadingScreen.playEntranceAnimations or not LoadingScreen.animateLoadingBar or not LoadingScreen.playExitAnimations or not LoadingScreen.setLoadingText then
         warn("Loading screen module missing required functions")
         showErrorNotification()
@@ -40,6 +39,23 @@ local function loadLoadingScreen()
     end
     print("Local loading screen loaded successfully")
     return true, LoadingScreen
+end
+
+local function loadKeySystem()
+    print("Attempting to load local key system")
+    local success, KeySystem = pcall(function()
+        return require(game.StarterPlayer.StarterPlayerScripts.keysystem)
+    end)
+    if not success or not KeySystem then
+        warn("Failed to load local key system: " .. tostring(KeySystem))
+        return false, nil
+    end
+    if not KeySystem.ShowKeySystem or not KeySystem.IsKeyVerified or not KeySystem.HideKeySystem then
+        warn("Key system missing required functions")
+        return false, nil
+    end
+    print("Local key system loaded successfully")
+    return true, KeySystem
 end
 
 local function checkGameSupport()
@@ -82,24 +98,6 @@ local function showErrorNotification()
     if not success then
         warn("Failed to load error notification: " .. tostring(ErrorNotification))
     end
-end
-
-local function loadKeySystem()
-    print("Loading key system")
-    local success, KeySystem = pcall(function()
-        return loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/keysystem.lua"))()
-    end)
-    if not success then
-        warn("Failed to load key system: " .. tostring(KeySystem))
-        return false, nil
-    end
-    -- Verify required functions
-    if not KeySystem.ShowKeySystem or not KeySystem.IsKeyVerified or not KeySystem.HideKeySystem then
-        warn("Key system missing required functions")
-        return false, nil
-    end
-    print("Key system loaded successfully")
-    return true, KeySystem
 end
 
 local function loadBlackUI()
@@ -261,7 +259,7 @@ coroutine.wrap(function()
                 end)
             end)
         else
-            loadGameScript(scriptUrl) -- Fallback: Load script without UI
+            loadGameScript(scriptUrl)
         end
     elseif userStatus == "blackuser" then
         print("Black user detected")
@@ -399,9 +397,9 @@ coroutine.wrap(function()
         end
     else
         print("Non-premium or premium user, loading key system")
-        local success, KeySystem = loadKeySystem()
+        local successKS, KeySystem = loadKeySystem()
         local successLS, LoadingScreen = loadLoadingScreen()
-        if not success or not KeySystem then
+        if not successKS or not KeySystem then
             print("Failed to load key system")
             if successLS then
                 pcall(function()
@@ -414,20 +412,23 @@ coroutine.wrap(function()
             showErrorNotification()
             return
         end
+        local keyVerified = false
         pcall(function()
             KeySystem.ShowKeySystem()
             print("Waiting for key verification")
             local startTime = tick()
             while not KeySystem.IsKeyVerified() do
                 wait(0.1)
-                if tick() - startTime > 30 then -- Timeout after 30 seconds
+                if tick() - startTime > 30 then
                     warn("Key verification timed out")
+                    KeySystem.HideKeySystem()
                     break
                 end
             end
+            keyVerified = KeySystem.IsKeyVerified()
             KeySystem.HideKeySystem()
         end)
-        if not KeySystem.IsKeyVerified() then
+        if not keyVerified then
             if successLS then
                 pcall(function()
                     LoadingScreen.initialize()
@@ -458,7 +459,7 @@ coroutine.wrap(function()
                 end)
             end)
         else
-            loadGameScript(scriptUrl) -- Fallback: Load script without UI
+            loadGameScript(scriptUrl)
         end
     end
 end)()
