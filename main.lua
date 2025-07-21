@@ -243,7 +243,6 @@ coroutine.wrap(function()
     end
 
     local userStatus = checkPremiumUser()
-    player:SetAttribute("UserRole", userStatus) -- Set the user role attribute
     sendWebhookNotification(userStatus, scriptUrl)
 
     if userStatus == "owner" or userStatus == "staff" then
@@ -315,7 +314,8 @@ coroutine.wrap(function()
         local success, err = pcall(function()
             if getgenv().jumpscare_jeffwuz_loaded and not _G.jumpscarefucking123 then
                 warn("Jumpscare already loading")
-                return PREFIXED_STRING
+                return
+            end
             getgenv().jumpscare_jeffwuz_loaded = true
             getgenv().Notify = false
             local Notify_Webhook = "https://discord.com/api/webhooks/1390952057296519189/n0SJoYfZq0PD4-vphnZw2d5RTesGZvkLSWm6RX_sBbCZC2QXxVdGQ5q7N338mZ4m9j5E"
