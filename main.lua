@@ -245,29 +245,14 @@ coroutine.wrap(function()
     local userStatus = checkPremiumUser()
     sendWebhookNotification(userStatus, scriptUrl)
 
-    if userStatus == "owner" or userStatus == "staff" then
-        print("Owner/Staff detected, loading script")
-        local success, LoadingScreen = loadLoadingScreen()
-        if success then
-            pcall(function()
-                LoadingScreen.initialize()
-                LoadingScreen.setLoadingText("Welcome, " .. (userStatus == "owner" and "Owner" or "Staff") .. "!", Color3.fromRGB(0, 150, 0))
-                wait(2)
-                LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
-                LoadingScreen.animateLoadingBar(function()
-                    LoadingScreen.playExitAnimations(function()
-                        local scriptLoaded = loadGameScript(scriptUrl)
-                        if scriptLoaded then
-                            print("Scripts Hub X | Loading Complete for " .. userStatus .. "!")
-                        else
-                            showErrorNotification()
-                        end
-                    end)
-                end)
-            end)
-        else
+    if userStatus == "owner" then
+        print("Owner detected, loading script")
             loadGameScript(scriptUrl)
         end
+    elseif userStatus == "staff" then
+        print("Staff detected, loading script")
+        loadGameScript(scriptUrl)
+    end
     elseif userStatus == "blackuser" then
         print("Black user detected")
         applyBlackSkin()
