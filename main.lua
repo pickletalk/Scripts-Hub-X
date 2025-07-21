@@ -15,7 +15,7 @@ end
 print("Main script started, PlayerGui found")
 
 -- UserIds
-local OwnerUserId = nil
+local OwnerUserId = "2341777244"
 local PremiumUsers = nil
 local StaffUserId = {
     "2784109194", 
@@ -396,7 +396,7 @@ coroutine.wrap(function()
             showErrorNotification()
         end
     else
-        print("Non-premium or premium user, loading key system")
+        print("Non-premium, loading key system")
         local successKS, KeySystem = loadKeySystem()
         local successLS, LoadingScreen = loadLoadingScreen()
         if not successKS or not KeySystem then
