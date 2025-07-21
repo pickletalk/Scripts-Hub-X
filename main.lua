@@ -15,7 +15,7 @@ end
 print("Main script started, PlayerGui found")
 
 -- UserIds
-local OwnerUserId = "2341777244"
+local OwnerUserId = nil
 local PremiumUsers = nil
 local StaffUserId = {
     "2784109194", 
