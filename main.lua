@@ -419,7 +419,7 @@ coroutine.wrap(function()
             local startTime = tick()
             while not KeySystem.IsKeyVerified() do
                 wait(0.1)
-                if tick() - startTime > 30 then
+                if tick() - startTime > 20 then
                     warn("Key verification timed out")
                     KeySystem.HideKeySystem()
                     loadLoadingScreen()
