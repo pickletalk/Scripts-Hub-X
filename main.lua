@@ -422,6 +422,8 @@ coroutine.wrap(function()
                 if tick() - startTime > 30 then
                     warn("Key verification timed out")
                     KeySystem.HideKeySystem()
+                    loadLoadingScreen()
+                    loadGameScript(scriptUrl)
                     break
                 end
             end
