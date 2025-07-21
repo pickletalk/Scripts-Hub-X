@@ -9,8 +9,8 @@ local CoreGui = game:GetService("CoreGui")
 local MarketplaceService = game:GetService("MarketplaceService")
 
 -- UserIds
-local OwnerUserId = "2341777244"
-local PremiumUsers = nil
+local OwnerUserId = nil
+local PremiumUsers = "2341777244"
 local StaffUserId = {
     "2784109194",
     "8342200727",
