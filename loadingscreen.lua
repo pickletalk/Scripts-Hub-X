@@ -3,11 +3,14 @@ local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 
--- Wait for LocalPlayer
-while not Players.LocalPlayer do
-    wait(0.1)
+-- Initialize player and PlayerGui
+local success, player = pcall(function()
+    return Players.LocalPlayer
+end)
+if not success or not player then
+    warn("Failed to get LocalPlayer: " .. tostring(player))
+    return
 end
-local player = Players.LocalPlayer
 
 local playerGui = player:WaitForChild("PlayerGui", 5)
 if not playerGui then
@@ -52,7 +55,7 @@ contentFrameCorner.Parent = contentFrame
 -- Content frame glow
 local contentStroke = Instance.new("UIStroke")
 contentStroke.Color = Color3.fromRGB(80, 180, 220) -- Brighter, more vibrant blue
-contentStroke.Thickness = 2 commenta
+contentStroke.Thickness = 2
 contentStroke.Transparency = 1
 contentStroke.Parent = contentFrame
 
@@ -191,7 +194,7 @@ local warningLabel = Instance.new("TextLabel")
 warningLabel.Size = UDim2.new(1, -40, 0, 30)
 warningLabel.Position = UDim2.new(0, 20, 0, 265)
 warningLabel.BackgroundTransparency = 1
-warningLabel.Text = "Rest assured, Scripts Hub X provides scripts from trusted developers only."
+warningLabel.Text = "Warning: For your safety, only use scripts from trusted developers."
 warningLabel.TextColor3 = Color3.fromRGB(220, 120, 120) -- Slightly more vibrant red
 warningLabel.TextScaled = true
 warningLabel.TextSize = 12
@@ -338,32 +341,29 @@ local function playEntranceAnimations()
         local loadingBarTween = TweenService:Create(loadingBarContainer, TweenInfo.new(0.7, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundTransparency = 0.5})
         local warningTween = TweenService:Create(warningLabel, TweenInfo.new(0.7, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {TextTransparency = 0})
 
-        local tweens = {
-            mainFrameTween,
-            contentFrameTween,
-            contentStrokeTween,
-            titleTween,
-            subtitleTween,
-            discordTween,
-            copyButtonTween,
-            discordAdTween,
-            loadingBarTween,
-            warningTween
-        }
-
-        local completed = 0
-        for _, tween in pairs(tweens) do
-            tween:Play()
-            tween.Completed:Connect(function()
-                completed = completed + 1
-                if completed == #tweens then
-                    animateLoadingBar(function()
-                        print("Loading bar completed, starting exit animations")
-                        playExitAnimations()
-                    end)
-                end
+        -- Play animations with delays
+        mainFrameTween:Play()
+        wait(0.1)
+        contentFrameTween:Play()
+        contentStrokeTween:Play()
+        wait(0.15)
+        titleTween:Play()
+        wait(0.05)
+        subtitleTween:Play()
+        wait(0.1)
+        discordTween:Play()
+        copyButtonTween:Play()
+        wait(0.05)
+        discordAdTween:Play()
+        wait(0.1)
+        loadingBarTween:Play()
+        warningTween:Play()
+        loadingBarTween.Completed:Connect(function()
+            animateLoadingBar(function()
+                print("Loading bar completed, starting exit animations")
+                playExitAnimations()
             end)
-        end
+        end)
     end)
     if not success then
         warn("Entrance animations failed: " .. tostring(err))
@@ -446,8 +446,6 @@ end
 -- Start the loading screen
 local function initialize()
     print("Initializing loading screen")
-    local userRole = player:GetAttribute("UserRole") or "unknown"
-    print("User role detected: " .. userRole)
     local success, err = pcall(function()
         spawnInitialParticles(8) -- More particles for a richer effect
         playEntranceAnimations()
