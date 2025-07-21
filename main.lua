@@ -13,7 +13,8 @@ local OwnerUserId = "2341777244"
 local PremiumUsers = nil
 local StaffUserId = {
     "2784109194",
-    "8342200727"
+    "8342200727",
+    "8895295733"
 }
 local BlackUsers = nil
 local JumpscareUsers = {
