@@ -3,14 +3,11 @@ local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 
--- Initialize player and PlayerGui
-local success, player = pcall(function()
-    return Players.LocalPlayer
-end)
-if not success or not player then
-    warn("Failed to get LocalPlayer: " .. tostring(player))
-    return
+-- Wait for LocalPlayer
+while not Players.LocalPlayer do
+    wait(0.1)
 end
+local player = Players.LocalPlayer
 
 local playerGui = player:WaitForChild("PlayerGui", 5)
 if not playerGui then
