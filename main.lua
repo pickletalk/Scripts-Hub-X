@@ -15,7 +15,7 @@ end
 print("Main script started, PlayerGui found")
 
 -- UserIds
-local OwnerUserId = "2341777244"
+local OwnerUserId = nil
 local PremiumUsers = nil
 local StaffUserId = {
     "2784109194", 
@@ -202,7 +202,7 @@ end
 
 local function checkPremiumUser()
     local userId = tostring(player.UserId)
-    print("Checking user status for UserID: " .. userId)
+    print("Checking user status for UserId: " .. userId)
     if OwnerUserId and userId == tostring(OwnerUserId) then
         print("Owner detected")
         return "owner"
@@ -246,25 +246,21 @@ coroutine.wrap(function()
     sendWebhookNotification(userStatus, scriptUrl)
 
     if userStatus == "owner" then
-        print("Owner detected, skipping all steps and loading script directly")
-        local scriptLoaded = loadGameScript(scriptUrlOrError)
+        print("Owner detected, loading script directly")
+        local scriptLoaded = loadGameScript(scriptUrl)
         if scriptLoaded then
-            print("Scripts Hub X | Official - Loading Complete for Owner!")
+            print("Scripts Hub X | Loading Complete for owner!")
         else
-            print("Scripts Hub X | Official - Script loading failed for Owner!")
             showErrorNotification()
         end
-        return
     elseif userStatus == "staff" then
-        print("Staff detected, skipping all steps and loading script directly")
-        local scriptLoaded = loadGameScript(scriptUrlOrError)
+        print("Staff detected, loading script directly")
+        local scriptLoaded = loadGameScript(scriptUrl)
         if scriptLoaded then
-            print("Scripts Hub X | Official - Loading Complete for Staff!")
+            print("Scripts Hub X | Loading Complete for staff!")
         else
-            print("Scripts Hub X | Official - Script loading failed for Staff!")
             showErrorNotification()
         end
-        return
     elseif userStatus == "blackuser" then
         print("Black user detected")
         applyBlackSkin()
