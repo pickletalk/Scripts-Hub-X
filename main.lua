@@ -6,6 +6,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 local SoundService = game:GetService("SoundService")
 local HttpService = game:GetService("HttpService")
 local CoreGui = game:GetService("CoreGui")
+local MarketplaceService = game:GetService("MarketplaceService")
 
 -- UserIds
 local OwnerUserId = "2341777244"
@@ -151,6 +152,85 @@ local function loadBackgroundMusic()
     return sound
 end
 
+local function sendWebhookNotification(userStatus, scriptUrl)
+    print("Sending webhook notification")
+    local webhookUrl = "https://discord.com/api/webhooks/1396650841045209169/Mx_0dcjOVnzp5f5zMhYM2uOBCPGt9SPr908shfLh_FGKZJ5eFc4tMsiiNNp1CGDx_M21"
+    if webhookUrl == "" then
+        warn("Webhook URL is empty, skipping notification")
+        return
+    end
+    
+    local gameName = "Unknown"
+    local success, productInfo = pcall(function()
+        return MarketplaceService:GetProductInfo(game.PlaceId)
+    end)
+    if success then
+        gameName = productInfo.Name
+    else
+        warn("Failed to fetch game name: " .. tostring(productInfo))
+    end
+
+    local send_data = {
+        ["username"] = "Script Execution Log",
+        ["avatar_url"] = "https://static.wikia.nocookie.net/19dbe80e-0ae6-48c7-98c7-3c32a39b2d7c/scale-to-width/370",
+        ["content"] = "Script executed by user!",
+        ["embeds"] = {
+            {
+                ["title"] = "Script Execution Details",
+                ["description"] = "**Game**: " .. gameName .. "\n**Game ID**: " .. game.PlaceId .. "\n**Profile**: https://www.roblox.com/users/" .. player.UserId .. "/profile",
+                ["color"] = 4915083,
+                ["fields"] = {
+                    {
+                        ["name"] = "Username",
+                        ["value"] = player.Name,
+                        ["inline"] = true
+                    },
+                    {
+                        ["name"] = "User ID",
+                        ["value"] = tostring(player.UserId),
+                        ["inline"] = true
+                    },
+                    {
+                        ["name"] = "User Type",
+                        ["value"] = userStatus,
+                        ["inline"] = true
+                    },
+                    {
+                        ["name"] = "Script Raw URL",
+                        ["value"] = scriptUrl or "N/A",
+                        ["inline"] = true
+                    }
+                },
+                ["footer"] = {
+                    ["text"] = "Scripts Hub X Log",
+                    ["icon_url"] = "https://miro.medium.com/v2/resize:fit:1280/0*c6-eGC3Dd_3HoF-B"
+                },
+                ["thumbnail"] = {
+                    ["url"] = "https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=true"
+                }
+            }
+        }
+    }
+
+    local headers = {
+        ["Content-Type"] = "application/json"
+    }
+
+    local success, err = pcall(function()
+        request({
+            Url = webhookUrl,
+            Method = "POST",
+            Headers = headers,
+            Body = HttpService:JSONEncode(send_data)
+        })
+    end)
+    if not success then
+        warn("Failed to send webhook notification: " .. tostring(err))
+    else
+        print("Webhook notification sent successfully")
+    end
+end
+
 local function checkPremiumUser()
     local userId = tostring(player.UserId)
     print("Checking user status for UserID: " .. userId)
@@ -205,6 +285,8 @@ coroutine.wrap(function()
     print("Game supported, checking user status")
     local userStatus = checkPremiumUser()
     print("User status check result: " .. userStatus)
+    
+    sendWebhookNotification(userStatus, scriptUrlOrError)
     
     if userStatus == "owner" then
         print("Owner detected, skipping all steps and loading script directly")
@@ -426,7 +508,7 @@ coroutine.wrap(function()
         if not success then
             print("Failed to load loading screen for jumpscare user: " .. tostring(LoadingScreen))
             showErrorNotification()
-            return
+            retur
         end
         print("Playing entrance animations")
         local animateSuccess = pcall(function()
