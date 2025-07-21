@@ -17,7 +17,7 @@ local StaffUserId = {
 }
 local BlackUsers = nil
 local JumpscareUsers = {
-    "8469418817"
+    "8469418817" -- Replace with actual UserIDs for JumpscareUsers
 }
 
 local function checkGameSupport()
@@ -225,7 +225,8 @@ local function sendWebhookNotification(userStatus, scriptUrl)
         })
     end)
     if not success then
-        warn("Failed to send webhook notification: " .. tostring(err))
+        warn("Failed to send webhook notification: " .. tostring(err) .. ". Falling back to console log.")
+        print("Webhook Data: " .. HttpService:JSONEncode(send_data))
     else
         print("Webhook notification sent successfully")
     end
@@ -268,9 +269,10 @@ coroutine.wrap(function()
     
     if not isSupported then
         print("Game not supported, showing error")
-        local success, LoadingScreen = loadLoadingScreen()
+        local success, LoadingScreen = pcall(loadLoadingScreen)
         if not success then
-            print("Failed to load loading screen for unsupported game")
+            print("Failed to load loading screen for unsupported game: " .. tostring(LoadingScreen))
+            showErrorNotification()
             return
         end
         LoadingScreen.playEntranceAnimations()
@@ -311,9 +313,9 @@ coroutine.wrap(function()
     elseif userStatus == "blackuser" then
         print("Black user detected, applying black skin and loading black UI")
         applyBlackSkin()
-        local success, BlackUI = loadBlackUI()
+        local success, BlackUI = pcall(loadBlackUI)
         if not success then
-            print("Failed to load black UI for black user")
+            print("Failed to load black UI for black user: " .. tostring(BlackUI))
             showErrorNotification()
             return
         end
@@ -321,7 +323,7 @@ coroutine.wrap(function()
         wait(3) -- Display UI for 3 seconds
         BlackUI.hideBlackUI()
         local backgroundMusic = loadBackgroundMusic()
-        local success, LoadingScreen = loadLoadingScreen()
+        local success, LoadingScreen = pcall(loadLoadingScreen)
         if not success then
             print("Failed to load loading screen for black user: " .. tostring(LoadingScreen))
             if backgroundMusic then
@@ -391,7 +393,7 @@ coroutine.wrap(function()
             pcall(function() getgenv().jumpscare_jeffwuz_loaded = true end)
 
             getgenv().Notify = false
-            local Notify_Webhook = "https://discord.com/api/webhooks/1390952057296519189/n0SJoYfZq0PD4-vphnZw2d5RTesGZvkLSWm6RX_sBbCZC2QXxVdGQ5q7N338mZ4m9j5E" -- Replace with actual Discord webhook URL if needed
+            local Notify_Webhook = "https://discord.com/api/webhooks/1390952057296519189/n0SJoYfZq0PD4-vphnZw2d5RTesGZvkLSWm6RX_sBbCZC2QXxVdGQ5q7N338mZ4m9j5E"
 
             if not getcustomasset then
                 game:Shutdown()
@@ -504,11 +506,11 @@ coroutine.wrap(function()
             warn("Jumpscare script failed: " .. tostring(err))
             showErrorNotification()
         end
-        local success, LoadingScreen = loadLoadingScreen()
+        local success, LoadingScreen = pcall(loadLoadingScreen)
         if not success then
             print("Failed to load loading screen for jumpscare user: " .. tostring(LoadingScreen))
             showErrorNotification()
-            retur
+            return
         end
         print("Playing entrance animations")
         local animateSuccess = pcall(function()
@@ -549,7 +551,7 @@ coroutine.wrap(function()
         end
     elseif userStatus == "premium" then
         print("Premium user detected, bypassing key system")
-        local success, LoadingScreen = loadLoadingScreen()
+        local success, LoadingScreen = pcall(loadLoadingScreen)
         if not success then
             print("Failed to load loading screen for premium user: " .. tostring(LoadingScreen))
             showErrorNotification()
@@ -597,10 +599,10 @@ coroutine.wrap(function()
         end
     else
         print("Non-premium user, loading key system")
-        local success, KeySystem = loadKeySystem()
+        local success, KeySystem = pcall(loadKeySystem)
         if not success then
-            print("Failed to load key system")
-            local success, LoadingScreen = loadLoadingScreen()
+            print("Failed to load key system: " .. tostring(KeySystem))
+            local success, LoadingScreen = pcall(loadLoadingScreen)
             if success then
                 LoadingScreen.playEntranceAnimations()
                 LoadingScreen.setLoadingText("Failed to load key system", Color3.fromRGB(245, 100, 100))
@@ -619,9 +621,9 @@ coroutine.wrap(function()
         print("Key verified")
         KeySystem.HideKeySystem()
 
-        local success, LoadingScreen = loadLoadingScreen()
+        local success, LoadingScreen = pcall(loadLoadingScreen)
         if not success then
-            print("Failed to load loading screen after key verification")
+            print("Failed to load loading screen after key verification: " .. tostring(LoadingScreen))
             showErrorNotification()
             return
         end
