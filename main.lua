@@ -230,17 +230,9 @@ coroutine.wrap(function()
     local isSupported, scriptUrl = checkGameSupport()
     if not isSupported then
         print("Game not supported")
-        local success, LoadingScreen = loadLoadingScreen()
-        if success then
-            pcall(function()
-                LoadingScreen.initialize()
-                LoadingScreen.setLoadingText("Game not supported", Color3.fromRGB(245, 100, 100))
-                wait(3)
-                LoadingScreen.playExitAnimations()
-            end)
+            showErrorNotification()
+            return
         end
-        showErrorNotification()
-        return
     end
 
     local userStatus = checkPremiumUser()
