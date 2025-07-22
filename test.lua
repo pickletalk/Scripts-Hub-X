@@ -20,10 +20,59 @@ local toggles = {}
 local connections = {}
 local featureFunctions = {}
 
--- Load configuration with error handling
-if readfile and pcall(readfile, configFile) then
+-- Features list
+local features = {
+    "Infinite Jump", "Fly", "Anti-AFK", "Touch Fling", "Noclip", "Click Teleport", "Speed Hack", "ESP", "God Mode", "Super Jump", "Invisible"
+}
+
+-- Create Loading Screen
+local loadingScreen = Instance.new("Frame")
+loadingScreen.Name = "LoadingScreen"
+loadingScreen.Size = UDim2.new(1, 0, 1, 0)
+loadingScreen.BackgroundColor3 = Color3.new(0, 0, 0)
+loadingScreen.Parent = screenGui
+
+local loadingText = Instance.new("TextLabel")
+loadingText.Name = "LoadingText"
+loadingText.Size = UDim2.new(0.5, 0, 0.1, 0)
+loadingText.Position = UDim2.new(0.25, 0, 0.45, 0)
+loadingText.BackgroundTransparency = 1
+loadingText.Text = "Loading..."
+loadingText.TextColor3 = Color3.new(1, 1, 1)
+loadingText.TextScaled = true
+loadingText.Parent = loadingScreen
+
+-- Define Highlight function first
+local function addHighlight(element, isTab)
+    local stroke = Instance.new("UIStroke")
+    stroke.Name = "Highlight"
+    stroke.Thickness = 2
+    stroke.Color = Color3.fromRGB(255, 255, 255)
+    stroke.Transparency = 1
+    stroke.Parent = element
+
+    if isTab then
+        if element.BackgroundColor3 == Color3.fromRGB(70, 70, 70) then
+            stroke.Transparency = 0
+        end
+        element:GetPropertyChangedSignal("BackgroundColor3"):Connect(function()
+            stroke.Transparency = element.BackgroundColor3 == Color3.fromRGB(70, 70, 70) and 0 or 1
+        end)
+    else
+        element.MouseEnter:Connect(function()
+            stroke.Transparency = 0
+        end)
+        element.MouseLeave:Connect(function()
+            stroke.Transparency = 1
+        end)
+    end
+end
+
+-- Handle config during loading screen
+if readfile then
     local success, data = pcall(readfile, configFile)
     if success and data then
+        -- Parse existing config
         local parts = data:split("|")
         if #parts >= 1 then
             local colorParts = parts[1]:split(",")
@@ -44,34 +93,42 @@ if readfile and pcall(readfile, configFile) then
             config.transparency = tonumber(parts[3]) or 0
         end
     else
-        warn("Failed to read config file: " .. tostring(data))
-        config.color = Color3.fromRGB(50, 50, 50)
-        config.transparency = 0
+        -- Create config with defaults if writefile is available
+        if writefile then
+            local defaultColorStr = "50,50,50"
+            local defaultFeatureStr = ""
+            for _, feature in ipairs(features) do
+                defaultFeatureStr = defaultFeatureStr .. feature .. ":false,"
+            end
+            defaultFeatureStr = defaultFeatureStr:sub(1, -2)
+            local defaultTransparencyStr = "0"
+            local defaultData = defaultColorStr .. "|" .. defaultFeatureStr .. "|" .. defaultTransparencyStr
+            pcall(writefile, configFile, defaultData)
+            -- Set default config
+            config.color = Color3.fromRGB(50, 50, 50)
+            config.transparency = 0
+            for _, feature in ipairs(features) do
+                config[feature] = false
+            end
+        else
+            warn("Cannot create config file, using defaults")
+            config.color = Color3.fromRGB(50, 50, 50)
+            config.transparency = 0
+            for _, feature in ipairs(features) do
+                config[feature] = false
+            end
+        end
     end
 else
-    warn("readfile not available or failed. Using defaults.")
+    warn("readfile not available, using defaults")
     config.color = Color3.fromRGB(50, 50, 50)
     config.transparency = 0
+    for _, feature in ipairs(features) do
+        config[feature] = false
+    end
 end
 
--- Create Loading Screen
-local loadingScreen = Instance.new("Frame")
-loadingScreen.Name = "LoadingScreen"
-loadingScreen.Size = UDim2.new(1, 0, 1, 0)
-loadingScreen.BackgroundColor3 = Color3.new(0, 0, 0)
-loadingScreen.Parent = screenGui
-
-local loadingText = Instance.new("TextLabel")
-loadingText.Name = "LoadingText"
-loadingText.Size = UDim2.new(0.5, 0, 0.1, 0)
-loadingText.Position = UDim2.new(0.25, 0, 0.45, 0)
-loadingText.BackgroundTransparency = 1
-loadingText.Text = "Loading..."
-loadingText.TextColor3 = Color3.new(1, 1, 1)
-loadingText.TextScaled = true
-loadingText.Parent = loadingScreen
-
--- Create Window Frame
+-- Create Window Frame with loaded config
 local window = Instance.new("Frame")
 window.Name = "Window"
 window.Size = UDim2.new(0, 300, 0, 400)
@@ -192,7 +249,7 @@ local uiListLayout = Instance.new("UIListLayout")
 uiListLayout.Padding = UDim.new(0, 5)
 uiListLayout.Parent = featuresContent
 
--- Function to create toggle buttons with enhancements
+-- Function to create toggle buttons
 local function createToggleButton(name)
     local button = Instance.new("TextButton")
     button.Name = name
@@ -219,12 +276,7 @@ local function createToggleButton(name)
     return button
 end
 
--- List of features
-local features = {
-    "Infinite Jump", "Fly", "Anti-AFK", "Touch Fling", "Noclip", "Click Teleport", "Speed Hack", "ESP", "God Mode", "Super Jump", "Invisible"
-}
-
--- Create toggle buttons
+-- Create toggle buttons with loaded config
 for _, feature in ipairs(features) do
     toggles[feature] = config[feature] or false
     createToggleButton(feature)
@@ -482,7 +534,7 @@ applyTransparencyButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- Feature implementations (unchanged)
+-- Feature implementations
 featureFunctions["Infinite Jump"] = function(state)
     if state then
         connections["Infinite Jump"] = UserInputService.JumpRequest:Connect(function()
@@ -716,7 +768,7 @@ function saveConfig()
             warn("Failed to write config: " .. tostring(err))
         end
     else
-        warn("writefile not available.")
+        warn("writefile not available")
     end
 end
 
@@ -729,32 +781,6 @@ function string.split(str, sep)
     return result
 end
 
--- Highlight function
-local function addHighlight(element, isTab)
-    local stroke = Instance.new("UIStroke")
-    stroke.Name = "Highlight"
-    stroke.Thickness = 2
-    stroke.Color = Color3.fromRGB(255, 255, 255)
-    stroke.Transparency = 1
-    stroke.Parent = element
-
-    if isTab then
-        if element.BackgroundColor3 == Color3.fromRGB(70, 70, 70) then
-            stroke.Transparency = 0
-        end
-        element:GetPropertyChangedSignal("BackgroundColor3"):Connect(function()
-            stroke.Transparency = element.BackgroundColor3 == Color3.fromRGB(70, 70, 70) and 0 or 1
-        end)
-    else
-        element.MouseEnter:Connect(function()
-            stroke.Transparency = 0
-        end)
-        element.MouseLeave:Connect(function()
-            stroke.Transparency = 1
-        end)
-    end
-end
-
 -- Apply highlights
 addHighlight(featuresTab, true)
 addHighlight(settingsTab, true)
@@ -763,17 +789,12 @@ addHighlight(closeButton, false)
 addHighlight(applyButton, false)
 addHighlight(applyTransparencyButton, false)
 
--- Tween loading screen
+-- Tween loading screen and destroy it
 local tweenInfo = TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 local goal = {Position = UDim2.new(0, 0, -1, 0)}
 local tween = TweenService:Create(loadingScreen, tweenInfo, goal)
-
-wait(2)
 tween:Play()
-tween.Completed:Wait()
-loadingScreen.Visible = false
-window.Visible = true
-
--- Set initial config
-config.color = window.BackgroundColor3
-config.transparency = window.BackgroundTransparency
+tween.Completed:Connect(function()
+    loadingScreen:Destroy()
+    window.Visible = true
+end)
