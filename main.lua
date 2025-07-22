@@ -19,8 +19,7 @@ local OwnerUserId = "2341777244"
 local PremiumUsers = nil
 local StaffUserId = {
     "2784109194", 
-    "8342200727",
-    "3882788546"
+    "8342200727"
 }
 local BlackUsers = {
     "1234567890"
@@ -230,9 +229,17 @@ coroutine.wrap(function()
     local isSupported, scriptUrl = checkGameSupport()
     if not isSupported then
         print("Game not supported")
-            showErrorNotification()
-            return
+        local success, LoadingScreen = loadLoadingScreen()
+        if success then
+            pcall(function()
+                LoadingScreen.initialize()
+                LoadingScreen.setLoadingText("Game not supported", Color3.fromRGB(245, 100, 100))
+                wait(3)
+                LoadingScreen.playExitAnimations()
+            end)
         end
+        showErrorNotification()
+        return
     end
 
     local userStatus = checkPremiumUser()
@@ -415,18 +422,9 @@ coroutine.wrap(function()
                 if tick() - startTime > 20 then
                     warn("Key verification timed out")
                     KeySystem.HideKeySystem()
-                    if successLS then
-                        pcall(function()
-                            LoadingScreen.initialize()
-                            LoadingScreen.setLoadingText("Key verification timed out", Color3.fromRGB(245, 100, 100))
-                            wait(3)
-                            LoadingScreen.playExitAnimations(function()
-                                loadGameScript(scriptUrl)
-                            end)
-                        end)
-                    else
-                        loadGameScript(scriptUrl)
-                    end
+                    loadLoadingScreen()
+                    wait(3.2)
+                    loadGameScript(scriptUrl)
                     break
                 end
             end
