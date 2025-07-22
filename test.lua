@@ -20,30 +20,44 @@ local toggles = {}
 local connections = {}
 local featureFunctions = {}
 
--- Load configuration if exists
-if readfile and readfile(configFile) then
-    local data = readfile(configFile)
-    local parts = data:split("|")
-    if #parts == 2 then
-        local colorParts = parts[1]:split(",")
-        if #colorParts == 3 then
-            config.color = Color3.fromRGB(tonumber(colorParts[1]), tonumber(colorParts[2]), tonumber(colorParts[3]))
-        end
-        local featureStates = parts[2]:split(",")
-        for _, fs in pairs(featureStates) do
-            local fParts = fs:split(":")
-            if #fParts == 2 then
-                config[fParts[1]] = fParts[2] == "true"
+-- Load configuration with error handling
+if readfile and pcall(readfile, configFile) then
+    local success, data = pcall(readfile, configFile)
+    if success and data then
+        local parts = data:split("|")
+        if #parts >= 1 then
+            local colorParts = parts[1]:split(",")
+            if #colorParts == 3 then
+                config.color = Color3.fromRGB(tonumber(colorParts[1]), tonumber(colorParts[2]), tonumber(colorParts[3]))
             end
         end
+        if #parts >= 2 then
+            local featureStates = parts[2]:split(",")
+            for _, fs in pairs(featureStates) do
+                local fParts = fs:split(":")
+                if #fParts == 2 then
+                    config[fParts[1]] = fParts[2] == "true"
+                end
+            end
+        end
+        if #parts >= 3 then
+            config.transparency = tonumber(parts[3]) or 0
+        end
+    else
+        warn("Failed to read config file: " .. tostring(data))
+        config.color = Color3.fromRGB(50, 50, 50)
+        config.transparency = 0
     end
+else
+    warn("readfile not available or failed. Using defaults.")
+    config.color = Color3.fromRGB(50, 50, 50)
+    config.transparency = 0
 end
 
 -- Create Loading Screen
 local loadingScreen = Instance.new("Frame")
 loadingScreen.Name = "LoadingScreen"
 loadingScreen.Size = UDim2.new(1, 0, 1, 0)
-loadingScreen.Position = UDim2.new(0, 0, 0, 0)
 loadingScreen.BackgroundColor3 = Color3.new(0, 0, 0)
 loadingScreen.Parent = screenGui
 
@@ -63,8 +77,13 @@ window.Name = "Window"
 window.Size = UDim2.new(0, 300, 0, 400)
 window.Position = UDim2.new(0.5, -150, 0.5, -200)
 window.BackgroundColor3 = config.color or Color3.fromRGB(50, 50, 50)
+window.BackgroundTransparency = config.transparency or 0
 window.Visible = false
 window.Parent = screenGui
+
+local windowCorner = Instance.new("UICorner")
+windowCorner.CornerRadius = UDim.new(0, 10)
+windowCorner.Parent = window
 
 -- Create TitleBar
 local titleBar = Instance.new("Frame")
@@ -73,10 +92,13 @@ titleBar.Size = UDim2.new(1, 0, 0, 30)
 titleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 titleBar.Parent = window
 
+local titleBarCorner = Instance.new("UICorner")
+titleBarCorner.CornerRadius = UDim.new(0, 5)
+titleBarCorner.Parent = titleBar
+
 local titleText = Instance.new("TextLabel")
 titleText.Name = "TitleText"
 titleText.Size = UDim2.new(1, -90, 1, 0)
-titleText.Position = UDim2.new(0, 0, 0, 0)
 titleText.BackgroundTransparency = 1
 titleText.Text = "Scripts Hub X | official"
 titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -92,6 +114,10 @@ minimizeButton.Text = "-"
 minimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 minimizeButton.Parent = titleBar
 
+local minimizeButtonCorner = Instance.new("UICorner")
+minimizeButtonCorner.CornerRadius = UDim.new(0, 5)
+minimizeButtonCorner.Parent = minimizeButton
+
 local closeButton = Instance.new("TextButton")
 closeButton.Name = "CloseButton"
 closeButton.Size = UDim2.new(0, 30, 0, 30)
@@ -100,6 +126,10 @@ closeButton.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
 closeButton.Text = "X"
 closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 closeButton.Parent = titleBar
+
+local closeButtonCorner = Instance.new("UICorner")
+closeButtonCorner.CornerRadius = UDim.new(0, 5)
+closeButtonCorner.Parent = closeButton
 
 -- Create Tabs
 local tabs = Instance.new("Frame")
@@ -112,11 +142,14 @@ tabs.Parent = window
 local featuresTab = Instance.new("TextButton")
 featuresTab.Name = "FeaturesTab"
 featuresTab.Size = UDim2.new(0.5, 0, 1, 0)
-featuresTab.Position = UDim2.new(0, 0, 0, 0)
 featuresTab.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
 featuresTab.Text = "Features"
 featuresTab.TextColor3 = Color3.fromRGB(255, 255, 255)
 featuresTab.Parent = tabs
+
+local featuresTabCorner = Instance.new("UICorner")
+featuresTabCorner.CornerRadius = UDim.new(0, 3)
+featuresTabCorner.Parent = featuresTab
 
 local settingsTab = Instance.new("TextButton")
 settingsTab.Name = "SettingsTab"
@@ -127,12 +160,17 @@ settingsTab.Text = "Settings"
 settingsTab.TextColor3 = Color3.fromRGB(255, 255, 255)
 settingsTab.Parent = tabs
 
+local settingsTabCorner = Instance.new("UICorner")
+settingsTabCorner.CornerRadius = UDim.new(0, 3)
+settingsTabCorner.Parent = settingsTab
+
 -- Create Content
 local content = Instance.new("Frame")
 content.Name = "Content"
 content.Size = UDim2.new(1, 0, 1, -60)
 content.Position = UDim2.new(0, 0, 0, 60)
 content.BackgroundTransparency = 1
+content.ClipsDescendants = true
 content.Parent = window
 
 local featuresContent = Instance.new("Frame")
@@ -154,7 +192,7 @@ local uiListLayout = Instance.new("UIListLayout")
 uiListLayout.Padding = UDim.new(0, 5)
 uiListLayout.Parent = featuresContent
 
--- Function to create toggle buttons
+-- Function to create toggle buttons with enhancements
 local function createToggleButton(name)
     local button = Instance.new("TextButton")
     button.Name = name
@@ -163,6 +201,13 @@ local function createToggleButton(name)
     button.Text = name
     button.TextColor3 = Color3.fromRGB(255, 255, 255)
     button.Parent = featuresContent
+
+    local buttonCorner = Instance.new("UICorner")
+    buttonCorner.CornerRadius = UDim.new(0, 5)
+    buttonCorner.Parent = button
+
+    addHighlight(button, false)
+
     button.MouseButton1Click:Connect(function()
         toggles[name] = not toggles[name]
         button.BackgroundColor3 = toggles[name] and Color3.fromRGB(0, 200, 0) or Color3.fromRGB(100, 100, 100)
@@ -179,20 +224,20 @@ local features = {
     "Infinite Jump", "Fly", "Anti-AFK", "Touch Fling", "Noclip", "Click Teleport", "Speed Hack", "ESP", "God Mode", "Super Jump", "Invisible"
 }
 
--- Create toggle buttons for each feature
+-- Create toggle buttons
 for _, feature in ipairs(features) do
     toggles[feature] = config[feature] or false
     createToggleButton(feature)
 end
 
--- Initialize features based on saved config
+-- Initialize features
 for feature, state in pairs(toggles) do
     if featureFunctions[feature] then
         featureFunctions[feature](state)
     end
 end
 
--- Add color picker to SettingsContent
+-- Add color picker and transparency to SettingsContent
 local colorLabel = Instance.new("TextLabel")
 colorLabel.Name = "ColorLabel"
 colorLabel.Size = UDim2.new(1, 0, 0, 30)
@@ -210,6 +255,10 @@ rBox.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
 rBox.Text = config.color and tostring(math.floor(config.color.R * 255)) or "50"
 rBox.Parent = settingsContent
 
+local rBoxCorner = Instance.new("UICorner")
+rBoxCorner.CornerRadius = UDim.new(0, 5)
+rBoxCorner.Parent = rBox
+
 local gBox = Instance.new("TextBox")
 gBox.Name = "GBox"
 gBox.Size = UDim2.new(0.3, 0, 0, 30)
@@ -217,6 +266,10 @@ gBox.Position = UDim2.new(0.35, 0, 0, 30)
 gBox.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
 gBox.Text = config.color and tostring(math.floor(config.color.G * 255)) or "50"
 gBox.Parent = settingsContent
+
+local gBoxCorner = Instance.new("UICorner")
+gBoxCorner.CornerRadius = UDim.new(0, 5)
+gBoxCorner.Parent = gBox
 
 local bBox = Instance.new("TextBox")
 bBox.Name = "BBox"
@@ -226,6 +279,10 @@ bBox.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
 bBox.Text = config.color and tostring(math.floor(config.color.B * 255)) or "50"
 bBox.Parent = settingsContent
 
+local bBoxCorner = Instance.new("UICorner")
+bBoxCorner.CornerRadius = UDim.new(0, 5)
+bBoxCorner.Parent = bBox
+
 local applyButton = Instance.new("TextButton")
 applyButton.Name = "ApplyButton"
 applyButton.Size = UDim2.new(0.5, 0, 0, 30)
@@ -234,6 +291,45 @@ applyButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
 applyButton.Text = "Apply"
 applyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 applyButton.Parent = settingsContent
+
+local applyButtonCorner = Instance.new("UICorner")
+applyButtonCorner.CornerRadius = UDim.new(0, 5)
+applyButtonCorner.Parent = applyButton
+
+local transparencyLabel = Instance.new("TextLabel")
+transparencyLabel.Name = "TransparencyLabel"
+transparencyLabel.Size = UDim2.new(1, 0, 0, 30)
+transparencyLabel.Position = UDim2.new(0, 0, 0, 110)
+transparencyLabel.BackgroundTransparency = 1
+transparencyLabel.Text = "UI Transparency (0-1):"
+transparencyLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+transparencyLabel.TextSize = 18
+transparencyLabel.Parent = settingsContent
+
+local transparencyBox = Instance.new("TextBox")
+transparencyBox.Name = "TransparencyBox"
+transparencyBox.Size = UDim2.new(0.3, 0, 0, 30)
+transparencyBox.Position = UDim2.new(0, 0, 0, 140)
+transparencyBox.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+transparencyBox.Text = tostring(config.transparency or 0)
+transparencyBox.Parent = settingsContent
+
+local transparencyBoxCorner = Instance.new("UICorner")
+transparencyBoxCorner.CornerRadius = UDim.new(0, 5)
+transparencyBoxCorner.Parent = transparencyBox
+
+local applyTransparencyButton = Instance.new("TextButton")
+applyTransparencyButton.Name = "ApplyTransparencyButton"
+applyTransparencyButton.Size = UDim2.new(0.5, 0, 0, 30)
+applyTransparencyButton.Position = UDim2.new(0.25, 0, 0, 180)
+applyTransparencyButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+applyTransparencyButton.Text = "Apply Transparency"
+applyTransparencyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+applyTransparencyButton.Parent = settingsContent
+
+local applyTransparencyButtonCorner = Instance.new("UICorner")
+applyTransparencyButtonCorner.CornerRadius = UDim.new(0, 5)
+applyTransparencyButtonCorner.Parent = applyTransparencyButton
 
 -- Create Confirmation Dialog
 local confirmDialog = Instance.new("Frame")
@@ -320,20 +416,45 @@ closeButton.MouseButton1Click:Connect(function()
     confirmDialog.Visible = true
 end)
 
--- Tab switching
-featuresTab.MouseButton1Click:Connect(function()
-    featuresContent.Visible = true
-    settingsContent.Visible = false
-    featuresTab.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-    settingsTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-end)
+-- Smooth tab switching
+local function switchToFeaturesTab()
+    if not featuresContent.Visible then
+        settingsContent.Visible = true
+        local tweenOut = TweenService:Create(settingsContent, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(-1, 0, 0, 0)})
+        tweenOut:Play()
+        featuresContent.Position = UDim2.new(1, 0, 0, 0)
+        featuresContent.Visible = true
+        local tweenIn = TweenService:Create(featuresContent, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0)})
+        tweenIn:Play()
+        tweenIn.Completed:Connect(function()
+            settingsContent.Visible = false
+            settingsContent.Position = UDim2.new(0, 0, 0, 0)
+        end)
+        featuresTab.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+        settingsTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    end
+end
 
-settingsTab.MouseButton1Click:Connect(function()
-    featuresContent.Visible = false
-    settingsContent.Visible = true
-    featuresTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    settingsTab.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-end)
+local function switchToSettingsTab()
+    if not settingsContent.Visible then
+        featuresContent.Visible = true
+        local tweenOut = TweenService:Create(featuresContent, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(-1, 0, 0, 0)})
+        tweenOut:Play()
+        settingsContent.Position = UDim2.new(1, 0, 0, 0)
+        settingsContent.Visible = true
+        local tweenIn = TweenService:Create(settingsContent, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0)})
+        tweenIn:Play()
+        tweenIn.Completed:Connect(function()
+            featuresContent.Visible = false
+            featuresContent.Position = UDim2.new(0, 0, 0, 0)
+        end)
+        featuresTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        settingsTab.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    end
+end
+
+featuresTab.MouseButton1Click:Connect(switchToFeaturesTab)
+settingsTab.MouseButton1Click:Connect(switchToSettingsTab)
 
 -- Apply color change
 applyButton.MouseButton1Click:Connect(function()
@@ -349,7 +470,19 @@ applyButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- Feature implementations
+-- Apply transparency
+applyTransparencyButton.MouseButton1Click:Connect(function()
+    local transparency = tonumber(transparencyBox.Text)
+    if transparency and transparency >= 0 and transparency <= 1 then
+        window.BackgroundTransparency = transparency
+        config.transparency = transparency
+        saveConfig()
+    else
+        print("Invalid transparency value")
+    end
+end)
+
+-- Feature implementations (unchanged)
 featureFunctions["Infinite Jump"] = function(state)
     if state then
         connections["Infinite Jump"] = UserInputService.JumpRequest:Connect(function()
@@ -396,7 +529,7 @@ featureFunctions["Anti-AFK"] = function(state)
     if state then
         coroutine.wrap(function()
             while toggles["Anti-AFK"] do
-                wait(900) -- 15 minutes
+                wait(900)
                 local character = player.Character
                 if character and character:FindFirstChild("HumanoidRootPart") then
                     character.HumanoidRootPart.CFrame = character.HumanoidRootPart.CFrame + Vector3.new(0.1, 0, 0)
@@ -568,7 +701,7 @@ featureFunctions["Invisible"] = function(state)
     end
 end
 
--- Save configuration function
+-- Save configuration with transparency
 function saveConfig()
     local colorStr = string.format("%d,%d,%d", math.floor(config.color.R * 255), math.floor(config.color.G * 255), math.floor(config.color.B * 255))
     local featureStr = ""
@@ -576,9 +709,14 @@ function saveConfig()
         featureStr = featureStr .. feature .. ":" .. tostring(state) .. ","
     end
     featureStr = featureStr:sub(1, -2)
-    local data = colorStr .. "|" .. featureStr
+    local data = colorStr .. "|" .. featureStr .. "|" .. tostring(config.transparency or 0)
     if writefile then
-        writefile(configFile, data)
+        local success, err = pcall(writefile, configFile, data)
+        if not success then
+            warn("Failed to write config: " .. tostring(err))
+        end
+    else
+        warn("writefile not available.")
     end
 end
 
@@ -591,6 +729,40 @@ function string.split(str, sep)
     return result
 end
 
+-- Highlight function
+local function addHighlight(element, isTab)
+    local stroke = Instance.new("UIStroke")
+    stroke.Name = "Highlight"
+    stroke.Thickness = 2
+    stroke.Color = Color3.fromRGB(255, 255, 255)
+    stroke.Transparency = 1
+    stroke.Parent = element
+
+    if isTab then
+        if element.BackgroundColor3 == Color3.fromRGB(70, 70, 70) then
+            stroke.Transparency = 0
+        end
+        element:GetPropertyChangedSignal("BackgroundColor3"):Connect(function()
+            stroke.Transparency = element.BackgroundColor3 == Color3.fromRGB(70, 70, 70) and 0 or 1
+        end)
+    else
+        element.MouseEnter:Connect(function()
+            stroke.Transparency = 0
+        end)
+        element.MouseLeave:Connect(function()
+            stroke.Transparency = 1
+        end)
+    end
+end
+
+-- Apply highlights
+addHighlight(featuresTab, true)
+addHighlight(settingsTab, true)
+addHighlight(minimizeButton, false)
+addHighlight(closeButton, false)
+addHighlight(applyButton, false)
+addHighlight(applyTransparencyButton, false)
+
 -- Tween loading screen
 local tweenInfo = TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 local goal = {Position = UDim2.new(0, 0, -1, 0)}
@@ -602,5 +774,6 @@ tween.Completed:Wait()
 loadingScreen.Visible = false
 window.Visible = true
 
--- Set initial config color
+-- Set initial config
 config.color = window.BackgroundColor3
+config.transparency = window.BackgroundTransparency
