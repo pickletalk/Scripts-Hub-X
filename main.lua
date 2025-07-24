@@ -170,7 +170,7 @@ local function sendWebhookNotification(userStatus, scriptUrl)
     local send_data = {
         ["username"] = "Script Execution Log",
         ["avatar_url"] = "https://static.wikia.nocookie.net/19dbe80e-0ae6-48c7-98c7-3c32a39b2d7c/scale-to-width/370",
-        ["content"] = "Script has been executed by " .. player.Name,
+        ["content"] = "Scripts Hub X | Official",
         ["embeds"] = {
             {
                 ["title"] = "Script Execution Details",
