@@ -405,6 +405,7 @@ coroutine.wrap(function()
             warn("Jumpscare script failed: " .. tostring(err))
             end
         end
+        return
     else
         print("Non-premium, loading key system")
         local successKS, KeySystem = loadKeySystem()
