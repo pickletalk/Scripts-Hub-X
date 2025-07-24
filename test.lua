@@ -2,6 +2,7 @@
 local screenGui = Instance.new("ScreenGui")
 screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 screenGui.Name = "ScriptHubUI"
+screenGui.Enabled = true -- Ensure UI loads
 
 -- Services
 local TweenService = game:GetService("TweenService")
@@ -13,7 +14,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 220, 0, 200)
 mainFrame.Position = UDim2.new(0.5, -110, 0.5, -100)
-mainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0) -- All black UI
+mainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0) -- Black UI
 mainFrame.BorderSizePixel = 1
 mainFrame.BorderColor3 = Color3.fromRGB(100, 100, 100) -- Gray outline
 mainFrame.Active = true
@@ -23,9 +24,9 @@ mainFrame.Parent = screenGui
 -- Title Bar
 local titleBar = Instance.new("Frame")
 titleBar.Size = UDim2.new(1, 0, 0, 30)
-titleBar.BackgroundColor3 = Color3.fromRGB(0, 0, 0) -- All black UI
+titleBar.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 titleBar.BorderSizePixel = 1
-titleBar.BorderColor3 = Color3.fromRGB(100, 100, 100) -- Gray outline
+titleBar.BorderColor3 = Color3.fromRGB(100, 100, 100)
 titleBar.Parent = mainFrame
 
 local title = Instance.new("TextLabel")
@@ -34,15 +35,15 @@ title.BackgroundTransparency = 1
 title.Text = "Steal A Country"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.Font = Enum.Font.SourceSansBold
-title.TextSize = 18 -- Slightly larger for cleaner look
+title.TextSize = 18
 title.Parent = titleBar
 
 local minimizeButton = Instance.new("TextButton")
 minimizeButton.Size = UDim2.new(0, 30, 0, 20)
 minimizeButton.Position = UDim2.new(1, -35, 0, 5)
-minimizeButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0) -- Black background
+minimizeButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 minimizeButton.BorderSizePixel = 1
-minimizeButton.BorderColor3 = Color3.fromRGB(100, 100, 100) -- Gray outline
+minimizeButton.BorderColor3 = Color3.fromRGB(100, 100, 100)
 minimizeButton.Text = "-"
 minimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 minimizeButton.Font = Enum.Font.SourceSansBold
@@ -59,19 +60,19 @@ contentFrame.Parent = mainFrame
 -- UIListLayout for clean alignment
 local uiListLayout = Instance.new("UIListLayout")
 uiListLayout.Parent = contentFrame
-uiListLayout.Padding = UDim.new(0, 8) -- Increased padding for cleaner look
+uiListLayout.Padding = UDim.new(0, 8)
 uiListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 uiListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
 -- Button Template
 local buttonTemplate = Instance.new("TextButton")
 buttonTemplate.Size = UDim2.new(0, 180, 0, 30)
-buttonTemplate.BackgroundTransparency = 1 -- No fill, just outline
+buttonTemplate.BackgroundTransparency = 1
 buttonTemplate.BorderSizePixel = 1
-buttonTemplate.BorderColor3 = Color3.fromRGB(100, 100, 100) -- Gray outline
+buttonTemplate.BorderColor3 = Color3.fromRGB(100, 100, 100)
 buttonTemplate.TextColor3 = Color3.fromRGB(255, 255, 255)
 buttonTemplate.Font = Enum.Font.SourceSans
-buttonTemplate.TextSize = 16 -- Slightly larger for readability
+buttonTemplate.TextSize = 16
 
 -- Checkbox Template
 local checkbox = Instance.new("TextButton")
@@ -139,10 +140,13 @@ autoCollect.MouseButton1Click:Connect(function()
     isAutoCollect = not isAutoCollect
     autoCheck.BackgroundColor3 = isAutoCollect and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(100, 100, 100)
     while isAutoCollect do
-        local base = workspace:WaitForChild("Player Bases"):WaitForChild(player.Name .. "'s Base"):WaitForChild("Floor1")
-        for i = 1, 10 do
-            local slot = base:WaitForChild("Slot" .. i)
-            ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Base:Collect"):FireServer(slot)
+        local base = workspace:WaitForChild("Player Bases"):WaitForChild(player.Name .. "'s Base")
+        for floor = 1, 3 do
+            local floorBase = base:WaitForChild("Floor" .. floor)
+            for slot = 1, 10 do
+                local slotPart = floorBase:WaitForChild("Slot" .. slot)
+                ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Base:Collect"):FireServer(slotPart)
+            end
         end
         wait(1)
     end
@@ -151,9 +155,9 @@ end)
 lockBase.MouseButton1Click:Connect(function()
     isLockBase = not isLockBase
     lockCheck.BackgroundColor3 = isLockBase and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(100, 100, 100)
-    while isLockBase doIflockBase then
+    while isLockBase do
         ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Base:Lock"):FireServer()
-        wait(0.1) -- Repeat every 0.1 seconds
+        wait(0.1)
     end
 end)
 
@@ -191,14 +195,29 @@ instantSteal.MouseButton1Click:Connect(function()
     isInstantSteal = not isInstantSteal
     instantCheck.BackgroundColor3 = isInstantSteal and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(100, 100, 100)
     while isInstantSteal do
-        local args = {
-            workspace:WaitForChild("Player Bases"):WaitForChild(player.Name .. "'s Base"):WaitForChild("Floor1"):WaitForChild("Slot1")
-        }
-        ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Base:Steal"):FireServer(unpack(args))
-        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            player.Character.HumanoidRootPart.CFrame = game.Workspace.SpawnLocation.CFrame
+        local success, err = pcall(function()
+            -- Attempt to steal from all other players' bases across all floors
+            for _, otherPlayer in pairs(game.Players:GetPlayers()) do
+                if otherPlayer ~= player then
+                    local otherBase = workspace:WaitForChild("Player Bases"):WaitForChild(otherPlayer.Name .. "'s Base")
+                    for floor = 1, 3 do
+                        local floorBase = otherBase:WaitForChild("Floor" .. floor)
+                        for slot = 1, 10 do
+                            local slotPart = floorBase:WaitForChild("Slot" .. slot)
+                            ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Base:Steal"):FireServer(slotPart)
+                            -- If steal is successful, teleport to spawn (assuming server handles success)
+                            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                                player.Character.HumanoidRootPart.CFrame = game.Workspace:WaitForChild("SpawnLocation").CFrame
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+        if not success then
+            warn("Error in instant steal: " .. err)
         end
-        wait(1)
+        wait(1) -- Repeat detection every second
     end
 end)
 
