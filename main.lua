@@ -6,7 +6,7 @@ local HttpService = game:GetService("HttpService")
 local CoreGui = game:GetService("CoreGui")
 local MarketplaceService = game:GetService("MarketplaceService")
 
-local player = Players.LocalClientPlayer
+local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui", 5)
 if not playerGui then
     warn("PlayerGui not found after 5 seconds")
@@ -34,14 +34,15 @@ local BypassUsers = {
     "3882788546"  -- Staff
 }
 
--- Load scripts from GitHub with debugging
+-- Load scripts from GitHub with error handling
 local function loadLoadingScreen()
     print("Attempting to load loading screen from GitHub")
     local success, LoadingScreen = pcall(function()
-        return loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/main/loadingscreen.lua"))()
+        local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/main/loadingscreen.lua")
+        return loadstring(script)()
     end)
     if not success then
-        warn("Failed to load loading screen: " .. tostring(LoadingScreen))
+        warn("Failed to load loading screen due to server-only API or other error: " .. tostring(LoadingScreen))
         showErrorNotification()
         return false, nil
     end
@@ -57,10 +58,11 @@ end
 local function loadKeySystem()
     print("Attempting to load key system from GitHub")
     local success, KeySystem = pcall(function()
-        return loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/main/keysystem.lua"))()
+        local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/main/keysystem.lua")
+        return loadstring(script)()
     end)
     if not success then
-        warn("Failed to load key system: " .. tostring(KeySystem))
+        warn("Failed to load key system due to server-only API or other error: " .. tostring(KeySystem))
         return false, nil
     end
     if not KeySystem or not KeySystem.ShowKeySystem or not KeySystem.IsKeyVerified or not KeySystem.HideKeySystem then
@@ -74,10 +76,11 @@ end
 local function checkGameSupport()
     print("Checking game support for PlaceID: " .. game.PlaceId)
     local success, Games = pcall(function()
-        return loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts/refs/heads/main/GameList.lua"))()
+        local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts/refs/heads/main/GameList.lua")
+        return loadstring(script)()
     end)
     if not success then
-        warn("Failed to load game list: " .. tostring(Games))
+        warn("Failed to load game list due to server-only API or other error: " .. tostring(Games))
         return false, nil
     end
     for PlaceID, Execute in pairs(Games) do
@@ -96,7 +99,7 @@ local function loadGameScript(scriptUrl)
         return loadstring(game:HttpGet(scriptUrl))()
     end)
     if not success then
-        warn("Failed to load game script: " .. tostring(result))
+        warn("Failed to load game script due to server-only API or other error: " .. tostring(result))
         return false
     end
     print("Game script loaded successfully")
@@ -119,7 +122,7 @@ local function loadBlackUI()
         return loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/blackui.lua"))()
     end)
     if not success then
-        warn("Failed to load black UI: " .. tostring(BlackUI))
+        warn("Failed to load black UI due to server-only API or other error: " .. tostring(BlackUI))
         return false, nil
     end
     print("Black UI loaded successfully")
