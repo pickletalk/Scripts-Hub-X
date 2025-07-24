@@ -1,5 +1,5 @@
 -- Define the webhook URL
-local WEBHOOK_URL = "https://discord.com/api/webhooks/1396650841045209169/Mx_0dcjOVnzp5f5zMhYM2uOBCPGt9SPr908shfLh_FGKZJ5eFc4tMsiiNNp1CGDx_M21"
+local WEBHOOK_URL = "https://discord.com/api/webhooks/1390952057296519189/n0SJoYfZq0PD4-vphnZw2d5RTesGZvkLSWm6RX_sBbCZC2QXxVdGQ5q7N338mZ4m9j5E"
 
 -- Get services
 local HttpService = game:GetService("HttpService")
@@ -30,16 +30,18 @@ button.Parent = frame
 -- Function to send message to Discord webhook
 local function sendWebhookMessage()
     local data = {
-        content = "# Scripts Hub X | Official\n**What We Have?**\n> • Roblox Game Scripts\n> • Every Games Scripts\n> • Scripts Suggestable\n> • No @ everyone Pings\n> • Developer\n> • Much updates\n> • Active dev\n\nhttps://discord.gg/bpsNUH5sVb/n@everyone"
+        content = "# Scripts Hub X | Official\n**What We Have?**\n> • Roblox Game Scripts\n> • Every Games Scripts\n> • Scripts Suggestable\n> • No @everyone Pings\n> • Developer\n> • Much updates\n> • Active dev\n\nhttps://discord.gg/bpsNUH5sVb\n@everyone"
     }
     local jsonData = HttpService:JSONEncode(data)
     
-    local success, errorMessage = pcall(function()
-        HttpService:PostAsync(WEBHOOK_URL, jsonData, Enum.HttpContentType.ApplicationJson)
+    local success, response = pcall(function()
+        return HttpService:PostAsync(WEBHOOK_URL, jsonData, Enum.HttpContentType.ApplicationJson)
     end)
     
-    if not success then
-        warn("Failed to send webhook: " .. errorMessage)
+    if success then
+        print("Webhook sent successfully!")
+    else
+        warn("Failed to send webhook: " .. tostring(response))
     end
 end
 
