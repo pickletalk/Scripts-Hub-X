@@ -63,9 +63,12 @@ local function sendWebhookMessage()
     if message == "" then return end
 
     local data = {
-        content = message,
-        username = "Stop With This Scam Script Leaking Their Profile Information!",
-        avatar_url = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg" -- [INSERT YOUR WEBHOOK PROFILE THUMBNAIL URL HERE]
+        ["username"] = "Script Raiders",
+        ["avatar_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg",
+        ["content"] = message,
+        ["footer"] = {["text"] = "Scripts Hub X | Official", ["icon_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg"},
+        ["thumbnail"] = {["url"] = "https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=true"}
+    }
     }
 
     local success, response = pcall(function()
