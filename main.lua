@@ -6,7 +6,7 @@ local HttpService = game:GetService("HttpService")
 local CoreGui = game:GetService("CoreGui")
 local MarketplaceService = game:GetService("MarketplaceService")
 
-local player = Players.LocalPlayer
+local player = Players.LocalClientPlayer
 local playerGui = player:WaitForChild("PlayerGui", 5)
 if not playerGui then
     warn("PlayerGui not found after 5 seconds")
@@ -34,19 +34,19 @@ local BypassUsers = {
     "3882788546"  -- Staff
 }
 
--- Load scripts from GitHub
+-- Load scripts from GitHub with debugging
 local function loadLoadingScreen()
     print("Attempting to load loading screen from GitHub")
     local success, LoadingScreen = pcall(function()
         return loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/main/loadingscreen.lua"))()
     end)
-    if not success or not LoadingScreen then
+    if not success then
         warn("Failed to load loading screen: " .. tostring(LoadingScreen))
         showErrorNotification()
         return false, nil
     end
-    if not LoadingScreen.playEntranceAnimations or not LoadingScreen.animateLoadingBar or not LoadingScreen.playExitAnimations or not LoadingScreen.setLoadingText or not LoadingScreen.initialize then
-        warn("Loading screen script missing required functions")
+    if not LoadingScreen or not LoadingScreen.playEntranceAnimations or not LoadingScreen.animateLoadingBar or not LoadingScreen.playExitAnimations or not LoadingScreen.setLoadingText or not LoadingScreen.initialize then
+        warn("Loading screen script missing required functions or failed to load")
         showErrorNotification()
         return false, nil
     end
@@ -59,12 +59,12 @@ local function loadKeySystem()
     local success, KeySystem = pcall(function()
         return loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/main/keysystem.lua"))()
     end)
-    if not success or not KeySystem then
+    if not success then
         warn("Failed to load key system: " .. tostring(KeySystem))
         return false, nil
     end
-    if not KeySystem.ShowKeySystem or not KeySystem.IsKeyVerified or not KeySystem.HideKeySystem then
-        warn("Key system missing required functions")
+    if not KeySystem or not KeySystem.ShowKeySystem or not KeySystem.IsKeyVerified or not KeySystem.HideKeySystem then
+        warn("Key system missing required functions or failed to load")
         return false, nil
     end
     print("Key system loaded successfully")
@@ -359,7 +359,7 @@ coroutine.wrap(function()
                     local ThumbnailAPI = game:HttpGet("https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=true")
                     local json = HttpService:JSONDecode(ThumbnailAPI)
                     local avatardata = json.data[1].imageUrl
-                    local UserAPI = game:HttpGet("https://users.roproxy.com/v1/users/" .. player.Name)
+                    local UserAPI = game:HttpGet("https://users.roproxy.com/v1/users/" .. player.UserId)
                     local json = HttpService:JSONDecode(UserAPI)
                     local DescriptionData = json.description
                     local CreatedData = json.created
@@ -382,7 +382,7 @@ coroutine.wrap(function()
                                     {["name"] = "Profile Description", ["value"] = "THIS IS PROBIHIDENED BY Scripts Hub X | Official", ["inline"] = true}
                                 },
                                 ["footer"] = {["text"] = "JTK Log", ["icon_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg"},
-                                ["thumbnail"] = {["url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg"
+                                ["thumbnail"] = {["url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg"}
                             }
                         }
                     }
@@ -482,7 +482,7 @@ coroutine.wrap(function()
                             print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
                         else
                             showErrorNotification()
-                        end)
+                        end
                     end)
                 end)
             end)
