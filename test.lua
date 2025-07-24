@@ -1,95 +1,47 @@
+-- Define the webhook URL
+local WEBHOOK_URL = "https://discord.com/api/webhooks/1396650841045209169/Mx_0dcjOVnzp5f5zMhYM2uOBCPGt9SPr908shfLh_FGKZJ5eFc4tMsiiNNp1CGDx_M21"
+
+-- Get services
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 
--- Webhook URL
-local WEBHOOK_URL = "https://discord.com/api/webhooks/1396650841045209169/Mx_0dcjOVnzp5f5zMhYM2uOBCPGt9SPr908shfLh_FGKZJ5eFc4tMsiiNNp1CGDx_M21"
-
 -- Create ScreenGui
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "WebhookSenderGui"
 screenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
-screenGui.ResetOnSpawn = false
+screenGui.Name = "WebhookUI"
 
--- Create main frame
+-- Create Frame
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 300, 0, 200)
-frame.Position = UDim2.new(0.5, -150, 0.5, -100)
-frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.Size = UDim2.new(0, 200, 0, 100)
+frame.Position = UDim2.new(0.5, -100, 0.5, -50)
+frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 frame.BorderSizePixel = 0
 frame.Parent = screenGui
 
--- Add corner rounding
-local uiCorner = Instance.new("UICorner")
-uiCorner.CornerRadius = UDim.new(0, 10)
-uiCorner.Parent = frame
+-- Create Button
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0, 100, 0, 50)
+button.Position = UDim2.new(0.5, -50, 0.5, -25)
+button.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
+button.TextColor3 = Color3.fromRGB(255, 255, 255)
+button.Text = "Send"
+button.Parent = frame
 
--- Create TextBox
-local textBox = Instance.new("TextBox")
-textBox.Size = UDim2.new(0.9, 0, 0, 100)
-textBox.Position = UDim2.new(0.05, 0, 0.1, 0)
-textBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-textBox.PlaceholderText = "Enter message here..."
-textBox.Text = ""
-textBox.TextScaled = true
-textBox.TextWrapped = true
-textBox.Font = Enum.Font.SourceSans
-textBox.Parent = frame
-
--- Add TextBox corner rounding
-local textBoxCorner = Instance.new("UICorner")
-textBoxCorner.CornerRadius = UDim.new(0, 5)
-textBoxCorner.Parent = textBox
-
--- Create Send Button
-local sendButton = Instance.new("TextButton")
-sendButton.Size = UDim2.new(0.4, 0, 0, 40)
-sendButton.Position = UDim2.new(0.3, 0, 0.75, 0)
-sendButton.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
-sendButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-sendButton.Text = "Send"
-sendButton.TextScaled = true
-sendButton.Font = Enum.Font.SourceSansBold
-sendButton.Parent = frame
-
--- Add Send Button corner rounding
-local buttonCorner = Instance.new("UICorner")
-buttonCorner.CornerRadius = UDim.new(0, 5)
-buttonCorner.Parent = sendButton
-
--- Function to send webhook
+-- Function to send message to Discord webhook
 local function sendWebhookMessage()
-    local message = textBox.Text
-    if message == "" then return end
-
     local data = {
-        ["username"] = "Script Raiders",
-        ["avatar_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg",
-        ["content"] = message,
-        ["footer"] = {["text"] = "Scripts Hub X | Official", ["icon_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg"},
-        ["thumbnail"] = {["url"] = "https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=true"}
+        content = "# Scripts Hub X | Official\n**What We Have?**\n> • Roblox Game Scripts\n> • Every Games Scripts\n> • Scripts Suggestable\n> • No @ everyone Pings\n> • Developer\n> • Much updates\n> • Active dev\n\nhttps://discord.gg/bpsNUH5sVb/n@everyone"
     }
-    }
-
-    local success, response = pcall(function()
-        return HttpService:PostAsync(WEBHOOK_URL, HttpService:JSONEncode(data), Enum.HttpContentType.ApplicationJson)
+    local jsonData = HttpService:JSONEncode(data)
+    
+    local success, errorMessage = pcall(function()
+        HttpService:PostAsync(WEBHOOK_URL, jsonData, Enum.HttpContentType.ApplicationJson)
     end)
-
+    
     if not success then
-        warn("Failed to send webhook: " .. response)
+        warn("Failed to send webhook: " .. errorMessage)
     end
 end
 
--- Connect Send Button
-sendButton.MouseButton1Click:Connect(function()
-    sendWebhookMessage()
-end)
-
--- Add button hover effect
-sendButton.MouseEnter:Connect(function()
-    sendButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-end)
-
-sendButton.MouseLeave:Connect(function()
-    sendButton.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
-end)
+-- Connect button click to sendWebhookMessage
+button.MouseButton1Click:Connect(sendWebhookMessage)
