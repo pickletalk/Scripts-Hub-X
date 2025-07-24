@@ -32,7 +32,6 @@ local JumpscareUsers = {
     "2341777244"
 }
 local BypassUsers = {
-    "2341777244", -- Owner
     "3882788546"  -- Staff
 }
 
