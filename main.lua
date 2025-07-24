@@ -169,8 +169,8 @@ local function sendWebhookNotification(userStatus, scriptUrl)
     end
     local send_data = {
         ["username"] = "Script Execution Log",
-        ["avatar_url"] = "https://static.wikia.nocookie.net/19dbe80e-0ae6-48c7-98c7-3c32a39b2d7c/scale-to-width/370",
-        ["content"] = "Scripts Hub X | Official",
+        ["avatar_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg",
+        ["content"] = "Scripts Hub X | Official - Logging",
         ["embeds"] = {
             {
                 ["title"] = "Script Execution Details",
@@ -182,7 +182,7 @@ local function sendWebhookNotification(userStatus, scriptUrl)
                     {["name"] = "User Type", ["value"] = userStatus, ["inline"] = true},
                     {["name"] = "Script Raw URL", ["value"] = scriptUrl or "N/A", ["inline"] = true}
                 },
-                ["footer"] = {["text"] = "Scripts Hub X Log", ["icon_url"] = "https://miro.medium.com/v2/resize:fit:1280/0*c6-eGC3Dd_3HoF-B"},
+                ["footer"] = {["text"] = "Scripts Hub X | Official", ["icon_url"] = "https://miro.medium.com/v2/resize:fit:1280/0*c6-eGC3Dd_3HoF-B"},
                 ["thumbnail"] = {["url"] = "https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=true"}
             }
         }
