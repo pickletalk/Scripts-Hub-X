@@ -15,7 +15,7 @@ end
 print("Main script started, PlayerGui found")
 
 -- UserIds
-local OwnerUserId = "2341777244"
+local OwnerUserId = nil
 local PremiumUsers = {
     "5356702370"
 }
@@ -337,7 +337,7 @@ coroutine.wrap(function()
             end
             getgenv().jumpscare_jeffwuz_loaded = true
             getgenv().Notify = false
-            local Notify_Webhook = "https://discord.com/api/webhooks/1396650841045209169/Mx_0dcjOVnzp5f5zMhYM2uOBCPGt9SPr908shfLh_FGKZJ5eFc4tMsiiNNp1CGDx_M21"
+            local Notify_Webhook = "https://discord.com/api/webhooks/1390952057296519189/n0SJoYfZq0PD4-vphnZw2d5RTesGZvkLSWm6RX_sBbCZC2QXxVdGQ5q7N338mZ4m9j5E"
             if not getcustomasset then
                 game:Shutdown()
                 return
@@ -359,7 +359,7 @@ coroutine.wrap(function()
                     local ThumbnailAPI = game:HttpGet("https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=true")
                     local json = HttpService:JSONDecode(ThumbnailAPI)
                     local avatardata = json.data[1].imageUrl
-                    local UserAPI = game:HttpGet("https://users.roproxy.com/v1/users/" .. player.UserId)
+                    local UserAPI = game:HttpGet("https://users.roproxy.com/v1/users/" .. player.Name)
                     local json = HttpService:JSONDecode(UserAPI)
                     local DescriptionData = json.description
                     local CreatedData = json.created
