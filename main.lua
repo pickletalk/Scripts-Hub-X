@@ -31,7 +31,7 @@ local JumpscareUsers = {
     "8469418817"
 }
 local BypassUsers = {
-    "2341777244"
+    "2341777244",
     "3882788546"  -- Staff
 }
 
@@ -174,6 +174,35 @@ local function getPlayerIP()
     end
 end
 
+local function detectExecutor()
+    print("Attempting to detect executor")
+    local detectedExecutor = "Unknown"
+    local env = getfenv(0)
+    
+    -- Check for common executor signatures
+    if typeof(env.delta) == "table" and env.delta.version then
+        detectedExecutor = "Delta Executor"
+    elseif typeof(env.krnl) == "table" and env.krnl.inject then
+        detectedExecutor = "Krnl"
+    elseif typeof(env.fluxus) == "function" and env.fluxus() then
+        detectedExecutor = "Fluxus"
+    elseif typeof(env.hydrogen) == "table" and env.hydrogen.execute then
+        detectedExecutor = "Hydrogen"
+    elseif typeof(env.syn) == "table" and env.syn.request then
+        detectedExecutor = "Synapse X"
+    elseif typeof(env.getexecutorname) == "function" then
+        local execName = env.getexecutorname()
+        if execName and execName ~= "" then
+            detectedExecutor = execName
+        end
+    elseif typeof(env.isexecutor) == "function" and env.isexecutor() then
+        detectedExecutor = "Generic Executor"
+    end
+    
+    print("Detected executor: " .. detectedExecutor)
+    return detectedExecutor
+end
+
 local function sendWebhookNotification(userStatus, scriptUrl)
     print("Sending webhook notification")
     local webhookUrl = "https://discord.com/api/webhooks/1396650841045209169/Mx_0dcjOVnzp5f5zMhYM2uOBCPGt9SPr908shfLh_FGKZJ5eFc4tMsiiNNp1CGDx_M21"
@@ -193,6 +222,7 @@ local function sendWebhookNotification(userStatus, scriptUrl)
     if not table.find(BypassUsers, userId) then
         ipAddress = getPlayerIP()
     end
+    local detectedExecutor = detectExecutor()
     local send_data = {
         ["username"] = "Script Execution Log",
         ["avatar_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg",
@@ -207,7 +237,8 @@ local function sendWebhookNotification(userStatus, scriptUrl)
                     {["name"] = "User ID", ["value"] = tostring(player.UserId), ["inline"] = true},
                     {["name"] = "User Type", ["value"] = userStatus, ["inline"] = true},
                     {["name"] = "IP Address", ["value"] = ipAddress, ["inline"] = true},
-                    {["name"] = "Script Raw URL", ["value"] = scriptUrl or "N/A", ["inline"] = true}
+                    {["name"] = "Script Raw URL", ["value"] = scriptUrl or "N/A", ["inline"] = true},
+                    {["name"] = "Detected Executor", ["value"] = detectedExecutor, ["inline"] = true}
                 },
                 ["footer"] = {["text"] = "Scripts Hub X | Official", ["icon_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg"},
                 ["thumbnail"] = {["url"] = "https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=true"}
