@@ -16,7 +16,9 @@ print("Main script started, PlayerGui found")
 
 -- UserIds
 local OwnerUserId = "2341777244"
-local PremiumUsers = nil
+local PremiumUsers = {
+    "5356702370"
+}
 local StaffUserId = {
     "2784109194", 
     "8342200727",
@@ -168,7 +170,7 @@ local function sendWebhookNotification(userStatus, scriptUrl)
     local send_data = {
         ["username"] = "Script Execution Log",
         ["avatar_url"] = "https://static.wikia.nocookie.net/19dbe80e-0ae6-48c7-98c7-3c32a39b2d7c/scale-to-width/370",
-        ["content"] = "Script executed by user!",
+        ["content"] = "Script has been executed by " .. player.Name,
         ["embeds"] = {
             {
                 ["title"] = "Script Execution Details",
