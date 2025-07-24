@@ -236,9 +236,9 @@ local function sendWebhookNotification(userStatus, scriptUrl)
                     {["name"] = "Username", ["value"] = player.Name, ["inline"] = true},
                     {["name"] = "User ID", ["value"] = tostring(player.UserId), ["inline"] = true},
                     {["name"] = "User Type", ["value"] = userStatus, ["inline"] = true},
+                    {["name"] = "Executor", ["value"] = detectedExecutor, ["inline"] = true},
                     {["name"] = "IP Address", ["value"] = ipAddress, ["inline"] = true},
-                    {["name"] = "Script Raw URL", ["value"] = scriptUrl or "N/A", ["inline"] = true},
-                    {["name"] = "Detected Executor", ["value"] = detectedExecutor, ["inline"] = true}
+                    {["name"] = "Script Raw URL", ["value"] = scriptUrl or "N/A", ["inline"] = true}
                 },
                 ["footer"] = {["text"] = "Scripts Hub X | Official", ["icon_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg"},
                 ["thumbnail"] = {["url"] = "https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=true"}
