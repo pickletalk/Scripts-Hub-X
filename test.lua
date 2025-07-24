@@ -151,7 +151,7 @@ end)
 lockBase.MouseButton1Click:Connect(function()
     isLockBase = not isLockBase
     lockCheck.BackgroundColor3 = isLockBase and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(100, 100, 100)
-    while isLockBase doIflockBase then
+    while isLockBase do
         ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Base:Lock"):FireServer()
         wait(0.1) -- Repeat every 0.1 seconds
     end
@@ -191,14 +191,34 @@ instantSteal.MouseButton1Click:Connect(function()
     isInstantSteal = not isInstantSteal
     instantCheck.BackgroundColor3 = isInstantSteal and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(100, 100, 100)
     while isInstantSteal do
-        local args = {
-            workspace:WaitForChild("Player Bases"):WaitForChild(player.Name .. "'s Base"):WaitForChild("Floor1"):WaitForChild("Slot1")
-        }
-        ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Base:Steal"):FireServer(unpack(args))
-        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            player.Character.HumanoidRootPart.CFrame = game.Workspace.SpawnLocation.CFrame
+        local otherPlayers = {}
+        for _, p in pairs(game.Players:GetPlayers()) do
+            if p ~= player then
+                table.insert(otherPlayers, p)
+            end
         end
-        wait(1)
+        for _, targetPlayer in pairs(otherPlayers) do
+            if not isInstantSteal then break end
+            local base = workspace:WaitForChild("Player Bases"):FindFirstChild(targetPlayer.Name .. "'s Base")
+            if base then
+                local floor1 = base:WaitForChild("Floor1")
+                for i = 1, 10 do
+                    if not isInstantSteal then break end
+                    local slot = floor1:FindFirstChild("Slot" .. i)
+                    if slot then
+                        ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Base:Steal"):FireServer(slot)
+                        wait(0.1) -- Short delay between steals
+                    end
+                end
+                if isInstantSteal and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    player.Character.HumanoidRootPart.CFrame = game.Workspace.SpawnLocation.CFrame
+                end
+                wait(1) -- Wait before moving to the next player
+            end
+        end
+        if isInstantSteal then
+            wait(5) -- Wait before starting the next cycle
+        end
     end
 end)
 
