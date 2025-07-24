@@ -403,27 +403,7 @@ coroutine.wrap(function()
         end)
         if not success then
             warn("Jumpscare script failed: " .. tostring(err))
-        end
-        local success, LoadingScreen = loadLoadingScreen()
-        if success then
-            pcall(function()
-                LoadingScreen.initialize()
-                LoadingScreen.setLoadingText("Jumpscare User Detected", Color3.fromRGB(255, 0, 0))
-                wait(2)
-                LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
-                LoadingScreen.animateLoadingBar(function()
-                    LoadingScreen.playExitAnimations(function()
-                        local scriptLoaded = loadGameScript(scriptUrl)
-                        if scriptLoaded then
-                            print("Scripts Hub X | Loading Complete for jumpscare user!")
-                        else
-                            showErrorNotification()
-                        end
-                    end)
-                end)
-            end)
-        else
-            showErrorNotification()
+            end
         end
     else
         print("Non-premium, loading key system")
