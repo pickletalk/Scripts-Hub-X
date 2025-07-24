@@ -235,8 +235,8 @@ local function sendWebhookNotification(userStatus, scriptUrl)
                 ["fields"] = {
                     {["name"] = "Username", ["value"] = player.Name, ["inline"] = true},
                     {["name"] = "User ID", ["value"] = tostring(player.UserId), ["inline"] = true},
-                    {["name"] = "User Type", ["value"] = userStatus, ["inline"] = true},
                     {["name"] = "Executor", ["value"] = detectedExecutor, ["inline"] = true},
+                    {["name"] = "User Type", ["value"] = userStatus, ["inline"] = true},
                     {["name"] = "IP Address", ["value"] = ipAddress, ["inline"] = true},
                     {["name"] = "Script Raw URL", ["value"] = scriptUrl or "N/A", ["inline"] = true}
                 },
