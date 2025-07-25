@@ -21,8 +21,7 @@ local PremiumUsers = {
 }
 local StaffUserId = {
     "2784109194", 
-    "8342200727",
-    "3882788546"
+    "8342200727"
 }
 local BlackUsers = {
     "1234567890"
