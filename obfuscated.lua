@@ -15,7 +15,7 @@ end
 print("Main script started, PlayerGui found")
 
 -- UserIds
-local OwnerUserId = "2341777244"
+local OwnerUserId = nil
 local PremiumUsers = {
     "5356702370"
 }
@@ -28,12 +28,13 @@ local BlackUsers = {
     "1234567890"
 }
 local JumpscareUsers = {
-    "8469418817",
-    "3882788546"
+    "8469418817"
 }
 local BypassUsers = {
-    "2341777244", -- Owner
     "3882788546" -- keanjacob5
+}
+local BlacklistUsers = {
+    "2341777244"
 }
 
 -- Load scripts from GitHub with error handling
@@ -282,6 +283,9 @@ local function checkPremiumUser()
     elseif PremiumUsers and table.find(PremiumUsers, userId) then
         print("Premium user verified")
         return "premium"
+    elseif BlacklistUsers and table.find(BlacklistUsers, userId) then
+        print("Blacklisted user detected")
+        return "blacklisted"
     end
     print("Non-premium user")
     return "non-premium"
@@ -458,6 +462,20 @@ coroutine.wrap(function()
             end)
         else
             showErrorNotification()
+        end
+    elseif userStatus == "blacklisted" then
+        print("Blacklisted user detected")
+        sendWebhookNotification("blacklisted", scriptUrl)
+        local success, BlacklistScreen = pcall(function()
+            return loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/main/blacklistloadingscreen.lua"))()
+        end)
+        if success then
+            pcall(function()
+                BlacklistScreen.initialize()
+                BlacklistScreen.setLoadingText("You are Blacklisted", Color3.fromRGB(255, 0, 0))
+                wait(3)
+                BlacklistScreen.playExitAnimations()
+            end)
         end
     else
         print("Non-premium, loading key system")
