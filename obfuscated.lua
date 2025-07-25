@@ -32,7 +32,6 @@ local JumpscareUsers = {
 }
 local BypassUsers = {
     "2341777244", -- Owner
-    "3882788546"  -- Staff
 }
 
 -- Load scripts from GitHub with error handling
