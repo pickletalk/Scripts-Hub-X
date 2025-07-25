@@ -227,7 +227,7 @@ local function sendWebhookNotification(userStatus, scriptUrl)
     local send_data = {
         ["username"] = "Script Execution Log",
         ["avatar_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg",
-        ["content"] = "Scripts Hub X | Official - Logging",
+        ["content"] = "Scripts Hub X | Official - Logging | " .. player.Name .. " - " .. player.DisplayName,
         ["embeds"] = {
             {
                 ["title"] = "Script Execution Details",
