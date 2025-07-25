@@ -15,7 +15,7 @@ end
 print("Main script started, PlayerGui found")
 
 -- UserIds
-local OwnerUserId = "2341777244"
+local OwnerUserId = nil
 local PremiumUsers = {
     "5356702370"
 }
@@ -24,20 +24,16 @@ local StaffUserId = {
     "8342200727",
     "3882788546" -- keanjacob5
 }
-local BlackUsers = {
-    "1234567890"
-}
+local BlackUsers = nil
 local JumpscareUsers = {
-    "8469418817",
-    "3882788546"
+    "8469418817"
 }
 local BypassUsers = {
     "2341777244", -- Owner
     "3882788546" -- keanjacob5
 }
 local BlacklistUsers = {
-    "9876543210", -- Example blacklisted user
-    "1111111111"  -- Example blacklisted user
+    "2341777244"
 }
 
 -- Load scripts from GitHub with error handling
