@@ -20,8 +20,9 @@ local PremiumUsers = {
     "5356702370"
 }
 local StaffUserId = {
-    "2784109194", 
-    "8342200727",
+    "2784109194", -- giweyi
+    "8342200727", -- Chloe_Zoom28
+    "799427028", -- Roblox_xvt
     "3882788546" -- keanjacob5
 }
 local BlackUsers = nil
