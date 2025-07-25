@@ -15,7 +15,7 @@ end
 print("Main script started, PlayerGui found")
 
 -- UserIds
-local OwnerUserId = "2341777244"
+local OwnerUserId = {"2341777244", "4196292931"}
 local PremiumUsers = {
     "5356702370"
 }
@@ -31,6 +31,7 @@ local JumpscareUsers = {
 }
 local BypassUsers = {
     "2341777244", -- Owner
+    "4196292931", -- Owner's Alt
     "3882788546" -- keanjacob5
 }
 local BlacklistUsers = nil
