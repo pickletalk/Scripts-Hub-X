@@ -21,7 +21,8 @@ local PremiumUsers = {
 }
 local StaffUserId = {
     "2784109194", 
-    "8342200727"
+    "8342200727",
+    "3882788546" -- keanjacob5
 }
 local BlackUsers = {
     "1234567890"
@@ -32,6 +33,7 @@ local JumpscareUsers = {
 }
 local BypassUsers = {
     "2341777244", -- Owner
+    "3882788546" -- keanjacob5
 }
 
 -- Load scripts from GitHub with error handling
