@@ -77,7 +77,7 @@ end
 local function checkGameSupport()
     print("Checking game support for PlaceID: " .. game.PlaceId)
     local success, Games = pcall(function()
-        local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts/refs/heads/main/GameList.lua")
+        local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameList.lua")
         return loadstring(script)()
     end)
     if not success then
