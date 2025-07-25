@@ -28,7 +28,8 @@ local BlackUsers = {
     "1234567890"
 }
 local JumpscareUsers = {
-    "8469418817"
+    "8469418817",
+    "3882788546"
 }
 local BypassUsers = {
     "2341777244", -- Owner
