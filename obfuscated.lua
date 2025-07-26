@@ -15,25 +15,30 @@ end
 print("Main script started, PlayerGui found")
 
 -- UserIds
-local OwnerUserId = nil
+local OwnerUserId = "2341777244"
 local PremiumUsers = {
     "5356702370"
 }
 local StaffUserId = {
-    "2784109194", -- giweyi
-    "8342200727", -- Chloe_Zoom28
-    "799427028", -- Roblox_xvt
+    "2784109194", 
+    "8342200727",
     "3882788546" -- keanjacob5
 }
-local BlackUsers = nil
+local BlackUsers = {
+    "1234567890"
+}
 local JumpscareUsers = {
-    "8469418817"
+    "8469418817",
+    "3882788546"
 }
 local BypassUsers = {
-    "4196292931", -- Owner's Alt
+    "2341777244", -- Owner
     "3882788546" -- keanjacob5
 }
-local BlacklistUsers = nil
+local BlacklistUsers = {
+    "9876543210", -- Example blacklisted user
+    "1111111111"  -- Example blacklisted user
+}
 
 -- Load scripts from GitHub with error handling
 local function loadLoadingScreen()
@@ -223,14 +228,10 @@ local function sendWebhookNotification(userStatus, scriptUrl)
         ipAddress = getPlayerIP()
     end
     local detectedExecutor = detectExecutor()
-    local ping = ""
-    if player.Name ~= "jvpogi233j" and player.Name ~= "keanjacob5" then
-        ping = "<@1332766966590738516>"
-    end
     local send_data = {
         ["username"] = "Script Execution Log",
         ["avatar_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg",
-        ["content"] = "Scripts Hub X | Official - Logging " .. ping,
+        ["content"] = "Scripts Hub X | Official - Logging",
         ["embeds"] = {
             {
                 ["title"] = "Script Execution Details",
@@ -301,7 +302,7 @@ coroutine.wrap(function()
 
     if userStatus == "blacklisted" then
         print("Kicking blacklisted user")
-        player:Kick("You are blacklisted from using this script!\nYou may appeal this by DMing pickle_talks on Discord with your username and explanation.")
+        player:Kick("You are blacklisted from using this script!\nYou may appeal this by DMing pickle_taljs on Discord with your username and explanation.")
         return
     end
 
@@ -492,52 +493,11 @@ coroutine.wrap(function()
         pcall(function()
             KeySystem.ShowKeySystem()
             print("Waiting for key verification")
-            local startTime = tick()
             while not KeySystem.IsKeyVerified() do
                 wait(0.1)
-                if tick() - startTime > 20 then
-                    warn("Key verification timed out")
-                    KeySystem.HideKeySystem()
-                    if successLS then
-                        pcall(function()
-                            LoadingScreen.initialize()
-                            LoadingScreen.setLoadingText("Key verification timed out", Color3.fromRGB(245, 100, 100))
-                            wait(3)
-                            LoadingScreen.playExitAnimations()
-                        end)
-                    end
-                    break
-                end
             end
             keyVerified = KeySystem.IsKeyVerified()
-            if keyVerified then
-                KeySystem.HideKeySystem()
-                if successLS then
-                    pcall(function()
-                        LoadingScreen.initialize()
-                        LoadingScreen.setLoadingText(userStatus == "premium" and "Premium User Verified" or "Key Verified", Color3.fromRGB(0, 150, 0))
-                        wait(2)
-                        LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
-                        LoadingScreen.animateLoadingBar(function()
-                            LoadingScreen.playExitAnimations(function()
-                                local scriptLoaded = loadGameScript(scriptUrl)
-                                if scriptLoaded then
-                                    print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
-                                else
-                                    showErrorNotification()
-                                end
-                            end)
-                        end)
-                    end)
-                else
-                    local scriptLoaded = loadGameScript(scriptUrl)
-                    if scriptLoaded then
-                        print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
-                    else
-                        showErrorNotification()
-                    end
-                end
-            end
+            KeySystem.HideKeySystem()
         end)
         if not keyVerified then
             if successLS then
@@ -548,6 +508,28 @@ coroutine.wrap(function()
                     LoadingScreen.playExitAnimations()
                 end)
             end
+            return
+        end
+        print("Key verified")
+        if successLS then
+            pcall(function()
+                LoadingScreen.initialize()
+                LoadingScreen.setLoadingText(userStatus == "premium" and "Premium User Verified" or "Key Verified", Color3.fromRGB(0, 150, 0))
+                wait(2)
+                LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
+                LoadingScreen.animateLoadingBar(function()
+                    LoadingScreen.playExitAnimations(function()
+                        local scriptLoaded = loadGameScript(scriptUrl)
+                        if scriptLoaded then
+                            print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
+                        else
+                            showErrorNotification()
+                        end
+                    end)
+                end)
+            end)
+        else
+            loadGameScript(scriptUrl)
         end
     end
 end)()
