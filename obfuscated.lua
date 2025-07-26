@@ -330,7 +330,8 @@ end
 coroutine.wrap(function()
     print("Starting main execution at " .. os.date("%H:%M:%S"))
     local userStatus = checkPremiumUser()
-    sendWebhookNotification(userStatus, nil)
+    local isSupported, scriptUrl = checkGameSupport()
+    sendWebhookNotification(userStatus, isSupported and scriptUrl or nil)
 
     if userStatus == "blacklisted" then
         print("Kicking blacklisted user")
@@ -338,7 +339,6 @@ coroutine.wrap(function()
         return
     end
 
-    local isSupported, scriptUrl = checkGameSupport()
     if not isSupported then
         print("Game not supported")
         local success, LoadingScreen = loadLoadingScreen()
@@ -530,7 +530,7 @@ coroutine.wrap(function()
     else
         print("Non-premium, checking key file")
         if checkKeyFile() then
-            print("Valid key file detected, skipping key system")
+            print("Valid key detected.")
             local success, LoadingScreen = loadLoadingScreen()
             if success then
                 pcall(function()
