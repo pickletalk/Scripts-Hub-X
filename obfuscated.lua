@@ -33,12 +33,10 @@ local JumpscareUsers = {
 }
 local BypassUsers = {
     "2341777244", -- Owner
+    "4196292931", -- Owner's Alt
     "3882788546" -- keanjacob5
 }
-local BlacklistUsers = {
-    "9876543210", -- Example blacklisted user
-    "1111111111"  -- Example blacklisted user
-}
+local BlacklistUsers = nil
 
 -- Load scripts from GitHub with error handling
 local function loadLoadingScreen()
