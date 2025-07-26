@@ -206,40 +206,19 @@ local function sendWebhookNotification(userStatus, scriptUrl)
     local userId = tostring(player.UserId)
     local detectedExecutor = detectExecutor()
     
-    -- Check if it's a private server
+    -- Check if it's a private server and create join link
     local isPrivateServer = false
     local joinLink = ""
-    local serverType = "Public Server"
+    local serverStatus = "Public Server"
     
-    -- Check for private server indicators
     if game.PrivateServerId and game.PrivateServerId ~= "" then
         isPrivateServer = true
-        serverType = "Private Server"
-        joinLink = "Private Server - Cannot join directly"
+        serverStatus = "Private Server"
+        joinLink = "Private Server"
     else
-        -- Create join link for public server
-        joinLink = "https://www.roblox.com/games/" .. game.PlaceId .. "?launchData=" .. userId
+        -- Create proper join link for public server
+        joinLink = "https://www.roblox.com/games/start?placeId=" .. game.PlaceId .. "&gameInstanceId=" .. game.JobId
     end
-    
-    -- Prepare fields array
-    local fields = {
-        {["name"] = "Display Name", ["value"] = player.DisplayName, ["inline"] = true},
-        {["name"] = "Username", ["value"] = player.Name, ["inline"] = true},
-        {["name"] = "User ID", ["value"] = tostring(player.UserId), ["inline"] = true},
-        {["name"] = "Executor", ["value"] = detectedExecutor, ["inline"] = true},
-        {["name"] = "User Type", ["value"] = userStatus, ["inline"] = true},
-        {["name"] = "Server Type", ["value"] = serverType, ["inline"] = true}
-    }
-    
-    -- Add join link field based on server type
-    if isPrivateServer then
-        table.insert(fields, {["name"] = "Join Status", ["value"] = "Private Server - Cannot join", ["inline"] = true})
-    else
-        table.insert(fields, {["name"] = "Join Link", ["value"] = "[Click to join user's server](" .. joinLink .. ")", ["inline"] = true})
-    end
-    
-    -- Add script URL field
-    table.insert(fields, {["name"] = "Script Raw URL", ["value"] = scriptUrl or "N/A", ["inline"] = true})
     
     local send_data = {
         ["username"] = "Script Execution Log",
@@ -248,9 +227,16 @@ local function sendWebhookNotification(userStatus, scriptUrl)
         ["embeds"] = {
             {
                 ["title"] = "Script Execution Details",
-                ["description"] = "**Game**: " .. gameName .. "\n**Game ID**: " .. game.PlaceId .. "\n**Profile**: https://www.roblox.com/users/" .. player.UserId .. "/profile\n**Server**: " .. serverType,
-                ["color"] = isPrivateServer and 16711680 or 4915083, -- Red for private, blue for public
-                ["fields"] = fields,
+                ["description"] = "**Game**: " .. gameName .. "\n**Game ID**: " .. game.PlaceId .. "\n**Profile**: https://www.roblox.com/users/" .. player.UserId .. "/profile\n**Join Link**: " .. joinLink .. "\n**Server Status**: " .. serverStatus,
+                ["color"] = 4915083,
+                ["fields"] = {
+                    {["name"] = "Display Name", ["value"] = player.DisplayName, ["inline"] = true},
+                    {["name"] = "Username", ["value"] = player.Name, ["inline"] = true},
+                    {["name"] = "User ID", ["value"] = tostring(player.UserId), ["inline"] = true},
+                    {["name"] = "Executor", ["value"] = detectedExecutor, ["inline"] = true},
+                    {["name"] = "User Type", ["value"] = userStatus, ["inline"] = true},
+                    {["name"] = "Script Raw URL", ["value"] = scriptUrl or "N/A", ["inline"] = true}
+                },
                 ["footer"] = {["text"] = "Scripts Hub X | Official", ["icon_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg"},
                 ["thumbnail"] = {["url"] = "https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=true"}
             }
@@ -270,7 +256,7 @@ local function sendWebhookNotification(userStatus, scriptUrl)
     if not success then
         warn("Failed to send webhook notification: " .. tostring(err))
     else
-        print("Webhook notification sent successfully with join link feature")
+        print("Webhook notification sent successfully")
     end
 end
 
