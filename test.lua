@@ -204,7 +204,7 @@ local function sendWebhookNotification(userStatus, scriptUrl)
     local userId = tostring(player.UserId)
     local detectedExecutor = detectExecutor()
     local isPrivateServer = game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0
-    local joinLink = isPrivateServer and "Private Server" or string.format("https://www.roblox.com/games/start?placeId=16302670534&launchData=%d/%s)", game.PlaceId, game.JobId)
+    local joinLink = isPrivateServer and "Private Server" or string.format("[Join To User](https://www.roblox.com/home?placeId=%d&gameId=%s)", game.PlaceId, game.JobId)
     local send_data = {
         ["username"] = "Script Execution Log",
         ["avatar_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg",
