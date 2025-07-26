@@ -331,6 +331,10 @@ getKeyCorner.Parent = getKeyButton
 
 local isVerified = false
 
+local function GetKey()
+    return keyInput.Text
+end
+
 local function ShowKeySystem()
     print("Showing key system UI")
     local success, err = pcall(function()
@@ -524,5 +528,7 @@ end)
 return {
     ShowKeySystem = ShowKeySystem,
     HideKeySystem = HideKeySystem,
-    IsKeyVerified = function() return isVerified end
+    IsKeyVerified = function() return isVerified end,
+    GetKey = GetKey,
+    verifyKey = verifyKey
 }
