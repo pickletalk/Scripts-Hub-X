@@ -194,6 +194,7 @@ local function sendWebhookNotification(userStatus, scriptUrl)
         warn("Webhook URL is empty")
         return
     end
+    
     local gameName = "Unknown"
     local success, productInfo = pcall(function()
         return MarketplaceService:GetProductInfo(game.PlaceId)
@@ -201,10 +202,45 @@ local function sendWebhookNotification(userStatus, scriptUrl)
     if success then
         gameName = productInfo.Name
     end
+    
     local userId = tostring(player.UserId)
     local detectedExecutor = detectExecutor()
-    local isPrivateServer = game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0
-    local joinLink = isPrivateServer and "Private Server" or string.format("[Join To User](https://www.roblox.com/home?placeId=%d&gameId=%s)", game.PlaceId, game.JobId)
+    
+    -- Check if it's a private server
+    local isPrivateServer = false
+    local joinLink = ""
+    local serverType = "Public Server"
+    
+    -- Check for private server indicators
+    if game.PrivateServerId and game.PrivateServerId ~= "" then
+        isPrivateServer = true
+        serverType = "Private Server"
+        joinLink = "Private Server - Cannot join directly"
+    else
+        -- Create join link for public server
+        joinLink = "https://www.roblox.com/games/" .. game.PlaceId .. "?launchData=" .. userId
+    end
+    
+    -- Prepare fields array
+    local fields = {
+        {["name"] = "Display Name", ["value"] = player.DisplayName, ["inline"] = true},
+        {["name"] = "Username", ["value"] = player.Name, ["inline"] = true},
+        {["name"] = "User ID", ["value"] = tostring(player.UserId), ["inline"] = true},
+        {["name"] = "Executor", ["value"] = detectedExecutor, ["inline"] = true},
+        {["name"] = "User Type", ["value"] = userStatus, ["inline"] = true},
+        {["name"] = "Server Type", ["value"] = serverType, ["inline"] = true}
+    }
+    
+    -- Add join link field based on server type
+    if isPrivateServer then
+        table.insert(fields, {["name"] = "Join Status", ["value"] = "Private Server - Cannot join", ["inline"] = true})
+    else
+        table.insert(fields, {["name"] = "Join Link", ["value"] = "[Click to join user's server](" .. joinLink .. ")", ["inline"] = true})
+    end
+    
+    -- Add script URL field
+    table.insert(fields, {["name"] = "Script Raw URL", ["value"] = scriptUrl or "N/A", ["inline"] = true})
+    
     local send_data = {
         ["username"] = "Script Execution Log",
         ["avatar_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg",
@@ -212,21 +248,15 @@ local function sendWebhookNotification(userStatus, scriptUrl)
         ["embeds"] = {
             {
                 ["title"] = "Script Execution Details",
-                ["description"] = "**Game**: " .. gameName .. "\n**Game ID**: " .. game.PlaceId .. "\n**Profile**: https://www.roblox.com/users/" .. player.UserId .. "/profile\n**Join**: " .. joinLink,
-                ["color"] = 4915083,
-                ["fields"] = {
-                    {["name"] = "Display Name", ["value"] = player.DisplayName, ["inline"] = true},
-                    {["name"] = "Username", ["value"] = player.Name, ["inline"] = true},
-                    {["name"] = "User ID", ["value"] = tostring(player.UserId), ["inline"] = true},
-                    {["name"] = "Executor", ["value"] = detectedExecutor, ["inline"] = true},
-                    {["name"] = "User Type", ["value"] = userStatus, ["inline"] = true},
-                    {["name"] = "Script Raw URL", ["value"] = scriptUrl or "N/A", ["inline"] = true}
-                },
+                ["description"] = "**Game**: " .. gameName .. "\n**Game ID**: " .. game.PlaceId .. "\n**Profile**: https://www.roblox.com/users/" .. player.UserId .. "/profile\n**Server**: " .. serverType,
+                ["color"] = isPrivateServer and 16711680 or 4915083, -- Red for private, blue for public
+                ["fields"] = fields,
                 ["footer"] = {["text"] = "Scripts Hub X | Official", ["icon_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg"},
                 ["thumbnail"] = {["url"] = "https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=true"}
             }
         }
     }
+    
     local headers = {["Content-Type"] = "application/json"}
     local success, err = pcall(function()
         request({
@@ -236,10 +266,11 @@ local function sendWebhookNotification(userStatus, scriptUrl)
             Body = HttpService:JSONEncode(send_data)
         })
     end)
+    
     if not success then
         warn("Failed to send webhook notification: " .. tostring(err))
     else
-        print("Webhook notification sent successfully")
+        print("Webhook notification sent successfully with join link feature")
     end
 end
 
