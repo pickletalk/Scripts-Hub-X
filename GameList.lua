@@ -93,7 +93,10 @@ local Games = {
     [137925884276740] = "https://raw.githubusercontent.com/ScriptsRBXdotCom/scripts/refs/heads/main/buildaplane",
 
     -- Steal A Country
-    [107600241411943] = "https://raw.githubusercontent.com/gumanba/Scripts/main/StealaCountry"
+    [107600241411943] = "https://raw.githubusercontent.com/gumanba/Scripts/main/StealaCountry",
+
+    -- Blade Ball
+    [13772394625] = "https://raw.githubusercontent.com/NodeX-Enc/NodeX/refs/heads/main/Main.lua"
 }
 
 return Games
