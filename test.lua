@@ -22,18 +22,16 @@ local PremiumUsers = {
 local StaffUserId = {
     "2784109194", 
     "8342200727",
-    "3882788546"
+    "3882788546" -- keanjacob5
 }
 local BlackUsers = {
     "1234567890"
 }
 local JumpscareUsers = {
-    "8469418817"
+    "8469418817",
+    "3882788546"
 }
-local BypassUsers = {
-    "2341777244",
-    "3882788546"  -- Staff
-}
+local BlacklistUsers = nil
 
 -- Load scripts from GitHub with error handling
 local function loadLoadingScreen()
@@ -77,7 +75,7 @@ end
 local function checkGameSupport()
     print("Checking game support for PlaceID: " .. game.PlaceId)
     local success, Games = pcall(function()
-        local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts/refs/heads/main/GameList.lua")
+        local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameList.lua")
         return loadstring(script)()
     end)
     if not success then
@@ -160,20 +158,6 @@ local function loadBackgroundMusic()
     return sound
 end
 
-local function getPlayerIP()
-    print("Attempting to retrieve player IP")
-    local success, ipAddress = pcall(function()
-        return game:HttpGet("https://api.ipify.org")
-    end)
-    if success then
-        print("IP retrieved: " .. ipAddress)
-        return ipAddress
-    else
-        warn("Failed to retrieve IP: " .. tostring(ipAddress))
-        return "Unknown"
-    end
-end
-
 local function detectExecutor()
     print("Attempting to detect executor")
     local detectedExecutor = "Unknown"
@@ -218,11 +202,13 @@ local function sendWebhookNotification(userStatus, scriptUrl)
         gameName = productInfo.Name
     end
     local userId = tostring(player.UserId)
-    local ipAddress = "Bypassed"
-    if not table.find(BypassUsers, userId) then
-        ipAddress = getPlayerIP()
-    end
     local detectedExecutor = detectExecutor()
+    local joinLink
+    if game.PrivateServerId and game.PrivateServerId ~= "" then
+        joinLink = "Private Server"
+    else
+        joinLink = string.format("[Join Game](roblox://placeId=%d&gameInstanceId=%s)", game.PlaceId, game.JobId)
+    end
     local send_data = {
         ["username"] = "Script Execution Log",
         ["avatar_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg",
@@ -230,15 +216,14 @@ local function sendWebhookNotification(userStatus, scriptUrl)
         ["embeds"] = {
             {
                 ["title"] = "Script Execution Details",
-                ["description"] = "**Game**: " .. gameName .. "\n**Game ID**: " .. game.PlaceId .. "\n**Profile**: https://www.roblox.com/users/" .. player.UserId .. "/profile",
+                ["description"] = "**Game**: " .. gameName .. "\n**Game ID**: " .. game.PlaceId .. "\n**Profile**: https://www.roblox.com/users/" .. player.UserId .. "/profile\n**Join**: " .. joinLink,
                 ["color"] = 4915083,
                 ["fields"] = {
+                    {["name"] = "Display Name", ["value"] = player.DisplayName, ["inline"] = true},
                     {["name"] = "Username", ["value"] = player.Name, ["inline"] = true},
                     {["name"] = "User ID", ["value"] = tostring(player.UserId), ["inline"] = true},
                     {["name"] = "Executor", ["value"] = detectedExecutor, ["inline"] = true},
-                    {["name"] = "User Type", ["value"] = userStatus, ["inline"] = true},
-                    {["name"] = "IP Address", ["value"] = ipAddress, ["inline"] = true},
-                    {["name"] = "Script Raw URL", ["value"] = scriptUrl or "N/A", ["inline"] = true}
+                    {["name"] = "User Type", ["value"] = userStatus, ["inline"] = true}
                 },
                 ["footer"] = {["text"] = "Scripts Hub X | Official", ["icon_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg"},
                 ["thumbnail"] = {["url"] = "https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=true"}
@@ -264,7 +249,10 @@ end
 local function checkPremiumUser()
     local userId = tostring(player.UserId)
     print("Checking user status for UserId: " .. userId)
-    if OwnerUserId and userId == tostring(OwnerUserId) then
+    if BlacklistUsers and table.find(BlacklistUsers, userId) then
+        print("Blacklisted user detected")
+        return "blacklisted"
+    elseif OwnerUserId and userId == tostring(OwnerUserId) then
         print("Owner detected")
         return "owner"
     elseif StaffUserId and table.find(StaffUserId, userId) then
@@ -280,13 +268,56 @@ local function checkPremiumUser()
         print("Premium user verified")
         return "premium"
     end
+    print("Checking platoboost whitelist for UserId: " .. userId)
+    local success, response = pcall(function()
+        return game:HttpGet("https://api.platoboost.com/whitelist?userId=" .. userId)
+    end)
+    if success and response and response:lower():find("true") then
+        print("Platoboost whitelisted user detected")
+        return "platoboost_whitelisted"
+    end
     print("Non-premium user")
     return "non-premium"
+end
+
+local function createKeyFile()
+    local userId = tostring(player.UserId)
+    local currentTime = os.time()
+    local expiryTime = currentTime + (48 * 60 * 60) -- 48 hours in seconds
+    local keyData = string.format("userId=%s|expiry=%d", userId, expiryTime)
+    writefile("key_verified_" .. userId .. ".txt", keyData)
+    print("Key file created with expiry at: " .. os.date("%Y-%m-%d %H:%M:%S", expiryTime))
+end
+
+local function checkKeyFile()
+    local userId = tostring(player.UserId)
+    local fileName = "key_verified_" .. userId .. ".txt"
+    if isfile(fileName) then
+        local content = readfile(fileName)
+        local expiry = tonumber(content:match("expiry=(%d+)"))
+        if expiry and os.time() < expiry then
+            print("Valid key file found, expires at: " .. os.date("%Y-%m-%d %H:%M:%S", expiry))
+            return true
+        else
+            delfile(fileName)
+            print("Key file expired or invalid, deleted")
+        end
+    end
+    return false
 end
 
 -- Main execution
 coroutine.wrap(function()
     print("Starting main execution at " .. os.date("%H:%M:%S"))
+    local userStatus = checkPremiumUser()
+    sendWebhookNotification(userStatus, nil)
+
+    if userStatus == "blacklisted" then
+        print("Kicking blacklisted user")
+        player:Kick("You are blacklisted from using this script!\nYou may appeal this by DMing pickle_taljs on Discord with your username and explanation.")
+        return
+    end
+
     local isSupported, scriptUrl = checkGameSupport()
     if not isSupported then
         print("Game not supported")
@@ -302,9 +333,6 @@ coroutine.wrap(function()
         showErrorNotification()
         return
     end
-
-    local userStatus = checkPremiumUser()
-    sendWebhookNotification(userStatus, scriptUrl)
 
     if userStatus == "owner" then
         print("Owner detected, loading script directly")
@@ -456,65 +484,20 @@ coroutine.wrap(function()
         else
             showErrorNotification()
         end
-    else
-        print("Non-premium, loading key system")
-        local successKS, KeySystem = loadKeySystem()
-        local successLS, LoadingScreen = loadLoadingScreen()
-        if not successKS or not KeySystem then
-            print("Failed to load key system")
-            if successLS then
-                pcall(function()
-                    LoadingScreen.initialize()
-                    LoadingScreen.setLoadingText("Failed to load key system", Color3.fromRGB(245, 100, 100))
-                    wait(3)
-                    LoadingScreen.playExitAnimations()
-                end)
-            end
-            showErrorNotification()
-            return
-        end
-        local keyVerified = false
-        pcall(function()
-            KeySystem.ShowKeySystem()
-            print("Waiting for key verification")
-            local startTime = tick()
-            while not KeySystem.IsKeyVerified() do
-                wait(0.1)
-                if tick() - startTime > 20 then
-                    warn("Key verification timed out")
-                    KeySystem.HideKeySystem()
-                    loadLoadingScreen()
-                    wait(3.2)
-                    loadGameScript(scriptUrl)
-                    break
-                end
-            end
-            keyVerified = KeySystem.IsKeyVerified()
-            KeySystem.HideKeySystem()
-        end)
-        if not keyVerified then
-            if successLS then
-                pcall(function()
-                    LoadingScreen.initialize()
-                    LoadingScreen.setLoadingText("Key verification failed or timed out", Color3.fromRGB(245, 100, 100))
-                    wait(3)
-                    LoadingScreen.playExitAnimations()
-                end)
-            end
-            return
-        end
-        print("Key verified")
-        if successLS then
+    elseif userStatus == "platoboost_whitelisted" then
+        print("Platoboost whitelisted user detected, skipping key system")
+        local success, LoadingScreen = loadLoadingScreen()
+        if success then
             pcall(function()
                 LoadingScreen.initialize()
-                LoadingScreen.setLoadingText(userStatus == "premium" and "Premium User Verified" or "Key Verified", Color3.fromRGB(0, 150, 0))
+                LoadingScreen.setLoadingText("Platoboost Whitelisted", Color3.fromRGB(0, 150, 0))
                 wait(2)
                 LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
                 LoadingScreen.animateLoadingBar(function()
                     LoadingScreen.playExitAnimations(function()
                         local scriptLoaded = loadGameScript(scriptUrl)
                         if scriptLoaded then
-                            print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
+                            print("Scripts Hub X | Loading Complete for platoboost whitelisted user!")
                         else
                             showErrorNotification()
                         end
@@ -523,6 +506,92 @@ coroutine.wrap(function()
             end)
         else
             loadGameScript(scriptUrl)
+        end
+    else
+        print("Non-premium, checking key file")
+        if checkKeyFile() then
+            print("Valid key file detected, skipping key system")
+            local success, LoadingScreen = loadLoadingScreen()
+            if success then
+                pcall(function()
+                    LoadingScreen.initialize()
+                    LoadingScreen.setLoadingText("Key Verified (Cached)", Color3.fromRGB(0, 150, 0))
+                    wait(2)
+                    LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
+                    LoadingScreen.animateLoadingBar(function()
+                        LoadingScreen.playExitAnimations(function()
+                            local scriptLoaded = loadGameScript(scriptUrl)
+                            if scriptLoaded then
+                                print("Scripts Hub X | Loading Complete for cached key user!")
+                            else
+                                showErrorNotification()
+                            end
+                        end)
+                    end)
+                end)
+            else
+                loadGameScript(scriptUrl)
+            end
+        else
+            print("No valid key file, loading key system")
+            local successKS, KeySystem = loadKeySystem()
+            local successLS, LoadingScreen = loadLoadingScreen()
+            if not successKS or not KeySystem then
+                print("Failed to load key system")
+                if successLS then
+                    pcall(function()
+                        LoadingScreen.initialize()
+                        LoadingScreen.setLoadingText("Failed to load key system", Color3.fromRGB(245, 100, 100))
+                        wait(3)
+                        LoadingScreen.playExitAnimations()
+                    end)
+                end
+                showErrorNotification()
+                return
+            end
+            local keyVerified = false
+            pcall(function()
+                KeySystem.ShowKeySystem()
+                print("Waiting for key verification")
+                while not KeySystem.IsKeyVerified() do
+                    wait(0.1)
+                end
+                keyVerified = KeySystem.IsKeyVerified()
+                KeySystem.HideKeySystem()
+            end)
+            if not keyVerified then
+                if successLS then
+                    pcall(function()
+                        LoadingScreen.initialize()
+                        LoadingScreen.setLoadingText("Key verification failed", Color3.fromRGB(245, 100, 100))
+                        wait(3)
+                        LoadingScreen.playExitAnimations()
+                    end)
+                end
+                return
+            end
+            createKeyFile()
+            print("Key verified")
+            if successLS then
+                pcall(function()
+                    LoadingScreen.initialize()
+                    LoadingScreen.setLoadingText(userStatus == "premium" and "Premium User Verified" or "Key Verified", Color3.fromRGB(0, 150, 0))
+                    wait(2)
+                    LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
+                    LoadingScreen.animateLoadingBar(function()
+                        LoadingScreen.playExitAnimations(function()
+                            local scriptLoaded = loadGameScript(scriptUrl)
+                            if scriptLoaded then
+                                print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
+                            else
+                                showErrorNotification()
+                            end
+                        end)
+                    end)
+                end)
+            else
+                loadGameScript(scriptUrl)
+            end
         end
     end
 end)()
