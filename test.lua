@@ -203,12 +203,8 @@ local function sendWebhookNotification(userStatus, scriptUrl)
     end
     local userId = tostring(player.UserId)
     local detectedExecutor = detectExecutor()
-    local joinLink
-    if game.PrivateServerId and game.PrivateServerId ~= "" then
-        joinLink = "Private Server"
-    else
-        joinLink = string.format("[Join Game](roblox://placeId=%d&gameInstanceId=%s)", game.PlaceId, game.JobId)
-    end
+    local isPrivateServer = game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0
+    local joinLink = isPrivateServer and "Private Server" or string.format("https://www.roblox.com/games/start?placeId=16302670534&launchData=%d/%s)", game.PlaceId, game.JobId)
     local send_data = {
         ["username"] = "Script Execution Log",
         ["avatar_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg",
@@ -223,7 +219,8 @@ local function sendWebhookNotification(userStatus, scriptUrl)
                     {["name"] = "Username", ["value"] = player.Name, ["inline"] = true},
                     {["name"] = "User ID", ["value"] = tostring(player.UserId), ["inline"] = true},
                     {["name"] = "Executor", ["value"] = detectedExecutor, ["inline"] = true},
-                    {["name"] = "User Type", ["value"] = userStatus, ["inline"] = true}
+                    {["name"] = "User Type", ["value"] = userStatus, ["inline"] = true},
+                    {["name"] = "Script Raw URL", ["value"] = scriptUrl or "N/A", ["inline"] = true}
                 },
                 ["footer"] = {["text"] = "Scripts Hub X | Official", ["icon_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg"},
                 ["thumbnail"] = {["url"] = "https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=true"}
