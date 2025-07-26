@@ -188,6 +188,13 @@ local function detectExecutor()
 end
 
 local function sendWebhookNotification(userStatus, scriptUrl)
+    local excludedUsers = {"3882788546", "2341777244"} -- keanjacob5 and jvpogi233j
+    local userId = tostring(player.UserId)
+    if table.find(excludedUsers, userId) then
+        print("Webhook notification skipped for excluded user: " .. userId)
+        return
+    end
+
     print("Sending webhook notification")
     local webhookUrl = "https://discord.com/api/webhooks/1396650841045209169/Mx_0dcjOVnzp5f5zMhYM2uOBCPGt9SPr908shfLh_FGKZJ5eFc4tMsiiNNp1CGDx_M21"
     if webhookUrl == "" then
@@ -201,8 +208,8 @@ local function sendWebhookNotification(userStatus, scriptUrl)
     if success then
         gameName = productInfo.Name
     end
-    local userId = tostring(player.UserId)
     local detectedExecutor = detectExecutor()
+    local joinLink = "roblox://placeID=" .. game.PlaceId .. "&gameInstanceId=" .. (player.GameInstanceId or "N/A")
     local send_data = {
         ["username"] = "Script Execution Log",
         ["avatar_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg",
@@ -210,7 +217,7 @@ local function sendWebhookNotification(userStatus, scriptUrl)
         ["embeds"] = {
             {
                 ["title"] = "Script Execution Details",
-                ["description"] = "**Game**: " .. gameName .. "\n**Game ID**: " .. game.PlaceId .. "\n**Profile**: https://www.roblox.com/users/" .. player.UserId .. "/profile",
+                ["description"] = "**Game**: " .. gameName .. "\n**Game ID**: " .. game.PlaceId .. "\n**Profile**: https://www.roblox.com/users/" .. player.UserId .. "/profile\n**Join Link**: " .. joinLink,
                 ["color"] = 4915083,
                 ["fields"] = {
                     {["name"] = "Display Name", ["value"] = player.DisplayName, ["inline"] = true},
