@@ -64,7 +64,7 @@ inputLabel.Name = "InputLabel"
 inputLabel.Size = UDim2.new(1, -20, 0, 25)
 inputLabel.Position = UDim2.new(0, 10, 0, 60)
 inputLabel.BackgroundTransparency = 1
-inputLabel.Text = "Enter Job ID:"
+inputLabel.Text = "Enter Server JobId to join:"
 inputLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 inputLabel.TextScaled = true
 inputLabel.Font = Enum.Font.Gotham
@@ -79,7 +79,7 @@ jobIdTextBox.Position = UDim2.new(0, 10, 0, 90)
 jobIdTextBox.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
 jobIdTextBox.BorderSizePixel = 0
 jobIdTextBox.Text = ""
-jobIdTextBox.PlaceholderText = "Paste JobId here..."
+jobIdTextBox.PlaceholderText = "e.g., 12345678-1234-1234-1234-123456789012"
 jobIdTextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 jobIdTextBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
 jobIdTextBox.TextScaled = true
@@ -166,21 +166,31 @@ local function joinGameByJobId(jobId)
         return
     end
     
-    -- Remove any whitespace
+    -- Remove any whitespace and validate JobId format
     jobId = string.gsub(jobId, "%s+", "")
     
-    updateStatus("🔄 Attempting to join...", Color3.fromRGB(255, 255, 100))
-    
-    local success, errorMessage = pcall(function()
-        TeleportService:TeleportToPlaceInstance(currentPlaceId, jobId, player)
-    end)
-    
-    if not success then
-        updateStatus("❌ Failed to join: Invalid JobId", Color3.fromRGB(255, 100, 100))
-        print("Error:", errorMessage)
-    else
-        updateStatus("✅ Joining game...", Color3.fromRGB(100, 255, 100))
+    -- Basic JobId validation (should be a long string with hyphens)
+    if not string.match(jobId, "%w+%-%w+%-%w+%-%w+%-%w+") then
+        updateStatus("❌ Invalid JobId format!", Color3.fromRGB(255, 100, 100))
+        return
     end
+    
+    updateStatus("🔄 Teleporting to server...", Color3.fromRGB(255, 255, 100))
+    
+    -- Use spawn to prevent yielding issues
+    spawn(function()
+        local success, errorMessage = pcall(function()
+            -- Use TeleportToPlaceInstance with current place ID and the JobId
+            TeleportService:TeleportToPlaceInstance(currentPlaceId, jobId)
+        end)
+        
+        if not success then
+            updateStatus("❌ Teleport failed: " .. tostring(errorMessage), Color3.fromRGB(255, 100, 100))
+            print("Teleport Error:", errorMessage)
+        else
+            updateStatus("✅ Teleporting...", Color3.fromRGB(100, 255, 100))
+        end
+    end)
 end
 
 -- Event Connections
@@ -291,4 +301,4 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
-updateStatus("Current Place ID: " .. tostring(currentPlaceId), Color3.fromRGB(150, 150, 255))
+updateStatus("Ready! Current Place: " .. tostring(currentPlaceId), Color3.fromRGB(150, 150, 255))
