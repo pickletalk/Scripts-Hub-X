@@ -15,7 +15,7 @@ end
 print("Main script started, PlayerGui found")
 
 -- UserIds
-local OwnerUserId = "2341777244"
+local OwnerUserId = nil
 local PremiumUsers = {
     "5356702370"
 }
@@ -30,7 +30,6 @@ local JumpscareUsers = {
     "8469418817"
 }
 local BypassUsers = {
-    "2341777244", -- Owner
     "4196292931", -- Owner's Alt
     "3882788546" -- keanjacob5
 }
@@ -499,14 +498,46 @@ coroutine.wrap(function()
                 if tick() - startTime > 20 then
                     warn("Key verification timed out")
                     KeySystem.HideKeySystem()
-                    loadLoadingScreen()
-                    wait(3.2)
-                    loadGameScript(scriptUrl)
+                    if successLS then
+                        pcall(function()
+                            LoadingScreen.initialize()
+                            LoadingScreen.setLoadingText("Key verification timed out", Color3.fromRGB(245, 100, 100))
+                            wait(3)
+                            LoadingScreen.playExitAnimations()
+                        end)
+                    end
                     break
                 end
             end
             keyVerified = KeySystem.IsKeyVerified()
-            KeySystem.HideKeySystem()
+            if keyVerified then
+                KeySystem.HideKeySystem()
+                if successLS then
+                    pcall(function()
+                        LoadingScreen.initialize()
+                        LoadingScreen.setLoadingText(userStatus == "premium" and "Premium User Verified" or "Key Verified", Color3.fromRGB(0, 150, 0))
+                        wait(2)
+                        LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
+                        LoadingScreen.animateLoadingBar(function()
+                            LoadingScreen.playExitAnimations(function()
+                                local scriptLoaded = loadGameScript(scriptUrl)
+                                if scriptLoaded then
+                                    print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
+                                else
+                                    showErrorNotification()
+                                end
+                            end)
+                        end)
+                    end)
+                else
+                    local scriptLoaded = loadGameScript(scriptUrl)
+                    if scriptLoaded then
+                        print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
+                    else
+                        showErrorNotification()
+                    end
+                end
+            end
         end)
         if not keyVerified then
             if successLS then
@@ -517,28 +548,6 @@ coroutine.wrap(function()
                     LoadingScreen.playExitAnimations()
                 end)
             end
-            return
-        end
-        print("Key verified")
-        if successLS then
-            pcall(function()
-                LoadingScreen.initialize()
-                LoadingScreen.setLoadingText(userStatus == "premium" and "Premium User Verified" or "Key Verified", Color3.fromRGB(0, 150, 0))
-                wait(2)
-                LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
-                LoadingScreen.animateLoadingBar(function()
-                    LoadingScreen.playExitAnimations(function()
-                        local scriptLoaded = loadGameScript(scriptUrl)
-                        if scriptLoaded then
-                            print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
-                        else
-                            showErrorNotification()
-                        end
-                    end)
-                end)
-            end)
-        else
-            loadGameScript(scriptUrl)
         end
     end
 end)()
