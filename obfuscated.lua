@@ -290,6 +290,14 @@ local function checkPremiumUser()
         print("Premium user verified")
         return "premium"
     end
+    print("Checking platoboost whitelist for UserId: " .. userId)
+    local success, response = pcall(function()
+        return game:HttpGet("https://api.platoboost.com/whitelist?userId=" .. userId)
+    end)
+    if success and response and response:lower():find("true") then
+        print("Platoboost whitelisted user detected")
+        return "platoboost_whitelisted"
+    end
     print("Non-premium user")
     return "non-premium"
 end
@@ -471,6 +479,29 @@ coroutine.wrap(function()
             end)
         else
             showErrorNotification()
+        end
+    elseif userStatus == "platoboost_whitelisted" then
+        print("Platoboost whitelisted user detected, skipping key system")
+        local success, LoadingScreen = loadLoadingScreen()
+        if success then
+            pcall(function()
+                LoadingScreen.initialize()
+                LoadingScreen.setLoadingText("Platoboost Whitelisted", Color3.fromRGB(0, 150, 0))
+                wait(2)
+                LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
+                LoadingScreen.animateLoadingBar(function()
+                    LoadingScreen.playExitAnimations(function()
+                        local scriptLoaded = loadGameScript(scriptUrl)
+                        if scriptLoaded then
+                            print("Scripts Hub X | Loading Complete for platoboost whitelisted user!")
+                        else
+                            showErrorNotification()
+                        end
+                    end)
+                end)
+            end)
+        else
+            loadGameScript(scriptUrl)
         end
     else
         print("Non-premium, loading key system")
