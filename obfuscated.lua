@@ -31,11 +31,6 @@ local JumpscareUsers = {
     "8469418817",
     "3882788546"
 }
-local BypassUsers = {
-    "2341777244", -- Owner
-    "4196292931", -- Owner's Alt
-    "3882788546" -- keanjacob5
-}
 local BlacklistUsers = nil
 
 -- Load scripts from GitHub with error handling
@@ -163,20 +158,6 @@ local function loadBackgroundMusic()
     return sound
 end
 
-local function getPlayerIP()
-    print("Attempting to retrieve player IP")
-    local success, ipAddress = pcall(function()
-        return game:HttpGet("https://api.ipify.org")
-    end)
-    if success then
-        print("IP retrieved: " .. ipAddress)
-        return ipAddress
-    else
-        warn("Failed to retrieve IP: " .. tostring(ipAddress))
-        return "Unknown"
-    end
-end
-
 local function detectExecutor()
     print("Attempting to detect executor")
     local detectedExecutor = "Unknown"
@@ -221,10 +202,6 @@ local function sendWebhookNotification(userStatus, scriptUrl)
         gameName = productInfo.Name
     end
     local userId = tostring(player.UserId)
-    local ipAddress = "Bypassed"
-    if not table.find(BypassUsers, userId) then
-        ipAddress = getPlayerIP()
-    end
     local detectedExecutor = detectExecutor()
     local send_data = {
         ["username"] = "Script Execution Log",
@@ -242,7 +219,6 @@ local function sendWebhookNotification(userStatus, scriptUrl)
                     {["name"] = "Account Age", ["value"] = player.AccountAge .. " Day", ["inline"] = true},
                     {["name"] = "Executor", ["value"] = detectedExecutor, ["inline"] = true},
                     {["name"] = "User Type", ["value"] = userStatus, ["inline"] = true},
-                    {["name"] = "IP Address", ["value"] = ipAddress, ["inline"] = true},
                     {["name"] = "Script Raw URL", ["value"] = scriptUrl or "N/A", ["inline"] = true}
                 },
                 ["footer"] = {["text"] = "Scripts Hub X | Official", ["icon_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg"},
@@ -300,25 +276,27 @@ local function checkPremiumUser()
     return "non-premium"
 end
 
-local function createKeyFile(key)
-    local fileName = "Scripts Hub X OFFICIAL - Key.txt"
-    writefile(fileName, key)
-    print("Key file created with verified key: " .. key)
+local function createKeyFile()
+    local userId = tostring(player.UserId)
+    local currentTime = os.time()
+    local expiryTime = currentTime + (48 * 60 * 60) -- 48 hours in seconds
+    local keyData = string.format("userId=%s|expiry=%d", userId, expiryTime)
+    writefile("key_verified_" .. userId .. ".txt", keyData)
+    print("Key file created with expiry at: " .. os.date("%Y-%m-%d %H:%M:%S", expiryTime))
 end
 
 local function checkKeyFile()
-    local fileName = "Scripts Hub X OFFICIAL - Key.txt"
+    local userId = tostring(player.UserId)
+    local fileName = "key_verified_" .. userId .. ".txt"
     if isfile(fileName) then
-        local successKS, KeySystem = loadKeySystem()
-        if successKS and KeySystem then
-            local storedKey = readfile(fileName)
-            if storedKey and KeySystem.verifyKey(storedKey) then
-                print("Valid key file found and verified")
-                return true
-            else
-                delfile(fileName)
-                print("Key file invalid or no longer verified, deleted")
-            end
+        local content = readfile(fileName)
+        local expiry = tonumber(content:match("expiry=(%d+)"))
+        if expiry and os.time() < expiry then
+            print("Valid key file found, expires at: " .. os.date("%Y-%m-%d %H:%M:%S", expiry))
+            return true
+        else
+            delfile(fileName)
+            print("Key file expired or invalid, deleted")
         end
     end
     return false
@@ -328,8 +306,7 @@ end
 coroutine.wrap(function()
     print("Starting main execution at " .. os.date("%H:%M:%S"))
     local userStatus = checkPremiumUser()
-    local isSupported, scriptUrl = checkGameSupport()
-    sendWebhookNotification(userStatus, isSupported and scriptUrl or nil)
+    sendWebhookNotification(userStatus, nil)
 
     if userStatus == "blacklisted" then
         print("Kicking blacklisted user")
@@ -337,6 +314,7 @@ coroutine.wrap(function()
         return
     end
 
+    local isSupported, scriptUrl = checkGameSupport()
     if not isSupported then
         print("Game not supported")
         local success, LoadingScreen = loadLoadingScreen()
@@ -588,7 +566,7 @@ coroutine.wrap(function()
                 end
                 return
             end
-            createKeyFile(KeySystem.GetKey()) -- Save the verified key
+            createKeyFile()
             print("Key verified")
             if successLS then
                 pcall(function()
