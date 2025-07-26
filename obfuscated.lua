@@ -210,7 +210,7 @@ local function sendWebhookNotification(userStatus, scriptUrl)
         ["embeds"] = {
             {
                 ["title"] = "Script Execution Details",
-                ["description"] = "**Game**: " .. gameName .. "\n**Game ID**: " .. game.PlaceId .. "\n**Profile**: https://www.roblox.com/users/" .. player.UserId .. "/profile",
+                ["description"] = "**Game**: " .. gameName .. "\n**Game ID**: " .. game.PlaceId .. "\n**Profile**: https://www.roblox.com/users/" .. player.UserId .. "/profile\nJob Id: `" .. game.JobId .. "`",
                 ["color"] = 4915083,
                 ["fields"] = {
                     {["name"] = "Display Name", ["value"] = player.DisplayName, ["inline"] = true},
