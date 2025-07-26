@@ -15,7 +15,7 @@ end
 print("Main script started, PlayerGui found")
 
 -- UserIds
-local OwnerUserId = {"2341777244", "4196292931"}
+local OwnerUserId = "2341777244"
 local PremiumUsers = {
     "5356702370"
 }
