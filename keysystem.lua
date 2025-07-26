@@ -1,6 +1,7 @@
 -- Scripts Hub X | Key System
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui", 5)
 if not playerGui then
@@ -8,6 +9,182 @@ if not playerGui then
     return {}
 end
 print("Key system started, PlayerGui found")
+
+local service = 5008
+local secret = "dd2c65bc-6361-4147-9a25-246cd334eedd"
+local useNonce = true
+local cachedLink, cachedTime = "", 0
+
+local function lEncode(data)
+    return HttpService:JSONEncode(data)
+end
+
+local function lDecode(data)
+    return HttpService:JSONDecode(data)
+end
+
+local function lDigest(input)
+    local inputStr = tostring(input)
+    local hash = {}
+    for i = 1, #inputStr do
+        table.insert(hash, string.byte(inputStr, i))
+    end
+    local hashHex = ""
+    for _, byte in ipairs(hash) do
+        hashHex = hashHex .. string.format("%02x", byte)
+    end
+    return hashHex
+end
+
+local function generateNonce()
+    local str = ""
+    for _ = 1, 16 do
+        str = str .. string.char(math.floor(math.random() * (122 - 97 + 1)) + 97)
+    end
+    return str
+end
+
+local host = "https://api.platoboost.com"
+local hostResponse = request({
+    Url = host .. "/public/connectivity",
+    Method = "GET"
+})
+if hostResponse.StatusCode ~= 200 and hostResponse.StatusCode ~= 429 then
+    host = "https://api.platoboost.net"
+end
+
+local function cacheLink()
+    if cachedTime + (10*60) < os.time() then
+        local response = request({
+            Url = host .. "/public/start",
+            Method = "POST",
+            Body = lEncode({
+                service = service,
+                identifier = lDigest(player.UserId)
+            }),
+            Headers = {
+                ["Content-Type"] = "application/json"
+            }
+        })
+        if response.StatusCode == 200 then
+            local decoded = lDecode(response.Body)
+            if decoded.success == true then
+                cachedLink = decoded.data.url
+                cachedTime = os.time()
+                return true, cachedLink
+            else
+                statusLabel.Text = decoded.message
+                return false, decoded.message
+            end
+        elseif response.StatusCode == 429 then
+            statusLabel.Text = "You are being rate limited, please wait 20 seconds and try again."
+            return false, "Rate limited"
+        else
+            statusLabel.Text = "Failed to cache link."
+            return false, "Failed to cache link."
+        end
+    else
+        return true, cachedLink
+    end
+end
+
+local function verifyKey(key)
+    local requestSending = false
+    if requestSending then
+        statusLabel.Text = "A request is already being sent, please slow down."
+        return false
+    else
+        requestSending = true
+    end
+    local nonce = generateNonce()
+    local endpoint = host .. "/public/whitelist/" .. tostring(service) .. "?identifier=" .. lDigest(player.UserId) .. "&key=" .. key
+    if useNonce then
+        endpoint = endpoint .. "&nonce=" .. nonce
+    end
+    local response = request({
+        Url = endpoint,
+        Method = "GET"
+    })
+    requestSending = false
+    if response.StatusCode == 200 then
+        local decoded = lDecode(response.Body)
+        if decoded.success == true then
+            if decoded.data.valid == true then
+                if useNonce then
+                    return true
+                else
+                    return true
+                end
+            else
+                if string.sub(key, 1, 4) == "FREE_" then
+                    local nonce = generateNonce()
+                    local endpoint = host .. "/public/redeem/" .. tostring(service)
+                    local body = {
+                        identifier = lDigest(player.UserId),
+                        key = key
+                    }
+                    if useNonce then
+                        body.nonce = nonce
+                    end
+                    local response = request({
+                        Url = endpoint,
+                        Method = "POST",
+                        Body = lEncode(body),
+                        Headers = {
+                            ["Content-Type"] = "application/json"
+                        }
+                    })
+                    if response.StatusCode == 200 then
+                        local decoded = lDecode(response.Body)
+                        if decoded.success == true then
+                            if decoded.data.valid == true then
+                                if useNonce then
+                                    if decoded.data.hash == lDigest("true" .. "-" .. nonce .. "-" .. secret) then
+                                        return true
+                                    else
+                                        statusLabel.Text = "Failed to verify integrity."
+                                        return false
+                                    end
+                                else
+                                    return true
+                                end
+                            else
+                                statusLabel.Text = "Key is invalid."
+                                return false
+                            end
+                        else
+                            if string.sub(decoded.message, 1, 27) == "unique constraint violation" then
+                                statusLabel.Text = "You already have an active key, please wait for it to expire."
+                                return false
+                            else
+                                statusLabel.Text = decoded.message
+                                return false
+                            end
+                        end
+                    elseif response.StatusCode == 429 then
+                        statusLabel.Text = "You are being rate limited, please wait 20 seconds."
+                        return false
+                    else
+                        statusLabel.Text = "Server returned an invalid status code."
+                        return false
+                    end
+                else
+                    statusLabel.Text = "Key is invalid."
+                    return false
+                end
+            end
+        else
+            statusLabel.Text = decoded.message
+            return false
+        end
+    elseif response.StatusCode == 429 then
+        statusLabel.Text = "You are being rate limited, please wait 20 seconds."
+        return false
+    else
+        statusLabel.Text = "Server returned an invalid status code."
+        return false
+    end
+end
 
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "KeySystemGUI"
@@ -86,7 +263,7 @@ local statusLabel = Instance.new("TextLabel")
 statusLabel.Size = UDim2.new(1, -30, 0, 30)
 statusLabel.Position = UDim2.new(0, 15, 0, 90)
 statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "Get key or join Discord server to get the key!" -- Fixed typo
+statusLabel.Text = "Get key or join Discord server to get the key!"
 statusLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
 statusLabel.TextSize = 11
 statusLabel.Font = Enum.Font.Gotham
@@ -153,8 +330,6 @@ getKeyCorner.CornerRadius = UDim.new(0, 8)
 getKeyCorner.Parent = getKeyButton
 
 local isVerified = false
-local maxAttempts = 5
-local attemptCount = 0
 
 local function ShowKeySystem()
     print("Showing key system UI")
@@ -203,7 +378,6 @@ local function ShowKeySystem()
     end)
     if not success then
         warn("Failed to show key system UI: " .. tostring(err))
-        -- Fallback: Set visible properties
         mainFrame.BackgroundTransparency = 0.2
         uiStroke.Transparency = 0
         titleLabel.TextTransparency = 0
@@ -226,7 +400,7 @@ local function HideKeySystem()
     local success, err = pcall(function()
         local frameTween = TweenService:Create(mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
             BackgroundTransparency = 1,
-            Size = UDim2.new(0, 250, 0, 200) -- Reset size to avoid glitches
+            Size = UDim2.new(0, 250, 0, 200)
         })
         local strokeTween = TweenService:Create(uiStroke, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
             Transparency = 1
@@ -282,41 +456,19 @@ local function HideKeySystem()
     end
 end
 
-local function VerifyKey()
-    attemptCount = attemptCount + 1
-    print("Verification attempt #" .. attemptCount .. ", Input Key: " .. keyInput.Text)
-    if attemptCount > maxAttempts then
-        statusLabel.Text = "Max attempts reached!"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
-        wait(2)
-        HideKeySystem()
-        return
-    end
-    local inputKey = keyInput.Text:upper()
-    if inputKey == "PICKLE" then
-        statusLabel.Text = "Key accepted! Loading..."
-        statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-        isVerified = true
-        wait(1)
-        HideKeySystem()
-    else
-        statusLabel.Text = "Invalid key! Try again."
-        statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
-        keyInput.Text = ""
-        wait(2)
-        statusLabel.Text = "Get key or join Discord server to get the key!"
-        statusLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
-    end
-end
-
 getKeyButton.MouseButton1Click:Connect(function()
     local success, err = pcall(function()
-        setclipboard("https://rekonise.com/scripts-hub-x-or-official-3i64w")
-        getKeyButton.Text = "Copied!"
-        getKeyButton.BackgroundColor3 = Color3.fromRGB(0, 80, 160)
-        wait(1)
-        getKeyButton.Text = "Get Key"
-        getKeyButton.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
+        local success, link = cacheLink()
+        if success then
+            setclipboard(link)
+            getKeyButton.Text = "Copied!"
+            getKeyButton.BackgroundColor3 = Color3.fromRGB(0, 80, 160)
+            wait(1)
+            getKeyButton.Text = "Get Key"
+            getKeyButton.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
+        else
+            statusLabel.Text = err
+        end
     end)
     if not success then
         warn("Get Key button failed: " .. tostring(err))
@@ -344,7 +496,29 @@ end)
 
 verifyButton.MouseButton1Click:Connect(function()
     print("Verify button clicked")
-    VerifyKey()
+    local success, err = pcall(function()
+        if keyInput.Text == "" then
+            statusLabel.Text = "Please enter a key."
+            statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+            return
+        end
+        local verified = verifyKey(keyInput.Text)
+        if verified then
+            statusLabel.Text = "Key accepted! Loading..."
+            statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+            isVerified = true
+            wait(1)
+            HideKeySystem()
+        else
+            keyInput.Text = ""
+            wait(2)
+            statusLabel.Text = "Get key or join Discord server to get the key!"
+            statusLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
+        end
+    end)
+    if not success then
+        warn("Verify button failed: " .. tostring(err))
+    end
 end)
 
 return {
