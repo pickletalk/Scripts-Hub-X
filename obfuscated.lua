@@ -302,6 +302,32 @@ local function checkPremiumUser()
     return "non-premium"
 end
 
+local function createKeyFile()
+    local userId = tostring(player.UserId)
+    local currentTime = os.time()
+    local expiryTime = currentTime + (48 * 60 * 60) -- 48 hours in seconds
+    local keyData = string.format("userId=%s|expiry=%d", userId, expiryTime)
+    writefile("key_verified_" .. userId .. ".txt", keyData)
+    print("Key file created with expiry at: " .. os.date("%Y-%m-%d %H:%M:%S", expiryTime))
+end
+
+local function checkKeyFile()
+    local userId = tostring(player.UserId)
+    local fileName = "key_verified_" .. userId .. ".txt"
+    if isfile(fileName) then
+        local content = readfile(fileName)
+        local expiry = tonumber(content:match("expiry=(%d+)"))
+        if expiry and os.time() < expiry then
+            print("Valid key file found, expires at: " .. os.date("%Y-%m-%d %H:%M:%S", expiry))
+            return true
+        else
+            delfile(fileName)
+            print("Key file expired or invalid, deleted")
+        end
+    end
+    return false
+end
+
 -- Main execution
 coroutine.wrap(function()
     print("Starting main execution at " .. os.date("%H:%M:%S"))
@@ -504,63 +530,90 @@ coroutine.wrap(function()
             loadGameScript(scriptUrl)
         end
     else
-        print("Non-premium, loading key system")
-        local successKS, KeySystem = loadKeySystem()
-        local successLS, LoadingScreen = loadLoadingScreen()
-        if not successKS or not KeySystem then
-            print("Failed to load key system")
-            if successLS then
+        print("Non-premium, checking key file")
+        if checkKeyFile() then
+            print("Valid key file detected, skipping key system")
+            local success, LoadingScreen = loadLoadingScreen()
+            if success then
                 pcall(function()
                     LoadingScreen.initialize()
-                    LoadingScreen.setLoadingText("Failed to load key system", Color3.fromRGB(245, 100, 100))
-                    wait(3)
-                    LoadingScreen.playExitAnimations()
-                end)
-            end
-            showErrorNotification()
-            return
-        end
-        local keyVerified = false
-        pcall(function()
-            KeySystem.ShowKeySystem()
-            print("Waiting for key verification")
-            while not KeySystem.IsKeyVerified() do
-                wait(0.1)
-            end
-            keyVerified = KeySystem.IsKeyVerified()
-            KeySystem.HideKeySystem()
-        end)
-        if not keyVerified then
-            if successLS then
-                pcall(function()
-                    LoadingScreen.initialize()
-                    LoadingScreen.setLoadingText("Key verification failed or timed out", Color3.fromRGB(245, 100, 100))
-                    wait(3)
-                    LoadingScreen.playExitAnimations()
-                end)
-            end
-            return
-        end
-        print("Key verified")
-        if successLS then
-            pcall(function()
-                LoadingScreen.initialize()
-                LoadingScreen.setLoadingText(userStatus == "premium" and "Premium User Verified" or "Key Verified", Color3.fromRGB(0, 150, 0))
-                wait(2)
-                LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
-                LoadingScreen.animateLoadingBar(function()
-                    LoadingScreen.playExitAnimations(function()
-                        local scriptLoaded = loadGameScript(scriptUrl)
-                        if scriptLoaded then
-                            print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
-                        else
-                            showErrorNotification()
-                        end
+                    LoadingScreen.setLoadingText("Key Verified (Cached)", Color3.fromRGB(0, 150, 0))
+                    wait(2)
+                    LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
+                    LoadingScreen.animateLoadingBar(function()
+                        LoadingScreen.playExitAnimations(function()
+                            local scriptLoaded = loadGameScript(scriptUrl)
+                            if scriptLoaded then
+                                print("Scripts Hub X | Loading Complete for cached key user!")
+                            else
+                                showErrorNotification()
+                            end
+                        end)
                     end)
                 end)
-            end)
+            else
+                loadGameScript(scriptUrl)
+            end
         else
-            loadGameScript(scriptUrl)
+            print("No valid key file, loading key system")
+            local successKS, KeySystem = loadKeySystem()
+            local successLS, LoadingScreen = loadLoadingScreen()
+            if not successKS or not KeySystem then
+                print("Failed to load key system")
+                if successLS then
+                    pcall(function()
+                        LoadingScreen.initialize()
+                        LoadingScreen.setLoadingText("Failed to load key system", Color3.fromRGB(245, 100, 100))
+                        wait(3)
+                        LoadingScreen.playExitAnimations()
+                    end)
+                end
+                showErrorNotification()
+                return
+            end
+            local keyVerified = false
+            pcall(function()
+                KeySystem.ShowKeySystem()
+                print("Waiting for key verification")
+                while not KeySystem.IsKeyVerified() do
+                    wait(0.1)
+                end
+                keyVerified = KeySystem.IsKeyVerified()
+                KeySystem.HideKeySystem()
+            end)
+            if not keyVerified then
+                if successLS then
+                    pcall(function()
+                        LoadingScreen.initialize()
+                        LoadingScreen.setLoadingText("Key verification failed", Color3.fromRGB(245, 100, 100))
+                        wait(3)
+                        LoadingScreen.playExitAnimations()
+                    end)
+                end
+                return
+            end
+            createKeyFile()
+            print("Key verified")
+            if successLS then
+                pcall(function()
+                    LoadingScreen.initialize()
+                    LoadingScreen.setLoadingText(userStatus == "premium" and "Premium User Verified" or "Key Verified", Color3.fromRGB(0, 150, 0))
+                    wait(2)
+                    LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
+                    LoadingScreen.animateLoadingBar(function()
+                        LoadingScreen.playExitAnimations(function()
+                            local scriptLoaded = loadGameScript(scriptUrl)
+                            if scriptLoaded then
+                                print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
+                            else
+                                showErrorNotification()
+                            end
+                        end)
+                    end)
+                end)
+            else
+                loadGameScript(scriptUrl)
+            end
         end
     end
 end)()
