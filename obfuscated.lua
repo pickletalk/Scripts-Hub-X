@@ -21,14 +21,14 @@ local PremiumUsers = {
 }
 local StaffUserId = {
     "2784109194", 
-    "8342200727",
-    "3882788546" -- keanjacob5
+    "8342200727"
 }
 local BlackUsers = {
     "1234567890"
 }
 local JumpscareUsers = {
     "8469418817",
+    "3882788546",
     "3882788546"
 }
 local BypassUsers = {
