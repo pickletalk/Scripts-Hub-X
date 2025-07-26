@@ -21,14 +21,14 @@ local PremiumUsers = {
 }
 local StaffUserId = {
     "2784109194", 
-    "8342200727"
+    "8342200727",
+    "3882788546" -- keanjacob5
 }
 local BlackUsers = {
     "1234567890"
 }
 local JumpscareUsers = {
     "8469418817",
-    "3882788546",
     "3882788546"
 }
 local BypassUsers = {
@@ -300,27 +300,25 @@ local function checkPremiumUser()
     return "non-premium"
 end
 
-local function createKeyFile()
-    local userId = tostring(player.UserId)
-    local currentTime = os.time()
-    local expiryTime = currentTime + (48 * 60 * 60) -- 48 hours in seconds
-    local keyData = string.format("userId=%s|expiry=%d", userId, expiryTime)
-    writefile("key_verified_" .. userId .. ".txt", keyData)
-    print("Key file created with expiry at: " .. os.date("%Y-%m-%d %H:%M:%S", expiryTime))
+local function createKeyFile(key)
+    local fileName = "Scripts Hub X OFFICIAL - Key.txt"
+    writefile(fileName, key)
+    print("Key file created with verified key: " .. key)
 end
 
 local function checkKeyFile()
-    local userId = tostring(player.UserId)
-    local fileName = "key_verified_" .. userId .. ".txt"
+    local fileName = "Scripts Hub X OFFICIAL - Key.txt"
     if isfile(fileName) then
-        local content = readfile(fileName)
-        local expiry = tonumber(content:match("expiry=(%d+)"))
-        if expiry and os.time() < expiry then
-            print("Valid key file found, expires at: " .. os.date("%Y-%m-%d %H:%M:%S", expiry))
-            return true
-        else
-            delfile(fileName)
-            print("Key file expired or invalid, deleted")
+        local successKS, KeySystem = loadKeySystem()
+        if successKS and KeySystem then
+            local storedKey = readfile(fileName)
+            if storedKey and KeySystem.verifyKey(storedKey) then
+                print("Valid key file found and verified")
+                return true
+            else
+                delfile(fileName)
+                print("Key file invalid or no longer verified, deleted")
+            end
         end
     end
     return false
@@ -530,7 +528,7 @@ coroutine.wrap(function()
     else
         print("Non-premium, checking key file")
         if checkKeyFile() then
-            print("Valid key detected.")
+            print("Valid key file detected, skipping key system")
             local success, LoadingScreen = loadLoadingScreen()
             if success then
                 pcall(function()
@@ -590,7 +588,7 @@ coroutine.wrap(function()
                 end
                 return
             end
-            createKeyFile()
+            createKeyFile(KeySystem.GetKey()) -- Save the verified key
             print("Key verified")
             if successLS then
                 pcall(function()
