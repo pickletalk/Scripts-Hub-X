@@ -1,304 +1,469 @@
--- Game JobId Joiner Script
--- Clean UI for joining games by JobId
+-- Draggable UI for Steal A Freddy (Roblox) with Ragdoll
+-- Place ID: 137167142636546
 
 local Players = game:GetService("Players")
-local TeleportService = game:GetService("TeleportService")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Get current place ID
-local currentPlaceId = game.PlaceId
+-- Saved position storage
+local savedPosition = nil
+local isRagdolled = false
+local ragdollConnection = nil
 
 -- Create ScreenGui
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "JobIdJoiner"
-screenGui.ResetOnSpawn = false
+screenGui.Name = "PositionSaverUI"
 screenGui.Parent = playerGui
+screenGui.ResetOnSpawn = false
 
 -- Main Frame
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 350, 0, 200)
-mainFrame.Position = UDim2.new(0.5, -175, 0.5, -100)
-mainFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+mainFrame.Size = UDim2.new(0, 250, 0, 140)
+mainFrame.Position = UDim2.new(0, 100, 0, 100)
+mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 mainFrame.BorderSizePixel = 0
 mainFrame.Parent = screenGui
 
--- Add corner rounding
+-- Add corner radius
 local mainCorner = Instance.new("UICorner")
-mainCorner.CornerRadius = UDim.new(0, 12)
+mainCorner.CornerRadius = UDim.new(0, 8)
 mainCorner.Parent = mainFrame
 
--- Add drop shadow effect
-local shadow = Instance.new("Frame")
-shadow.Name = "Shadow"
-shadow.Size = UDim2.new(1, 6, 1, 6)
-shadow.Position = UDim2.new(0, -3, 0, -3)
-shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-shadow.BackgroundTransparency = 0.7
-shadow.ZIndex = mainFrame.ZIndex - 1
-shadow.Parent = mainFrame
+-- Title Bar (for dragging)
+local titleBar = Instance.new("Frame")
+titleBar.Name = "TitleBar"
+titleBar.Size = UDim2.new(1, 0, 0, 30)
+titleBar.Position = UDim2.new(0, 0, 0, 0)
+titleBar.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+titleBar.BorderSizePixel = 0
+titleBar.Parent = mainFrame
 
-local shadowCorner = Instance.new("UICorner")
-shadowCorner.CornerRadius = UDim.new(0, 12)
-shadowCorner.Parent = shadow
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 8)
+titleCorner.Parent = titleBar
 
--- Title
-local titleLabel = Instance.new("TextLabel")
-titleLabel.Name = "Title"
-titleLabel.Size = UDim2.new(1, -20, 0, 40)
-titleLabel.Position = UDim2.new(0, 10, 0, 10)
-titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "🎮 Game Joiner"
-titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleLabel.TextScaled = true
-titleLabel.Font = Enum.Font.GothamBold
-titleLabel.Parent = mainFrame
-
--- JobId Input Section
-local inputLabel = Instance.new("TextLabel")
-inputLabel.Name = "InputLabel"
-inputLabel.Size = UDim2.new(1, -20, 0, 25)
-inputLabel.Position = UDim2.new(0, 10, 0, 60)
-inputLabel.BackgroundTransparency = 1
-inputLabel.Text = "Enter Server JobId to join:"
-inputLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-inputLabel.TextScaled = true
-inputLabel.Font = Enum.Font.Gotham
-inputLabel.TextXAlignment = Enum.TextXAlignment.Left
-inputLabel.Parent = mainFrame
-
--- JobId TextBox
-local jobIdTextBox = Instance.new("TextBox")
-jobIdTextBox.Name = "JobIdTextBox"
-jobIdTextBox.Size = UDim2.new(1, -20, 0, 35)
-jobIdTextBox.Position = UDim2.new(0, 10, 0, 90)
-jobIdTextBox.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-jobIdTextBox.BorderSizePixel = 0
-jobIdTextBox.Text = ""
-jobIdTextBox.PlaceholderText = "e.g., 12345678-1234-1234-1234-123456789012"
-jobIdTextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-jobIdTextBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
-jobIdTextBox.TextScaled = true
-jobIdTextBox.Font = Enum.Font.Gotham
-jobIdTextBox.ClearTextOnFocus = false
-jobIdTextBox.Parent = mainFrame
-
-local textBoxCorner = Instance.new("UICorner")
-textBoxCorner.CornerRadius = UDim.new(0, 6)
-textBoxCorner.Parent = jobIdTextBox
-
--- Join Button
-local joinButton = Instance.new("TextButton")
-joinButton.Name = "JoinButton"
-joinButton.Size = UDim2.new(0, 120, 0, 35)
-joinButton.Position = UDim2.new(0.5, -60, 0, 145)
-joinButton.BackgroundColor3 = Color3.fromRGB(0, 162, 255)
-joinButton.BorderSizePixel = 0
-joinButton.Text = "🚀 Join Game"
-joinButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-joinButton.TextScaled = true
-joinButton.Font = Enum.Font.GothamBold
-joinButton.Parent = mainFrame
-
-local buttonCorner = Instance.new("UICorner")
-buttonCorner.CornerRadius = UDim.new(0, 8)
-buttonCorner.Parent = joinButton
-
--- Status Label
-local statusLabel = Instance.new("TextLabel")
-statusLabel.Name = "StatusLabel"
-statusLabel.Size = UDim2.new(1, -20, 0, 20)
-statusLabel.Position = UDim2.new(0, 10, 1, -30)
-statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "Ready to join!"
-statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-statusLabel.TextScaled = true
-statusLabel.Font = Enum.Font.Gotham
-statusLabel.Parent = mainFrame
+-- Title Text
+local titleText = Instance.new("TextLabel")
+titleText.Name = "TitleText"
+titleText.Size = UDim2.new(1, -30, 1, 0)
+titleText.Position = UDim2.new(0, 5, 0, 0)
+titleText.BackgroundTransparency = 1
+titleText.Text = "by pickletalk"
+titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleText.TextScaled = true
+titleText.Font = Enum.Font.GothamBold
+titleText.Parent = titleBar
 
 -- Close Button
 local closeButton = Instance.new("TextButton")
 closeButton.Name = "CloseButton"
-closeButton.Size = UDim2.new(0, 30, 0, 30)
-closeButton.Position = UDim2.new(1, -35, 0, 5)
-closeButton.BackgroundColor3 = Color3.fromRGB(255, 85, 85)
-closeButton.BorderSizePixel = 0
-closeButton.Text = "✕"
+closeButton.Size = UDim2.new(0, 25, 0, 25)
+closeButton.Position = UDim2.new(1, -27, 0, 2)
+closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+closeButton.Text = "X"
 closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 closeButton.TextScaled = true
 closeButton.Font = Enum.Font.GothamBold
-closeButton.Parent = mainFrame
+closeButton.BorderSizePixel = 0
+closeButton.Parent = titleBar
 
 local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(0, 15)
+closeCorner.CornerRadius = UDim.new(0, 4)
 closeCorner.Parent = closeButton
 
--- Functions
-local function updateStatus(message, color)
-    statusLabel.Text = message
-    statusLabel.TextColor3 = color
-end
+-- Save Position Button
+local saveButton = Instance.new("TextButton")
+saveButton.Name = "SaveButton"
+saveButton.Size = UDim2.new(0, 110, 0, 30)
+saveButton.Position = UDim2.new(0, 10, 0, 40)
+saveButton.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
+saveButton.Text = "Save Position"
+saveButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+saveButton.TextScaled = true
+saveButton.Font = Enum.Font.Gotham
+saveButton.BorderSizePixel = 0
+saveButton.Parent = mainFrame
 
-local function animateButton(button, scale)
-    local tween = TweenService:Create(
-        button,
-        TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-        {Size = button.Size * scale}
-    )
-    tween:Play()
-    tween.Completed:Connect(function()
-        local backTween = TweenService:Create(
-            button,
-            TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {Size = button.Size / scale}
-        )
-        backTween:Play()
-    end)
-end
+local saveCorner = Instance.new("UICorner")
+saveCorner.CornerRadius = UDim.new(0, 6)
+saveCorner.Parent = saveButton
 
-local function joinGameByJobId(jobId)
-    if not jobId or jobId == "" then
-        updateStatus("❌ Please enter a JobId!", Color3.fromRGB(255, 100, 100))
-        return
-    end
-    
-    -- Remove any whitespace and validate JobId format
-    jobId = string.gsub(jobId, "%s+", "")
-    
-    -- Basic JobId validation (should be a long string with hyphens)
-    if not string.match(jobId, "%w+%-%w+%-%w+%-%w+%-%w+") then
-        updateStatus("❌ Invalid JobId format!", Color3.fromRGB(255, 100, 100))
-        return
-    end
-    
-    updateStatus("🔄 Teleporting to server...", Color3.fromRGB(255, 255, 100))
-    
-    -- Use spawn to prevent yielding issues
-    spawn(function()
-        local success, errorMessage = pcall(function()
-            -- Use TeleportToPlaceInstance with current place ID and the JobId
-            TeleportService:TeleportToPlaceInstance(currentPlaceId, jobId)
-        end)
-        
-        if not success then
-            updateStatus("❌ Teleport failed: " .. tostring(errorMessage), Color3.fromRGB(255, 100, 100))
-            print("Teleport Error:", errorMessage)
-        else
-            updateStatus("✅ Teleporting...", Color3.fromRGB(100, 255, 100))
-        end
-    end)
-end
+-- Teleport Button
+local teleportButton = Instance.new("TextButton")
+teleportButton.Name = "TeleportButton"
+teleportButton.Size = UDim2.new(0, 110, 0, 30)
+teleportButton.Position = UDim2.new(0, 130, 0, 40)
+teleportButton.BackgroundColor3 = Color3.fromRGB(150, 50, 150)
+teleportButton.Text = "Teleport"
+teleportButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+teleportButton.TextScaled = true
+teleportButton.Font = Enum.Font.Gotham
+teleportButton.BorderSizePixel = 0
+teleportButton.Parent = mainFrame
 
--- Event Connections
-joinButton.MouseButton1Click:Connect(function()
-    animateButton(joinButton, 0.95)
-    local jobId = jobIdTextBox.Text
-    joinGameByJobId(jobId)
-end)
+local teleportCorner = Instance.new("UICorner")
+teleportCorner.CornerRadius = UDim.new(0, 6)
+teleportCorner.Parent = teleportButton
 
--- Enter key support
-jobIdTextBox.FocusLost:Connect(function(enterPressed)
-    if enterPressed then
-        local jobId = jobIdTextBox.Text
-        joinGameByJobId(jobId)
-    end
-end)
+-- Position Display
+local positionLabel = Instance.new("TextLabel")
+positionLabel.Name = "PositionLabel"
+positionLabel.Size = UDim2.new(1, -20, 0, 25)
+positionLabel.Position = UDim2.new(0, 10, 0, 80)
+positionLabel.BackgroundTransparency = 1
+positionLabel.Text = "Current: X=0, Y=0, Z=0"
+positionLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+positionLabel.TextScaled = true
+positionLabel.Font = Enum.Font.Gotham
+positionLabel.TextXAlignment = Enum.TextXAlignment.Left
+positionLabel.Parent = mainFrame
 
--- Close button
-closeButton.MouseButton1Click:Connect(function()
-    animateButton(closeButton, 0.9)
-    screenGui:Destroy()
-end)
+-- Saved Position Display
+local savedLabel = Instance.new("TextLabel")
+savedLabel.Name = "SavedLabel"
+savedLabel.Size = UDim2.new(1, -20, 0, 25)
+savedLabel.Position = UDim2.new(0, 10, 0, 105)
+savedLabel.BackgroundTransparency = 1
+savedLabel.Text = "Saved: None"
+savedLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+savedLabel.TextScaled = true
+savedLabel.Font = Enum.Font.Gotham
+savedLabel.TextXAlignment = Enum.TextXAlignment.Left
+savedLabel.Parent = mainFrame
 
--- Hover effects
-joinButton.MouseEnter:Connect(function()
-    local tween = TweenService:Create(
-        joinButton,
-        TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-        {BackgroundColor3 = Color3.fromRGB(30, 180, 255)}
-    )
-    tween:Play()
-end)
-
-joinButton.MouseLeave:Connect(function()
-    local tween = TweenService:Create(
-        joinButton,
-        TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-        {BackgroundColor3 = Color3.fromRGB(0, 162, 255)}
-    )
-    tween:Play()
-end)
-
-closeButton.MouseEnter:Connect(function()
-    local tween = TweenService:Create(
-        closeButton,
-        TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-        {BackgroundColor3 = Color3.fromRGB(255, 120, 120)}
-    )
-    tween:Play()
-end)
-
-closeButton.MouseLeave:Connect(function()
-    local tween = TweenService:Create(
-        closeButton,
-        TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-        {BackgroundColor3 = Color3.fromRGB(255, 85, 85)}
-    )
-    tween:Play()
-end)
-
--- TextBox focus effects
-jobIdTextBox.Focused:Connect(function()
-    local tween = TweenService:Create(
-        jobIdTextBox,
-        TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-        {BackgroundColor3 = Color3.fromRGB(40, 40, 50)}
-    )
-    tween:Play()
-end)
-
-jobIdTextBox.FocusLost:Connect(function()
-    local tween = TweenService:Create(
-        jobIdTextBox,
-        TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-        {BackgroundColor3 = Color3.fromRGB(35, 35, 45)}
-    )
-    tween:Play()
-end)
-
--- Make the GUI draggable
+-- Dragging functionality
 local dragging = false
 local dragStart = nil
 local startPos = nil
 
-mainFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+local function updateDrag(input)
+    local delta = input.Position - dragStart
+    mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+titleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
         dragStart = input.Position
         startPos = mainFrame.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
     end
 end)
 
-mainFrame.InputChanged:Connect(function(input)
-    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - dragStart
-        mainFrame.Position = UDim2.new(
-            startPos.X.Scale,
-            startPos.X.Offset + delta.X,
-            startPos.Y.Scale,
-            startPos.Y.Offset + delta.Y
-        )
+titleBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        if dragging then
+            updateDrag(input)
+        end
     end
 end)
 
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = false
+-- Ragdoll Functions
+local function enableRagdoll()
+    if player.Character and player.Character:FindFirstChild("Humanoid") then
+        local humanoid = player.Character.Humanoid
+        isRagdolled = true
+        
+        -- Set to Physics state
+        humanoid.PlatformStand = true
+        humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+        
+        -- Make all joints loose
+        for _, joint in pairs(player.Character:GetDescendants()) do
+            if joint:IsA("Motor6D") then
+                local attachment0 = Instance.new("Attachment")
+                local attachment1 = Instance.new("Attachment")
+                attachment0.Parent = joint.Part0
+                attachment1.Parent = joint.Part1
+                attachment0.CFrame = joint.C0
+                attachment1.CFrame = joint.C1
+                
+                local ballSocket = Instance.new("BallSocketConstraint")
+                ballSocket.Attachment0 = attachment0
+                ballSocket.Attachment1 = attachment1
+                ballSocket.Parent = joint.Part0
+                
+                joint.Enabled = false
+                
+                -- Store for cleanup
+                joint:SetAttribute("OriginalEnabled", true)
+                ballSocket:SetAttribute("RagdollConstraint", true)
+            end
+        end
+        
+        print("Ragdoll enabled")
     end
+end
+
+local function disableRagdoll()
+    if player.Character and isRagdolled then
+        local humanoid = player.Character:FindFirstChild("Humanoid")
+        if humanoid then
+            humanoid.PlatformStand = false
+            humanoid:ChangeState(Enum.HumanoidStateType.Running)
+        end
+        
+        -- Remove ragdoll constraints and re-enable joints
+        for _, constraint in pairs(player.Character:GetDescendants()) do
+            if constraint:GetAttribute("RagdollConstraint") then
+                constraint:Destroy()
+            end
+        end
+        
+        for _, joint in pairs(player.Character:GetDescendants()) do
+            if joint:IsA("Motor6D") and joint:GetAttribute("OriginalEnabled") then
+                joint.Enabled = true
+                joint:SetAttribute("OriginalEnabled", nil)
+            end
+        end
+        
+        isRagdolled = false
+        print("Ragdoll disabled")
+    end
+end
+
+-- Save Position Function
+local function savePosition()
+    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        local rootPart = player.Character.HumanoidRootPart
+        savedPosition = rootPart.CFrame
+        
+        local pos = savedPosition.Position
+        savedLabel.Text = string.format("Saved: X=%.1f, Y=%.1f, Z=%.1f", pos.X, pos.Y, pos.Z)
+        
+        -- Visual feedback
+        local originalColor = saveButton.BackgroundColor3
+        saveButton.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+        wait(0.2)
+        saveButton.BackgroundColor3 = originalColor
+        
+        print("Position saved!")
+    else
+        print("Cannot save position - character not found!")
+    end
+end
+
+-- Teleport Function with Ragdoll
+local function teleportToSaved()
+    if savedPosition and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        local rootPart = player.Character.HumanoidRootPart
+        local humanoid = player.Character:FindFirstChild("Humanoid")
+        
+        local currentPos = rootPart.Position
+        local targetPos = savedPosition.Position
+        local distance = (currentPos - targetPos).Magnitude
+        
+        print("Distance to target: " .. math.floor(distance) .. " studs")
+        
+        -- Enable ragdoll immediately
+        enableRagdoll()
+        
+        -- Visual feedback
+        spawn(function()
+            local originalColor = teleportButton.BackgroundColor3
+            teleportButton.BackgroundColor3 = Color3.fromRGB(255, 100, 255)
+            teleportButton.Text = "Ragdolling..."
+        end)
+        
+        -- Wait 1 second before starting teleportation
+        wait(1)
+        
+        -- Enable noclip for all movement
+        local function enableNoclip()
+            for _, part in pairs(player.Character:GetChildren()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+        end
+        
+        -- Disable noclip 
+        local function disableNoclip()
+            spawn(function()
+                wait(0.5) -- Wait a bit before re-enabling collision
+                if player.Character then
+                    for _, part in pairs(player.Character:GetChildren()) do
+                        if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                            part.CanCollide = true
+                        end
+                    end
+                end
+            end)
+        end
+        
+        enableNoclip()
+        teleportButton.Text = "Teleporting..."
+        
+        -- Start distance monitoring for ragdoll disable
+        local distanceConnection
+        distanceConnection = RunService.Heartbeat:Connect(function()
+            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local currentDistance = (player.Character.HumanoidRootPart.Position - targetPos).Magnitude
+                if currentDistance <= 25 and isRagdolled then
+                    disableRagdoll()
+                    print("Within 25 studs - ragdoll disabled")
+                end
+            end
+        end)
+        
+        -- Method 1: Short distance tween with noclip
+        if distance <= 100 then            
+            local tweenInfo = TweenInfo.new(
+                math.max(0.3, distance / 200), -- Faster for short distances
+                Enum.EasingStyle.Sine,
+                Enum.EasingDirection.InOut
+            )
+            local tween = TweenService:Create(rootPart, tweenInfo, {CFrame = savedPosition})
+            
+            tween:Play()
+            tween.Completed:Connect(function()
+                disableNoclip()
+                if isRagdolled then
+                    disableRagdoll()
+                end
+                if distanceConnection then
+                    distanceConnection:Disconnect()
+                end
+                teleportButton.Text = "Teleport"
+                teleportButton.BackgroundColor3 = Color3.fromRGB(150, 50, 150)
+            end)
+            
+        -- Method 2: Long distance - Multiple waypoint system
+        else            
+            -- Calculate waypoints to avoid straight-line detection
+            local waypoints = {}
+            local numWaypoints = math.min(math.floor(distance / 150), 4) -- Max 4 waypoints
+            
+            for i = 1, numWaypoints do
+                local progress = i / (numWaypoints + 1)
+                local lerpedPos = currentPos:lerp(targetPos, progress)
+                
+                -- Add slight random offset to avoid straight line
+                local randomOffset = Vector3.new(
+                    math.random(-20, 20),
+                    math.random(-10, 30), -- Slightly upward bias
+                    math.random(-20, 20)
+                )
+                
+                table.insert(waypoints, lerpedPos + randomOffset)
+            end
+            
+            -- Add final target
+            table.insert(waypoints, targetPos)
+            
+            -- Move through waypoints
+            local currentWaypoint = 1
+            local function moveToNextWaypoint()
+                if currentWaypoint > #waypoints then
+                    -- Final positioning
+                    local finalTween = TweenService:Create(rootPart, TweenInfo.new(0.2), {CFrame = savedPosition})
+                    finalTween:Play()
+                    finalTween.Completed:Connect(function()
+                        disableNoclip()
+                        if isRagdolled then
+                            disableRagdoll()
+                        end
+                        if distanceConnection then
+                            distanceConnection:Disconnect()
+                        end
+                        teleportButton.Text = "Teleport"
+                        teleportButton.BackgroundColor3 = Color3.fromRGB(150, 50, 150)
+                    end)
+                    return
+                end
+                
+                local targetWaypoint = waypoints[currentWaypoint]
+                local waypointDistance = (rootPart.Position - targetWaypoint).Magnitude
+                local speed = math.max(100, math.min(waypointDistance * 3, 400)) -- Dynamic speed
+                local time = waypointDistance / speed
+                
+                local tweenInfo = TweenInfo.new(
+                    math.max(0.1, time),
+                    Enum.EasingStyle.Sine,
+                    Enum.EasingDirection.InOut
+                )
+                
+                local waypointCFrame = CFrame.new(targetWaypoint, targetWaypoint + (targetWaypoint - rootPart.Position).Unit)
+                local tween = TweenService:Create(rootPart, tweenInfo, {CFrame = waypointCFrame})
+                
+                tween:Play()
+                tween.Completed:Connect(function()
+                    currentWaypoint = currentWaypoint + 1
+                    moveToNextWaypoint()
+                end)
+            end
+            
+            moveToNextWaypoint()
+        end
+        
+        print("Starting ragdoll teleportation...")
+    else
+        if not savedPosition then
+            print("No saved position!")
+        else
+            print("Cannot teleport - character not found!")
+        end
+    end
+end
+
+-- Button connections
+saveButton.MouseButton1Click:Connect(savePosition)
+teleportButton.MouseButton1Click:Connect(teleportToSaved)
+
+-- Close button
+closeButton.MouseButton1Click:Connect(function()
+    if isRagdolled then
+        disableRagdoll()
+    end
+    screenGui:Destroy()
 end)
 
-updateStatus("Ready! Current Place: " .. tostring(currentPlaceId), Color3.fromRGB(150, 150, 255))
+-- Update position display
+local function updatePositionDisplay()
+    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        local pos = player.Character.HumanoidRootPart.Position
+        positionLabel.Text = string.format("Current: X=%.1f, Y=%.1f, Z=%.1f", pos.X, pos.Y, pos.Z)
+    else
+        positionLabel.Text = "Current: Character not found"
+    end
+end
+
+-- Connect position update
+RunService.Heartbeat:Connect(updatePositionDisplay)
+
+-- Button hover effects
+local function addHoverEffect(button, hoverColor, originalColor)
+    button.MouseEnter:Connect(function()
+        if button.Text == "Teleport" then -- Only hover if not teleporting
+            button.BackgroundColor3 = hoverColor
+        end
+    end)
+    
+    button.MouseLeave:Connect(function()
+        if button.Text == "Teleport" then -- Only reset if not teleporting
+            button.BackgroundColor3 = originalColor
+        end
+    end)
+end
+
+-- Add hover effects
+addHoverEffect(saveButton, Color3.fromRGB(70, 170, 70), Color3.fromRGB(50, 150, 50))
+addHoverEffect(teleportButton, Color3.fromRGB(170, 70, 170), Color3.fromRGB(150, 50, 150))
+addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
+
+-- Clean up on character removal
+player.CharacterRemoving:Connect(function()
+    if isRagdolled then
+        isRagdolled = false
+    end
+end)
