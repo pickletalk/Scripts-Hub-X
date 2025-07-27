@@ -47,7 +47,7 @@ local Games = {
     [128762245270197] = "https://raw.githubusercontent.com/tienkhanh1/spicy/main/Chilli.lua",
     
     -- Murder Mystery 2
-    [142823291] = "https://raw.githubusercontent.com/Au0yX/Community/main/XhubMM2",
+    [142823291] = "https://raw.githubusercontent.com/Vertex-GG/MM2/refs/heads/main/AutoFarmer%25Murdery.lua",
     
     -- Doors
     [6516141723] = "https://raw.githubusercontent.com/KINGHUB01/BlackKing-obf/main/Doors%20Blackking%20And%20BobHub",
