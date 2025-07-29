@@ -302,8 +302,11 @@ end
 
 local function createKeyFile(key)
     local fileName = "Scripts Hub X OFFICIAL - Key.txt"
+    if isfile(fileName) then
+        delfile(fileName)
+    end
     writefile(fileName, key)
-    print("Key file created with verified key: " .. key)
+    print("Key file updated with verified key: " .. key)
 end
 
 local function checkKeyFile()
@@ -313,13 +316,13 @@ local function checkKeyFile()
         local storedKey = readfile(fileName)
         if storedKey and KeySystem.verifyKey(storedKey) then
             print("Valid key file found and verified: " .. storedKey)
-            return true
+            return true, storedKey
         else
-            print("Key file exists but key is invalid, updating with new key if verified")
-            return false
+            print("Key file exists but key is invalid")
+            return false, storedKey
         end
     end
-    return false
+    return false, nil
 end
 
 -- Main execution
@@ -526,7 +529,11 @@ coroutine.wrap(function()
     else
         print("Non-premium, checking key file")
         local successKS, KeySystem = loadKeySystem()
-        if successKS and checkKeyFile() then
+        local validKey, storedKey = false, nil
+        if successKS then
+            validKey, storedKey = checkKeyFile()
+        end
+        if validKey then
             print("Valid key file detected, skipping key system")
             local success, LoadingScreen = loadLoadingScreen()
             if success then
@@ -563,13 +570,16 @@ coroutine.wrap(function()
                 while not KeySystem.IsKeyVerified() do
                     wait(0.1)
                 end
-                local verifiedKey = nil
+                local newVerifiedKey = nil
                 local success, KeySystemModule = loadKeySystem()
                 if success and KeySystemModule then
-                    verifiedKey = KeySystemModule.getVerifiedKey and KeySystemModule.getVerifiedKey() or nil
+                    newVerifiedKey = KeySystemModule.getVerifiedKey and KeySystemModule.getVerifiedKey() or nil
                 end
-                if verifiedKey then
-                    createKeyFile(verifiedKey)
+                if newVerifiedKey then
+                    createKeyFile(newVerifiedKey)
+                    if storedKey and storedKey ~= newVerifiedKey then
+                        print("Updated key file with new verified key: " .. newVerifiedKey)
+                    end
                     LoadingScreen.setLoadingText("Key Verified", Color3.fromRGB(0, 150, 0))
                     wait(2)
                     LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
