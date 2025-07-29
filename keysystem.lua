@@ -14,7 +14,6 @@ local service = 5008
 local secret = "dd2c65bc-6361-4147-9a25-246cd334eedd"
 local useNonce = true
 local cachedLink, cachedTime = "", 0
-local verifiedKey = nil
 
 local function lEncode(data)
     return HttpService:JSONEncode(data)
@@ -112,10 +111,8 @@ local function verifyKey(key)
         if decoded.success == true then
             if decoded.data.valid == true then
                 if useNonce then
-                    verifiedKey = key
                     return true
                 else
-                    verifiedKey = key
                     return true
                 end
             else
@@ -143,14 +140,12 @@ local function verifyKey(key)
                             if decoded.data.valid == true then
                                 if useNonce then
                                     if decoded.data.hash == lDigest("true" .. "-" .. nonce .. "-" .. secret) then
-                                        verifiedKey = key
                                         return true
                                     else
                                         statusLabel.Text = "Failed to verify integrity."
                                         return false
                                     end
                                 else
-                                    verifiedKey = key
                                     return true
                                 end
                             else
@@ -335,6 +330,10 @@ getKeyCorner.CornerRadius = UDim.new(0, 8)
 getKeyCorner.Parent = getKeyButton
 
 local isVerified = false
+
+local function GetKey()
+    return keyInput.Text
+end
 
 local function ShowKeySystem()
     print("Showing key system UI")
@@ -530,6 +529,6 @@ return {
     ShowKeySystem = ShowKeySystem,
     HideKeySystem = HideKeySystem,
     IsKeyVerified = function() return isVerified end,
-    verifyKey = verifyKey,
-    getVerifiedKey = function() return verifiedKey end
+    GetKey = GetKey,
+    verifyKey = verifyKey
 }
