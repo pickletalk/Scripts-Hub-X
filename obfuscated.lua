@@ -302,9 +302,6 @@ end
 
 local function createKeyFile(key)
     local fileName = "Scripts Hub X OFFICIAL - Key.txt"
-    if isfile(fileName) then
-        delfile(fileName)
-    end
     writefile(fileName, key)
     print("Key file updated with verified key: " .. key)
 end
@@ -577,9 +574,6 @@ coroutine.wrap(function()
                 end
                 if newVerifiedKey then
                     createKeyFile(newVerifiedKey)
-                    if storedKey and storedKey ~= newVerifiedKey then
-                        print("Updated key file with new verified key: " .. newVerifiedKey)
-                    end
                     LoadingScreen.setLoadingText("Key Verified", Color3.fromRGB(0, 150, 0))
                     wait(2)
                     LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
