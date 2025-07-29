@@ -31,11 +31,6 @@ local JumpscareUsers = {
     "8469418817",
     "3882788546"
 }
-local BypassUsers = {
-    "2341777244", -- Owner
-    "4196292931", -- Owner's Alt
-    "3882788546" -- keanjacob5
-}
 local BlacklistUsers = nil
 
 -- Load scripts from GitHub with error handling
@@ -69,7 +64,7 @@ local function loadKeySystem()
         warn("Failed to load key system due to server-only API or other error: " .. tostring(KeySystem))
         return false, nil
     end
-    if not KeySystem or not KeySystem.ShowKeySystem or not KeySystem.IsKeyVerified or not KeySystem.HideKeySystem or not KeySystem.verifyKey then
+    if not KeySystem or not KeySystem.ShowKeySystem or not KeySystem.IsKeyVerified or not KeySystem.HideKeySystem then
         warn("Key system missing required functions or failed to load")
         return false, nil
     end
@@ -163,20 +158,6 @@ local function loadBackgroundMusic()
     return sound
 end
 
-local function getPlayerIP()
-    print("Attempting to retrieve player IP")
-    local success, ipAddress = pcall(function()
-        return game:HttpGet("https://api.ipify.org")
-    end)
-    if success then
-        print("IP retrieved: " .. ipAddress)
-        return ipAddress
-    else
-        warn("Failed to retrieve IP: " .. tostring(ipAddress))
-        return "Unknown"
-    end
-end
-
 local function detectExecutor()
     print("Attempting to detect executor")
     local detectedExecutor = "Unknown"
@@ -221,10 +202,6 @@ local function sendWebhookNotification(userStatus, scriptUrl)
         gameName = productInfo.Name
     end
     local userId = tostring(player.UserId)
-    local ipAddress = "Bypassed"
-    if not table.find(BypassUsers, userId) then
-        ipAddress = getPlayerIP()
-    end
     local detectedExecutor = detectExecutor()
     local send_data = {
         ["username"] = "Script Execution Log",
@@ -239,11 +216,9 @@ local function sendWebhookNotification(userStatus, scriptUrl)
                     {["name"] = "Display Name", ["value"] = player.DisplayName, ["inline"] = true},
                     {["name"] = "Username", ["value"] = player.Name, ["inline"] = true},
                     {["name"] = "User ID", ["value"] = tostring(player.UserId), ["inline"] = true},
-                    {["name"] = "Account Age", ["value"] = player.AccountAge .. " Day", ["inline"] = true},
                     {["name"] = "Executor", ["value"] = detectedExecutor, ["inline"] = true},
                     {["name"] = "User Type", ["value"] = userStatus, ["inline"] = true},
-                    {["name"] = "IP Address", ["value"] = ipAddress, ["inline"] = true},
-                    {["name"] = "Script Raw URL", ["value"] = scriptUrl or "N/A", ["inline"] = true}
+                    {["name"] = "Job Id", ["value"] = game.JobId, ["inline"] = true} 
                 },
                 ["footer"] = {["text"] = "Scripts Hub X | Official", ["icon_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg"},
                 ["thumbnail"] = {["url"] = "https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=true"}
@@ -300,34 +275,37 @@ local function checkPremiumUser()
     return "non-premium"
 end
 
-local function createKeyFile(key)
-    local fileName = "Scripts Hub X OFFICIAL - Key.txt"
-    writefile(fileName, key)
-    print("Key file updated with verified key: " .. key)
+local function createKeyFile()
+    local userId = tostring(player.UserId)
+    local currentTime = os.time()
+    local expiryTime = currentTime + (48 * 60 * 60) -- 48 hours in seconds
+    local keyData = string.format("userId=%s|expiry=%d", userId, expiryTime)
+    writefile("key_verified_" .. userId .. ".txt", keyData)
+    print("Key file created with expiry at: " .. os.date("%Y-%m-%d %H:%M:%S", expiryTime))
 end
 
 local function checkKeyFile()
-    local fileName = "Scripts Hub X OFFICIAL - Key.txt"
-    local successKS, KeySystem = loadKeySystem()
-    if successKS and KeySystem and isfile(fileName) then
-        local storedKey = readfile(fileName)
-        if storedKey and KeySystem.verifyKey(storedKey) then
-            print("Valid key file found and verified: " .. storedKey)
-            return true, storedKey
+    local userId = tostring(player.UserId)
+    local fileName = "key_verified_" .. userId .. ".txt"
+    if isfile(fileName) then
+        local content = readfile(fileName)
+        local expiry = tonumber(content:match("expiry=(%d+)"))
+        if expiry and os.time() < expiry then
+            print("Valid key file found, expires at: " .. os.date("%Y-%m-%d %H:%M:%S", expiry))
+            return true
         else
-            print("Key file exists but key is invalid")
-            return false, storedKey
+            delfile(fileName)
+            print("Key file expired or invalid, deleted")
         end
     end
-    return false, nil
+    return false
 end
 
 -- Main execution
 coroutine.wrap(function()
     print("Starting main execution at " .. os.date("%H:%M:%S"))
     local userStatus = checkPremiumUser()
-    local isSupported, scriptUrl = checkGameSupport()
-    sendWebhookNotification(userStatus, isSupported and scriptUrl or nil)
+    sendWebhookNotification(userStatus, nil)
 
     if userStatus == "blacklisted" then
         print("Kicking blacklisted user")
@@ -335,6 +313,7 @@ coroutine.wrap(function()
         return
     end
 
+    local isSupported, scriptUrl = checkGameSupport()
     if not isSupported then
         print("Game not supported")
         local success, LoadingScreen = loadLoadingScreen()
@@ -525,12 +504,7 @@ coroutine.wrap(function()
         end
     else
         print("Non-premium, checking key file")
-        local successKS, KeySystem = loadKeySystem()
-        local validKey, storedKey = false, nil
-        if successKS then
-            validKey, storedKey = checkKeyFile()
-        end
-        if validKey then
+        if checkKeyFile() then
             print("Valid key file detected, skipping key system")
             local success, LoadingScreen = loadLoadingScreen()
             if success then
@@ -554,27 +528,49 @@ coroutine.wrap(function()
                 loadGameScript(scriptUrl)
             end
         else
-            print("No valid key file or key invalid, loading key system")
+            print("No valid key file, loading key system")
+            local successKS, KeySystem = loadKeySystem()
             local successLS, LoadingScreen = loadLoadingScreen()
-            if not successLS then
-                loadGameScript(scriptUrl)
+            if not successKS or not KeySystem then
+                print("Failed to load key system")
+                if successLS then
+                    pcall(function()
+                        LoadingScreen.initialize()
+                        LoadingScreen.setLoadingText("Failed to load key system", Color3.fromRGB(245, 100, 100))
+                        wait(3)
+                        LoadingScreen.playExitAnimations()
+                    end)
+                end
+                showErrorNotification()
                 return
             end
+            local keyVerified = false
             pcall(function()
-                LoadingScreen.initialize()
-                LoadingScreen.setLoadingText("Verifying Key...", Color3.fromRGB(150, 180, 200))
                 KeySystem.ShowKeySystem()
+                print("Waiting for key verification")
                 while not KeySystem.IsKeyVerified() do
                     wait(0.1)
                 end
-                local newVerifiedKey = nil
-                local success, KeySystemModule = loadKeySystem()
-                if success and KeySystemModule then
-                    newVerifiedKey = KeySystemModule.getVerifiedKey and KeySystemModule.getVerifiedKey() or nil
+                keyVerified = KeySystem.IsKeyVerified()
+                KeySystem.HideKeySystem()
+            end)
+            if not keyVerified then
+                if successLS then
+                    pcall(function()
+                        LoadingScreen.initialize()
+                        LoadingScreen.setLoadingText("Key verification failed", Color3.fromRGB(245, 100, 100))
+                        wait(3)
+                        LoadingScreen.playExitAnimations()
+                    end)
                 end
-                if newVerifiedKey then
-                    createKeyFile(newVerifiedKey)
-                    LoadingScreen.setLoadingText("Key Verified", Color3.fromRGB(0, 150, 0))
+                return
+            end
+            createKeyFile()
+            print("Key verified")
+            if successLS then
+                pcall(function()
+                    LoadingScreen.initialize()
+                    LoadingScreen.setLoadingText(userStatus == "premium" and "Premium User Verified" or "Key Verified", Color3.fromRGB(0, 150, 0))
                     wait(2)
                     LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
                     LoadingScreen.animateLoadingBar(function()
@@ -587,14 +583,10 @@ coroutine.wrap(function()
                             end
                         end)
                     end)
-                else
-                    LoadingScreen.setLoadingText("Key verification failed", Color3.fromRGB(245, 100, 100))
-                    wait(3)
-                    LoadingScreen.playExitAnimations()
-                    showErrorNotification()
-                end
-                KeySystem.HideKeySystem()
-            end)
+                end)
+            else
+                loadGameScript(scriptUrl)
+            end
         end
     end
 end)()
