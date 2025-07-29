@@ -9,6 +9,9 @@ local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
+-- Load ragdoll module
+local RagdollModule = require(game.ReplicatedStorage.Ragdoll)
+
 -- Saved position storage
 local savedPosition = nil
 local isRagdolled = false
@@ -168,65 +171,18 @@ titleBar.InputChanged:Connect(function(input)
     end
 end)
 
--- Ragdoll Functions
+-- Ragdoll Functions using module
 local function enableRagdoll()
     if player.Character and player.Character:FindFirstChild("Humanoid") then
-        local humanoid = player.Character.Humanoid
         isRagdolled = true
-        
-        -- Set to Physics state
-        humanoid.PlatformStand = true
-        humanoid:ChangeState(Enum.HumanoidStateType.Physics)
-        
-        -- Make all joints loose
-        for _, joint in pairs(player.Character:GetDescendants()) do
-            if joint:IsA("Motor6D") then
-                local attachment0 = Instance.new("Attachment")
-                local attachment1 = Instance.new("Attachment")
-                attachment0.Parent = joint.Part0
-                attachment1.Parent = joint.Part1
-                attachment0.CFrame = joint.C0
-                attachment1.CFrame = joint.C1
-                
-                local ballSocket = Instance.new("BallSocketConstraint")
-                ballSocket.Attachment0 = attachment0
-                ballSocket.Attachment1 = attachment1
-                ballSocket.Parent = joint.Part0
-                
-                joint.Enabled = false
-                
-                -- Store for cleanup
-                joint:SetAttribute("OriginalEnabled", true)
-                ballSocket:SetAttribute("RagdollConstraint", true)
-            end
-        end
-        
+        RagdollModule.Ragdoll(player.Character)
         print("Ragdoll enabled")
     end
 end
 
 local function disableRagdoll()
     if player.Character and isRagdolled then
-        local humanoid = player.Character:FindFirstChild("Humanoid")
-        if humanoid then
-            humanoid.PlatformStand = false
-            humanoid:ChangeState(Enum.HumanoidStateType.Running)
-        end
-        
-        -- Remove ragdoll constraints and re-enable joints
-        for _, constraint in pairs(player.Character:GetDescendants()) do
-            if constraint:GetAttribute("RagdollConstraint") then
-                constraint:Destroy()
-            end
-        end
-        
-        for _, joint in pairs(player.Character:GetDescendants()) do
-            if joint:IsA("Motor6D") and joint:GetAttribute("OriginalEnabled") then
-                joint.Enabled = true
-                joint:SetAttribute("OriginalEnabled", nil)
-            end
-        end
-        
+        RagdollModule.Unragdoll(player.Character)
         isRagdolled = false
         print("Ragdoll disabled")
     end
@@ -309,9 +265,9 @@ local function teleportToSaved()
         distanceConnection = RunService.Heartbeat:Connect(function()
             if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                 local currentDistance = (player.Character.HumanoidRootPart.Position - targetPos).Magnitude
-                if currentDistance <= 25 and isRagdolled then
+                if currentDistance <= 20 and isRagdolled then
                     disableRagdoll()
-                    print("Within 25 studs - ragdoll disabled")
+                    print("Within 20 studs - ragdoll disabled")
                 end
             end
         end)
@@ -328,9 +284,6 @@ local function teleportToSaved()
             tween:Play()
             tween.Completed:Connect(function()
                 disableNoclip()
-                if isRagdolled then
-                    disableRagdoll()
-                end
                 if distanceConnection then
                     distanceConnection:Disconnect()
                 end
@@ -370,9 +323,6 @@ local function teleportToSaved()
                     finalTween:Play()
                     finalTween.Completed:Connect(function()
                         disableNoclip()
-                        if isRagdolled then
-                            disableRagdoll()
-                        end
                         if distanceConnection then
                             distanceConnection:Disconnect()
                         end
