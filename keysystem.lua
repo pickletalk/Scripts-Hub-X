@@ -14,6 +14,7 @@ local service = 5008
 local secret = "dd2c65bc-6361-4147-9a25-246cd334eedd"
 local useNonce = true
 local cachedLink, cachedTime = "", 0
+local keyFileName = "Scripts Hub X OFFICIAL - Key.txt"
 
 local function lEncode(data)
     return HttpService:JSONEncode(data)
@@ -42,6 +43,61 @@ local function generateNonce()
         str = str .. string.char(math.floor(math.random() * (122 - 97 + 1)) + 97)
     end
     return str
+end
+
+-- File-based key management functions
+local function saveKeyToFile(key)
+    local success, err = pcall(function()
+        writefile(keyFileName, key)
+    end)
+    if success then
+        print("Key saved to file: " .. keyFileName)
+        return true
+    else
+        warn("Failed to save key to file: " .. tostring(err))
+        return false
+    end
+end
+
+local function loadKeyFromFile()
+    local success, key = pcall(function()
+        if isfile(keyFileName) then
+            return readfile(keyFileName)
+        else
+            return nil
+        end
+    end)
+    if success and key then
+        print("Key loaded from file: " .. keyFileName)
+        return key
+    else
+        print("No valid key file found or failed to read")
+        return nil
+    end
+end
+
+local function deleteKeyFile()
+    local success, err = pcall(function()
+        if isfile(keyFileName) then
+            delfile(keyFileName)
+        end
+    end)
+    if success then
+        print("Key file deleted: " .. keyFileName)
+        return true
+    else
+        warn("Failed to delete key file: " .. tostring(err))
+        return false
+    end
+end
+
+local function checkStoredKey()
+    local storedKey = loadKeyFromFile()
+    if storedKey and storedKey ~= "" then
+        print("Found stored key, verifying...")
+        return verifyKeyWithServer(storedKey, true) -- Silent verification
+    end
+    return false
 end
 
 local host = "https://api.platoboost.com"
@@ -73,14 +129,20 @@ local function cacheLink()
                 cachedTime = os.time()
                 return true, cachedLink
             else
-                statusLabel.Text = decoded.message
+                if statusLabel then
+                    statusLabel.Text = decoded.message
+                end
                 return false, decoded.message
             end
         elseif response.StatusCode == 429 then
-            statusLabel.Text = "You are being rate limited, please wait 20 seconds and try again."
+            if statusLabel then
+                statusLabel.Text = "You are being rate limited, please wait 20 seconds and try again."
+            end
             return false, "Rate limited"
         else
-            statusLabel.Text = "Failed to cache link."
+            if statusLabel then
+                statusLabel.Text = "Failed to cache link."
+            end
             return false, "Failed to cache link."
         end
     else
@@ -88,34 +150,39 @@ local function cacheLink()
     end
 end
 
-local function verifyKey(key)
+function verifyKeyWithServer(key, silent)
+    silent = silent or false
     local requestSending = false
     if requestSending then
-        statusLabel.Text = "A request is already being sent, please slow down."
+        if not silent and statusLabel then
+            statusLabel.Text = "A request is already being sent, please slow down."
+        end
         return false
     else
         requestSending = true
     end
+    
     local nonce = generateNonce()
     local endpoint = host .. "/public/whitelist/" .. tostring(service) .. "?identifier=" .. lDigest(player.UserId) .. "&key=" .. key
     if useNonce then
         endpoint = endpoint .. "&nonce=" .. nonce
     end
+    
     local response = request({
         Url = endpoint,
         Method = "GET"
     })
     requestSending = false
+    
     if response.StatusCode == 200 then
         local decoded = lDecode(response.Body)
         if decoded.success == true then
             if decoded.data.valid == true then
-                if useNonce then
-                    return true
-                else
-                    return true
-                end
+                -- Key is valid, save it to file
+                saveKeyToFile(key)
+                return true
             else
+                -- Key is not valid, try FREE_ key redemption
                 if string.sub(key, 1, 4) == "FREE_" then
                     local nonce = generateNonce()
                     local endpoint = host .. "/public/redeem/" .. tostring(service)
@@ -140,50 +207,84 @@ local function verifyKey(key)
                             if decoded.data.valid == true then
                                 if useNonce then
                                     if decoded.data.hash == lDigest("true" .. "-" .. nonce .. "-" .. secret) then
+                                        -- Key redeemed successfully, save it
+                                        saveKeyToFile(key)
                                         return true
                                     else
-                                        statusLabel.Text = "Failed to verify integrity."
+                                        if not silent and statusLabel then
+                                            statusLabel.Text = "Failed to verify integrity."
+                                        end
+                                        deleteKeyFile() -- Delete invalid key file
                                         return false
                                     end
                                 else
+                                    saveKeyToFile(key)
                                     return true
                                 end
                             else
-                                statusLabel.Text = "Key is invalid."
+                                if not silent and statusLabel then
+                                    statusLabel.Text = "Key is invalid."
+                                end
+                                deleteKeyFile() -- Delete invalid key file
                                 return false
                             end
                         else
                             if string.sub(decoded.message, 1, 27) == "unique constraint violation" then
-                                statusLabel.Text = "You already have an active key, please wait for it to expire."
+                                if not silent and statusLabel then
+                                    statusLabel.Text = "You already have an active key, please wait for it to expire."
+                                end
                                 return false
                             else
-                                statusLabel.Text = decoded.message
+                                if not silent and statusLabel then
+                                    statusLabel.Text = decoded.message
+                                end
+                                deleteKeyFile() -- Delete invalid key file
                                 return false
                             end
                         end
                     elseif response.StatusCode == 429 then
-                        statusLabel.Text = "You are being rate limited, please wait 20 seconds."
+                        if not silent and statusLabel then
+                            statusLabel.Text = "You are being rate limited, please wait 20 seconds."
+                        end
                         return false
                     else
-                        statusLabel.Text = "Server returned an invalid status code."
+                        if not silent and statusLabel then
+                            statusLabel.Text = "Server returned an invalid status code."
+                        end
+                        deleteKeyFile() -- Delete invalid key file
                         return false
                     end
                 else
-                    statusLabel.Text = "Key is invalid."
+                    if not silent and statusLabel then
+                        statusLabel.Text = "Key is invalid."
+                    end
+                    deleteKeyFile() -- Delete invalid key file
                     return false
                 end
             end
         else
-            statusLabel.Text = decoded.message
+            if not silent and statusLabel then
+                statusLabel.Text = decoded.message
+            end
+            deleteKeyFile() -- Delete invalid key file
             return false
         end
     elseif response.StatusCode == 429 then
-        statusLabel.Text = "You are being rate limited, please wait 20 seconds."
+        if not silent and statusLabel then
+            statusLabel.Text = "You are being rate limited, please wait 20 seconds."
+        end
         return false
     else
-        statusLabel.Text = "Server returned an invalid status code."
+        if not silent and statusLabel then
+            statusLabel.Text = "Server returned an invalid status code."
+        end
+        deleteKeyFile() -- Delete invalid key file
         return false
     end
+end
+
+local function verifyKey(key)
+    return verifyKeyWithServer(key, false)
 end
 
 local screenGui = Instance.new("ScreenGui")
@@ -337,6 +438,14 @@ end
 
 local function ShowKeySystem()
     print("Showing key system UI")
+    
+    -- Check for stored key first
+    if checkStoredKey() then
+        print("Valid stored key found, auto-verifying...")
+        isVerified = true
+        return -- Don't show UI if key is already valid
+    end
+    
     local success, err = pcall(function()
         local frameTween = TweenService:Create(mainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             BackgroundTransparency = 0.2
@@ -528,7 +637,14 @@ end)
 return {
     ShowKeySystem = ShowKeySystem,
     HideKeySystem = HideKeySystem,
-    IsKeyVerified = function() return isVerified end,
+    IsKeyVerified = function() 
+        -- Also check stored key when this function is called
+        if not isVerified then
+            isVerified = checkStoredKey()
+        end
+        return isVerified 
+    end,
     GetKey = GetKey,
-    verifyKey = verifyKey
+    verifyKey = verifyKey,
+    checkStoredKey = checkStoredKey
 }
