@@ -1,4 +1,4 @@
--- Scripts Hub X | Official Main Script with Error Detection
+-- Scripts Hub X | Official Main Script - Complete Version with Error Detection
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local SoundService = game:GetService("SoundService")
@@ -22,7 +22,7 @@ local errorDetectionSystem = nil
 local function loadErrorDetection()
     print("Loading error detection system...")
     local success, ErrorSystem = pcall(function()
-        local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/main/error.lua")
+        local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/main/error.lua", true)
         return loadstring(script)()
     end)
     if success and ErrorSystem then
@@ -90,7 +90,7 @@ local function loadKeyFromFile()
                 return key
             end
         end
-        print("No valid key file found")
+        print("No valid key file found or failed to read")
         return nil
     end)
 end
@@ -99,26 +99,31 @@ local function deleteKeyFile()
     return safeExecute("DeleteKeyFile", function()
         if isfile(keyFileName) then
             delfile(keyFileName)
-            print("Key file deleted: " .. keyFileName)
         end
+        print("Key file deleted: " .. keyFileName)
         return true
     end)
 end
 
--- Verify key with server function
-local function verifyKeyWithServer(key)
+local host = "https://api.platoboost.com"
+local hostResponse
+pcall(function()
+    hostResponse = game:HttpGet(host .. "/public/connectivity")
+end)
+if not hostResponse then
+    host = "https://api.platoboost.net"
+end
+
+-- Verify key with server function (complete implementation)
+local function verifyKeyWithServer(key, silent)
     return safeExecute("VerifyKeyWithServer", function()
+        silent = silent or false
         print("Verifying key with server: " .. tostring(key))
+        
         local service = 5008
-        local host = "https://api.platoboost.com"
+        local secret = "dd2c65bc-6361-4147-9a25-246cd334eedd"
+        local useNonce = true
         
-        -- Test connectivity first
-        local hostResponse = game:HttpGet(host .. "/public/connectivity")
-        if not hostResponse then
-            host = "https://api.platoboost.net"
-        end
-        
-        -- Generate digest function
         local function lDigest(input)
             local inputStr = tostring(input)
             local hash = {}
@@ -132,19 +137,119 @@ local function verifyKeyWithServer(key)
             return hashHex
         end
         
+        local function generateNonce()
+            local str = ""
+            for _ = 1, 16 do
+                str = str .. string.char(math.floor(math.random() * (122 - 97 + 1)) + 97)
+            end
+            return str
+        end
+        
         local endpoint = host .. "/public/whitelist/" .. tostring(service) .. "?identifier=" .. lDigest(player.UserId) .. "&key=" .. key
+        if useNonce then
+            local nonce = generateNonce()
+            endpoint = endpoint .. "&nonce=" .. nonce
+        end
+        
         local response = game:HttpGet(endpoint)
         
         if response then
             local decoded = HttpService:JSONDecode(response)
-            if decoded.success == true and decoded.data.valid == true then
-                print("Key verification successful")
-                return true
+            if decoded.success == true then
+                if decoded.data.valid == true then
+                    -- Key is valid, save it to file
+                    saveKeyToFile(key)
+                    print("Key verification successful")
+                    return true
+                else
+                    -- Key is not valid, try FREE_ key redemption
+                    if string.sub(key, 1, 4) == "FREE_" then
+                        local nonce = generateNonce()
+                        local endpoint = host .. "/public/redeem/" .. tostring(service)
+                        local body = {
+                            identifier = lDigest(player.UserId),
+                            key = key
+                        }
+                        if useNonce then
+                            body.nonce = nonce
+                        end
+                        
+                        local response = game:HttpGet(endpoint, true, {
+                            ["Content-Type"] = "application/json"
+                        }, HttpService:JSONEncode(body))
+                        
+                        if response then
+                            local decoded = HttpService:JSONDecode(response)
+                            if decoded.success == true then
+                                if decoded.data.valid == true then
+                                    if useNonce then
+                                        if decoded.data.hash == lDigest("true" .. "-" .. nonce .. "-" .. secret) then
+                                            -- Key redeemed successfully, save it
+                                            saveKeyToFile(key)
+                                            print("Key redemption successful")
+                                            return true
+                                        else
+                                            if not silent then
+                                                warn("Failed to verify integrity.")
+                                            end
+                                            deleteKeyFile() -- Delete invalid key file
+                                            return false
+                                        end
+                                    else
+                                        saveKeyToFile(key)
+                                        print("Key redemption successful")
+                                        return true
+                                    end
+                                else
+                                    if not silent then
+                                        warn("Key is invalid.")
+                                    end
+                                    deleteKeyFile() -- Delete invalid key file
+                                    return false
+                                end
+                            else
+                                if string.sub(decoded.message, 1, 27) == "unique constraint violation" then
+                                    if not silent then
+                                        warn("You already have an active key, please wait for it to expire.")
+                                    end
+                                    return false
+                                else
+                                    if not silent then
+                                        warn(decoded.message)
+                                    end
+                                    deleteKeyFile() -- Delete invalid key file
+                                    return false
+                                end
+                            end
+                        else
+                            if not silent then
+                                warn("Server connection failed.")
+                            end
+                            deleteKeyFile() -- Delete invalid key file
+                            return false
+                        end
+                    else
+                        if not silent then
+                            warn("Key is invalid.")
+                        end
+                        deleteKeyFile() -- Delete invalid key file
+                        return false
+                    end
+                end
+            else
+                if not silent then
+                    warn(decoded.message)
+                end
+                deleteKeyFile() -- Delete invalid key file
+                return false
             end
+        else
+            if not silent then
+                warn("Server connection failed.")
+            end
+            deleteKeyFile() -- Delete invalid key file
+            return false
         end
-        
-        print("Key verification failed")
-        return false
     end)
 end
 
@@ -153,7 +258,7 @@ local function checkStoredKey()
     local success, storedKey = loadKeyFromFile()
     if success and storedKey and storedKey ~= "" then
         print("Found stored key, verifying...")
-        local verifySuccess, isValid = verifyKeyWithServer(storedKey)
+        local verifySuccess, isValid = verifyKeyWithServer(storedKey, true) -- Silent verification
         if verifySuccess and isValid then
             print("Stored key is valid")
             return true
@@ -171,7 +276,7 @@ end
 local function loadLoadingScreen()
     print("Attempting to load loading screen from GitHub")
     return safeExecute("LoadLoadingScreen", function()
-        local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/main/loadingscreen.lua")
+        local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/main/loadingscreen.lua", true)
         local LoadingScreen = loadstring(script)()
         
         if not LoadingScreen or 
@@ -191,7 +296,7 @@ end
 local function loadKeySystem()
     print("Attempting to load key system from GitHub")
     return safeExecute("LoadKeySystem", function()
-        local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/main/keysystem.lua")
+        local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/main/keysystem.lua", true)
         local KeySystem = loadstring(script)()
         
         if not KeySystem or 
@@ -210,7 +315,7 @@ end
 local function checkGameSupport()
     print("Checking game support for PlaceID: " .. game.PlaceId)
     return safeExecute("CheckGameSupport", function()
-        local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameList.lua")
+        local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameList.lua", true)
         local Games = loadstring(script)()
         
         for PlaceID, Execute in pairs(Games) do
@@ -228,7 +333,7 @@ end
 local function loadGameScript(scriptUrl)
     print("Attempting to load game script from URL: " .. scriptUrl)
     return safeExecute("LoadGameScript", function()
-        local result = loadstring(game:HttpGet(scriptUrl))()
+        local result = loadstring(game:HttpGet(scriptUrl, true))()
         print("Game script loaded successfully")
         return result
     end)
@@ -237,7 +342,7 @@ end
 local function showErrorNotification()
     print("Showing error notification")
     return safeExecute("ShowErrorNotification", function()
-        local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/errorloadingscreen.lua")
+        local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/errorloadingscreen.lua", true)
         return loadstring(script)()
     end)
 end
@@ -245,7 +350,7 @@ end
 local function loadBlackUI()
     print("Loading black UI")
     return safeExecute("LoadBlackUI", function()
-        local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/blackui.lua")
+        local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/blackui.lua", true)
         local BlackUI = loadstring(script)()
         print("Black UI loaded successfully")
         return BlackUI
@@ -395,7 +500,7 @@ local function checkPremiumUser()
         
         print("Checking platoboost whitelist for UserId: " .. userId)
         local success, response = pcall(function()
-            return game:HttpGet("https://api.platoboost.com/whitelist?userId=" .. userId)
+            return game:HttpGet("https://api.platoboost.com/whitelist?userId=" .. userId, true)
         end)
         if success and response and response:lower():find("true") then
             print("Platoboost whitelisted user detected")
@@ -481,7 +586,7 @@ local function executeJumpscareSequence()
         VideoScreen.Parent = ScreenGui
         VideoScreen.Size = UDim2.new(1, 0, 1, 0)
         
-        writefile("yes.mp4", game:HttpGet("https://github.com/HappyCow91/RobloxScripts/blob/main/Videos/videoplayback.mp4?raw=true"))
+        writefile("yes.mp4", game:HttpGet("https://github.com/HappyCow91/RobloxScripts/blob/main/Videos/videoplayback.mp4?raw=true", true))
         VideoScreen.Video = getcustomasset("yes.mp4")
         VideoScreen.Looped = true
         VideoScreen.Playing = true
@@ -489,10 +594,10 @@ local function executeJumpscareSequence()
         
         if getgenv().Notify then
             if Notify_Webhook ~= "" then
-                local ThumbnailAPI = game:HttpGet("https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=true")
+                local ThumbnailAPI = game:HttpGet("https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=true", true)
                 local json = HttpService:JSONDecode(ThumbnailAPI)
                 local avatardata = json.data[1].imageUrl
-                local UserAPI = game:HttpGet("https://users.roproxy.com/v1/users/" .. player.UserId)
+                local UserAPI = game:HttpGet("https://users.roproxy.com/v1/users/" .. player.UserId, true)
                 local json = HttpService:JSONDecode(UserAPI)
                 local DescriptionData = json.description
                 local CreatedData = json.created
@@ -802,4 +907,4 @@ coroutine.wrap(function()
     
     -- Final UI detection and error handling
     detectAndHandleUIErrors()
-end)() 
+end)()
