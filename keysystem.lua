@@ -45,52 +45,6 @@ local function generateNonce()
     return str
 end
 
--- File-based key management functions
-local function saveKeyToFile(key)
-    local success, err = pcall(function()
-        writefile(keyFileName, key)
-    end)
-    if success then
-        print("Key saved to file: " .. keyFileName)
-        return true
-    else
-        warn("Failed to save key to file: " .. tostring(err))
-        return false
-    end
-end
-
-local function loadKeyFromFile()
-    local success, key = pcall(function()
-        if isfile(keyFileName) then
-            return readfile(keyFileName)
-        else
-            return nil
-        end
-    end)
-    if success and key and key ~= "" then
-        print("Key loaded from file: " .. keyFileName)
-        return key
-    else
-        print("No valid key file found or failed to read")
-        return nil
-    end
-end
-
-local function deleteKeyFile()
-    local success, err = pcall(function()
-        if isfile(keyFileName) then
-            delfile(keyFileName)
-        end
-    end)
-    if success then
-        print("Key file deleted: " .. keyFileName)
-        return true
-    else
-        warn("Failed to delete key file: " .. tostring(err))
-        return false
-    end
-end
-
 local host = "https://api.platoboost.com"
 local hostResponse
 pcall(function()
