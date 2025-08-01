@@ -498,15 +498,6 @@ local function checkPremiumUser()
             return "premium"
         end
         
-        print("Checking platoboost whitelist for UserId: " .. userId)
-        local success, response = pcall(function()
-            return game:HttpGet("https://api.platoboost.com/whitelist?userId=" .. userId, true)
-        end)
-        if success and response and response:lower():find("true") then
-            print("Platoboost whitelisted user detected")
-            return "platoboost_whitelisted"
-        end
-        
         print("Non-premium user")
         return "non-premium"
     end)
@@ -752,20 +743,20 @@ coroutine.wrap(function()
             showErrorNotification()
         end
         
-    elseif userStatus == "platoboost_whitelisted" or userStatus == "premium" then
-        print("Platoboost whitelisted or premium user detected, skipping key system")
+    elseif userStatus == "premium" then
+        print("Premium user detected, skipping key system")
         local loadingSuccess, LoadingScreen = loadLoadingScreen()
         if loadingSuccess and LoadingScreen then
             pcall(function()
                 LoadingScreen.initialize()
-                LoadingScreen.setLoadingText(userStatus == "premium" and "Premium User Verified" or "Platoboost Whitelisted", Color3.fromRGB(0, 150, 0))
+                LoadingScreen.setLoadingText("Premium User Verified", Color3.fromRGB(0, 150, 0))
                 wait(2)
                 LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
                 LoadingScreen.animateLoadingBar(function()
                     LoadingScreen.playExitAnimations(function()
                         local scriptLoadedSuccess, scriptLoaded = loadGameScript(scriptUrl)
                         if scriptLoadedSuccess then
-                            print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
+                            print("Scripts Hub X | Loading Complete for premium user!")
                         else
                             showErrorNotification()
                         end
@@ -775,7 +766,7 @@ coroutine.wrap(function()
         else
             local scriptLoadedSuccess, scriptLoaded = loadGameScript(scriptUrl)
             if scriptLoadedSuccess then
-                print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
+                print("Scripts Hub X | Loading Complete for premium user!")
             else
                 showErrorNotification()
             end
