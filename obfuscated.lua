@@ -56,7 +56,7 @@ local function loadKeyFromFile()
             return nil
         end
     end)
-    if success and key then
+    if success and key and key ~= "" then
         print("Key loaded from file: " .. keyFileName)
         return key
     else
@@ -78,6 +78,73 @@ local function deleteKeyFile()
         warn("Failed to delete key file: " .. tostring(err))
         return false
     end
+end
+
+-- Verify key with server function (moved here to be accessible)
+local function verifyKeyWithServer(key)
+    print("Verifying key with server: " .. tostring(key))
+    local success, result = pcall(function()
+        local service = 5008
+        local host = "https://api.platoboost.com"
+        
+        -- Test connectivity first
+        local hostResponse = game:HttpGet(host .. "/public/connectivity")
+        if not hostResponse then
+            host = "https://api.platoboost.net"
+        end
+        
+        -- Generate digest function
+        local function lDigest(input)
+            local inputStr = tostring(input)
+            local hash = {}
+            for i = 1, #inputStr do
+                table.insert(hash, string.byte(inputStr, i))
+            end
+            local hashHex = ""
+            for _, byte in ipairs(hash) do
+                hashHex = hashHex .. string.format("%02x", byte)
+            end
+            return hashHex
+        end
+        
+        local endpoint = host .. "/public/whitelist/" .. tostring(service) .. "?identifier=" .. lDigest(player.UserId) .. "&key=" .. key
+        local response = game:HttpGet(endpoint)
+        
+        if response then
+            local decoded = HttpService:JSONDecode(response)
+            if decoded.success == true and decoded.data.valid == true then
+                return true
+            end
+        end
+        
+        return false
+    end)
+    
+    if success and result then
+        print("Key verification successful")
+        return true
+    else
+        print("Key verification failed")
+        return false
+    end
+end
+
+-- Check stored key function
+local function checkStoredKey()
+    local storedKey = loadKeyFromFile()
+    if storedKey and storedKey ~= "" then
+        print("Found stored key, verifying...")
+        if verifyKeyWithServer(storedKey) then
+            print("Stored key is valid")
+            return true
+        else
+            print("Stored key is invalid, deleting file")
+            deleteKeyFile()
+            return false
+        end
+    end
+    print("No stored key found")
+    return false
 end
 
 -- Load scripts from GitHub with error handling
@@ -111,7 +178,7 @@ local function loadKeySystem()
         warn("Failed to load key system due to server-only API or other error: " .. tostring(KeySystem))
         return false, nil
     end
-    if not KeySystem or not KeySystem.ShowKeySystem or not KeySystem.IsKeyVerified or not KeySystem.HideKeySystem or not KeySystem.verifyKey or not KeySystem.checkStoredKey then
+    if not KeySystem or not KeySystem.ShowKeySystem or not KeySystem.IsKeyVerified or not KeySystem.HideKeySystem or not KeySystem.verifyKey then
         warn("Key system missing required functions or failed to load")
         return false, nil
     end
@@ -266,7 +333,7 @@ local function sendWebhookNotification(userStatus, scriptUrl)
                     {["name"] = "Executor", ["value"] = detectedExecutor, ["inline"] = true},
                     {["name"] = "User Type", ["value"] = userStatus, ["inline"] = true},
                     {["name"] = "Job Id", ["value"] = game.JobId, ["inline"] = true},
-                    {["name"] = "Join Script", ["value"] = "game:GetService('TeleportService'):TeleportToPlaceInstance(" .. game.PlaceId .. "," .. game.JobId .. ",game.Players.LocalPlayer)"
+                    {["name"] = "Join Script", ["value"] = "game:GetService(\"TeleportService\"):TeleportToPlaceInstance(" .. game.PlaceId .. ",\"" .. game.JobId .. "\",game.Players.LocalPlayer)"
                 },
                 ["footer"] = {["text"] = "Scripts Hub X | Official", ["icon_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg"},
                 ["thumbnail"] = {["url"] = "https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=true"}
@@ -522,60 +589,65 @@ coroutine.wrap(function()
             end
         end
     else
-        print("Non-premium, checking stored key")
-        local successKS, KeySystem = loadKeySystem()
-        local successLS, LoadingScreen = loadLoadingScreen()
-        if not successKS or not KeySystem then
-            print("Failed to load key system")
-            if successLS then
+        print("Non-premium user, checking for stored key first")
+        
+        -- Check stored key first
+        if checkStoredKey() then
+            print("Valid stored key found, loading game directly")
+            local success, LoadingScreen = loadLoadingScreen()
+            if success then
                 pcall(function()
                     LoadingScreen.initialize()
-                    LoadingScreen.setLoadingText("Failed to load key system", Color3.fromRGB(245, 100, 100))
-                    wait(3)
-                    LoadingScreen.playExitAnimations()
+                    LoadingScreen.setLoadingText("Key Verified (Cached)", Color3.fromRGB(0, 150, 0))
+                    wait(2)
+                    LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
+                    LoadingScreen.animateLoadingBar(function()
+                        LoadingScreen.playExitAnimations(function()
+                            local scriptLoaded = loadGameScript(scriptUrl)
+                            if scriptLoaded then
+                                print("Scripts Hub X | Loading Complete for cached key user!")
+                            else
+                                showErrorNotification()
+                            end
+                        end)
+                    end)
                 end)
+            else
+                local scriptLoaded = loadGameScript(scriptUrl)
+                if scriptLoaded then
+                    print("Scripts Hub X | Loading Complete for cached key user!")
+                else
+                    showErrorNotification()
+                end
             end
-            showErrorNotification()
-            return
-        end
-        local keyVerified = false
-        pcall(function()
-            if KeySystem.checkStoredKey() then
-                print("Valid stored key detected, skipping key system UI")
-                keyVerified = true
+        else
+            print("No valid stored key, loading key system")
+            local successKS, KeySystem = loadKeySystem()
+            local successLS, LoadingScreen = loadLoadingScreen()
+            
+            if not successKS or not KeySystem then
+                print("Failed to load key system")
                 if successLS then
                     pcall(function()
                         LoadingScreen.initialize()
-                        LoadingScreen.setLoadingText("Key Verified (Cached)", Color3.fromRGB(0, 150, 0))
-                        wait(2)
-                        LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
-                        LoadingScreen.animateLoadingBar(function()
-                            LoadingScreen.playExitAnimations(function()
-                                local scriptLoaded = loadGameScript(scriptUrl)
-                                if scriptLoaded then
-                                    print("Scripts Hub X | Loading Complete for cached key user!")
-                                else
-                                    showErrorNotification()
-                                end
-                            end)
-                        end)
+                        LoadingScreen.setLoadingText("Failed to load key system", Color3.fromRGB(245, 100, 100))
+                        wait(3)
+                        LoadingScreen.playExitAnimations()
                     end)
-                else
-                    local scriptLoaded = loadGameScript(scriptUrl)
-                    if scriptLoaded then
-                        print("Scripts Hub X | Loading Complete for cached key user!")
-                    else
-                        showErrorNotification()
-                    end
                 end
-            else
-                print("No valid stored key, loading key system UI")
+                showErrorNotification()
+                return
+            end
+            
+            local keyVerified = false
+            pcall(function()
+                print("Showing key system UI")
                 KeySystem.ShowKeySystem()
                 print("Waiting for key verification")
                 local startTime = tick()
                 while not KeySystem.IsKeyVerified() do
                     wait(0.1)
-                    if tick() - startTime > 20 then
+                    if tick() - startTime > 300 then -- 5 minutes timeout
                         warn("Key verification timed out")
                         KeySystem.HideKeySystem()
                         if successLS then
@@ -595,6 +667,7 @@ coroutine.wrap(function()
                     local key = KeySystem.GetKey()
                     if key and key ~= "" then
                         saveKeyToFile(key)
+                        print("Key saved after verification")
                     end
                     if successLS then
                         pcall(function()
@@ -631,10 +704,11 @@ coroutine.wrap(function()
                         end)
                     end
                 end
+            end)
+            
+            if not keyVerified then
+                deleteKeyFile()
             end
-        end)
-        if not keyVerified then
-            deleteKeyFile()
         end
     end
 end)()
