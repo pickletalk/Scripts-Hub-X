@@ -275,30 +275,44 @@ local function checkPremiumUser()
     return "non-premium"
 end
 
-local function createKeyFile()
-    local userId = tostring(player.UserId)
-    local currentTime = os.time()
-    local expiryTime = currentTime + (48 * 60 * 60) -- 48 hours in seconds
-    local keyData = string.format("userId=%s|expiry=%d", userId, expiryTime)
-    writefile("key_verified_" .. userId .. ".txt", keyData)
-    print("Key file created with expiry at: " .. os.date("%Y-%m-%d %H:%M:%S", expiryTime))
+local function createKeyFile(validKey)
+    local fileName = "Scripts Hub X OFFICIAL - Key.txt"
+    writefile(fileName, validKey)
+    print("Key file created with valid key")
 end
 
-local function checkKeyFile()
-    local userId = tostring(player.UserId)
-    local fileName = "key_verified_" .. userId .. ".txt"
+local function checkValidKey(KeySystem)
+    local fileName = "Scripts Hub X OFFICIAL - Key.txt"
     if isfile(fileName) then
-        local content = readfile(fileName)
-        local expiry = tonumber(content:match("expiry=(%d+)"))
-        if expiry and os.time() < expiry then
-            print("Valid key file found, expires at: " .. os.date("%Y-%m-%d %H:%M:%S", expiry))
+        local storedKey = readfile(fileName)
+        print("Found existing key file, checking validity...")
+        
+        -- Check if the stored key is still valid by testing it with the key system
+        local isValid = false
+        local success, err = pcall(function()
+            -- Assuming the KeySystem has a method to validate a key without showing UI
+            -- You may need to modify this based on your actual KeySystem implementation
+            if KeySystem.ValidateKey then
+                isValid = KeySystem.ValidateKey(storedKey)
+            else
+                -- Alternative: temporarily set the key and check if it's verified
+                -- This depends on your KeySystem's implementation
+                isValid = KeySystem.IsKeyVerified()
+            end
+        end)
+        
+        if success and isValid then
+            print("Stored key is still valid")
             return true
         else
+            print("Stored key is invalid, deleting file")
             delfile(fileName)
-            print("Key file expired or invalid, deleted")
+            return false
         end
+    else
+        print("No key file found")
+        return false
     end
-    return false
 end
 
 -- Main execution
@@ -503,8 +517,24 @@ coroutine.wrap(function()
             loadGameScript(scriptUrl)
         end
     else
-        print("Non-premium, checking key file")
-        if checkKeyFile() then
+        print("Non-premium user, checking for valid key file")
+        local successKS, KeySystem = loadKeySystem()
+        if not successKS or not KeySystem then
+            print("Failed to load key system")
+            local successLS, LoadingScreen = loadLoadingScreen()
+            if successLS then
+                pcall(function()
+                    LoadingScreen.initialize()
+                    LoadingScreen.setLoadingText("Failed to load key system", Color3.fromRGB(245, 100, 100))
+                    wait(3)
+                    LoadingScreen.playExitAnimations()
+                end)
+            end
+            showErrorNotification()
+            return
+        end
+        
+        if checkValidKey(KeySystem) then
             print("Valid key file detected, skipping key system")
             local success, LoadingScreen = loadLoadingScreen()
             if success then
@@ -529,22 +559,10 @@ coroutine.wrap(function()
             end
         else
             print("No valid key file, loading key system")
-            local successKS, KeySystem = loadKeySystem()
             local successLS, LoadingScreen = loadLoadingScreen()
-            if not successKS or not KeySystem then
-                print("Failed to load key system")
-                if successLS then
-                    pcall(function()
-                        LoadingScreen.initialize()
-                        LoadingScreen.setLoadingText("Failed to load key system", Color3.fromRGB(245, 100, 100))
-                        wait(3)
-                        LoadingScreen.playExitAnimations()
-                    end)
-                end
-                showErrorNotification()
-                return
-            end
+            
             local keyVerified = false
+            local validKey = ""
             pcall(function()
                 KeySystem.ShowKeySystem()
                 print("Waiting for key verification")
@@ -552,8 +570,12 @@ coroutine.wrap(function()
                     wait(0.1)
                 end
                 keyVerified = KeySystem.IsKeyVerified()
+                if keyVerified and KeySystem.GetEnteredKey then
+                    validKey = KeySystem.GetEnteredKey()
+                end
                 KeySystem.HideKeySystem()
             end)
+            
             if not keyVerified then
                 if successLS then
                     pcall(function()
@@ -565,8 +587,13 @@ coroutine.wrap(function()
                 end
                 return
             end
-            createKeyFile()
+            
+            -- Create key file with the valid key
+            if validKey ~= "" then
+                createKeyFile(validKey)
+            end
             print("Key verified")
+            
             if successLS then
                 pcall(function()
                     LoadingScreen.initialize()
