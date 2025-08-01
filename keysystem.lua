@@ -55,36 +55,58 @@ if hostResponse.StatusCode ~= 200 and hostResponse.StatusCode ~= 429 then
 end
 
 local function cacheLink()
+    print("Attempting to cache link...")
     if cachedTime + (10*60) < os.time() then
-        local response = request({
-            Url = host .. "/public/start",
-            Method = "POST",
-            Body = lEncode({
-                service = service,
-                identifier = lDigest(player.UserId)
-            }),
-            Headers = {
-                ["Content-Type"] = "application/json"
-            }
-        })
+        print("Cache expired, requesting new link...")
+        local success, response = pcall(function()
+            return request({
+                Url = host .. "/public/start",
+                Method = "POST",
+                Body = lEncode({
+                    service = service,
+                    identifier = lDigest(player.UserId)
+                }),
+                Headers = {
+                    ["Content-Type"] = "application/json"
+                }
+            })
+        end)
+        
+        if not success then
+            print("Request failed: " .. tostring(response))
+            return false, "Request failed: " .. tostring(response)
+        end
+        
+        print("Response Status Code: " .. tostring(response.StatusCode))
+        print("Response Body: " .. tostring(response.Body))
+        
         if response.StatusCode == 200 then
-            local decoded = lDecode(response.Body)
+            local decodeSuccess, decoded = pcall(function()
+                return lDecode(response.Body)
+            end)
+            
+            if not decodeSuccess then
+                print("Failed to decode response: " .. tostring(decoded))
+                return false, "Failed to decode response"
+            end
+            
+            print("Decoded response success: " .. tostring(decoded.success))
             if decoded.success == true then
                 cachedLink = decoded.data.url
                 cachedTime = os.time()
+                print("Successfully cached link: " .. cachedLink)
                 return true, cachedLink
             else
-                statusLabel.Text = decoded.message
-                return false, decoded.message
+                print("API returned error: " .. tostring(decoded.message))
+                return false, decoded.message or "Unknown API error"
             end
         elseif response.StatusCode == 429 then
-            statusLabel.Text = "You are being rate limited, please wait 20 seconds and try again."
-            return false, "Rate limited"
+            return false, "You are being rate limited, please wait 20 seconds and try again."
         else
-            statusLabel.Text = "Failed to cache link."
-            return false, "Failed to cache link."
+            return false, "Server returned status code: " .. tostring(response.StatusCode)
         end
     else
+        print("Using cached link: " .. cachedLink)
         return true, cachedLink
     end
 end
@@ -462,21 +484,37 @@ local function HideKeySystem()
 end
 
 getKeyButton.MouseButton1Click:Connect(function()
+    print("Get Key button clicked")
     local success, err = pcall(function()
-        local success, link = cacheLink()
-        if success then
-            setclipboard(link)
-            getKeyButton.Text = "Copied!"
-            getKeyButton.BackgroundColor3 = Color3.fromRGB(0, 80, 160)
-            wait(1)
-            getKeyButton.Text = "Get Key"
-            getKeyButton.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
+        statusLabel.Text = "Generating key link..."
+        statusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+        
+        local linkSuccess, link = cacheLink()
+        if linkSuccess then
+            if link and link ~= "" then
+                setclipboard(link)
+                getKeyButton.Text = "Copied!"
+                getKeyButton.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+                statusLabel.Text = "Key link copied to clipboard!"
+                statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+                wait(2)
+                getKeyButton.Text = "Get Key"
+                getKeyButton.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
+                statusLabel.Text = "Get key or join Discord server to get the key!"
+                statusLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
+            else
+                statusLabel.Text = "Failed: Empty link received"
+                statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+            end
         else
-            statusLabel.Text = err
+            statusLabel.Text = "Error: " .. tostring(link)
+            statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
         end
     end)
     if not success then
         warn("Get Key button failed: " .. tostring(err))
+        statusLabel.Text = "Error: " .. tostring(err)
+        statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
     end
 end)
 
@@ -530,6 +568,7 @@ return {
     ShowKeySystem = ShowKeySystem,
     HideKeySystem = HideKeySystem,
     IsKeyVerified = function() return isVerified end,
-    verifyKey = verifyKey,
+    ValidateKey = verifyKey,
+    GetEnteredKey = function() return verifiedKey end,
     getVerifiedKey = function() return verifiedKey end
-} 
+}
