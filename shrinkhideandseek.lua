@@ -15,7 +15,7 @@ tab.newButton("Esp", "Prints ESP Enabled!", function() loadstring(game:HttpGet('
 end)
 
 -- ind jump
-tab.newButton("Inf Jump", "inf jump enabled!", function()
+tab.newButton("Inf Jump", "inf jump enabled!", function(enableInfiniteJump(true))
 -- Infinite Jump Script (Fixed - Natural Jump Height)
 -- by pickletalk
 
