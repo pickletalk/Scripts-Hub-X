@@ -95,10 +95,10 @@ Section:CreateInput({
     Name = "Enter Text",
     Placeholder = "Type here...",
     Default = "Hello",
-    Callback = function(Text)
+    Callback = function(Text, EnterPressed)
         PickleLibrary:Notify({
             Title = "Input Received",
-            Content = "You entered: " .. Text,
+            Content = "You entered: " .. Text .. (EnterPressed and " (Enter pressed)" or ""),
             Duration = 3
         })
     end
@@ -111,12 +111,28 @@ Section:CreateColorPicker({
     Callback = function(Value)
         PickleLibrary:Notify({
             Title = "Color Picked",
-            Content = "New color selected!",
+            Content = string.format("New color: RGB(%d, %d, %d)", 
+                Value.R * 255, Value.G * 255, Value.B * 255),
             Duration = 3
         })
     end
 })
 
+-- Wait for UI to fully load before attempting to load configuration
+task.wait(2)
+
 -- Load configuration if it exists
-task.wait(1) -- Wait for UI to fully load
-PickleLibrary:LoadConfiguration()
+local configLoaded = PickleLibrary:LoadConfiguration()
+if configLoaded then
+    PickleLibrary:Notify({
+        Title = "Configuration Loaded",
+        Content = "Your saved settings have been restored!",
+        Duration = 3
+    })
+else
+    PickleLibrary:Notify({
+        Title = "Welcome!",
+        Content = "No previous configuration found. Settings will be saved automatically.",
+        Duration = 5
+    })
+end
