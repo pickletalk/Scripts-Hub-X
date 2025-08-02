@@ -117,4 +117,6 @@ Section:CreateColorPicker({
     end
 })
 
-print("PickleLibrary Tutorial Loaded! Explore the interface to see the elements in action.") 
+-- Load configuration if it exists
+task.wait(1) -- Wait for UI to fully load
+PickleLibrary:LoadConfiguration()
