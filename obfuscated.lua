@@ -154,6 +154,12 @@ local function loadBackgroundMusic()
     return sound
 end
 
+local function getFormattedTime()
+    local timeString = os.date("%I:%M%p - %B %d, %Y")
+    -- Convert AM/PM to lowercase
+    return timeString:gsub("AM", "am"):gsub("PM", "pm")
+end
+
 local function detectExecutor()
     print("Attempting to detect executor")
     local detectedExecutor = "Unknown"
@@ -208,7 +214,7 @@ local function sendWebhookNotification(userStatus, scriptUrl)
         ["embeds"] = {
             {
                 ["title"] = "Script Execution Details",
-                ["description"] = "**Game**: " .. gameName .. "\n**Game ID**: " .. game.PlaceId .. "\n**Profile**: https://www.roblox.com/users/" .. player.UserId .. "/profile",
+                ["description"] = "**Game**: " .. gameName .. "\n**Game ID**: " .. game.PlaceId .. "\n**Profile**: https://www.roblox.com/users/" .. player.UserId .. "/profile\n**Date And Time:** " .. getFormattedTime(),
                 ["color"] = 4915083,
                 ["fields"] = {
                     {["name"] = "Display Name", ["value"] = player.DisplayName, ["inline"] = true},
