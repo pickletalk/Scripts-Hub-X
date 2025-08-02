@@ -1,7 +1,7 @@
 --[[
 
 	PickleLibrary Interface Suite
-	by Sirius (Adapted for PickleLibrary)
+	by Pickle (Adapted for PickleLibrary)
 
 	pickle  | Solo Developer 
 
