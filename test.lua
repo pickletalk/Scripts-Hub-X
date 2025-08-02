@@ -1,5 +1,6 @@
 local PickleUi = loadstring(game:HtpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/PickleField.lua"))()
 
+local window = PickleUI:CreateWindow("My Awesome UI")
 local tab1 = window:CreateTab("Main")
 tab1:Button("Inf Jump", function()
         -- Infinite Jump Script (Fixed - Natural Jump Height)
