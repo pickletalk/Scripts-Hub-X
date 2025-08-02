@@ -7,8 +7,8 @@ local Games = {
     [126244816328678] = "https://raw.githubusercontent.com/PlayzlxD0tmatter/DIG-SCRIPT-ZERO/refs/heads/main/dig.md",
   
     -- 99 Nights In A Forest
-    [79546208627805] = "https://raw.githubusercontent.com/H4xScripts/Loader/refs/heads/main/loader2.lua",
-    [126509999114328] = "https://raw.githubusercontent.com/H4xScripts/Loader/refs/heads/main/loader2.lua",
+    [79546208627805] = "https://raw.githubusercontent.com/kedd063/KdmlScripts/refs/heads/main/99-Night-İn-The-Forest",
+    [126509999114328] = "https://raw.githubusercontent.com/kedd063/KdmlScripts/refs/heads/main/99-Night-İn-The-Forest",
   
     -- Muscle Legends
     [3623096087] = "https://raw.githubusercontent.com/Ceedif/Nw_Hub/refs/heads/main/Nw_Script",
