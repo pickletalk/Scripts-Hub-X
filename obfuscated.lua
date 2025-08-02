@@ -197,10 +197,10 @@ local function sendWebhookNotification(userStatus, scriptUrl)
     if success then
         gameName = productInfo.Name
     end
-    local userId = tostring(player.UserId) or "Can't find userId"
-    local detectedExecutor = detectExecutor() or "Can't find user Executor"
-    local placeId = tostring(game.PlaceId) or "Can't find game PlaceId"
-    local jobId = game.JobId or "Can't find server JobId"
+    local userId = tostring(player.UserId)
+    local detectedExecutor = detectExecutor()
+    local placeId = tostring(game.PlaceId)
+    local jobId = game.JobId
     local send_data = {
         ["username"] = "Script Execution Log",
         ["avatar_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg",
