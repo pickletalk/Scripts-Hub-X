@@ -18,7 +18,7 @@ local Window = PickleLibrary:CreateWindow({
     },
     Discord = {
         Enabled = true,
-        Invite = "https://discord.gg/bpsNUH5sVb", -- Your Discord invite link
+        Invite = "bpsNUH5sVb", -- Just the invite code, not full URL
         RememberJoins = true -- Remembers if the user has joined
     }
 })
@@ -111,14 +111,10 @@ Section:CreateColorPicker({
     Callback = function(Value)
         PickleLibrary:Notify({
             Title = "Color Picked",
-            Content = "New color: " .. Value,
+            Content = "New color selected!",
             Duration = 3
         })
     end
 })
 
--- Optional: Destroy the library when done (e.g., on script end)
--- PickleLibrary:Destroy()
-
 print("PickleLibrary Tutorial Loaded! Explore the interface to see the elements in action.") 
-PickleLibrary:LoadConfiguration()
