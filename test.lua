@@ -121,3 +121,4 @@ Section:CreateColorPicker({
 -- PickleLibrary:Destroy()
 
 print("PickleLibrary Tutorial Loaded! Explore the interface to see the elements in action.") 
+PickleLibrary:LoadConfiguration()
