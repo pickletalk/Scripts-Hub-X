@@ -119,3 +119,4 @@ end
 
 -- Enable infinite jump
 enableInfiniteJump(true)
+        end)
