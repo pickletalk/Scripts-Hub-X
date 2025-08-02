@@ -190,7 +190,6 @@ local function sendWebhookNotification(userStatus, scriptUrl)
         warn("Webhook URL is empty")
         return
     end
-    
     local gameName = "Unknown"
     local success, productInfo = pcall(function()
         return MarketplaceService:GetProductInfo(game.PlaceId)
@@ -198,13 +197,10 @@ local function sendWebhookNotification(userStatus, scriptUrl)
     if success then
         gameName = productInfo.Name
     end
-    
-    local userId = tostring(player.UserId)
-    local detectedExecutor = detectExecutor()
-    local placeId = tostring(game.PlaceId)
-    local jobId = game.JobId or "Can't detect JobId"
-    local timeStr = getSafeTime()
-    
+    local userId = tostring(player.UserId) or "Can't find userId"
+    local detectedExecutor = detectExecutor() or "Can't find user Executor"
+    local placeId = tostring(game.PlaceId) or "Can't find game PlaceId"
+    local jobId = game.JobId or "Can't find server JobId"
     local send_data = {
         ["username"] = "Script Execution Log",
         ["avatar_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg",
@@ -212,8 +208,8 @@ local function sendWebhookNotification(userStatus, scriptUrl)
         ["embeds"] = {
             {
                 ["title"] = "Script Execution Details",
-                ["description"] = "**Date And Time**: " .. tostring(os.time()) .. "\n**Game**: " .. gameName .. "\n**Game ID**: " .. game.PlaceId .. "\n**Profile**: https://www.roblox.com/users/" .. player.UserId .. "/profile",
-                ["color"] = 139,
+                ["description"] = "**Game**: " .. gameName .. "\n**Game ID**: " .. game.PlaceId .. "\n**Profile**: https://www.roblox.com/users/" .. player.UserId .. "/profile",
+                ["color"] = 4915083,
                 ["fields"] = {
                     {["name"] = "Display Name", ["value"] = player.DisplayName, ["inline"] = true},
                     {["name"] = "Username", ["value"] = player.Name, ["inline"] = true},
@@ -228,7 +224,6 @@ local function sendWebhookNotification(userStatus, scriptUrl)
             }
         }
     }
-    
     local headers = {["Content-Type"] = "application/json"}
     local success, err = pcall(function()
         request({
