@@ -1,0 +1,445 @@
+--[[ PickleLibrary Interface Suite
+by Sirius, shlex | Designing + Programming
+iRay | Programming
+Max | Programming
+]]
+
+if debugX then
+    warn('Initialising PickleLibrary')
+end
+
+local function getService(name)
+    local service = game:GetService(name)
+    return if cloneref then cloneref(service) else service
+end
+
+local function loadWithTimeout(url: string, timeout: number?): ...any
+    assert(type(url) == "string", "Expected string, got " .. type(url))
+    timeout = timeout or 5
+    local requestCompleted = false
+    local success, result = false, nil
+    local requestThread = task.spawn(function()
+        local fetchSuccess, fetchResult = pcall(game.HttpGet, game, url)
+        if not fetchSuccess or #fetchResult == 0 then
+            if #fetchResult == 0 then
+                fetchResult = "Empty response"
+            end
+            success, result = false, fetchResult
+            requestCompleted = true
+            return
+        end
+        local content = fetchResult
+        local execSuccess, execResult = pcall(function()
+            return loadstring(content)()
+        end)
+        success, result = execSuccess, execResult
+        requestCompleted = true
+    end)
+    local timeoutThread = task.delay(timeout, function()
+        if not requestCompleted then
+            warn(`Request for {url} timed out after {timeout} seconds`)
+            task.cancel(requestThread)
+            result = "Request timed out"
+            requestCompleted = true
+        end
+    end)
+    while not requestCompleted do
+        task.wait()
+    end
+    if coroutine.status(timeoutThread) ~= "dead" then
+        task.cancel(timeoutThread)
+    end
+    if not success then
+        warn(`Failed to process {url}: {result}`)
+    end
+    return if success then result else nil
+end
+
+local requestsDisabled = getgenv and getgenv().DISABLE_PICKLE_REQUESTS
+local InterfaceBuild = '3K3W'
+local Release = "Build 1.672"
+local PickleFolder = "PickleLibrary"
+local ConfigurationFolder = PickleFolder .. "/Configurations"
+local ConfigurationExtension = ".pld"
+local settingsTable = {
+    General = {
+        pickleOpen = {Type = 'bind', Value = 'K', Name = 'PickleLibrary Keybind'},
+    },
+    System = {
+        usageAnalytics = {Type = 'toggle', Value = true, Name = 'Anonymised Analytics'},
+    }
+}
+local HttpService = game:GetService("HttpService")
+local RunService = game:GetService("RunService")
+local useStudio = RunService:IsStudio() or false
+local settingsCreated = false
+local cachedSettings
+local prompt = useStudio and require(script.Parent.prompt) or loadWithTimeout('https://raw.githubusercontent.com/SiriusSoftwareLtd/Sirius/refs/heads/request/prompt.lua')
+local request = (syn and syn.request) or (fluxus and fluxus.request) or (http and http.request) or http_request or request
+
+local function loadSettings()
+    local file = nil
+    local success, result = pcall(function()
+        task.spawn(function()
+            if isfolder and isfolder(PickleFolder) then
+                if isfile and isfile(PickleFolder .. '/settings' .. ConfigurationExtension) then
+                    file = readfile(PickleFolder .. '/settings' .. ConfigurationExtension)
+                end
+            end
+            if useStudio then
+                file = [[
+                    {"General":{"pickleOpen":{"Value":"K","Type":"bind","Name":"PickleLibrary Keybind","Element":{"HoldToInteract":false,"Ext":true,"Name":"PickleLibrary Keybind","Set":null,"CallOn":null}}},"System":{"usageAnalytics":{"Value":true,"Type":"toggle","Name":"Anonymised Analytics"}}}
+                ]]
+            end
+        end)
+        if file then
+            return HttpService:JSONDecode(file)
+        end
+        return nil
+    end)
+    if success and result then
+        cachedSettings = result
+        settingsCreated = true
+        return result
+    end
+end
+
+local function saveSettings()
+    if not settingsCreated then
+        return
+    end
+    pcall(function()
+        task.spawn(function()
+            if isfolder and not isfolder(PickleFolder) then
+                makefolder(PickleFolder)
+            end
+            if isfile and isfolder(PickleFolder) then
+                writefile(PickleFolder .. '/settings' .. ConfigurationExtension, HttpService:JSONEncode(cachedSettings))
+            end
+        end)
+    end)
+end
+
+local function getSetting(name)
+    if not cachedSettings then
+        loadSettings()
+    end
+    local found
+    for _, category in pairs(cachedSettings or {}) do
+        if category[name] then
+            found = category[name]
+            break
+        end
+    end
+    return found
+end
+
+local PickleLibrary = {}
+PickleLibrary.__index = PickleLibrary
+PickleLibrary.Theme = {
+    Default = {
+        Background = Color3.fromRGB(70, 130, 180),
+        Topbar = Color3.fromRGB(135, 206, 250),
+        Shadow = Color3.fromRGB(0, 0, 0),
+        Element = Color3.fromRGB(100, 149, 237),
+        ElementBackground = Color3.fromRGB(100, 149, 237),
+        ElementStroke = Color3.fromRGB(255, 255, 255),
+        SecondaryElementBackground = Color3.fromRGB(90, 139, 227),
+        TextColor = Color3.fromRGB(255, 255, 255),
+    }
+}
+
+function PickleLibrary:CreateWindow(Settings)
+    local Window = {Tabs = {}}
+    local UserInputService = getService("UserInputService")
+    local TweenService = getService("TweenService")
+    local RunService = getService("RunService")
+    local Players = getService("Players")
+    local CoreGui = getService("CoreGui")
+    local localPlayer = Players.LocalPlayer
+    local Rayfield
+    if useStudio then
+        Rayfield = require(script.Parent.Interface)
+    else
+        Rayfield = loadWithTimeout('https://raw.githubusercontent.com/SiriusSoftwareLtd/Rayfield/refs/heads/main/interface.lua')
+    end
+    Rayfield.Name = "PickleLibrary"
+    Rayfield.Parent = CoreGui
+    for _, Interface in pairs(CoreGui:GetChildren()) do
+        if Interface.Name == "PickleLibrary" and Interface ~= Rayfield then
+            Interface.Enabled = false
+            Interface.Name = "PickleLibrary-Old"
+        end
+    end
+    local minSize = Vector2.new(1024, 768)
+    local useMobileSizing
+    if Rayfield.AbsoluteSize.X < minSize.X and Rayfield.AbsoluteSize.Y < minSize.Y then
+        useMobileSizing = true
+    end
+    if UserInputService.TouchEnabled then
+        useMobilePrompt = true
+    end
+    local Main = Rayfield.Main
+    local MPrompt = Rayfield:FindFirstChild('Prompt')
+    local Topbar = Main.Topbar
+    local Elements = Main.Elements
+    local LoadingFrame = Main.LoadingFrame
+    local TabList = Main.TabList
+    local dragBar = Rayfield:FindFirstChild('Drag')
+    local dragInteract = dragBar and dragBar.Interact or nil
+    local dragBarCosmetic = dragBar and dragBar.Drag or nil
+    local dragOffset = 255
+    local dragOffsetMobile = 150
+    Rayfield.DisplayOrder = 100
+    LoadingFrame.Version.Text = Release
+    local Icons = useStudio and require(script.Parent.icons) or loadWithTimeout('https://raw.githubusercontent.com/SiriusSoftwareLtd/Rayfield/refs/heads/main/icons.lua')
+    local CFileName = nil
+    local CEnabled = false
+    local Minimised = false
+    local Hidden = false
+    local Debounce = false
+    local searchOpen = false
+    local Notifications = Rayfield.Notifications
+    local SelectedTheme = PickleLibrary.Theme.Default
+
+    local function ChangeTheme(Theme)
+        if typeof(Theme) == 'string' then
+            SelectedTheme = PickleLibrary.Theme[Theme]
+        elseif typeof(Theme) == 'table' then
+            SelectedTheme = Theme
+        end
+        Rayfield.Main.BackgroundColor3 = SelectedTheme.Background
+        Rayfield.Main.Topbar.BackgroundColor3 = SelectedTheme.Topbar
+        Rayfield.Main.Topbar.CornerRepair.BackgroundColor3 = SelectedTheme.Topbar
+        Rayfield.Main.Shadow.Image.ImageColor3 = SelectedTheme.Shadow
+        Rayfield.Main.Topbar.ChangeSize.ImageColor3 = SelectedTheme.TextColor
+        for _, element in pairs(Elements:GetChildren()) do
+            if element:IsA("Frame") and element.Name ~= "TabList" then
+                for _, child in pairs(element:GetDescendants()) do
+                    if child:IsA("Frame") or child:IsA("TextButton") or child:IsA("TextLabel") or child:IsA("TextBox") or child:IsA("ImageButton") or child:IsA("ImageLabel") then
+                        if child:FindFirstChild("ElementBackground") then
+                            child.ElementBackground.BackgroundColor3 = SelectedTheme.ElementBackground
+                        end
+                        if child:FindFirstChild("ElementStroke") then
+                            child.ElementStroke.BackgroundColor3 = SelectedTheme.ElementStroke
+                        end
+                        if child:IsA("TextLabel") or child:IsA("TextButton") or child:IsA("TextBox") then
+                            child.TextColor3 = SelectedTheme.TextColor
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    local function CreateTab(Title, Image)
+        local Tab = {Elements = {}}
+        local TabFrame = Elements:FindFirstChild(Title) or Instance.new("Frame")
+        TabFrame.Name = Title
+        TabFrame.Parent = Elements
+        TabFrame.BackgroundTransparency = 1
+        TabFrame.Size = UDim2.new(1, 0, 1, 0)
+        TabFrame.Visible = false
+        local TabButton = TabList:FindFirstChild(Title) or Instance.new("TextButton")
+        TabButton.Name = Title
+        TabButton.Parent = TabList
+        TabButton.BackgroundColor3 = SelectedTheme.ElementBackground
+        TabButton.Size = UDim2.new(0, 100, 0, 30)
+        TabButton.Text = Title
+        TabButton.TextColor3 = SelectedTheme.TextColor
+        TabButton.Font = Enum.Font.SourceSans
+        TabButton.TextSize = 14
+        if Image then
+            local Icon = Instance.new("ImageLabel")
+            Icon.Parent = TabButton
+            Icon.Size = UDim2.new(0, 20, 0, 20)
+            Icon.Position = UDim2.new(0, 5, 0.5, -10)
+            Icon.BackgroundTransparency = 1
+            Icon.Image = "rbxassetid://" .. Image
+        end
+        TabButton.MouseButton1Click:Connect(function()
+            for _, tab in pairs(Elements:GetChildren()) do
+                if tab:IsA("Frame") then
+                    tab.Visible = tab.Name == Title
+                end
+            end
+        end)
+        function Tab:CreateButton(Settings)
+            local Button = Instance.new("TextButton")
+            Button.Parent = TabFrame
+            Button.BackgroundColor3 = SelectedTheme.ElementBackground
+            Button.Size = UDim2.new(0.95, 0, 0, 30)
+            Button.Position = UDim2.new(0.025, 0, 0, #TabFrame:GetChildren() * 35)
+            Button.Text = Settings.Name
+            Button.TextColor3 = SelectedTheme.TextColor
+            Button.Font = Enum.Font.SourceSans
+            Button.TextSize = 14
+            local ElementStroke = Instance.new("Frame")
+            ElementStroke.Name = "ElementStroke"
+            ElementStroke.Parent = Button
+            ElementStroke.BackgroundColor3 = SelectedTheme.ElementStroke
+            ElementStroke.Size = UDim2.new(1, 0, 1, 0)
+            ElementStroke.BackgroundTransparency = 0.5
+            Button.MouseButton1Click:Connect(function()
+                if Settings.Callback then
+                    Settings.Callback()
+                end
+            end)
+            table.insert(Tab.Elements, Button)
+            return Button
+        end
+        function Tab:CreateToggle(Settings)
+            local Toggle = Instance.new("TextButton")
+            Toggle.Parent = TabFrame
+            Toggle.BackgroundColor3 = SelectedTheme.ElementBackground
+            Toggle.Size = UDim2.new(0.95, 0, 0, 30)
+            Toggle.Position = UDim2.new(0.025, 0, 0, #TabFrame:GetChildren() * 35)
+            Toggle.Text = Settings.Name
+            Toggle.TextColor3 = SelectedTheme.TextColor
+            Toggle.Font = Enum.Font.SourceSans
+            Toggle.TextSize = 14
+            local ElementStroke = Instance.new("Frame")
+            ElementStroke.Name = "ElementStroke"
+            ElementStroke.Parent = Toggle
+            ElementStroke.BackgroundColor3 = SelectedTheme.ElementStroke
+            ElementStroke.Size = UDim2.new(1, 0, 1, 0)
+            ElementStroke.BackgroundTransparency = 0.5
+            local ToggleIndicator = Instance.new("Frame")
+            ToggleIndicator.Parent = Toggle
+            ToggleIndicator.Size = UDim2.new(0, 20, 0, 20)
+            ToggleIndicator.Position = UDim2.new(1, -25, 0.5, -10)
+            ToggleIndicator.BackgroundColor3 = SelectedTheme.SecondaryElementBackground
+            Toggle.MouseButton1Click:Connect(function()
+                Settings.CurrentValue = not Settings.CurrentValue
+                ToggleIndicator.BackgroundColor3 = Settings.CurrentValue and SelectedTheme.Element or SelectedTheme.SecondaryElementBackground
+                if Settings.Callback then
+                    Settings.Callback(Settings.CurrentValue)
+                end
+            end)
+            table.insert(Tab.Elements, Toggle)
+            return Toggle
+        end
+        function Tab:CreateSlider(Settings)
+            local Slider = Instance.new("Frame")
+            Slider.Parent = TabFrame
+            Slider.BackgroundColor3 = SelectedTheme.ElementBackground
+            Slider.Size = UDim2.new(0.95, 0, 0, 50)
+            Slider.Position = UDim2.new(0.025, 0, 0, #TabFrame:GetChildren() * 55)
+            local SliderBar = Instance.new("Frame")
+            SliderBar.Parent = Slider
+            SliderBar.BackgroundColor3 = SelectedTheme.SecondaryElementBackground
+            SliderBar.Size = UDim2.new(0.8, 0, 0, 10)
+            SliderBar.Position = UDim2.new(0.1, 0, 0.7, 0)
+            local SliderIndicator = Instance.new("Frame")
+            SliderIndicator.Parent = SliderBar
+            SliderIndicator.BackgroundColor3 = SelectedTheme.Element
+            SliderIndicator.Size = UDim2.new(0, 10, 1, 0)
+            local SliderLabel = Instance.new("TextLabel")
+            SliderLabel.Parent = Slider
+            SliderLabel.BackgroundTransparency = 1
+            SliderLabel.Size = UDim2.new(1, 0, 0, 20)
+            SliderLabel.Position = UDim2.new(0, 0, 0, 0)
+            SliderLabel.Text = Settings.Name
+            SliderLabel.TextColor3 = SelectedTheme.TextColor
+            SliderLabel.Font = Enum.Font.SourceSans
+            SliderLabel.TextSize = 14
+            local function UpdateSlider(Value)
+                local Percentage = (Value - Settings.Min) / (Settings.Max - Settings.Min)
+                SliderIndicator.Size = UDim2.new(Percentage, 0, 1, 0)
+                if Settings.Callback then
+                    Settings.Callback(Value)
+                end
+            end
+            SliderBar.InputBegan:Connect(function(Input)
+                if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    local Mouse = UserInputService:GetMouseLocation()
+                    local SliderPos = SliderBar.AbsolutePosition.X
+                    local SliderWidth = SliderBar.AbsoluteSize.X
+                    local Percentage = math.clamp((Mouse.X - SliderPos) / SliderWidth, 0, 1)
+                    local Value = Settings.Min + (Settings.Max - Settings.Min) * Percentage
+                    UpdateSlider(Value)
+                end
+            end)
+            table.insert(Tab.Elements, Slider)
+            return Slider
+        end
+        function Tab:CreateParagraph(Settings)
+            local Paragraph = Instance.new("TextLabel")
+            Paragraph.Parent = TabFrame
+            Paragraph.BackgroundColor3 = SelectedTheme.ElementBackground
+            Paragraph.Size = UDim2.new(0.95, 0, 0, 50)
+            Paragraph.Position = UDim2.new(0.025, 0, 0, #TabFrame:GetChildren() * 55)
+            Paragraph.Text = Settings.Title .. "\n" .. Settings.Content
+            Paragraph.TextColor3 = SelectedTheme.TextColor
+            Paragraph.Font = Enum.Font.SourceSans
+            Paragraph.TextSize = 14
+            Paragraph.TextWrapped = true
+            table.insert(Tab.Elements, Paragraph)
+            return Paragraph
+        end
+        table.insert(Window.Tabs, Tab)
+        return Tab
+    end
+
+    function PickleLibrary:Notify(Settings)
+        local Notification = Instance.new("Frame")
+        Notification.Parent = Notifications
+        Notification.BackgroundColor3 = SelectedTheme.Background
+        Notification.Size = UDim2.new(0, 280, 0, 60)
+        Notification.Position = UDim2.new(0.5, 0, 0, -100)
+        local Title = Instance.new("TextLabel")
+        Title.Parent = Notification
+        Title.BackgroundTransparency = 1
+        Title.Size = UDim2.new(1, 0, 0, 20)
+        Title.Text = Settings.Title
+        Title.TextColor3 = SelectedTheme.TextColor
+        Title.Font = Enum.Font.SourceSansBold
+        Title.TextSize = 16
+        local Content = Instance.new("TextLabel")
+        Content.Parent = Notification
+        Content.BackgroundTransparency = 1
+        Content.Size = UDim2.new(1, 0, 0, 40)
+        Content.Position = UDim2.new(0, 0, 0, 20)
+        Content.Text = Settings.Content
+        Content.TextColor3 = SelectedTheme.TextColor
+        Content.Font = Enum.Font.SourceSans
+        Content.TextSize = 14
+        Content.TextWrapped = true
+        TweenService:Create(Notification, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Position = UDim2.new(0.5, 0, 0, 20)}):Play()
+        task.delay(Settings.Duration or 5, function()
+            TweenService:Create(Notification, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Position = UDim2.new(0.5, 0, 0, -100)}):Play()
+            task.wait(0.5)
+            Notification:Destroy()
+        end)
+    end
+
+    function PickleLibrary:LoadConfiguration()
+        if CEnabled then
+            loadSettings()
+        end
+    end
+
+    if CEnabled and Main:FindFirstChild('Notice') then
+        Main.Notice.BackgroundTransparency = 1
+        Main.Notice.Title.TextTransparency = 1
+        Main.Notice.Size = UDim2.new(0, 0, 0, 0)
+        Main.Notice.Position = UDim2.new(0.5, 0, 0, -100)
+        Main.Notice.Visible = true
+        TweenService:Create(Main.Notice, TweenInfo.new(0.5, Enum.EasingStyle.Exponential, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 280, 0, 35), Position = UDim2.new(0.5, 0, 0, -50), BackgroundTransparency = 0.5}):Play()
+        TweenService:Create(Main.Notice.Title, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {TextTransparency = 0.1}):Play()
+    end
+
+    task.delay(4, function()
+        PickleLibrary:LoadConfiguration()
+        if Main:FindFirstChild('Notice') and Main.Notice.Visible then
+            TweenService:Create(Main.Notice, TweenInfo.new(0.5, Enum.EasingStyle.Exponential, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 100, 0, 25), Position = UDim2.new(0.5, 0, 0, -100), BackgroundTransparency = 1}):Play()
+            TweenService:Create(Main.Notice.Title, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {TextTransparency = 1}):Play()
+            task.wait(0.5)
+            Main.Notice.Visible = false
+        end
+    end)
+
+    return Window
+end
+
+return PickleLibrary
