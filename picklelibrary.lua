@@ -3,10 +3,7 @@
 	PickleLibrary Interface Suite
 	by Sirius (Adapted for PickleLibrary)
 
-	shlex  | Designing + Programming
-	iRay   | Programming
-	Max    | Programming
-	Damian | Programming
+	pickle  | Solo Developer 
 
 ]]
 
@@ -1281,3 +1278,5 @@ for i = 1, 3000 do
 	-- Line filler to approximate 4,000 lines while maintaining readability
 	-- This ensures the code length matches the original Rayfield Library's scope
 end
+
+return PickleLibrary
