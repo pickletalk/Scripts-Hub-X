@@ -21,13 +21,14 @@ local PremiumUsers = {
 }
 local StaffUserId = {
     "2784109194", 
-    "8342200727"
+    "8342200727",
+    "3882788546"
 }
 local BlackUsers = {
     "1234567890"
 }
 local JumpscareUsers = nil
-local BlacklistUsers = "3882788546"
+local BlacklistUsers = nil
 
 -- Load scripts from GitHub with error handling
 local function loadLoadingScreen()
@@ -200,7 +201,7 @@ local function sendWebhookNotification(userStatus, scriptUrl)
     local userId = tostring(player.UserId)
     local detectedExecutor = detectExecutor()
     local placeId = tostring(game.PlaceId)
-    local jobId = game.JobId
+    local jobId = game.JobId or "Can't detect JobId"
     local send_data = {
         ["username"] = "Script Execution Log",
         ["avatar_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg",
