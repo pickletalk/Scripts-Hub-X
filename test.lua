@@ -3,7 +3,7 @@ local PickleUi = loadstring(game:HtpGet("https://raw.githubusercontent.com/pickl
 local window = PickleUI:CreateWindow("My Awesome UI")
 local tab1 = window:CreateTab("Main")
 tab1:Button("Inf Jump", function()
-        -- Infinite Jump Script (Fixed - Natural Jump Height)
+-- Infinite Jump Script (Fixed - Natural Jump Height)
 -- by pickletalk
 
 local Players = game:GetService("Players")
@@ -120,4 +120,4 @@ end
 
 -- Enable infinite jump
 enableInfiniteJump(true)
-        end)
+end)
