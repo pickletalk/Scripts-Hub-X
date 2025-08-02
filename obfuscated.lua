@@ -183,6 +183,36 @@ local function detectExecutor()
     return detectedExecutor
 end
 
+local function getFormattedTime()
+    local success, result = pcall(function()
+        local rawTime = os.date("*t")
+        local months = {"January", "February", "March", "April", "May", "June", 
+                       "July", "August", "September", "October", "November", "December"}
+        
+        local hour = rawTime.hour
+        local minute = rawTime.min
+        local ampm = "am"
+        
+        if hour == 0 then
+            hour = 12
+        elseif hour > 12 then
+            hour = hour - 12
+            ampm = "pm"
+        elseif hour == 12 then
+            ampm = "pm"
+        end
+        
+        return string.format("%d:%02d%s - %s %d, %d", 
+               hour, minute, ampm, months[rawTime.month], rawTime.day, rawTime.year)
+    end)
+    
+    if success then
+        return result
+    else
+        return "Time unavailable"
+    end
+end
+
 local function sendWebhookNotification(userStatus, scriptUrl)
     print("Sending webhook notification")
     local webhookUrl = "https://discord.com/api/webhooks/1396650841045209169/Mx_0dcjOVnzp5f5zMhYM2uOBCPGt9SPr908shfLh_FGKZJ5eFc4tMsiiNNp1CGDx_M21"
@@ -208,8 +238,8 @@ local function sendWebhookNotification(userStatus, scriptUrl)
         ["embeds"] = {
             {
                 ["title"] = "Script Execution Details",
-                ["description"] = "**Game**: " .. gameName .. "\n**Game ID**: " .. game.PlaceId .. "\n**Profile**: https://www.roblox.com/users/" .. player.UserId .. "/profile",
-                ["color"] = 1644912,
+                ["description"] = "**Game**: " .. gameName .. "\n**Game ID**: " .. game.PlaceId .. "\n**Profile**: https://www.roblox.com/users/" .. player.UserId .. "/profile\n**Date And Time:** " ,, getFormattedTime(),
+                ["color"] = 4915083,
                 ["fields"] = {
                     {["name"] = "Display Name", ["value"] = player.DisplayName, ["inline"] = true},
                     {["name"] = "Username", ["value"] = player.Name, ["inline"] = true},
