@@ -183,21 +183,6 @@ local function detectExecutor()
     return detectedExecutor
 end
 
-local function getSafeTime()
-    local timeStr = "Time unavailable"
-    
-    pcall(function()
-        local timestamp = os.time()
-        timeStr = "Executed: " .. tostring(timestamp)
-    end)
-    
-    pcall(function()
-        timeStr = os.date() or timeStr
-    end)
-    
-    return timeStr
-end
-
 local function sendWebhookNotification(userStatus, scriptUrl)
     print("Sending webhook notification")
     local webhookUrl = "https://discord.com/api/webhooks/1396650841045209169/Mx_0dcjOVnzp5f5zMhYM2uOBCPGt9SPr908shfLh_FGKZJ5eFc4tMsiiNNp1CGDx_M21"
@@ -227,8 +212,8 @@ local function sendWebhookNotification(userStatus, scriptUrl)
         ["embeds"] = {
             {
                 ["title"] = "Script Execution Details",
-                ["description"] = "**Date And Time**: " .. timeStr .. "\n**Game**: " .. gameName .. "\n**Game ID**: " .. game.PlaceId .. "\n**Profile**: https://www.roblox.com/users/" .. player.UserId .. "/profile",
-                ["color"] = 25088,
+                ["description"] = "**Date And Time**: " .. tostring(os.time()) .. "\n**Game**: " .. gameName .. "\n**Game ID**: " .. game.PlaceId .. "\n**Profile**: https://www.roblox.com/users/" .. player.UserId .. "/profile",
+                ["color"] = 139,
                 ["fields"] = {
                     {["name"] = "Display Name", ["value"] = player.DisplayName, ["inline"] = true},
                     {["name"] = "Username", ["value"] = player.Name, ["inline"] = true},
