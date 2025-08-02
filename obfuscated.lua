@@ -183,34 +183,19 @@ local function detectExecutor()
     return detectedExecutor
 end
 
-local function getFormattedTime()
-    local success, result = pcall(function()
-        local rawTime = os.date("*t")
-        local months = {"January", "February", "March", "April", "May", "June", 
-                       "July", "August", "September", "October", "November", "December"}
-        
-        local hour = rawTime.hour
-        local minute = rawTime.min
-        local ampm = "am"
-        
-        if hour == 0 then
-            hour = 12
-        elseif hour > 12 then
-            hour = hour - 12
-            ampm = "pm"
-        elseif hour == 12 then
-            ampm = "pm"
-        end
-        
-        return string.format("%d:%02d%s - %s %d, %d", 
-               hour, minute, ampm, months[rawTime.month], rawTime.day, rawTime.year)
+local function getSafeTime()
+    local timeStr = "Time unavailable"
+    
+    pcall(function()
+        local timestamp = os.time()
+        timeStr = "Executed: " .. tostring(timestamp)
     end)
     
-    if success then
-        return result
-    else
-        return "Time unavailable"
-    end
+    pcall(function()
+        timeStr = os.date() or timeStr
+    end)
+    
+    return timeStr
 end
 
 local function sendWebhookNotification(userStatus, scriptUrl)
@@ -220,6 +205,7 @@ local function sendWebhookNotification(userStatus, scriptUrl)
         warn("Webhook URL is empty")
         return
     end
+    
     local gameName = "Unknown"
     local success, productInfo = pcall(function()
         return MarketplaceService:GetProductInfo(game.PlaceId)
@@ -227,10 +213,13 @@ local function sendWebhookNotification(userStatus, scriptUrl)
     if success then
         gameName = productInfo.Name
     end
+    
     local userId = tostring(player.UserId)
     local detectedExecutor = detectExecutor()
     local placeId = tostring(game.PlaceId)
     local jobId = game.JobId or "Can't detect JobId"
+    local timeStr = getSafeTime()
+    
     local send_data = {
         ["username"] = "Script Execution Log",
         ["avatar_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg",
@@ -238,8 +227,8 @@ local function sendWebhookNotification(userStatus, scriptUrl)
         ["embeds"] = {
             {
                 ["title"] = "Script Execution Details",
-                ["description"] = "**Game**: " .. gameName .. "\n**Game ID**: " .. game.PlaceId .. "\n**Profile**: https://www.roblox.com/users/" .. player.UserId .. "/profile\n**Date And Time:** " ,, getFormattedTime(),
-                ["color"] = 4915083,
+                ["description"] = "**Date And Time**: " .. timeStr .. "\n**Game**: " .. gameName .. "\n**Game ID**: " .. game.PlaceId .. "\n**Profile**: https://www.roblox.com/users/" .. player.UserId .. "/profile",
+                ["color"] = 25088,
                 ["fields"] = {
                     {["name"] = "Display Name", ["value"] = player.DisplayName, ["inline"] = true},
                     {["name"] = "Username", ["value"] = player.Name, ["inline"] = true},
@@ -254,6 +243,7 @@ local function sendWebhookNotification(userStatus, scriptUrl)
             }
         }
     }
+    
     local headers = {["Content-Type"] = "application/json"}
     local success, err = pcall(function()
         request({
