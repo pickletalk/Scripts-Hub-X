@@ -4,8 +4,13 @@ local PickleLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com
 
 local window = PickleLibrary:Load("Shrink Hide And Seek", "Default")
 local tab = window.newTab("Scripts")
-local window = Color3.fromRGB(30, 60, 120)
-local tab = Color3.fromRGB(20, 40, 80)
+window:SetTheme(
+    Color3.fromRGB(30, 60, 120)
+)
+tab:SetTheme(
+    Color3.fromRGB(20, 40, 80)
+)
+
 
 -- Infinite Jump Script
 -- by pickletalk
