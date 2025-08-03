@@ -184,4 +184,17 @@ local Button = Main:CreateButton({
    end,
 })
 
+local Slider = Player:CreateSlider({
+    Name = "Player Speed",
+    Range = {16, 100},
+    Increment = 16,
+    Suffix = "Speed",
+    CurrentValue = 16,
+    Flag = "Speed Slider",
+    Callback = function(Value)
+        -- Function to change player speed when slider updates
+        humanoid.WalkSpeed = Value
+    end,
+})
+
 Rayfield:LoadConfiguration()
