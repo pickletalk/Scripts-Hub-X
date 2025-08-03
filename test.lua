@@ -94,3 +94,18 @@ Section1:CreateColorPicker({
         })
     end
 })
+
+loadconfig = PickleLibrary:LoadConfiguration()
+if loadconfig then
+    PickleLibrary:Notify({
+            Title = "Successfully Loaded Ui",
+            Content = "Thank You for using our library!",
+            Duration = 3
+        })
+else
+    PickleLibrary:Notify({
+            Title = "Error load",
+            Content = "Error while loading the configuration",
+            Duration = 3
+        })
+end
