@@ -6,7 +6,7 @@ local Window = Rayfield:CreateWindow({
    LoadingTitle = "Pickle Interface Suite",
    LoadingSubtitle = "by PickleTalk",
    ShowText = "by PickleTalk",
-   Theme = "",
+   Theme = "Amethyst",
    ToggleUIKeybind = "K",
    DisableRayfieldPrompts = false,
    DisableBuildWarnings = false,
@@ -63,6 +63,10 @@ local OriginalSpeed = 16
 
 local InfiniteJumpEnabled = false
 local InfiniteJumpConnection = nil
+
+local GodModeEnabled = false
+local OriginalMaxHealth = 100
+local HealthConnection = nil
 
 -- Helper Functions
 local function getRootPart()
@@ -255,7 +259,7 @@ local function getDirectionVector()
         moveVector = moveVector - Vector3.new(0, 1, 0)
     end
     
-    return moveVector.Unit
+    return moveVector.Magnitude > 0 and moveVector.Unit or Vector3.new(0, 0, 0)
 end
 
 local function startFly()
@@ -266,6 +270,11 @@ local function startFly()
     local rootPart = character:FindFirstChild("HumanoidRootPart")
     
     if not humanoid or not rootPart then return end
+    
+    -- Clean up existing objects
+    if BodyVelocity then BodyVelocity:Destroy() end
+    if BodyAngularVelocity then BodyAngularVelocity:Destroy() end
+    if FlyConnection then FlyConnection:Disconnect() end
     
     BodyVelocity = Instance.new("BodyVelocity")
     BodyVelocity.MaxForce = Vector3.new(4000, 4000, 4000)
@@ -280,7 +289,7 @@ local function startFly()
     humanoid.PlatformStand = true
     
     FlyConnection = RunService.Heartbeat:Connect(function()
-        if Flying and BodyVelocity then
+        if Flying and BodyVelocity and BodyVelocity.Parent then
             local direction = getDirectionVector()
             BodyVelocity.Velocity = direction * FlySpeed
         end
@@ -312,8 +321,55 @@ local function stopFly()
         FlyConnection:Disconnect()
         FlyConnection = nil
     end
+    if HealthConnection then
+        HealthConnection:Disconnect()
+        HealthConnection = nil
+    end
     
     print("Flying disabled")
+end
+
+-- God Mode Functions
+local function enableGodMode()
+    local humanoid = getHumanoid()
+    if not humanoid then return end
+    
+    -- Store original max health
+    if not GodModeEnabled then
+        OriginalMaxHealth = humanoid.MaxHealth
+    end
+    
+    -- Set health to infinite
+    humanoid.MaxHealth = math.huge
+    humanoid.Health = math.huge
+    
+    -- Create connection to maintain infinite health
+    if HealthConnection then
+        HealthConnection:Disconnect()
+    end
+    
+    HealthConnection = humanoid.HealthChanged:Connect(function(health)
+        if GodModeEnabled and health < math.huge then
+            humanoid.Health = math.huge
+        end
+    end)
+    
+    print("God Mode enabled")
+end
+
+local function disableGodMode()
+    local humanoid = getHumanoid()
+    if humanoid then
+        humanoid.MaxHealth = OriginalMaxHealth
+        humanoid.Health = OriginalMaxHealth
+    end
+    
+    if HealthConnection then
+        HealthConnection:Disconnect()
+        HealthConnection = nil
+    end
+    
+    print("God Mode disabled")
 end
 
 -- Character Event Handlers
@@ -328,6 +384,9 @@ local function onCharacterAdded(character)
     end
     if not JumpPowerEnabled then
         OriginalJumpPower = humanoid.JumpPower
+    end
+    if not GodModeEnabled then
+        OriginalMaxHealth = humanoid.MaxHealth
     end
     
     -- Reapply enabled features
@@ -345,6 +404,9 @@ local function onCharacterAdded(character)
     end
     if Flying then
         startFly()
+    end
+    if GodModeEnabled then
+        enableGodMode()
     end
 end
 
@@ -372,13 +434,15 @@ if LocalPlayer.Character then
     onCharacterAdded(LocalPlayer.Character)
 end
 
--- UI Elements
+-- Main Tab
 
--- Infinite Jump Button (Main Tab)
-local InfJumpButton = Main:CreateButton({
-   Name = "Toggle Infinite Jump",
-   Callback = function()
-       InfiniteJumpEnabled = not InfiniteJumpEnabled
+-- Infinite Jump Toggle (Main Tab)
+local InfJumpToggle = Main:CreateToggle({
+   Name = "Infinite Jump",
+   CurrentValue = false,
+   Flag = "InfiniteJumpToggle",
+   Callback = function(Value)
+       InfiniteJumpEnabled = Value
        
        if InfiniteJumpEnabled then
            enableInfiniteJump()
@@ -402,6 +466,22 @@ local NoclipToggle = Main:CreateToggle({
             enableNoclip()
         else
             disableNoclip()
+        end
+    end,
+})
+
+-- God Mode Toggle (Main Tab)
+local GodModeToggle = Main:CreateToggle({
+    Name = "God Mode",
+    CurrentValue = false,
+    Flag = "GodModeToggle",
+    Callback = function(Value)
+        GodModeEnabled = Value
+        
+        if GodModeEnabled then
+            enableGodMode()
+        else
+            disableGodMode()
         end
     end,
 })
