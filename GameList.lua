@@ -110,8 +110,14 @@ local Games = {
     [120759571391756] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua", -- 6
     [91711653427804] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua", -- 7
 
+    -- Smack Gear Tower
+    [137346665938077] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua", -- 1
+    [90922469229908] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua", -- 2
+    [79223711715581] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua", -- 3
+    [116270410750670] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua", -- 4
+
     -- Tower Of Hell
-    [1962086868] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua"
+    [1962086868] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua",
 }
 
 return Games
