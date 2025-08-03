@@ -40,39 +40,39 @@ local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
-local ContextActionService = game:GetService("ContextActionService")
 
 local LocalPlayer = Players.LocalPlayer
 
 -- Variables
 local Flying = false
-local FlySpeed = 1
-local BodyGyro = nil
+local FlySpeed = 50
 local BodyVelocity = nil
+local BodyAngularVelocity = nil
+local FlyConnection = nil
+
 local JumpPowerEnabled = false
 local CustomJumpPower = 50
 local OriginalJumpPower = 50
+
 local NoclipEnabled = false
 local NoclipConnection = nil
+
 local SpeedEnabled = false
 local CustomSpeed = 50
 local OriginalSpeed = 16
+
 local InfiniteJumpEnabled = false
 local InfiniteJumpConnection = nil
+
 local GodModeEnabled = false
 local OriginalMaxHealth = 100
 local HealthConnection = nil
-local ctrl = {f = 0, b = 0, l = 0, r = 0}
-local lastctrl = {f = 0, b = 0, l = 0, r = 0}
-local maxspeed = 50
-local speed = 0
-local isMobile = UserInputService.TouchEnabled
 
 -- Helper Functions
 local function getRootPart()
     local character = LocalPlayer.Character
     if character then
-        return character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
+        return character:FindFirstChild("HumanoidRootPart")
     end
     return nil
 end
@@ -236,103 +236,99 @@ local function disableNoclip()
 end
 
 -- Fly Functions
-local function handleInput(actionName, inputState, inputObject)
-    if inputState == Enum.UserInputState.Begin then
-        if inputObject.KeyCode == Enum.KeyCode.W then ctrl.f = 1
-        elseif inputObject.KeyCode == Enum.KeyCode.S then ctrl.b = -1
-        elseif inputObject.KeyCode == Enum.KeyCode.A then ctrl.l = -1
-        elseif inputObject.KeyCode == Enum.KeyCode.D then ctrl.r = 1
-        end
-    elseif inputState == Enum.UserInputState.End then
-        if inputObject.KeyCode == Enum.KeyCode.W then ctrl.f = 0
-        elseif inputObject.KeyCode == Enum.KeyCode.S then ctrl.b = 0
-        elseif inputObject.KeyCode == Enum.KeyCode.A then ctrl.l = 0
-        elseif inputObject.KeyCode == Enum.KeyCode.D then ctrl.r = 0
-        end
+local function getDirectionVector()
+    local camera = workspace.CurrentCamera
+    local moveVector = Vector3.new(0, 0, 0)
+    
+    if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+        moveVector = moveVector + camera.CFrame.LookVector
     end
+    if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+        moveVector = moveVector - camera.CFrame.LookVector
+    end
+    if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+        moveVector = moveVector - camera.CFrame.RightVector
+    end
+    if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+        moveVector = moveVector + camera.CFrame.RightVector
+    end
+    if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+        moveVector = moveVector + Vector3.new(0, 1, 0)
+    end
+    if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+        moveVector = moveVector - Vector3.new(0, 1, 0)
+    end
+    
+    return moveVector.Magnitude > 0 and moveVector.Unit or Vector3.new(0, 0, 0)
 end
 
 local function startFly()
-    repeat wait() until LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character:FindFirstChild("Humanoid")
     local character = LocalPlayer.Character
+    if not character then return end
+    
     local humanoid = character:FindFirstChild("Humanoid")
-    local rootPart = getRootPart()
-
-    if not Flying or not rootPart or not humanoid then return end
-
-    createNotification("Fly Activated")
-    BodyGyro = Instance.new("BodyGyro", rootPart)
-    BodyGyro.P = 9e4
-    BodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-    BodyGyro.CFrame = rootPart.CFrame
-    BodyVelocity = Instance.new("BodyVelocity", rootPart)
-    BodyVelocity.Velocity = Vector3.new(0, 0.1, 0)
-    BodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    
+    if not humanoid or not rootPart then return end
+    
+    -- Clean up existing objects
+    if BodyVelocity then BodyVelocity:Destroy() end
+    if BodyAngularVelocity then BodyAngularVelocity:Destroy() end
+    if FlyConnection then FlyConnection:Disconnect() end
+    
+    BodyVelocity = Instance.new("BodyVelocity")
+    BodyVelocity.MaxForce = Vector3.new(4000, 4000, 4000)
+    BodyVelocity.Velocity = Vector3.new(0, 0, 0)
+    BodyVelocity.Parent = rootPart
+    
+    BodyAngularVelocity = Instance.new("BodyAngularVelocity")
+    BodyAngularVelocity.MaxTorque = Vector3.new(0, 0, 0) -- Disable rotation
+    BodyAngularVelocity.AngularVelocity = Vector3.new(0, 0, 0)
+    BodyAngularVelocity.Parent = rootPart
+    
     humanoid.PlatformStand = true
-    LocalPlayer.Character.Animate.Disabled = true
-
-    -- Bind controls for PC and mobile
-    if isMobile then
-        ContextActionService:BindAction("flyForward", handleInput, false, Enum.KeyCode.ButtonA)
-        ContextActionService:BindAction("flyBackward", handleInput, false, Enum.KeyCode.ButtonB)
-        ContextActionService:BindAction("flyLeft", handleInput, false, Enum.KeyCode.ButtonX)
-        ContextActionService:BindAction("flyRight", handleInput, false, Enum.KeyCode.ButtonY)
-    else
-        ContextActionService:BindAction("flyForward", handleInput, false, Enum.KeyCode.W)
-        ContextActionService:BindAction("flyBackward", handleInput, false, Enum.KeyCode.S)
-        ContextActionService:BindAction("flyLeft", handleInput, false, Enum.KeyCode.A)
-        ContextActionService:BindAction("flyRight", handleInput, false, Enum.KeyCode.D)
-    end
-
-    local lastUpdate = tick()
-    RunService.RenderStepped:Connect(function()
-        local now = tick()
-        if now - lastUpdate < 1/60 then return end
-        lastUpdate = now
-
-        if ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0 then
-            speed = math.min(speed + 0.5 + (speed / maxspeed), maxspeed)
-        elseif not (ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0) and speed ~= 0 then
-            speed = math.max(speed - 1, 0)
+    
+    FlyConnection = RunService.Heartbeat:Connect(function()
+        if Flying and BodyVelocity and BodyVelocity.Parent then
+            local direction = getDirectionVector()
+            BodyVelocity.Velocity = direction * FlySpeed
+            rootPart.CFrame *= CFrame.new(Vector3.new(0, 10, 0)) -- Apply lift
+            humanoid.PlatformStand = true -- Ensure platform stand is maintained
         end
-        if (ctrl.l + ctrl.r) ~= 0 or (ctrl.f + ctrl.b) ~= 0 then
-            BodyVelocity.Velocity = ((workspace.CurrentCamera.CFrame.LookVector * (ctrl.f + ctrl.b)) + ((workspace.CurrentCamera.CFrame * CFrame.new(ctrl.l + ctrl.r, (ctrl.f + ctrl.b) * 0.2, 0).Position) - workspace.CurrentCamera.CFrame.Position)) * speed
-            lastctrl = {f = ctrl.f, b = ctrl.b, l = ctrl.l, r = ctrl.r}
-        elseif (ctrl.l + ctrl.r) == 0 and (ctrl.f + ctrl.b) == 0 and speed ~= 0 then
-            BodyVelocity.Velocity = ((workspace.CurrentCamera.CFrame.LookVector * (lastctrl.f + lastctrl.b)) + ((workspace.CurrentCamera.CFrame * CFrame.new(lastctrl.l + lastctrl.r, (lastctrl.f + lastctrl.b) * 0.2, 0).Position) - workspace.CurrentCamera.CFrame.Position)) * speed
-        else
-            BodyVelocity.Velocity = Vector3.new(0, 0.1, 0)
-        end
-        BodyGyro.CFrame = workspace.CurrentCamera.CFrame * CFrame.Angles(-math.rad((ctrl.f + ctrl.b) * 50 * speed / maxspeed), 0, 0)
     end)
-
-    while Flying and LocalPlayer.Character and humanoid and humanoid.Health > 0 do
-        wait()
-    end
+    
+    print("Flying enabled at speed: " .. FlySpeed)
 end
 
 local function stopFly()
-    Flying = false
-    if BodyGyro then BodyGyro:Destroy() end
-    if BodyVelocity then BodyVelocity:Destroy() end
-    local humanoid = getHumanoid()
-    if humanoid then
-        humanoid.PlatformStand = false
-        LocalPlayer.Character.Animate.Disabled = false
+    local character = LocalPlayer.Character
+    if character then
+        local humanoid = character:FindFirstChild("Humanoid")
+        if humanoid then
+            humanoid.PlatformStand = false
+        end
     end
-    if isMobile then
-        ContextActionService:UnbindAction("flyForward")
-        ContextActionService:UnbindAction("flyBackward")
-        ContextActionService:UnbindAction("flyLeft")
-        ContextActionService:UnbindAction("flyRight")
-    else
-        ContextActionService:UnbindAction("flyForward")
-        ContextActionService:UnbindAction("flyBackward")
-        ContextActionService:UnbindAction("flyLeft")
-        ContextActionService:UnbindAction("flyRight")
+    
+    if BodyVelocity then
+        BodyVelocity:Destroy()
+        BodyVelocity = nil
     end
-    createNotification("Fly Deactivated")
+    
+    if BodyAngularVelocity then
+        BodyAngularVelocity:Destroy()
+        BodyAngularVelocity = nil
+    end
+    
+    if FlyConnection then
+        FlyConnection:Disconnect()
+        FlyConnection = nil
+    end
+    if HealthConnection then
+        HealthConnection:Disconnect()
+        HealthConnection = nil
+    end
+    
+    print("Flying disabled")
 end
 
 -- God Mode Functions
@@ -340,13 +336,16 @@ local function enableGodMode()
     local humanoid = getHumanoid()
     if not humanoid then return end
     
+    -- Store original max health
     if not GodModeEnabled then
         OriginalMaxHealth = humanoid.MaxHealth
     end
     
+    -- Set health to infinite
     humanoid.MaxHealth = math.huge
     humanoid.Health = math.huge
     
+    -- Create connection to maintain infinite health
     if HealthConnection then
         HealthConnection:Disconnect()
     end
@@ -381,6 +380,7 @@ local function onCharacterAdded(character)
     
     local humanoid = character:WaitForChild("Humanoid")
     
+    -- Store original values
     if not SpeedEnabled then
         OriginalSpeed = humanoid.WalkSpeed
     end
@@ -391,6 +391,7 @@ local function onCharacterAdded(character)
         OriginalMaxHealth = humanoid.MaxHealth
     end
     
+    -- Reapply enabled features
     if SpeedEnabled then
         applySpeed(CustomSpeed)
     end
@@ -420,22 +421,31 @@ local function onCharacterRemoving()
         NoclipConnection:Disconnect()
         NoclipConnection = nil
     end
+    if FlyConnection then
+        FlyConnection:Disconnect()
+        FlyConnection = nil
+    end
 end
 
+-- Connect character events
 LocalPlayer.CharacterAdded:Connect(onCharacterAdded)
 LocalPlayer.CharacterRemoving:Connect(onCharacterRemoving)
 
+-- Initialize if character already exists
 if LocalPlayer.Character then
     onCharacterAdded(LocalPlayer.Character)
 end
 
 -- Main Tab
+
+-- Infinite Jump Toggle (Main Tab)
 local InfJumpToggle = Main:CreateToggle({
    Name = "Infinite Jump",
    CurrentValue = false,
    Flag = "InfiniteJumpToggle",
    Callback = function(Value)
        InfiniteJumpEnabled = Value
+       
        if InfiniteJumpEnabled then
            enableInfiniteJump()
            createNotification("Infinite Jump Enabled")
@@ -446,12 +456,14 @@ local InfJumpToggle = Main:CreateToggle({
    end,
 })
 
+-- Noclip Toggle (Main Tab)
 local NoclipToggle = Main:CreateToggle({
     Name = "Noclip Toggle",
     CurrentValue = false,
     Flag = "NoclipToggle",
     Callback = function(Value)
         NoclipEnabled = Value
+        
         if NoclipEnabled then
             enableNoclip()
         else
@@ -460,12 +472,14 @@ local NoclipToggle = Main:CreateToggle({
     end,
 })
 
+-- God Mode Toggle (Main Tab)
 local GodModeToggle = Main:CreateToggle({
     Name = "God Mode",
     CurrentValue = false,
     Flag = "GodModeToggle",
     Callback = function(Value)
         GodModeEnabled = Value
+        
         if GodModeEnabled then
             enableGodMode()
         else
@@ -475,12 +489,15 @@ local GodModeToggle = Main:CreateToggle({
 })
 
 -- Player Tab Elements
+
+-- Speed Toggle
 local SpeedToggle = PlayerTab:CreateToggle({
     Name = "Player Speed",
     CurrentValue = false,
     Flag = "SpeedToggle",
     Callback = function(Value)
         SpeedEnabled = Value
+        
         if SpeedEnabled then
             enableSpeed()
         else
@@ -489,6 +506,7 @@ local SpeedToggle = PlayerTab:CreateToggle({
     end,
 })
 
+-- Speed Slider
 local SpeedSlider = PlayerTab:CreateSlider({
     Name = "Speed Value",
     Range = {16, 200},
@@ -498,18 +516,21 @@ local SpeedSlider = PlayerTab:CreateSlider({
     Flag = "SpeedSlider",
     Callback = function(Value)
         CustomSpeed = Value
+        
         if SpeedEnabled then
             applySpeed(CustomSpeed)
         end
     end,
 })
 
+-- Jump Power Toggle
 local JumpPowerToggle = PlayerTab:CreateToggle({
     Name = "Jump Power Toggle",
     CurrentValue = false,
     Flag = "JumpPowerToggle",
     Callback = function(Value)
         JumpPowerEnabled = Value
+        
         if JumpPowerEnabled then
             enableJumpPower()
         else
@@ -518,6 +539,7 @@ local JumpPowerToggle = PlayerTab:CreateToggle({
     end,
 })
 
+-- Jump Power Slider
 local JumpPowerSlider = PlayerTab:CreateSlider({
     Name = "Jump Power Value",
     Range = {50, 500},
@@ -527,36 +549,46 @@ local JumpPowerSlider = PlayerTab:CreateSlider({
     Flag = "JumpPowerSlider",
     Callback = function(Value)
         CustomJumpPower = Value
+        
         if JumpPowerEnabled then
             applyJumpPower(CustomJumpPower)
         end
     end,
 })
 
+-- Fly Toggle
 local FlyToggle = PlayerTab:CreateToggle({
     Name = "Fly Toggle (beta)",
     CurrentValue = false,
     Flag = "FlyToggle",
     Callback = function(Value)
         Flying = Value
+        
         if Flying then
             startFly()
+            createNotification("Flying Enabled")
         else
             stopFly()
+            createNotification("Flying Disabled")
         end
     end,
 })
 
+-- Fly Speed Slider
 local FlySpeedSlider = PlayerTab:CreateSlider({
     Name = "Fly Speed",
-    Range = {1, 100},
-    Increment = 1,
+    Range = {10, 200},
+    Increment = 10,
     Suffix = " Speed",
-    CurrentValue = 1,
+    CurrentValue = 50,
     Flag = "FlySpeed",
     Callback = function(Value)
-        maxspeed = Value
+        FlySpeed = Value
+        if Flying and BodyVelocity then
+            BodyVelocity.Velocity = getDirectionVector() * FlySpeed
+        end
     end,
 })
 
+-- Load configuration
 Rayfield:LoadConfiguration()
