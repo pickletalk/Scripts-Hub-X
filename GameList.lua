@@ -96,7 +96,10 @@ local Games = {
     [107600241411943] = "https://raw.githubusercontent.com/gumanba/Scripts/main/StealaCountry",
 
     -- Shrink Hide And Seek
-    [137541498231955] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/shrinkhideandseek.lua"
+    [137541498231955] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/shrinkhideandseek.lua",
+
+    -- Troll Slapping Tower
+    [128829279907343] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua"
 }
 
 return Games
