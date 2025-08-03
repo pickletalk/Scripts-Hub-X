@@ -124,7 +124,7 @@ local function performInfiniteJump()
     if humanoid and rootPart then
         local bodyVelocity = Instance.new("BodyVelocity")
         bodyVelocity.MaxForce = Vector3.new(0, math.huge, 0)
-        bodyVelocity.Velocity = Vector3.new(0, CustomJumpPower, 0)
+        bodyVelocity.Velocity = Vector3.new(0, JumpPowerEnabled and CustomJumpPower or OriginalJumpPower, 0)
         bodyVelocity.Parent = rootPart
         
         game:GetService("Debris"):AddItem(bodyVelocity, 0.2)
@@ -282,7 +282,7 @@ local function startFly()
     BodyVelocity.Parent = rootPart
     
     BodyAngularVelocity = Instance.new("BodyAngularVelocity")
-    BodyAngularVelocity.MaxTorque = Vector3.new(4000, 4000, 4000)
+    BodyAngularVelocity.MaxTorque = Vector3.new(0, 0, 0) -- Disable rotation
     BodyAngularVelocity.AngularVelocity = Vector3.new(0, 0, 0)
     BodyAngularVelocity.Parent = rootPart
     
@@ -292,6 +292,7 @@ local function startFly()
         if Flying and BodyVelocity and BodyVelocity.Parent then
             local direction = getDirectionVector()
             BodyVelocity.Velocity = direction * FlySpeed
+            humanoid.PlatformStand = true -- Ensure platform stand is maintained
         end
     end)
     
@@ -564,8 +565,10 @@ local FlyToggle = PlayerTab:CreateToggle({
         
         if Flying then
             startFly()
+            createNotification("Flying Enabled")
         else
             stopFly()
+            createNotification("Flying Disabled")
         end
     end,
 })
@@ -580,6 +583,9 @@ local FlySpeedSlider = PlayerTab:CreateSlider({
     Flag = "FlySpeed",
     Callback = function(Value)
         FlySpeed = Value
+        if Flying and BodyVelocity then
+            BodyVelocity.Velocity = getDirectionVector() * FlySpeed
+        end
     end,
 })
 
