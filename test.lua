@@ -1,98 +1,135 @@
-local PickleLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/picklelibrary.lua"))()
+local PickleLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/picklelibrary.lua"))() -- Replace with your actual GitHub raw URL
 
+if not PickleLibrary then
+    warn("Failed to load PickleLibrary from GitHub")
+    return
+end
+
+-- Create a new window with configuration saving enabled
 local Window = PickleLibrary:CreateWindow({
-    Name = "Test Interface",
-    LoadingTitle = "Test Interface Suite",
-    LoadingSubtitle = "by TestUser",
+    Name = "PickleLibrary Test Suite",
+    LoadingSubtitle = "Testing by Pickle",
     ConfigurationSaving = {
         Enabled = true,
-        FileName = "TestConfig"
-    },
-    Discord = {
-        Enabled = true,
-        Invite = "https://discord.gg/donutsmp",
-        RememberJoins = true
-    },
-    Theme = "PickleTheme"
+        FileName = "PickleTestConfig"
+    }
 })
 
-local Tab = Window:CreateTab({Name = "Test Tab"})
+-- Create a main tab for general controls
+local MainTab = Window:CreateTab("Test Controls", "home")
 
-local Section1 = Tab:CreateSection({Name = "Basic Elements"})
+-- Add a section
+MainTab:CreateSection("Basic Controls")
 
-Section1:CreateButton({
+-- Test Button
+MainTab:CreateButton({
     Name = "Test Button",
     Callback = function()
+        print("Button clicked!")
         PickleLibrary:Notify({
             Title = "Button Pressed",
-            Content = "The Test Button was clicked!",
-            Duration = 5
+            Content = "You clicked the test button!",
+            Duration = 3
         })
     end
 })
 
-Section1:CreateToggle({
+-- Test Toggle
+MainTab:CreateToggle({
     Name = "Test Toggle",
     CurrentValue = false,
-    Callback = function(Value)
-        PickleLibrary:Notify({
-            Title = "Toggle Changed",
-            Content = "Toggle is now " .. tostring(Value),
-            Duration = 5
-        })
+    Flag = "TestToggle",
+    Callback = function(value)
+        print("Toggle changed to: " .. tostring(value))
     end
 })
 
-Section1:CreateSlider({
+-- Test Slider
+MainTab:CreateSlider({
     Name = "Test Slider",
-    Min = 0,
-    Max = 100,
-    Default = 50,
-    Callback = function(Value)
-        PickleLibrary:Notify({
-            Title = "Slider Moved",
-            Content = "Slider value: " .. tostring(Value),
-            Duration = 5
-        })
+    Range = {0, 100},
+    CurrentValue = 50,
+    Flag = "TestSlider",
+    Callback = function(value)
+        print("Slider changed to: " .. value)
     end
 })
 
-Section1:CreateDropdown({
+-- Test Dropdown (Single selection)
+MainTab:CreateDropdown({
     Name = "Test Dropdown",
     Options = {"Option 1", "Option 2", "Option 3"},
-    CurrentOption = "Option 1",
-    Callback = function(Option)
-        PickleLibrary:Notify({
-            Title = "Dropdown Changed",
-            Content = "Selected: " .. Option,
-            Duration = 5
-        })
+    CurrentOption = {"Option 1"},
+    Flag = "TestDropdown",
+    Callback = function(option)
+        print("Dropdown selected: " .. table.concat(option, ", "))
     end
 })
 
-Section1:CreateInput({
-    Name = "Test Input",
-    Default = "Hello",
-    Placeholder = "Enter text...",
-    Callback = function(Text, EnterPressed)
-        PickleLibrary:Notify({
-            Title = "Input Changed",
-            Content = "Input: " .. Text .. " (Enter: " .. tostring(EnterPressed) .. ")",
-            Duration = 5
-        })
+-- Test Dropdown (Multiple selection)
+MainTab:CreateDropdown({
+    Name = "Multi Dropdown",
+    Options = {"Apple", "Banana", "Orange", "Grape"},
+    CurrentOption = {"Apple", "Banana"},
+    MultipleOptions = true,
+    Flag = "TestMultiDropdown",
+    Callback = function(options)
+        print("Multi Dropdown selected: " .. table.concat(options, ", "))
     end
 })
 
-Section1:CreateColorPicker({
+-- Test Keybind
+MainTab:CreateKeybind({
+    Name = "Test Keybind",
+    CurrentKeybind = "E",
+    Flag = "TestKeybind",
+    Callback = function(key)
+        print("Keybind changed to: " .. key)
+    end
+})
+
+-- Test ColorPicker
+MainTab:CreateColorPicker({
     Name = "Test ColorPicker",
-    Default = Color3.fromRGB(255, 0, 0),
-    Callback = function(Value)
-        PickleLibrary:Notify({
-            Title = "Color Changed",
-            Content = "New color: R" .. math.floor(Value.R * 255) .. " G" .. math.floor(Value.G * 255) .. " B" .. math.floor(Value.B * 255),
-            Duration = 5
-        })
+    Color = Color3.fromRGB(255, 0, 0),
+    Flag = "TestColorPicker",
+    Callback = function(color)
+        print("Color changed to: R=" .. math.floor(color.R * 255) .. ", G=" .. math.floor(color.G * 255) .. ", B=" .. math.floor(color.B * 255))
     end
 })
 
-PickleLibrary:LoadConfiguration()
+-- Test Label
+local TestLabel = MainTab:CreateLabel("Test Label", "info", Color3.fromRGB(100, 200, 100))
+TestLabel:Set("Updated Label Text")
+
+-- Test Paragraph
+MainTab:CreateParagraph({
+    Title = "Test Paragraph",
+    Content = "This is a test paragraph to demonstrate the paragraph element in PickleLibrary."
+})
+
+-- Add a divider
+MainTab:CreateDivider()
+
+-- Add another section
+MainTab:CreateSection("Advanced Controls")
+
+-- Test Spacing
+MainTab:CreateSpacing()
+
+-- Test Button with Error
+MainTab:CreateButton({
+    Name = "Error Button",
+    Callback = function()
+        error("This is a test error")
+    end
+})
+
+-- Create a settings tab
+Window:CreateSettingsTab({
+    Name = "Settings",
+    Image = "settings"
+})
+
+-- Load configuration to test loading functionality
+Window:LoadConfiguration()
