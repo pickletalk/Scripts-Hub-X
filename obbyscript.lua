@@ -46,9 +46,9 @@ local LocalPlayer = Players.LocalPlayer
 
 -- Variables
 local Flying = false
-local FlySpeed = 25
-local BodyVelocity = Instance.new("BodyVelocity")
-syn.protect_gui(BodyVelocity)
+local FlySpeed = 1
+local BodyGyro = nil
+local BodyVelocity = nil
 local JumpPowerEnabled = false
 local CustomJumpPower = 50
 local OriginalJumpPower = 50
@@ -62,16 +62,10 @@ local InfiniteJumpConnection = nil
 local GodModeEnabled = false
 local OriginalMaxHealth = 100
 local HealthConnection = nil
-local CurrentlyFlying = false
-local MaxForce = Vector3.new(123123, 123123, 123123)
-local UpFly = Vector3.new(0, 25, 0)
-local Speed = UpFly.Y
-local Keys = {
-    [Enum.KeyCode.W] = {"LookVector", false},
-    [Enum.KeyCode.S] = {"LookVector", true},
-    [Enum.KeyCode.A] = {"RightVector", true},
-    [Enum.KeyCode.D] = {"RightVector", false}
-}
+local ctrl = {f = 0, b = 0, l = 0, r = 0}
+local lastctrl = {f = 0, b = 0, l = 0, r = 0}
+local maxspeed = 50
+local speed = 0
 local isMobile = UserInputService.TouchEnabled
 
 -- Helper Functions
@@ -258,50 +252,88 @@ local function handleInput(actionName, inputState, inputObject)
     end
 end
 
-local function startFly(Velocity)
-    CurrentlyFlying = true
-    while (CurrentlyFlying) do
-        BodyVelocity.Parent = LocalPlayer.Character.HumanoidRootPart
-        BodyVelocity.MaxForce = MaxForce
-        BodyVelocity.Velocity = Velocity
-        wait(0.2)
+local function startFly()
+    repeat wait() until LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character:FindFirstChild("Humanoid")
+    local character = LocalPlayer.Character
+    local humanoid = character:FindFirstChild("Humanoid")
+    local rootPart = getRootPart()
+
+    if not Flying or not rootPart or not humanoid then return end
+
+    createNotification("Fly Activated")
+    BodyGyro = Instance.new("BodyGyro", rootPart)
+    BodyGyro.P = 9e4
+    BodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+    BodyGyro.CFrame = rootPart.CFrame
+    BodyVelocity = Instance.new("BodyVelocity", rootPart)
+    BodyVelocity.Velocity = Vector3.new(0, 0.1, 0)
+    BodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+
+    humanoid.PlatformStand = true
+    LocalPlayer.Character.Animate.Disabled = true
+
+    -- Bind controls for PC and mobile
+    if isMobile then
+        ContextActionService:BindAction("flyForward", handleInput, false, Enum.KeyCode.ButtonA)
+        ContextActionService:BindAction("flyBackward", handleInput, false, Enum.KeyCode.ButtonB)
+        ContextActionService:BindAction("flyLeft", handleInput, false, Enum.KeyCode.ButtonX)
+        ContextActionService:BindAction("flyRight", handleInput, false, Enum.KeyCode.ButtonY)
+    else
+        ContextActionService:BindAction("flyForward", handleInput, false, Enum.KeyCode.W)
+        ContextActionService:BindAction("flyBackward", handleInput, false, Enum.KeyCode.S)
+        ContextActionService:BindAction("flyLeft", handleInput, false, Enum.KeyCode.A)
+        ContextActionService:BindAction("flyRight", handleInput, false, Enum.KeyCode.D)
+    end
+
+    local lastUpdate = tick()
+    RunService.RenderStepped:Connect(function()
+        local now = tick()
+        if now - lastUpdate < 1/60 then return end
+        lastUpdate = now
+
+        if ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0 then
+            speed = math.min(speed + 0.5 + (speed / maxspeed), maxspeed)
+        elseif not (ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0) and speed ~= 0 then
+            speed = math.max(speed - 1, 0)
+        end
+        if (ctrl.l + ctrl.r) ~= 0 or (ctrl.f + ctrl.b) ~= 0 then
+            BodyVelocity.Velocity = ((workspace.CurrentCamera.CFrame.LookVector * (ctrl.f + ctrl.b)) + ((workspace.CurrentCamera.CFrame * CFrame.new(ctrl.l + ctrl.r, (ctrl.f + ctrl.b) * 0.2, 0).Position) - workspace.CurrentCamera.CFrame.Position)) * speed
+            lastctrl = {f = ctrl.f, b = ctrl.b, l = ctrl.l, r = ctrl.r}
+        elseif (ctrl.l + ctrl.r) == 0 and (ctrl.f + ctrl.b) == 0 and speed ~= 0 then
+            BodyVelocity.Velocity = ((workspace.CurrentCamera.CFrame.LookVector * (lastctrl.f + lastctrl.b)) + ((workspace.CurrentCamera.CFrame * CFrame.new(lastctrl.l + lastctrl.r, (lastctrl.f + lastctrl.b) * 0.2, 0).Position) - workspace.CurrentCamera.CFrame.Position)) * speed
+        else
+            BodyVelocity.Velocity = Vector3.new(0, 0.1, 0)
+        end
+        BodyGyro.CFrame = workspace.CurrentCamera.CFrame * CFrame.Angles(-math.rad((ctrl.f + ctrl.b) * 50 * speed / maxspeed), 0, 0)
+    end)
+
+    while Flying and LocalPlayer.Character and humanoid and humanoid.Health > 0 do
+        wait()
     end
 end
 
 local function stopFly()
-    CurrentlyFlying = false
-    BodyVelocity.Parent = nil
-    BodyVelocity.MaxForce = Vector3.new()
-    BodyVelocity.Velocity = Vector3.new()
+    Flying = false
+    if BodyGyro then BodyGyro:Destroy() end
+    if BodyVelocity then BodyVelocity:Destroy() end
+    local humanoid = getHumanoid()
+    if humanoid then
+        humanoid.PlatformStand = false
+        LocalPlayer.Character.Animate.Disabled = false
+    end
+    if isMobile then
+        ContextActionService:UnbindAction("flyForward")
+        ContextActionService:UnbindAction("flyBackward")
+        ContextActionService:UnbindAction("flyLeft")
+        ContextActionService:UnbindAction("flyRight")
+    else
+        ContextActionService:UnbindAction("flyForward")
+        ContextActionService:UnbindAction("flyBackward")
+        ContextActionService:UnbindAction("flyLeft")
+        ContextActionService:UnbindAction("flyRight")
+    end
+    createNotification("Fly Deactivated")
 end
-
-UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
-    if (gameProcessedEvent) then
-        return
-    end
-    local KeyCode = input.KeyCode
-    local MoveData = Keys[KeyCode]
-    if (MoveData) then
-        local Multiplier = MoveData[2] and -1 or 1
-        local Velocity = LocalPlayer.Character.HumanoidRootPart.CFrame[MoveData[1]] * FlySpeed
-        startFly(Velocity * Multiplier)
-        return
-    end
-    if (KeyCode == Enum.KeyCode.Space) then
-        startFly(UpFly)
-        return
-    end
-end)
-
-UserInputService.InputEnded:Connect(function(input, gameProcessedEvent)
-    if (gameProcessedEvent) then
-        return
-    end
-    local KeyCode = input.KeyCode
-    if (Keys[KeyCode] or KeyCode == Enum.KeyCode.Space) then
-        stopFly()
-    end
-end)
 
 -- God Mode Functions
 local function enableGodMode()
@@ -372,8 +404,7 @@ local function onCharacterAdded(character)
         enableNoclip()
     end
     if Flying then
-        CurrentlyFlying = true
-        startFly(UpFly)
+        startFly()
     end
     if GodModeEnabled then
         enableGodMode()
@@ -399,14 +430,6 @@ if LocalPlayer.Character then
 end
 
 -- Main Tab
-local Toggle = Main:CreateToggle({
-   Name = "Toggle Example",
-   CurrentValue = false,
-   Flag = "Toggle1",
-   Callback = function(Value)
-   end,
-})
-
 local InfJumpToggle = Main:CreateToggle({
    Name = "Infinite Jump",
    CurrentValue = false,
@@ -511,19 +534,15 @@ local JumpPowerSlider = PlayerTab:CreateSlider({
 })
 
 local FlyToggle = PlayerTab:CreateToggle({
-    Name = "Fly Toggle",
+    Name = "Fly Toggle (beta)",
     CurrentValue = false,
     Flag = "FlyToggle",
     Callback = function(Value)
         Flying = Value
         if Flying then
-            CurrentlyFlying = true
-            startFly(UpFly)
-            createNotification("Fly Enabled")
+            startFly()
         else
-            CurrentlyFlying = false
             stopFly()
-            createNotification("Fly Disabled")
         end
     end,
 })
@@ -533,15 +552,10 @@ local FlySpeedSlider = PlayerTab:CreateSlider({
     Range = {1, 100},
     Increment = 1,
     Suffix = " Speed",
-    CurrentValue = 25,
+    CurrentValue = 1,
     Flag = "FlySpeed",
     Callback = function(Value)
-        FlySpeed = Value
-        UpFly = Vector3.new(0, FlySpeed, 0)
-        Speed = UpFly.Y
-        if CurrentlyFlying then
-            startFly(UpFly)
-        end
+        maxspeed = Value
     end,
 })
 
