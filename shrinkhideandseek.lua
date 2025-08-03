@@ -1,7 +1,6 @@
 -- Load UI
 
-local DrRayLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/PickleLibrary.lua"))()
-
+local PickleLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/PickleLibrary.lua"))()
 
 local window = PickleLibrary:Load("Shrink Hide And Seek", "Default")
 local tab = window.newTab("Scripts")
