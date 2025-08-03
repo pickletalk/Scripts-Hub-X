@@ -1,10 +1,8 @@
 --[[
-
 	PickleLibrary Interface Suite
 	by Pickle (Adapted for PickleLibrary)
 
 	pickle  | Solo Developer 
-
 ]]
 
 if debugX then
@@ -16,8 +14,6 @@ local function getService(name)
 	return if cloneref then cloneref(service) else service
 end
 
--- Loads and executes a function hosted on a remote URL. Cancels the request if the requested URL takes too long to respond.
--- Errors with the function are caught and logged to the output
 local function loadWithTimeout(url: string, timeout: number?): ...any
 	assert(type(url) == "string", "Expected string, got " .. type(url))
 	timeout = timeout or 5
@@ -102,10 +98,9 @@ local useStudio = RunService:IsStudio() or false
 local settingsCreated = false
 local settingsInitialized = false
 local cachedSettings
-local prompt = nil -- Simplified for now
+local prompt = nil
 local requestFunc = (syn and syn.request) or (fluxus and fluxus.request) or (http and http.request) or http_request or request
 
--- Simple fallback prompt
 if not prompt then
 	prompt = {
 		create = function() end
@@ -181,28 +176,25 @@ local TweenService = getService("TweenService")
 local Players = getService("Players")
 local CoreGui = getService("CoreGui")
 
--- Create the GUI directly instead of loading from asset
 local function createPickleGUI()
 	local ScreenGui = Instance.new("ScreenGui")
 	ScreenGui.Name = "Pickle"
 	ScreenGui.ResetOnSpawn = false
 	ScreenGui.IgnoreGuiInset = true
 	
-	-- Main Frame
 	local Main = Instance.new("Frame")
 	Main.Name = "Main"
-	Main.Size = UDim2.new(0, 500, 0, 400)
-	Main.Position = UDim2.new(0.5, -250, 0.5, -200)
-	Main.BackgroundColor3 = Color3.fromRGB(30, 50, 70)
+	-- Match RayfieldLibrary size: 430x225
+	Main.Size = UDim2.new(0, 430, 0, 225)
+	Main.Position = UDim2.new(0.5, -215, 0.5, -112.5)
+	Main.BackgroundColor3 = Color3.fromRGB(25, 40, 60) -- Changed to a darker blue theme
 	Main.BorderSizePixel = 0
 	Main.Parent = ScreenGui
 	
-	-- Corner
 	local Corner = Instance.new("UICorner")
-	Corner.CornerRadius = UDim.new(0, 8)
+	Corner.CornerRadius = UDim.new(0, 5)
 	Corner.Parent = Main
 	
-	-- Shadow
 	local Shadow = Instance.new("Frame")
 	Shadow.Name = "Shadow"
 	Shadow.Size = UDim2.new(1, 10, 1, 10)
@@ -221,148 +213,102 @@ local function createPickleGUI()
 	ShadowImage.SliceCenter = Rect.new(10, 10, 118, 118)
 	ShadowImage.Parent = Shadow
 	
-	-- Topbar
 	local Topbar = Instance.new("Frame")
 	Topbar.Name = "Topbar"
-	Topbar.Size = UDim2.new(1, 0, 0, 40)
-	Topbar.BackgroundColor3 = Color3.fromRGB(100, 150, 200)
+	Topbar.Size = UDim2.new(1, 0, 0, 30)
+	Topbar.BackgroundColor3 = Color3.fromRGB(35, 55, 80) -- Darker topbar color
 	Topbar.BorderSizePixel = 0
 	Topbar.Parent = Main
 	
 	local TopbarCorner = Instance.new("UICorner")
-	TopbarCorner.CornerRadius = UDim.new(0, 8)
+	TopbarCorner.CornerRadius = UDim.new(0, 5)
 	TopbarCorner.Parent = Topbar
 	
 	local CornerRepair = Instance.new("Frame")
 	CornerRepair.Name = "CornerRepair"
-	CornerRepair.Size = UDim2.new(1, 0, 0, 8)
-	CornerRepair.Position = UDim2.new(0, 0, 1, -8)
-	CornerRepair.BackgroundColor3 = Color3.fromRGB(100, 150, 200)
+	CornerRepair.Size = UDim2.new(1, 0, 0, 5)
+	CornerRepair.Position = UDim2.new(0, 0, 1, -5)
+	CornerRepair.BackgroundColor3 = Color3.fromRGB(35, 55, 80)
 	CornerRepair.BorderSizePixel = 0
 	CornerRepair.Parent = Topbar
 	
-	-- Title
 	local Title = Instance.new("TextLabel")
 	Title.Name = "Title"
 	Title.Size = UDim2.new(1, -100, 1, 0)
-	Title.Position = UDim2.new(0, 50, 0, 0)
+	Title.Position = UDim2.new(0, 10, 0, 0)
 	Title.BackgroundTransparency = 1
-	Title.Text = "PickleLibrary"
-	Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+	Title.Text = "NewFieldLibrary" -- Changed name
+	Title.TextColor3 = Color3.fromRGB(200, 220, 255) -- Lighter text for contrast
 	Title.TextSize = 16
 	Title.Font = Enum.Font.GothamBold
 	Title.TextXAlignment = Enum.TextXAlignment.Left
 	Title.Parent = Topbar
 	
-	-- Icon
 	local Icon = Instance.new("ImageLabel")
 	Icon.Name = "Icon"
-	Icon.Size = UDim2.new(0, 32, 0, 32)
-	Icon.Position = UDim2.new(0, 8, 0, 4)
+	Icon.Size = UDim2.new(0, 24, 0, 24)
+	Icon.Position = UDim2.new(0, 5, 0, 3)
 	Icon.BackgroundTransparency = 1
 	Icon.Image = ""
 	Icon.Parent = Topbar
 	
-	-- Hide Button
+	local Minimize = Instance.new("ImageButton")
+	Minimize.Name = "Minimize"
+	Minimize.Size = UDim2.new(0, 20, 0, 20)
+	Minimize.Position = UDim2.new(1, -40, 0, 5)
+	Minimize.BackgroundTransparency = 1
+	Minimize.Image = "rbxassetid://6031094678" -- Minimize icon
+	Minimize.ImageColor3 = Color3.fromRGB(200, 220, 255)
+	Minimize.Parent = Topbar
+	
 	local Hide = Instance.new("ImageButton")
 	Hide.Name = "Hide"
-	Hide.Size = UDim2.new(0, 24, 0, 24)
-	Hide.Position = UDim2.new(1, -32, 0, 8)
+	Hide.Size = UDim2.new(0, 20, 0, 20)
+	Hide.Position = UDim2.new(1, -20, 0, 5)
 	Hide.BackgroundTransparency = 1
-	Hide.Image = "rbxassetid://6031094678"
-	Hide.ImageColor3 = Color3.fromRGB(255, 255, 255)
+	Hide.Image = "rbxassetid://6031094678" -- Hide icon (same as minimize for now)
+	Hide.ImageColor3 = Color3.fromRGB(200, 220, 255)
 	Hide.Parent = Topbar
 	
-	-- Search Button
-	local Search = Instance.new("ImageButton")
-	Search.Name = "Search"
-	Search.Size = UDim2.new(0, 24, 0, 24)
-	Search.Position = UDim2.new(1, -64, 0, 8)
-	Search.BackgroundTransparency = 1
-	Search.Image = "rbxassetid://6031154871"
-	Search.ImageColor3 = Color3.fromRGB(255, 255, 255)
-	Search.Parent = Topbar
-	
-	-- ChangeSize Button
-	local ChangeSize = Instance.new("ImageButton")
-	ChangeSize.Name = "ChangeSize"
-	ChangeSize.Size = UDim2.new(0, 24, 0, 24)
-	ChangeSize.Position = UDim2.new(1, -96, 0, 8)
-	ChangeSize.BackgroundTransparency = 1
-	ChangeSize.Image = "rbxassetid://6031071053"
-	ChangeSize.ImageColor3 = Color3.fromRGB(255, 255, 255)
-	ChangeSize.Parent = Topbar
-	
-	-- Tab List
 	local TabList = Instance.new("Frame")
 	TabList.Name = "TabList"
-	TabList.Size = UDim2.new(0, 150, 1, -40)
-	TabList.Position = UDim2.new(0, 0, 0, 40)
+	TabList.Size = UDim2.new(0, 120, 1, -30)
+	TabList.Position = UDim2.new(0, 0, 0, 30)
 	TabList.BackgroundTransparency = 1
 	TabList.Parent = Main
 	
 	local TabListLayout = Instance.new("UIListLayout")
-	TabListLayout.Padding = UDim.new(0, 5)
+	TabListLayout.Padding = UDim.new(0, 2)
 	TabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	TabListLayout.Parent = TabList
 	
 	local TabListPadding = Instance.new("UIPadding")
-	TabListPadding.PaddingTop = UDim.new(0, 10)
-	TabListPadding.PaddingLeft = UDim.new(0, 10)
+	TabListPadding.PaddingTop = UDim.new(0, 5)
+	TabListPadding.PaddingLeft = UDim.new(0, 5)
 	TabListPadding.Parent = TabList
 	
-	-- Tab Template
-	local TabTemplate = Instance.new("Frame")
+	local TabTemplate = Instance.new("TextButton")
 	TabTemplate.Name = "Template"
-	TabTemplate.Size = UDim2.new(1, -10, 0, 35)
-	TabTemplate.BackgroundColor3 = Color3.fromRGB(50, 70, 90)
-	TabTemplate.BackgroundTransparency = 0.7
+	TabTemplate.Size = UDim2.new(1, -10, 0, 25)
+	TabTemplate.BackgroundColor3 = Color3.fromRGB(30, 50, 70)
+	TabTemplate.BackgroundTransparency = 0.8
 	TabTemplate.BorderSizePixel = 0
+	TabTemplate.Text = "Tab"
+	TabTemplate.TextColor3 = Color3.fromRGB(200, 220, 255)
+	TabTemplate.TextSize = 14
+	TabTemplate.Font = Enum.Font.Gotham
+	TabTemplate.TextXAlignment = Enum.TextXAlignment.Center
 	TabTemplate.Visible = false
 	TabTemplate.Parent = TabList
 	
 	local TabTemplateCorner = Instance.new("UICorner")
-	TabTemplateCorner.CornerRadius = UDim.new(0, 6)
+	TabTemplateCorner.CornerRadius = UDim.new(0, 3)
 	TabTemplateCorner.Parent = TabTemplate
 	
-	local TabTemplateStroke = Instance.new("UIStroke")
-	TabTemplateStroke.Color = Color3.fromRGB(60, 80, 100)
-	TabTemplateStroke.Transparency = 0.5
-	TabTemplateStroke.Parent = TabTemplate
-	
-	local TabTemplateImage = Instance.new("ImageLabel")
-	TabTemplateImage.Name = "Image"
-	TabTemplateImage.Size = UDim2.new(0, 20, 0, 20)
-	TabTemplateImage.Position = UDim2.new(0, 8, 0.5, -10)
-	TabTemplateImage.BackgroundTransparency = 1
-	TabTemplateImage.ImageTransparency = 0.2
-	TabTemplateImage.Parent = TabTemplate
-	
-	local TabTemplateTitle = Instance.new("TextLabel")
-	TabTemplateTitle.Name = "Title"
-	TabTemplateTitle.Size = UDim2.new(1, -35, 1, 0)
-	TabTemplateTitle.Position = UDim2.new(0, 35, 0, 0)
-	TabTemplateTitle.BackgroundTransparency = 1
-	TabTemplateTitle.Text = "Tab"
-	TabTemplateTitle.TextColor3 = Color3.fromRGB(200, 200, 200)
-	TabTemplateTitle.TextSize = 14
-	TabTemplateTitle.Font = Enum.Font.Gotham
-	TabTemplateTitle.TextXAlignment = Enum.TextXAlignment.Left
-	TabTemplateTitle.TextTransparency = 0.2
-	TabTemplateTitle.Parent = TabTemplate
-	
-	local TabTemplateInteract = Instance.new("TextButton")
-	TabTemplateInteract.Name = "Interact"
-	TabTemplateInteract.Size = UDim2.new(1, 0, 1, 0)
-	TabTemplateInteract.BackgroundTransparency = 1
-	TabTemplateInteract.Text = ""
-	TabTemplateInteract.Parent = TabTemplate
-	
-	-- Elements Container
 	local Elements = Instance.new("Frame")
 	Elements.Name = "Elements"
-	Elements.Size = UDim2.new(1, -150, 1, -40)
-	Elements.Position = UDim2.new(0, 150, 0, 40)
+	Elements.Size = UDim2.new(1, -120, 1, -30)
+	Elements.Position = UDim2.new(0, 120, 0, 30)
 	Elements.BackgroundTransparency = 1
 	Elements.Parent = Main
 	
@@ -370,28 +316,27 @@ local function createPickleGUI()
 	ElementsLayout.Name = "UIPageLayout"
 	ElementsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	ElementsLayout.TweenTime = 0.3
-	ElementsLayout.EasingStyle = Enum.EasingStyle.Exponential
+	ElementsLayout.EasingStyle = Enum.EasingStyle.Quad
 	ElementsLayout.Parent = Elements
 	
-	-- Search Frame
 	local SearchFrame = Instance.new("Frame")
 	SearchFrame.Name = "Search"
-	SearchFrame.Size = UDim2.new(1, -55, 0, 30)
-	SearchFrame.Position = UDim2.new(0.5, 0, 0, 57)
-	SearchFrame.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-	SearchFrame.BackgroundTransparency = 1
+	SearchFrame.Size = UDim2.new(1, -55, 0, 25)
+	SearchFrame.Position = UDim2.new(0.5, 0, 0, 40)
+	SearchFrame.BackgroundColor3 = Color3.fromRGB(35, 55, 80)
+	SearchFrame.BackgroundTransparency = 0.5
 	SearchFrame.BorderSizePixel = 0
 	SearchFrame.Visible = false
 	SearchFrame.Parent = Main
 	
 	local SearchCorner = Instance.new("UICorner")
-	SearchCorner.CornerRadius = UDim.new(0, 6)
+	SearchCorner.CornerRadius = UDim.new(0, 3)
 	SearchCorner.Parent = SearchFrame
 	
 	local SearchStroke = Instance.new("UIStroke")
 	SearchStroke.Name = "UIStroke"
-	SearchStroke.Color = Color3.fromRGB(60, 80, 100)
-	SearchStroke.Transparency = 1
+	SearchStroke.Color = Color3.fromRGB(40, 60, 90)
+	SearchStroke.Transparency = 0.5
 	SearchStroke.Parent = SearchFrame
 	
 	local SearchShadow = Instance.new("ImageLabel")
@@ -400,66 +345,62 @@ local function createPickleGUI()
 	SearchShadow.Position = UDim2.new(0, -5, 0, -5)
 	SearchShadow.BackgroundTransparency = 1
 	SearchShadow.Image = "rbxassetid://1316045217"
-	SearchShadow.ImageColor3 = Color3.fromRGB(230, 230, 230)
-	SearchShadow.ImageTransparency = 1
+	SearchShadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+	SearchShadow.ImageTransparency = 0.9
 	SearchShadow.ScaleType = Enum.ScaleType.Slice
 	SearchShadow.SliceCenter = Rect.new(10, 10, 118, 118)
 	SearchShadow.Parent = SearchFrame
 	
 	local SearchInput = Instance.new("TextBox")
 	SearchInput.Name = "Input"
-	SearchInput.Size = UDim2.new(1, -35, 1, 0)
-	SearchInput.Position = UDim2.new(0, 30, 0, 0)
+	SearchInput.Size = UDim2.new(1, -30, 1, 0)
+	SearchInput.Position = UDim2.new(0, 5, 0, 0)
 	SearchInput.BackgroundTransparency = 1
 	SearchInput.Text = ""
-	SearchInput.PlaceholderText = "Search for an element..."
-	SearchInput.PlaceholderColor3 = Color3.fromRGB(230, 230, 230)
-	SearchInput.TextColor3 = Color3.fromRGB(230, 230, 230)
+	SearchInput.PlaceholderText = "Search..."
+	SearchInput.PlaceholderColor3 = Color3.fromRGB(150, 170, 200)
+	SearchInput.TextColor3 = Color3.fromRGB(200, 220, 255)
 	SearchInput.TextSize = 14
 	SearchInput.Font = Enum.Font.Gotham
 	SearchInput.TextXAlignment = Enum.TextXAlignment.Left
-	SearchInput.TextTransparency = 1
-	SearchInput.Interactable = false
 	SearchInput.Parent = SearchFrame
 	
 	local SearchIcon = Instance.new("ImageLabel")
 	SearchIcon.Name = "Search"
 	SearchIcon.Size = UDim2.new(0, 20, 0, 20)
-	SearchIcon.Position = UDim2.new(0, 5, 0.5, -10)
+	SearchIcon.Position = UDim2.new(1, -25, 0.5, -10)
 	SearchIcon.BackgroundTransparency = 1
 	SearchIcon.Image = "rbxassetid://6031154871"
-	SearchIcon.ImageColor3 = Color3.fromRGB(230, 230, 230)
-	SearchIcon.ImageTransparency = 1
+	SearchIcon.ImageColor3 = Color3.fromRGB(200, 220, 255)
 	SearchIcon.Parent = SearchFrame
 	
-	-- Loading Frame
 	local LoadingFrame = Instance.new("Frame")
 	LoadingFrame.Name = "LoadingFrame"
-	LoadingFrame.Size = UDim2.new(0, 300, 0, 150)
-	LoadingFrame.Position = UDim2.new(0.5, -150, 0.5, -75)
-	LoadingFrame.BackgroundColor3 = Color3.fromRGB(30, 50, 70)
+	LoadingFrame.Size = UDim2.new(0, 200, 0, 100)
+	LoadingFrame.Position = UDim2.new(0.5, -100, 0.5, -50)
+	LoadingFrame.BackgroundColor3 = Color3.fromRGB(25, 40, 60)
 	LoadingFrame.BackgroundTransparency = 1
 	LoadingFrame.BorderSizePixel = 0
 	LoadingFrame.Visible = false
 	LoadingFrame.Parent = ScreenGui
 	
 	local LoadingCorner = Instance.new("UICorner")
-	LoadingCorner.CornerRadius = UDim.new(0, 8)
+	LoadingCorner.CornerRadius = UDim.new(0, 5)
 	LoadingCorner.Parent = LoadingFrame
 	
 	local LoadingStroke = Instance.new("UIStroke")
 	LoadingStroke.Name = "UIStroke"
-	LoadingStroke.Color = Color3.fromRGB(60, 80, 100)
+	LoadingStroke.Color = Color3.fromRGB(40, 60, 90)
 	LoadingStroke.Transparency = 1
 	LoadingStroke.Parent = LoadingFrame
 	
 	local LoadingTitle = Instance.new("TextLabel")
 	LoadingTitle.Name = "Title"
 	LoadingTitle.Size = UDim2.new(1, 0, 0, 30)
-	LoadingTitle.Position = UDim2.new(0, 0, 0, 40)
+	LoadingTitle.Position = UDim2.new(0, 0, 0, 20)
 	LoadingTitle.BackgroundTransparency = 1
 	LoadingTitle.Text = "Loading..."
-	LoadingTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+	LoadingTitle.TextColor3 = Color3.fromRGB(200, 220, 255)
 	LoadingTitle.TextSize = 18
 	LoadingTitle.Font = Enum.Font.GothamBold
 	LoadingTitle.TextTransparency = 1
@@ -468,10 +409,10 @@ local function createPickleGUI()
 	local LoadingSubtitle = Instance.new("TextLabel")
 	LoadingSubtitle.Name = "Subtitle"
 	LoadingSubtitle.Size = UDim2.new(1, 0, 0, 20)
-	LoadingSubtitle.Position = UDim2.new(0, 0, 0, 70)
+	LoadingSubtitle.Position = UDim2.new(0, 0, 0, 50)
 	LoadingSubtitle.BackgroundTransparency = 1
 	LoadingSubtitle.Text = "Please wait..."
-	LoadingSubtitle.TextColor3 = Color3.fromRGB(200, 200, 200)
+	LoadingSubtitle.TextColor3 = Color3.fromRGB(150, 170, 200)
 	LoadingSubtitle.TextSize = 14
 	LoadingSubtitle.Font = Enum.Font.Gotham
 	LoadingSubtitle.TextTransparency = 1
@@ -480,46 +421,44 @@ local function createPickleGUI()
 	local LoadingVersion = Instance.new("TextLabel")
 	LoadingVersion.Name = "Version"
 	LoadingVersion.Size = UDim2.new(1, 0, 0, 20)
-	LoadingVersion.Position = UDim2.new(0, 0, 0, 110)
+	LoadingVersion.Position = UDim2.new(0, 0, 0, 70)
 	LoadingVersion.BackgroundTransparency = 1
 	LoadingVersion.Text = Release
-	LoadingVersion.TextColor3 = Color3.fromRGB(150, 150, 150)
+	LoadingVersion.TextColor3 = Color3.fromRGB(150, 170, 200)
 	LoadingVersion.TextSize = 12
 	LoadingVersion.Font = Enum.Font.Gotham
 	LoadingVersion.TextTransparency = 1
 	LoadingVersion.Parent = LoadingFrame
 	
-	-- Notifications
 	local Notifications = Instance.new("Frame")
 	Notifications.Name = "Notifications"
-	Notifications.Size = UDim2.new(0, 300, 1, 0)
-	Notifications.Position = UDim2.new(1, -320, 0, 20)
+	Notifications.Size = UDim2.new(0, 250, 1, 0)
+	Notifications.Position = UDim2.new(1, -260, 0, 10)
 	Notifications.BackgroundTransparency = 1
 	Notifications.Parent = ScreenGui
 	
 	local NotificationsLayout = Instance.new("UIListLayout")
-	NotificationsLayout.Padding = UDim.new(0, 10)
+	NotificationsLayout.Padding = UDim.new(0, 5)
 	NotificationsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	NotificationsLayout.VerticalAlignment = Enum.VerticalAlignment.Top
 	NotificationsLayout.Parent = Notifications
 	
-	-- Notification Template
 	local NotificationTemplate = Instance.new("Frame")
 	NotificationTemplate.Name = "Template"
-	NotificationTemplate.Size = UDim2.new(1, 0, 0, 60)
-	NotificationTemplate.BackgroundColor3 = Color3.fromRGB(30, 50, 70)
+	NotificationTemplate.Size = UDim2.new(1, 0, 0, 50)
+	NotificationTemplate.BackgroundColor3 = Color3.fromRGB(25, 40, 60)
 	NotificationTemplate.BackgroundTransparency = 1
 	NotificationTemplate.BorderSizePixel = 0
 	NotificationTemplate.Visible = false
 	NotificationTemplate.Parent = Notifications
 	
 	local NotificationCorner = Instance.new("UICorner")
-	NotificationCorner.CornerRadius = UDim.new(0, 8)
+	NotificationCorner.CornerRadius = UDim.new(0, 5)
 	NotificationCorner.Parent = NotificationTemplate
 	
 	local NotificationStroke = Instance.new("UIStroke")
 	NotificationStroke.Name = "UIStroke"
-	NotificationStroke.Color = Color3.fromRGB(230, 230, 230)
+	NotificationStroke.Color = Color3.fromRGB(40, 60, 90)
 	NotificationStroke.Transparency = 1
 	NotificationStroke.Parent = NotificationTemplate
 	
@@ -537,8 +476,8 @@ local function createPickleGUI()
 	
 	local NotificationIcon = Instance.new("ImageLabel")
 	NotificationIcon.Name = "Icon"
-	NotificationIcon.Size = UDim2.new(0, 32, 0, 32)
-	NotificationIcon.Position = UDim2.new(0, 15, 0.5, -16)
+	NotificationIcon.Size = UDim2.new(0, 24, 0, 24)
+	NotificationIcon.Position = UDim2.new(0, 10, 0.5, -12)
 	NotificationIcon.BackgroundTransparency = 1
 	NotificationIcon.ImageTransparency = 1
 	NotificationIcon.Parent = NotificationTemplate
@@ -546,10 +485,10 @@ local function createPickleGUI()
 	local NotificationTitle = Instance.new("TextLabel")
 	NotificationTitle.Name = "Title"
 	NotificationTitle.Size = UDim2.new(1, -60, 0, 20)
-	NotificationTitle.Position = UDim2.new(0, 55, 0, 8)
+	NotificationTitle.Position = UDim2.new(0, 40, 0, 5)
 	NotificationTitle.BackgroundTransparency = 1
 	NotificationTitle.Text = "Notification"
-	NotificationTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+	NotificationTitle.TextColor3 = Color3.fromRGB(200, 220, 255)
 	NotificationTitle.TextSize = 14
 	NotificationTitle.Font = Enum.Font.GothamBold
 	NotificationTitle.TextXAlignment = Enum.TextXAlignment.Left
@@ -559,10 +498,10 @@ local function createPickleGUI()
 	local NotificationDescription = Instance.new("TextLabel")
 	NotificationDescription.Name = "Description"
 	NotificationDescription.Size = UDim2.new(1, -60, 0, 20)
-	NotificationDescription.Position = UDim2.new(0, 55, 0, 28)
+	NotificationDescription.Position = UDim2.new(0, 40, 0, 25)
 	NotificationDescription.BackgroundTransparency = 1
 	NotificationDescription.Text = "Description"
-	NotificationDescription.TextColor3 = Color3.fromRGB(200, 200, 200)
+	NotificationDescription.TextColor3 = Color3.fromRGB(150, 170, 200)
 	NotificationDescription.TextSize = 12
 	NotificationDescription.Font = Enum.Font.Gotham
 	NotificationDescription.TextXAlignment = Enum.TextXAlignment.Left
@@ -574,14 +513,13 @@ end
 
 local Pickle = createPickleGUI()
 local buildAttempts = 0
-local correctBuild = true -- Since we're creating it directly
+local correctBuild = true
 local warned = false
 local globalLoaded = false
 local pickleDestroyed = false
 
 Pickle.Enabled = false
 
--- Parent to appropriate location
 if gethui then
 	Pickle.Parent = gethui()
 elseif syn and syn.protect_gui then 
@@ -595,7 +533,6 @@ else
 	Pickle.Parent = CoreGui
 end
 
--- Remove old instances
 if gethui then
 	for _, Interface in ipairs(gethui():GetChildren()) do
 		if Interface.Name == Pickle.Name and Interface ~= Pickle then
@@ -636,9 +573,7 @@ local dragOffsetMobile = 150
 Pickle.DisplayOrder = 100
 LoadingFrame.Version.Text = Release
 
--- Simple icon system without external dependencies
 local function getIcon(name: string)
-	-- Return a default icon structure
 	return {
 		id = 0,
 		imageRectSize = Vector2.new(24, 24),
@@ -654,37 +589,37 @@ local Debounce = false
 local searchOpen = false
 local Notifications = Pickle.Notifications
 local SelectedTheme = {
-	TextColor = Color3.fromRGB(230, 230, 230),
-	Background = Color3.fromRGB(30, 50, 70),
-	Topbar = Color3.fromRGB(100, 150, 200),
+	TextColor = Color3.fromRGB(200, 220, 255),
+	Background = Color3.fromRGB(25, 40, 60),
+	Topbar = Color3.fromRGB(35, 55, 80),
 	Shadow = Color3.fromRGB(20, 30, 40),
-	NotificationBackground = Color3.fromRGB(30, 50, 70),
-	NotificationActionsBackground = Color3.fromRGB(220, 220, 220),
-	TabBackground = Color3.fromRGB(50, 70, 90),
-	TabStroke = Color3.fromRGB(60, 80, 100),
-	TabBackgroundSelected = Color3.fromRGB(80, 120, 160),
-	TabTextColor = Color3.fromRGB(200, 200, 200),
-	SelectedTabTextColor = Color3.fromRGB(255, 255, 255),
-	ElementBackground = Color3.fromRGB(40, 60, 80),
-	ElementBackgroundHover = Color3.fromRGB(50, 70, 90),
-	SecondaryElementBackground = Color3.fromRGB(35, 55, 75),
-	ElementStroke = Color3.fromRGB(60, 80, 100),
-	SecondaryElementStroke = Color3.fromRGB(55, 75, 95),
-	SliderBackground = Color3.fromRGB(60, 100, 140),
-	SliderProgress = Color3.fromRGB(80, 120, 160),
-	SliderStroke = Color3.fromRGB(70, 110, 150),
-	ToggleBackground = Color3.fromRGB(40, 60, 80),
-	ToggleEnabled = Color3.fromRGB(80, 120, 160),
-	ToggleDisabled = Color3.fromRGB(70, 90, 110),
-	ToggleEnabledStroke = Color3.fromRGB(90, 130, 170),
-	ToggleDisabledStroke = Color3.fromRGB(80, 100, 120),
-	ToggleEnabledOuterStroke = Color3.fromRGB(60, 80, 100),
-	ToggleDisabledOuterStroke = Color3.fromRGB(50, 70, 90),
-	DropdownSelected = Color3.fromRGB(50, 70, 90),
-	DropdownUnselected = Color3.fromRGB(40, 60, 80),
-	InputBackground = Color3.fromRGB(40, 60, 80),
-	InputStroke = Color3.fromRGB(60, 80, 100),
-	PlaceholderColor = Color3.fromRGB(150, 150, 150)
+	NotificationBackground = Color3.fromRGB(25, 40, 60),
+	NotificationActionsBackground = Color3.fromRGB(35, 55, 80),
+	TabBackground = Color3.fromRGB(30, 50, 70),
+	TabStroke = Color3.fromRGB(40, 60, 90),
+	TabBackgroundSelected = Color3.fromRGB(45, 70, 100),
+	TabTextColor = Color3.fromRGB(150, 170, 200),
+	SelectedTabTextColor = Color3.fromRGB(200, 220, 255),
+	ElementBackground = Color3.fromRGB(30, 50, 70),
+	ElementBackgroundHover = Color3.fromRGB(35, 55, 80),
+	SecondaryElementBackground = Color3.fromRGB(25, 45, 65),
+	ElementStroke = Color3.fromRGB(40, 60, 90),
+	SecondaryElementStroke = Color3.fromRGB(35, 55, 80),
+	SliderBackground = Color3.fromRGB(40, 60, 90),
+	SliderProgress = Color3.fromRGB(45, 70, 100),
+	SliderStroke = Color3.fromRGB(50, 75, 110),
+	ToggleBackground = Color3.fromRGB(30, 50, 70),
+	ToggleEnabled = Color3.fromRGB(45, 70, 100),
+	ToggleDisabled = Color3.fromRGB(35, 55, 80),
+	ToggleEnabledStroke = Color3.fromRGB(50, 75, 110),
+	ToggleDisabledStroke = Color3.fromRGB(40, 60, 90),
+	ToggleEnabledOuterStroke = Color3.fromRGB(40, 60, 90),
+	ToggleDisabledOuterStroke = Color3.fromRGB(30, 50, 70),
+	DropdownSelected = Color3.fromRGB(35, 55, 80),
+	DropdownUnselected = Color3.fromRGB(30, 50, 70),
+	InputBackground = Color3.fromRGB(30, 50, 70),
+	InputStroke = Color3.fromRGB(40, 60, 90),
+	PlaceholderColor = Color3.fromRGB(150, 170, 200)
 }
 
 local PickleLibrary = {
@@ -701,16 +636,13 @@ local function ChangeTheme(Theme)
 		SelectedTheme = Theme
 	end
 	
-	-- Apply theme colors
 	Main.BackgroundColor3 = SelectedTheme.Background
 	Topbar.BackgroundColor3 = SelectedTheme.Topbar
 	Topbar.CornerRepair.BackgroundColor3 = SelectedTheme.Topbar
 	Main.Shadow.Image.ImageColor3 = SelectedTheme.Shadow
-	Topbar.ChangeSize.ImageColor3 = SelectedTheme.TextColor
+	Topbar.Minimize.ImageColor3 = SelectedTheme.TextColor
 	Topbar.Hide.ImageColor3 = SelectedTheme.TextColor
-	Topbar.Search.ImageColor3 = SelectedTheme.TextColor
 	
-	-- Apply to other elements
 	for _, text in ipairs(Pickle:GetDescendants()) do
 		if text.Parent.Parent ~= Notifications then
 			if text:IsA('TextLabel') or text:IsA('TextBox') then 
@@ -725,7 +657,6 @@ local function getAssetUri(id: any): string
 	if type(id) == "number" then
 		assetUri = "rbxassetid://" .. id
 	elseif type(id) == "string" then
-		-- Handle Lucide icon names or just use default
 		assetUri = "rbxassetid://0"
 	else
 		warn("PickleLibrary | The icon argument must either be an icon ID (number) or a Lucide icon name (string)")
@@ -855,14 +786,12 @@ function PickleLibrary:Notify(data)
 			newNotification.Icon.Image = "rbxassetid://0"
 		end
 		
-		-- Apply theme colors
 		newNotification.Title.TextColor3 = SelectedTheme.TextColor
 		newNotification.Description.TextColor3 = SelectedTheme.TextColor
 		newNotification.BackgroundColor3 = SelectedTheme.Background
 		newNotification.UIStroke.Color = SelectedTheme.TextColor
 		newNotification.Icon.ImageColor3 = SelectedTheme.TextColor
 		
-		-- Set initial transparency
 		newNotification.BackgroundTransparency = 1
 		newNotification.Title.TextTransparency = 1
 		newNotification.Description.TextTransparency = 1
@@ -873,31 +802,27 @@ function PickleLibrary:Notify(data)
 		task.wait()
 		newNotification.Visible = true
 		
-		-- Calculate size
 		local bounds = {newNotification.Title.TextBounds.Y, newNotification.Description.TextBounds.Y}
-		newNotification.Size = UDim2.new(1, 0, 0, math.max(bounds[1] + bounds[2] + 31, 60))
+		newNotification.Size = UDim2.new(1, 0, 0, math.max(bounds[1] + bounds[2] + 29, 50))
 		
-		-- Animate in
-		TweenService:Create(newNotification, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.45}):Play()
-		TweenService:Create(newNotification.Title, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+		TweenService:Create(newNotification, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {BackgroundTransparency = 0.6}):Play()
+		TweenService:Create(newNotification.Title, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {TextTransparency = 0}):Play()
 		task.wait(0.05)
-		TweenService:Create(newNotification.Icon, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {ImageTransparency = 0}):Play()
+		TweenService:Create(newNotification.Icon, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {ImageTransparency = 0}):Play()
 		task.wait(0.05)
-		TweenService:Create(newNotification.Description, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {TextTransparency = 0.35}):Play()
-		TweenService:Create(newNotification.UIStroke, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {Transparency = 0.95}):Play()
-		TweenService:Create(newNotification.Shadow, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {ImageTransparency = 0.82}):Play()
+		TweenService:Create(newNotification.Description, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {TextTransparency = 0.4}):Play()
+		TweenService:Create(newNotification.UIStroke, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {Transparency = 0.9}):Play()
+		TweenService:Create(newNotification.Shadow, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {ImageTransparency = 0.85}):Play()
 		
-		-- Wait and animate out
 		local waitDuration = math.min(math.max((#newNotification.Description.Text * 0.1) + 2.5, 3), 10)
 		task.wait(data.Duration or waitDuration)
 		
-		-- Animate out
-		TweenService:Create(newNotification, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {BackgroundTransparency = 1}):Play()
-		TweenService:Create(newNotification.UIStroke, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
-		TweenService:Create(newNotification.Shadow, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {ImageTransparency = 1}):Play()
-		TweenService:Create(newNotification.Title, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {TextTransparency = 1}):Play()
-		TweenService:Create(newNotification.Description, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {TextTransparency = 1}):Play()
-		TweenService:Create(newNotification.Icon, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {ImageTransparency = 1}):Play()
+		TweenService:Create(newNotification, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {BackgroundTransparency = 1}):Play()
+		TweenService:Create(newNotification.UIStroke, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {Transparency = 1}):Play()
+		TweenService:Create(newNotification.Shadow, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {ImageTransparency = 1}):Play()
+		TweenService:Create(newNotification.Title, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {TextTransparency = 1}):Play()
+		TweenService:Create(newNotification.Description, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {TextTransparency = 1}):Play()
+		TweenService:Create(newNotification.Icon, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {ImageTransparency = 1}):Play()
 		
 		task.wait(0.5)
 		newNotification:Destroy()
@@ -921,8 +846,8 @@ function PickleLibrary:CreateWindow(Settings)
 		ConfigurationFolder = Settings.ConfigurationSaving.FolderName
 	end
 	
-	Topbar.Title.Text = Settings.Name or "PickleLibrary Interface"
-	LoadingFrame.Title.Text = Settings.LoadingTitle or "PickleLibrary Interface Suite"
+	Topbar.Title.Text = Settings.Name or "NewFieldLibrary Interface"
+	LoadingFrame.Title.Text = Settings.LoadingTitle or "NewFieldLibrary Interface Suite"
 	LoadingFrame.Subtitle.Text = Settings.LoadingSubtitle or "by Sirius"
 	
 	if Settings.Icon then
@@ -952,61 +877,73 @@ function PickleLibrary:CreateWindow(Settings)
 		end
 	end
 	
-	-- Hide button functionality
-	Topbar.Hide.MouseButton1Click:Connect(function()
-		Hidden = not Hidden
-		if Hidden then
-			Main.Visible = false
-			Topbar.Hide.Rotation = 180
+	-- Minimize button functionality
+	Minimize.MouseButton1Click:Connect(function()
+		Minimised = not Minimised
+		if Minimised then
+			TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 430, 0, 30)}):Play()
+			Elements.Visible = false
+			TabList.Visible = false
 		else
-			Main.Visible = true
-			Topbar.Hide.Rotation = 0
+			TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 430, 0, 225)}):Play()
+			Elements.Visible = true
+			TabList.Visible = true
 		end
 	end)
 	
-	-- Make draggable
-	makeDraggable(Pickle, dragInteract or Topbar, true, {dragOffset, dragOffsetMobile})
+	-- Hide button functionality
+	Hide.MouseButton1Click:Connect(function()
+		Hidden = not Hidden
+		if Hidden then
+			Main.Visible = false
+			Hide.Rotation = 180
+		else
+			Main.Visible = true
+			Hide.Rotation = 0
+		end
+	end)
 	
-	-- Show interface
+	makeDraggable(Pickle, Topbar, true, {dragOffset, dragOffsetMobile})
+	
 	Pickle.Enabled = true
 	LoadingFrame.Visible = true
 	
-	-- Loading animation
-	TweenService:Create(LoadingFrame, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
-	TweenService:Create(LoadingFrame.UIStroke, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
-	TweenService:Create(LoadingFrame.Title, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
-	TweenService:Create(LoadingFrame.Subtitle, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
-	TweenService:Create(LoadingFrame.Version, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+	TweenService:Create(LoadingFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {BackgroundTransparency = 0}):Play()
+	TweenService:Create(LoadingFrame.UIStroke, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {Transparency = 0}):Play()
+	TweenService:Create(LoadingFrame.Title, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {TextTransparency = 0}):Play()
+	TweenService:Create(LoadingFrame.Subtitle, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {TextTransparency = 0}):Play()
+	TweenService:Create(LoadingFrame.Version, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {TextTransparency = 0}):Play()
 	
 	task.wait(0.5)
 	
-	TweenService:Create(LoadingFrame, TweenInfo.new(1, Enum.EasingStyle.Exponential), {Size = UDim2.new(0, 0, 0, 0)}):Play()
-	TweenService:Create(LoadingFrame.UIStroke, TweenInfo.new(1, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
-	TweenService:Create(LoadingFrame.Title, TweenInfo.new(1, Enum.EasingStyle.Exponential), {TextTransparency = 1}):Play()
-	TweenService:Create(LoadingFrame.Subtitle, TweenInfo.new(1, Enum.EasingStyle.Exponential), {TextTransparency = 1}):Play()
-	TweenService:Create(LoadingFrame.Version, TweenInfo.new(1, Enum.EasingStyle.Exponential), {TextTransparency = 1}):Play()
+	TweenService:Create(LoadingFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 0, 0, 0)}):Play()
+	TweenService:Create(LoadingFrame.UIStroke, TweenInfo.new(0.5, Enum.EasingStyle.Quad), {Transparency = 1}):Play()
+	TweenService:Create(LoadingFrame.Title, TweenInfo.new(0.5, Enum.EasingStyle.Quad), {TextTransparency = 1}):Play()
+	TweenService:Create(LoadingFrame.Subtitle, TweenInfo.new(0.5, Enum.EasingStyle.Quad), {TextTransparency = 1}):Play()
+	TweenService:Create(LoadingFrame.Version, TweenInfo.new(0.5, Enum.EasingStyle.Quad), {TextTransparency = 1}):Play()
 	
-	task.wait(1)
+	task.wait(0.5)
 	LoadingFrame.Visible = false
 	globalLoaded = true
 	
-	Window.Name = Settings.Name or "PickleLibrary Interface"
+	Window.Name = Settings.Name or "NewFieldLibrary Interface"
 	Window.CurrentTab = nil
 	
 	function Window:CreateTab(TabSettings)
 		local Tab = {}
 		local TabButton = TabList.Template:Clone()
 		TabButton.Name = TabSettings.Name
-		TabButton.Title.Text = TabSettings.Name
+		TabButton.Text = TabSettings.Name
+		TabButton.BackgroundTransparency = 0.8
+		TabButton.TextColor3 = SelectedTheme.TabTextColor
 		
 		if TabSettings.Image then
-			TabButton.Image.Image = getAssetUri(TabSettings.Image)
+			TabButton.Image = getAssetUri(TabSettings.Image)
 		end
 		
 		TabButton.Parent = TabList
 		TabButton.Visible = true
 		
-		-- Create tab page
 		local TabPage = Instance.new("ScrollingFrame")
 		TabPage.Name = TabSettings.Name
 		TabPage.Size = UDim2.new(1, 0, 1, 0)
@@ -1031,29 +968,21 @@ function PickleLibrary:CreateWindow(Settings)
 		Padding.PaddingRight = UDim.new(0, 10)
 		Padding.Parent = TabPage
 		
-		-- Tab switching logic
-		TabButton.Interact.MouseButton1Click:Connect(function()
+		TabButton.MouseButton1Click:Connect(function()
 			if Window.CurrentTab then
-				Window.CurrentTab.Button.BackgroundTransparency = 0.7
-				Window.CurrentTab.Button.Title.TextTransparency = 0.2
-				Window.CurrentTab.Button.Image.ImageTransparency = 0.2
-				Window.CurrentTab.Button.UIStroke.Transparency = 0.5
+				TweenService:Create(Window.CurrentTab.Button, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {BackgroundTransparency = 0.8, TextTransparency = 0.2}):Play()
 				Window.CurrentTab.Page.Visible = false
 			end
 			
 			Window.CurrentTab = Tab
-			TabButton.BackgroundTransparency = 0
-			TabButton.Title.TextTransparency = 0
-			TabButton.Image.ImageTransparency = 0
-			TabButton.UIStroke.Transparency = 1
+			TweenService:Create(TabButton, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {BackgroundTransparency = 0, TextColor3 = SelectedTheme.SelectedTabTextColor}):Play()
 			TabPage.Visible = true
 			Elements.UIPageLayout:JumpTo(TabPage)
 			SaveConfiguration()
 		end)
 		
-		-- Auto-select first tab
-		if #TabList:GetChildren() == 2 then -- Template + 1 real tab
-			TabButton.Interact.MouseButton1Click:Fire()
+		if #TabList:GetChildren() == 2 then
+			TabButton.MouseButton1Click:Fire()
 		end
 		
 		Tab.Button = TabButton
@@ -1062,7 +991,6 @@ function PickleLibrary:CreateWindow(Settings)
 		function Tab:CreateSection(SectionSettings)
 			local Section = {}
 			
-			-- Section title
 			local SectionTitle = Instance.new("TextLabel")
 			SectionTitle.Name = "SectionTitle"
 			SectionTitle.Size = UDim2.new(1, -10, 0, 25)
@@ -1074,18 +1002,20 @@ function PickleLibrary:CreateWindow(Settings)
 			SectionTitle.TextXAlignment = Enum.TextXAlignment.Left
 			SectionTitle.Parent = TabPage
 			
+			TweenService:Create(SectionTitle, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {TextTransparency = 0}):Play()
+			
 			function Section:CreateButton(ButtonSettings)
 				local Button = {}
 				
 				local ButtonFrame = Instance.new("Frame")
 				ButtonFrame.Name = "Button"
-				ButtonFrame.Size = UDim2.new(1, -10, 0, 35)
+				ButtonFrame.Size = UDim2.new(1, -10, 0, 30)
 				ButtonFrame.BackgroundColor3 = SelectedTheme.ElementBackground
 				ButtonFrame.BorderSizePixel = 0
 				ButtonFrame.Parent = TabPage
 				
 				local ButtonCorner = Instance.new("UICorner")
-				ButtonCorner.CornerRadius = UDim.new(0, 6)
+				ButtonCorner.CornerRadius = UDim.new(0, 3)
 				ButtonCorner.Parent = ButtonFrame
 				
 				local ButtonStroke = Instance.new("UIStroke")
@@ -1118,6 +1048,8 @@ function PickleLibrary:CreateWindow(Settings)
 					end
 				end)
 				
+				TweenService:Create(ButtonFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(1, -10, 0, 30), BackgroundTransparency = 0}):Play()
+				
 				Button.Frame = ButtonFrame
 				Button.Type = "Button"
 				if ButtonSettings.Name then
@@ -1132,13 +1064,13 @@ function PickleLibrary:CreateWindow(Settings)
 				
 				local ToggleFrame = Instance.new("Frame")
 				ToggleFrame.Name = "Toggle"
-				ToggleFrame.Size = UDim2.new(1, -10, 0, 35)
+				ToggleFrame.Size = UDim2.new(1, -10, 0, 30)
 				ToggleFrame.BackgroundColor3 = SelectedTheme.ElementBackground
 				ToggleFrame.BorderSizePixel = 0
 				ToggleFrame.Parent = TabPage
 				
 				local ToggleCorner = Instance.new("UICorner")
-				ToggleCorner.CornerRadius = UDim.new(0, 6)
+				ToggleCorner.CornerRadius = UDim.new(0, 3)
 				ToggleCorner.Parent = ToggleFrame
 				
 				local ToggleStroke = Instance.new("UIStroke")
@@ -1196,9 +1128,9 @@ function PickleLibrary:CreateWindow(Settings)
 				function Toggle:Set(Value)
 					Toggle.CurrentValue = Value
 					if Value then
-						TweenService:Create(ToggleIndicator, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {BackgroundColor3 = SelectedTheme.ToggleEnabled}):Play()
+						TweenService:Create(ToggleIndicator, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {BackgroundColor3 = SelectedTheme.ToggleEnabled, Position = UDim2.new(0, 3, 0, 3)}):Play()
 					else
-						TweenService:Create(ToggleIndicator, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {BackgroundColor3 = SelectedTheme.ToggleDisabled}):Play()
+						TweenService:Create(ToggleIndicator, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {BackgroundColor3 = SelectedTheme.ToggleDisabled, Position = UDim2.new(0, 3, 0, 3)}):Play()
 					end
 					SaveConfiguration()
 				end
@@ -1211,8 +1143,9 @@ function PickleLibrary:CreateWindow(Settings)
 					end
 				end)
 				
-				-- Set initial state
 				Toggle:Set(Toggle.CurrentValue)
+				
+				TweenService:Create(ToggleFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(1, -10, 0, 30), BackgroundTransparency = 0}):Play()
 				
 				Toggle.Frame = ToggleFrame
 				if ToggleSettings.Name then
@@ -1233,7 +1166,7 @@ function PickleLibrary:CreateWindow(Settings)
 				SliderFrame.Parent = TabPage
 				
 				local SliderCorner = Instance.new("UICorner")
-				SliderCorner.CornerRadius = UDim.new(0, 6)
+				SliderCorner.CornerRadius = UDim.new(0, 3)
 				SliderCorner.Parent = SliderFrame
 				
 				local SliderStroke = Instance.new("UIStroke")
@@ -1322,7 +1255,7 @@ function PickleLibrary:CreateWindow(Settings)
 						local barAbsPos = SliderBar.AbsolutePosition
 						local barAbsSize = SliderBar.AbsoluteSize
 						local newValue = math.clamp((mousePos.X - barAbsPos.X) / barAbsSize.X, 0, 1) * (Slider.Max - Slider.Min) + Slider.Min
-						newValue = math.floor(newValue + 0.5) -- Round to nearest integer
+						newValue = math.floor(newValue + 0.5)
 						if Slider.CurrentValue ~= newValue then
 							Slider:Set(newValue)
 							if SliderSettings.Callback then 
@@ -1332,8 +1265,9 @@ function PickleLibrary:CreateWindow(Settings)
 					end
 				end)
 				
-				-- Set initial value
 				Slider:Set(Slider.CurrentValue)
+				
+				TweenService:Create(SliderFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(1, -10, 0, 50), BackgroundTransparency = 0}):Play()
 				
 				Slider.Frame = SliderFrame
 				if SliderSettings.Name then
@@ -1348,13 +1282,13 @@ function PickleLibrary:CreateWindow(Settings)
 				
 				local DropdownFrame = Instance.new("Frame")
 				DropdownFrame.Name = "Dropdown"
-				DropdownFrame.Size = UDim2.new(1, -10, 0, 35)
+				DropdownFrame.Size = UDim2.new(1, -10, 0, 30)
 				DropdownFrame.BackgroundColor3 = SelectedTheme.ElementBackground
 				DropdownFrame.BorderSizePixel = 0
 				DropdownFrame.Parent = TabPage
 				
 				local DropdownCorner = Instance.new("UICorner")
-				DropdownCorner.CornerRadius = UDim.new(0, 6)
+				DropdownCorner.CornerRadius = UDim.new(0, 3)
 				DropdownCorner.Parent = DropdownFrame
 				
 				local DropdownStroke = Instance.new("UIStroke")
@@ -1387,14 +1321,14 @@ function PickleLibrary:CreateWindow(Settings)
 				local DropdownList = Instance.new("Frame")
 				DropdownList.Name = "List"
 				DropdownList.Size = UDim2.new(1, -10, 0, 0)
-				DropdownList.Position = UDim2.new(0, 5, 0, 40)
+				DropdownList.Position = UDim2.new(0, 5, 0, 35)
 				DropdownList.BackgroundColor3 = SelectedTheme.DropdownUnselected
 				DropdownList.BorderSizePixel = 0
 				DropdownList.Visible = false
 				DropdownList.Parent = DropdownFrame
 				
 				local ListCorner = Instance.new("UICorner")
-				ListCorner.CornerRadius = UDim.new(0, 4)
+				ListCorner.CornerRadius = UDim.new(0, 3)
 				ListCorner.Parent = DropdownList
 				
 				local DropdownLayout = Instance.new("UIListLayout")
@@ -1413,7 +1347,7 @@ function PickleLibrary:CreateWindow(Settings)
 				
 				local DropdownInteract = Instance.new("TextButton")
 				DropdownInteract.Name = "Interact"
-				DropdownInteract.Size = UDim2.new(1, 0, 0, 35)
+				DropdownInteract.Size = UDim2.new(1, 0, 0, 30)
 				DropdownInteract.BackgroundTransparency = 1
 				DropdownInteract.Text = ""
 				DropdownInteract.Parent = DropdownFrame
@@ -1434,11 +1368,11 @@ function PickleLibrary:CreateWindow(Settings)
 				DropdownInteract.MouseButton1Click:Connect(function()
 					DropdownList.Visible = not DropdownList.Visible
 					if DropdownList.Visible then
-						TweenService:Create(DropdownFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(1, -10, 0, 45 + (#options * 22))}):Play()
+						TweenService:Create(DropdownFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(1, -10, 0, 40 + (#options * 20))}):Play()
 						TweenService:Create(DropdownArrow, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Rotation = 180}):Play()
-						TweenService:Create(DropdownList, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(1, -10, 0, #options * 22), BackgroundColor3 = SelectedTheme.DropdownSelected}):Play()
+						TweenService:Create(DropdownList, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(1, -10, 0, #options * 20), BackgroundColor3 = SelectedTheme.DropdownSelected}):Play()
 					else
-						TweenService:Create(DropdownFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(1, -10, 0, 35)}):Play()
+						TweenService:Create(DropdownFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(1, -10, 0, 30)}):Play()
 						TweenService:Create(DropdownArrow, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Rotation = 0}):Play()
 						TweenService:Create(DropdownList, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(1, -10, 0, 0), BackgroundColor3 = SelectedTheme.DropdownUnselected}):Play()
 					end
@@ -1459,11 +1393,13 @@ function PickleLibrary:CreateWindow(Settings)
 					OptionButton.MouseButton1Click:Connect(function()
 						Dropdown:Set(option)
 						DropdownList.Visible = false
-						TweenService:Create(DropdownFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(1, -10, 0, 35)}):Play()
+						TweenService:Create(DropdownFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(1, -10, 0, 30)}):Play()
 						TweenService:Create(DropdownArrow, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Rotation = 0}):Play()
 						TweenService:Create(DropdownList, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(1, -10, 0, 0)}):Play()
 					end)
 				end
+				
+				TweenService:Create(DropdownFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(1, -10, 0, 30), BackgroundTransparency = 0}):Play()
 				
 				Dropdown.Frame = DropdownFrame
 				if DropdownSettings.Name then
@@ -1478,13 +1414,13 @@ function PickleLibrary:CreateWindow(Settings)
 				
 				local InputFrame = Instance.new("Frame")
 				InputFrame.Name = "Input"
-				InputFrame.Size = UDim2.new(1, -10, 0, 35)
+				InputFrame.Size = UDim2.new(1, -10, 0, 30)
 				InputFrame.BackgroundColor3 = SelectedTheme.ElementBackground
 				InputFrame.BorderSizePixel = 0
 				InputFrame.Parent = TabPage
 				
 				local InputCorner = Instance.new("UICorner")
-				InputCorner.CornerRadius = UDim.new(0, 6)
+				InputCorner.CornerRadius = UDim.new(0, 3)
 				InputCorner.Parent = InputFrame
 				
 				local InputStroke = Instance.new("UIStroke")
@@ -1507,8 +1443,8 @@ function PickleLibrary:CreateWindow(Settings)
 				
 				local InputBox = Instance.new("TextBox")
 				InputBox.Name = "Box"
-				InputBox.Size = UDim2.new(0.5, -10, 0, 25)
-				InputBox.Position = UDim2.new(0.5, 5, 0.5, -12)
+				InputBox.Size = UDim2.new(0.5, -10, 0, 20)
+				InputBox.Position = UDim2.new(0.5, 5, 0.5, -10)
 				InputBox.BackgroundColor3 = SelectedTheme.InputBackground
 				InputBox.BorderSizePixel = 0
 				InputBox.Text = InputSettings.Default or ""
@@ -1521,7 +1457,7 @@ function PickleLibrary:CreateWindow(Settings)
 				InputBox.Parent = InputFrame
 				
 				local BoxCorner = Instance.new("UICorner")
-				BoxCorner.CornerRadius = UDim.new(0, 4)
+				BoxCorner.CornerRadius = UDim.new(0, 3)
 				BoxCorner.Parent = InputBox
 				
 				local BoxStroke = Instance.new("UIStroke")
@@ -1550,6 +1486,8 @@ function PickleLibrary:CreateWindow(Settings)
 					SaveConfiguration()
 				end)
 				
+				TweenService:Create(InputFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(1, -10, 0, 30), BackgroundTransparency = 0}):Play()
+				
 				Input.Frame = InputFrame
 				if InputSettings.Name then
 					PickleLibrary.Flags[InputSettings.Name] = Input
@@ -1563,13 +1501,13 @@ function PickleLibrary:CreateWindow(Settings)
 				
 				local ColorPickerFrame = Instance.new("Frame")
 				ColorPickerFrame.Name = "ColorPicker"
-				ColorPickerFrame.Size = UDim2.new(1, -10, 0, 35)
+				ColorPickerFrame.Size = UDim2.new(1, -10, 0, 30)
 				ColorPickerFrame.BackgroundColor3 = SelectedTheme.ElementBackground
 				ColorPickerFrame.BorderSizePixel = 0
 				ColorPickerFrame.Parent = TabPage
 				
 				local ColorPickerCorner = Instance.new("UICorner")
-				ColorPickerCorner.CornerRadius = UDim.new(0, 6)
+				ColorPickerCorner.CornerRadius = UDim.new(0, 3)
 				ColorPickerCorner.Parent = ColorPickerFrame
 				
 				local ColorPickerStroke = Instance.new("UIStroke")
@@ -1621,7 +1559,6 @@ function PickleLibrary:CreateWindow(Settings)
 					SaveConfiguration()
 				end
 				
-				-- Simple color picker - just cycles through some preset colors for demo
 				local colors = {
 					Color3.fromRGB(255, 0, 0),
 					Color3.fromRGB(0, 255, 0),
@@ -1642,6 +1579,8 @@ function PickleLibrary:CreateWindow(Settings)
 					ColorPicker:Set(colors[currentColorIndex])
 				end)
 				
+				TweenService:Create(ColorPickerFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(1, -10, 0, 30), BackgroundTransparency = 0}):Play()
+				
 				ColorPicker.Frame = ColorPickerFrame
 				if ColorPickerSettings.Name then
 					PickleLibrary.Flags[ColorPickerSettings.Name] = ColorPicker
@@ -1659,7 +1598,6 @@ function PickleLibrary:CreateWindow(Settings)
 	return Window
 end
 
--- Add keybind functionality
 UserInputService.InputBegan:Connect(function(input, processed)
 	if not processed and input.KeyCode == Enum.KeyCode[getSetting("General", "pickleOpen")] then
 		if Pickle then
@@ -1675,4 +1613,3 @@ function PickleLibrary:Destroy()
 end
 
 return PickleLibrary
-				
