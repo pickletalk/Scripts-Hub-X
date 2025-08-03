@@ -1,14 +1,14 @@
 -- Instances: 147 | Scripts: 0 | Modules: 1
 local DRR = {};
 
--- DrRay
+-- PickleLibrary
 DRR["1"] = Instance.new("ScreenGui", game:GetService("CoreGui"));
 DRR["1"]["IgnoreGuiInset"] = true;
 DRR["1"]["ScreenInsets"] = Enum.ScreenInsets.DeviceSafeInsets;
 DRR["1"]["Name"] = [[DrRay]];
 DRR["1"]["ZIndexBehavior"] = Enum.ZIndexBehavior.Sibling;
 
--- DrRay.TopBar
+-- PickleLibrary.TopBar
 DRR["2"] = Instance.new("Frame", DRR["1"]);
 DRR["2"]["BorderSizePixel"] = 0;
 DRR["2"]["BackgroundColor3"] = Color3.fromRGB(42, 42, 58);
@@ -1064,18 +1064,18 @@ DRR["7d"]["Name"] = [[Label]];
 DRR["7e"] = Instance.new("UICorner", DRR["7d"]);
 DRR["7e"]["CornerRadius"] = UDim.new(0.33000001311302185, 0);
 
--- DrRay.Folder.Toggle.Label.UIGradient
+-- PickleLibrary.Folder.Toggle.Label.UIGradient
 DRR["7f"] = Instance.new("UIGradient", DRR["7d"]);
 DRR["7f"]["Rotation"] = 90;
 DRR["7f"]["Color"] = ColorSequence.new{ColorSequenceKeypoint.new(0.000, Color3.fromRGB(166, 166, 166)),ColorSequenceKeypoint.new(1.000, Color3.fromRGB(255, 255, 255))};
 
--- DrRay.Folder.Toggle.Label.UIStroke
+-- PickleLibrary.Folder.Toggle.Label.UIStroke
 DRR["80"] = Instance.new("UIStroke", DRR["7d"]);
 DRR["80"]["Color"] = Color3.fromRGB(40, 45, 62);
 DRR["80"]["Thickness"] = 2.4000000953674316;
 DRR["80"]["ApplyStrokeMode"] = Enum.ApplyStrokeMode.Border;
 
--- DrRay.Folder.Toggle.Label.Label
+-- PickleLibrary.Folder.Toggle.Label.Label
 DRR["81"] = Instance.new("TextButton", DRR["7d"]);
 DRR["81"]["BorderSizePixel"] = 0;
 DRR["81"]["BackgroundColor3"] = Color3.fromRGB(40, 45, 62);
@@ -1087,16 +1087,16 @@ DRR["81"]["Text"] = [[]];
 DRR["81"]["AutomaticSize"] = Enum.AutomaticSize.Y;
 DRR["81"]["BackgroundTransparency"] = 1;
 
--- DrRay.Folder.Toggle.Label.Label.UICorner
+-- PickleLibrary.Folder.Toggle.Label.Label.UICorner
 DRR["82"] = Instance.new("UICorner", DRR["81"]);
 DRR["82"]["CornerRadius"] = UDim.new(0.33000001311302185, 0);
 
--- DrRay.Folder.Toggle.Label.Label.UIGradient
+-- PickleLibrary.Folder.Toggle.Label.Label.UIGradient
 DRR["83"] = Instance.new("UIGradient", DRR["81"]);
 DRR["83"]["Rotation"] = 90;
 DRR["83"]["Color"] = ColorSequence.new{ColorSequenceKeypoint.new(0.000, Color3.fromRGB(166, 166, 166)),ColorSequenceKeypoint.new(1.000, Color3.fromRGB(255, 255, 255))};
 
--- DrRay.Folder.Button
+-- PickleLibrary.Folder.Button
 DRR["84"] = Instance.new("TextButton", DRR["30"]);
 DRR["84"]["BorderSizePixel"] = 0;
 DRR["84"]["AutoButtonColor"] = false;
@@ -1110,16 +1110,16 @@ DRR["84"]["Text"] = [[]];
 DRR["84"]["Position"] = UDim2.new(0.019283747300505638, 0, 0.6786856055259705, 0);
 DRR["84"]["BackgroundTransparency"] = 0.4000000059604645;
 
--- DrRay.Folder.Button.UICorner
+-- PickleLibrary.Folder.Button.UICorner
 DRR["85"] = Instance.new("UICorner", DRR["84"]);
 DRR["85"]["CornerRadius"] = UDim.new(0.03999999910593033, 0);
 
--- DrRay.Folder.Button.UIGradient
+-- PickleLibrary.Folder.Button.UIGradient
 DRR["86"] = Instance.new("UIGradient", DRR["84"]);
 DRR["86"]["Rotation"] = 90;
 DRR["86"]["Color"] = ColorSequence.new{ColorSequenceKeypoint.new(0.000, Color3.fromRGB(109, 109, 109)),ColorSequenceKeypoint.new(0.765, Color3.fromRGB(181, 181, 181)),ColorSequenceKeypoint.new(1.000, Color3.fromRGB(217, 217, 217))};
 
--- DrRay.Folder.Button.Title
+-- PickleLibrary.Folder.Button.Title
 DRR["87"] = Instance.new("TextLabel", DRR["84"]);
 DRR["87"]["TextWrapped"] = true;
 DRR["87"]["BorderSizePixel"] = 0;
@@ -1137,7 +1137,7 @@ DRR["87"]["Name"] = [[Title]];
 DRR["87"]["BackgroundTransparency"] = 1;
 DRR["87"]["Position"] = UDim2.new(0.015759311616420746, 0, 0.18482854962348938, 0);
 
--- DrRay.Folder.Button.Description
+-- PickleLibrary.Folder.Button.Description
 DRR["88"] = Instance.new("TextLabel", DRR["84"]);
 DRR["88"]["TextWrapped"] = true;
 DRR["88"]["BorderSizePixel"] = 0;
@@ -1154,7 +1154,7 @@ DRR["88"]["Name"] = [[Description]];
 DRR["88"]["BackgroundTransparency"] = 1;
 DRR["88"]["Position"] = UDim2.new(0.011461318470537663, 0, 0.5852904319763184, 0);
 
--- DrRay.Folder.DropdownButton
+-- PickleLibrary.Folder.DropdownButton
 DRR["89"] = Instance.new("TextButton", DRR["30"]);
 DRR["89"]["Active"] = false;
 DRR["89"]["BorderSizePixel"] = 0;
@@ -1166,20 +1166,20 @@ DRR["89"]["Name"] = [[DropdownButton]];
 DRR["89"]["BorderColor3"] = Color3.fromRGB(0, 0, 0);
 DRR["89"]["Position"] = UDim2.new(0.08656254410743713, 0, 0, 0);
 
--- DrRay.Folder.DropdownButton.UICorner
+-- PickleLibrary.Folder.DropdownButton.UICorner
 DRR["8a"] = Instance.new("UICorner", DRR["89"]);
 DRR["8a"]["CornerRadius"] = UDim.new(0.20000000298023224, 0);
 
--- DrRay.Folder.DropdownButton.UIGradient
+-- PickleLibrary.Folder.DropdownButton.UIGradient
 DRR["8b"] = Instance.new("UIGradient", DRR["89"]);
 DRR["8b"]["Rotation"] = 90;
 DRR["8b"]["Color"] = ColorSequence.new{ColorSequenceKeypoint.new(0.000, Color3.fromRGB(117, 117, 117)),ColorSequenceKeypoint.new(1.000, Color3.fromRGB(255, 255, 255))};
 
--- DrRay.Folder.DropdownButton.UIStroke
+-- PickleLibrary.Folder.DropdownButton.UIStroke
 DRR["8c"] = Instance.new("UIStroke", DRR["89"]);
 DRR["8c"]["Color"] = Color3.fromRGB(40, 45, 62);
 
--- DrRay.Folder.DropdownButton.name
+-- PickleLibrary.Folder.DropdownButton.name
 DRR["8d"] = Instance.new("TextLabel", DRR["89"]);
 DRR["8d"]["TextWrapped"] = true;
 DRR["8d"]["BorderSizePixel"] = 0;
@@ -1195,7 +1195,7 @@ DRR["8d"]["Name"] = [[name]];
 DRR["8d"]["BackgroundTransparency"] = 1;
 DRR["8d"]["Position"] = UDim2.new(0, 0, 0.21875, 0);
 
--- DrRay.Button
+-- PickleLibrary.Button
 DRR["8e"] = Instance.new("TextButton", DRR["1"]);
 DRR["8e"]["BorderSizePixel"] = 0;
 DRR["8e"]["AutoButtonColor"] = false;
@@ -1209,16 +1209,16 @@ DRR["8e"]["Text"] = [[]];
 DRR["8e"]["Position"] = UDim2.new(0.019283747300505638, 0, 0.6786856055259705, 0);
 DRR["8e"]["BackgroundTransparency"] = 0.4000000059604645;
 
--- DrRay.Button.UICorner
+-- PickleLibrary.Button.UICorner
 DRR["8f"] = Instance.new("UICorner", DRR["8e"]);
 DRR["8f"]["CornerRadius"] = UDim.new(0.03999999910593033, 0);
 
--- DrRay.Button.UIGradient
+-- PickleLibrary.Button.UIGradient
 DRR["90"] = Instance.new("UIGradient", DRR["8e"]);
 DRR["90"]["Rotation"] = 90;
 DRR["90"]["Color"] = ColorSequence.new{ColorSequenceKeypoint.new(0.000, Color3.fromRGB(109, 109, 109)),ColorSequenceKeypoint.new(0.765, Color3.fromRGB(181, 181, 181)),ColorSequenceKeypoint.new(1.000, Color3.fromRGB(217, 217, 217))};
 
--- DrRay.Button.Title
+-- PickleLibrary.Button.Title
 DRR["91"] = Instance.new("TextLabel", DRR["8e"]);
 DRR["91"]["TextWrapped"] = true;
 DRR["91"]["BorderSizePixel"] = 0;
@@ -1236,7 +1236,7 @@ DRR["91"]["Name"] = [[Title]];
 DRR["91"]["BackgroundTransparency"] = 1;
 DRR["91"]["Position"] = UDim2.new(0.015759311616420746, 0, 0.18482854962348938, 0);
 
--- DrRay.Button.Description
+-- PickleLibrary.Button.Description
 DRR["92"] = Instance.new("TextLabel", DRR["8e"]);
 DRR["92"]["TextWrapped"] = true;
 DRR["92"]["BorderSizePixel"] = 0;
