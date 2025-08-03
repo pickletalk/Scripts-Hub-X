@@ -623,7 +623,7 @@ local Button = Main:CreateButton({
 })
 
 -- Speed Toggle
-local SpeedToggle = Tab:CreateToggle({
+local SpeedToggle = Player:CreateToggle({
     Name = "Player Speed",
     CurrentValue = false,
     Flag = "SpeedToggle",
@@ -639,7 +639,7 @@ local SpeedToggle = Tab:CreateToggle({
 })
 
 -- Speed Slider
-local SpeedSlider = Tab:CreateSlider({
+local SpeedSlider = Player:CreateSlider({
     Name = "Player Speed",
     Range = {16, 200},
     Increment = 8,
