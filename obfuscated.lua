@@ -18,7 +18,8 @@ print("Main script started, PlayerGui found")
 local OwnerUserId = "2341777244"
 local PremiumUsers = {
     "5356702370",
-    "7923265734" -- Jerdx19
+    "8208978599", -- creaturekaijufan1849
+    "8558295467" -- JerdxBackup
 }
 local StaffUserId = {
     "2784109194", 
