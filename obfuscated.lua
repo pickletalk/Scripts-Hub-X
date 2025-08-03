@@ -37,12 +37,12 @@ local function loadLoadingScreen()
         return loadstring(script)()
     end)
     if not success then
-        warn("Failed to load loading screen due to server-only API or other error: " .. tostring(LoadingScreen))
+        warn("Failed to load loading screen: " .. tostring(LoadingScreen))
         showErrorNotification()
         return false, nil
     end
     if not LoadingScreen or not LoadingScreen.playEntranceAnimations or not LoadingScreen.animateLoadingBar or not LoadingScreen.playExitAnimations or not LoadingScreen.setLoadingText or not LoadingScreen.initialize then
-        warn("Loading screen script missing required functions or failed to load")
+        warn("Loading screen script missing required functions")
         showErrorNotification()
         return false, nil
     end
@@ -57,11 +57,11 @@ local function loadKeySystem()
         return loadstring(script)()
     end)
     if not success then
-        warn("Failed to load key system due to server-only API or other error: " .. tostring(KeySystem))
+        warn("Failed to load key system: " .. tostring(KeySystem))
         return false, nil
     end
     if not KeySystem or not KeySystem.ShowKeySystem or not KeySystem.IsKeyVerified or not KeySystem.HideKeySystem then
-        warn("Key system missing required functions or failed to load")
+        warn("Key system missing required functions")
         return false, nil
     end
     print("Key system loaded successfully")
@@ -75,7 +75,7 @@ local function checkGameSupport()
         return loadstring(script)()
     end)
     if not success then
-        warn("Failed to load game list due to server-only API or other error: " .. tostring(Games))
+        warn("Failed to load game list: " .. tostring(Games))
         return false, nil
     end
     for PlaceID, Execute in pairs(Games) do
@@ -94,7 +94,7 @@ local function loadGameScript(scriptUrl)
         return loadstring(game:HttpGet(scriptUrl))()
     end)
     if not success then
-        warn("Failed to load game script due to server-only API or other error: " .. tostring(result))
+        warn("Failed to load game script: " .. tostring(result))
         return false
     end
     print("Game script loaded successfully")
@@ -117,7 +117,7 @@ local function loadBlackUI()
         return loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/blackui.lua"))()
     end)
     if not success then
-        warn("Failed to load black UI due to server-only API or other error: " .. tostring(BlackUI))
+        warn("Failed to load black UI: " .. tostring(BlackUI))
         return false, nil
     end
     print("Black UI loaded successfully")
@@ -286,22 +286,17 @@ local function checkValidKey(KeySystem)
         local storedKey = readfile(fileName)
         print("Found existing key file, checking validity...")
         
-        -- Check if the stored key is still valid by testing it with the key system
         local isValid = false
         local success, err = pcall(function()
-            -- Assuming the KeySystem has a method to validate a key without showing UI
-            -- You may need to modify this based on your actual KeySystem implementation
             if KeySystem.ValidateKey then
                 isValid = KeySystem.ValidateKey(storedKey)
             else
-                -- Alternative: temporarily set the key and check if it's verified
-                -- This depends on your KeySystem's implementation
                 isValid = KeySystem.IsKeyVerified()
             end
         end)
         
         if success and isValid then
-            print("Stored key is still valid")
+            print("Stored key is valid")
             return true
         else
             print("Stored key is invalid, deleting file")
@@ -342,21 +337,28 @@ coroutine.wrap(function()
         return
     end
 
-    if userStatus == "owner" then
-        print("Owner detected, loading script directly")
-        local scriptLoaded = loadGameScript(scriptUrl)
-        if scriptLoaded then
-            print("Scripts Hub X | Loading Complete for owner!")
+    if userStatus == "owner" or userStatus == "staff" or userStatus == "premium" or userStatus == "platoboost_whitelisted" then
+        print(userStatus .. " detected, skipping key system")
+        local success, LoadingScreen = loadLoadingScreen()
+        if success then
+            pcall(function()
+                LoadingScreen.initialize()
+                LoadingScreen.setLoadingText(userStatus == "premium" and "Premium User Verified" or userStatus == "platoboost_whitelisted" and "Platoboost Whitelisted" or userStatus .. " Verified", Color3.fromRGB(0, 150, 0))
+                wait(2)
+                LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
+                LoadingScreen.animateLoadingBar(function()
+                    LoadingScreen.playExitAnimations(function()
+                        local scriptLoaded = loadGameScript(scriptUrl)
+                        if scriptLoaded then
+                            print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
+                        else
+                            showErrorNotification()
+                        end
+                    end)
+                end)
+            end)
         else
-            showErrorNotification()
-        end
-    elseif userStatus == "staff" then
-        print("Staff detected, loading script directly")
-        local scriptLoaded = loadGameScript(scriptUrl)
-        if scriptLoaded then
-            print("Scripts Hub X | Loading Complete for staff!")
-        else
-            showErrorNotification()
+            loadGameScript(scriptUrl)
         end
     elseif userStatus == "blackuser" then
         print("Black user detected")
@@ -388,7 +390,7 @@ coroutine.wrap(function()
                             print("Scripts Hub X | Loading Complete for black user!")
                         else
                             showErrorNotification()
-                        end
+                        end)
                     end)
                 end)
             end)
@@ -492,29 +494,6 @@ coroutine.wrap(function()
         else
             showErrorNotification()
         end
-    elseif userStatus == "platoboost_whitelisted" then
-        print("Platoboost whitelisted user detected, skipping key system")
-        local success, LoadingScreen = loadLoadingScreen()
-        if success then
-            pcall(function()
-                LoadingScreen.initialize()
-                LoadingScreen.setLoadingText("Platoboost Whitelisted", Color3.fromRGB(0, 150, 0))
-                wait(2)
-                LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
-                LoadingScreen.animateLoadingBar(function()
-                    LoadingScreen.playExitAnimations(function()
-                        local scriptLoaded = loadGameScript(scriptUrl)
-                        if scriptLoaded then
-                            print("Scripts Hub X | Loading Complete for platoboost whitelisted user!")
-                        else
-                            showErrorNotification()
-                        end
-                    end)
-                end)
-            end)
-        else
-            loadGameScript(scriptUrl)
-        end
     else
         print("Non-premium user, checking for valid key file")
         local successKS, KeySystem = loadKeySystem()
@@ -587,7 +566,6 @@ coroutine.wrap(function()
                 return
             end
             
-            -- Create key file with the valid key
             if validKey ~= "" then
                 createKeyFile(validKey)
             end
@@ -596,14 +574,14 @@ coroutine.wrap(function()
             if successLS then
                 pcall(function()
                     LoadingScreen.initialize()
-                    LoadingScreen.setLoadingText(userStatus == "premium" and "Premium User Verified" or "Key Verified", Color3.fromRGB(0, 150, 0))
+                    LoadingScreen.setLoadingText("Key Verified", Color3.fromRGB(0, 150, 0))
                     wait(2)
                     LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
                     LoadingScreen.animateLoadingBar(function()
                         LoadingScreen.playExitAnimations(function()
                             local scriptLoaded = loadGameScript(scriptUrl)
                             if scriptLoaded then
-                                print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
+                                print("Scripts Hub X | Loading Complete for non-premium user!")
                             else
                                 showErrorNotification()
                             end
@@ -615,4 +593,4 @@ coroutine.wrap(function()
             end
         end
     end
-end)()
+end)() 
