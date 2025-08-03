@@ -236,99 +236,77 @@ local function disableNoclip()
 end
 
 -- Fly Functions
-local function getDirectionVector()
-    local camera = workspace.CurrentCamera
-    local moveVector = Vector3.new(0, 0, 0)
+local function Fly()
+    -- Waits until the player is in game
+    repeat wait() until game.Players.LocalPlayer and game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Torso") and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid")
+    local mouse = game.Players.LocalPlayer:GetMouse()
     
-    if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-        moveVector = moveVector + camera.CFrame.LookVector
-    end
-    if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-        moveVector = moveVector - camera.CFrame.LookVector
-    end
-    if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-        moveVector = moveVector - camera.CFrame.RightVector
-    end
-    if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-        moveVector = moveVector + camera.CFrame.RightVector
-    end
-    if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-        moveVector = moveVector + Vector3.new(0, 1, 0)
-    end
-    if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
-        moveVector = moveVector - Vector3.new(0, 1, 0)
-    end
+    -- Waits until the player's mouse is found
+    repeat wait() until mouse
     
-    return moveVector.Magnitude > 0 and moveVector.Unit or Vector3.new(0, 0, 0)
+    -- Variables
+    local plr = game.Players.LocalPlayer
+    local torso = plr.Character.Torso
+    local flying = true
+    local deb = true
+    local ctrl = {f = 0, b = 0, l = 0, r = 0}
+    local lastctrl = {f = 0, b = 0, l = 0, r = 0}
+    local maxspeed = 50
+    local speed = 0
+    local bg = nil
+    local bv = nil
+    
+    createNotification("Fly Activated")
+    bg = Instance.new("BodyGyro", torso)
+    bg.P = 9e4
+    bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+    bg.CFrame = torso.CFrame
+    bv = Instance.new("BodyVelocity", torso)
+    bv.velocity = Vector3.new(0, 0.1, 0)
+    bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
+    repeat wait()
+      plr.Character.Humanoid.PlatformStand = true
+      if ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0 then
+        speed = speed + 0.5 + (speed/maxspeed)
+        if speed > maxspeed then
+          speed = maxspeed
+        end
+      elseif not (ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0) and speed ~= 0 then
+        speed = speed - 1
+        if speed < 0 then
+          speed = 0
+        end
+      end
+      if (ctrl.l + ctrl.r) ~= 0 or (ctrl.f + ctrl.b) ~= 0 then
+        bv.velocity = ((workspace.CurrentCamera.CoordinateFrame.LookVector * (ctrl.f + ctrl.b)) + ((workspace.CurrentCamera.CoordinateFrame * CFrame.new(ctrl.l + ctrl.r, (ctrl.f + ctrl.b) * 0.2, 0).p) - workspace.CurrentCamera.CoordinateFrame.p)) * speed
+        lastctrl = {f = ctrl.f, b = ctrl.b, l = ctrl.l, r = ctrl.r}
+      elseif (ctrl.l + ctrl.r) == 0 and (ctrl.f + ctrl.b) == 0 and speed ~= 0 then
+        bv.velocity = ((workspace.CurrentCamera.CoordinateFrame.LookVector * (lastctrl.f + lastctrl.b)) + ((workspace.CurrentCamera.CoordinateFrame * CFrame.new(lastctrl.l + lastctrl.r, (lastctrl.f + lastctrl.b) * 0.2, 0).p) - workspace.CurrentCamera.CoordinateFrame.p)) * speed
+      else
+        bv.velocity = Vector3.new(0, 0.1, 0)
+      end
+      bg.CFrame = workspace.CurrentCamera.CoordinateFrame * CFrame.Angles(-math.rad((ctrl.f + ctrl.b) * 50 * speed/maxspeed), 0, 0)
+    until not flying
+    ctrl = {f = 0, b = 0, l = 0, r = 0}
+    lastctrl = {f = 0, b = 0, l = 0, r = 0}
+    speed = 0
+    bg:Destroy()
+    bg = nil
+    bv:Destroy()
+    bv = nil
+    plr.Character.Humanoid.PlatformStand = false
+    createNotification("Fly Deactivated")
 end
 
 local function startFly()
-    local character = LocalPlayer.Character
-    if not character then return end
-    
-    local humanoid = character:FindFirstChild("Humanoid")
-    local rootPart = character:FindFirstChild("HumanoidRootPart")
-    
-    if not humanoid or not rootPart then return end
-    
-    -- Clean up existing objects
-    if BodyVelocity then BodyVelocity:Destroy() end
-    if BodyAngularVelocity then BodyAngularVelocity:Destroy() end
-    if FlyConnection then FlyConnection:Disconnect() end
-    
-    BodyVelocity = Instance.new("BodyVelocity")
-    BodyVelocity.MaxForce = Vector3.new(4000, 4000, 4000)
-    BodyVelocity.Velocity = Vector3.new(0, 0, 0)
-    BodyVelocity.Parent = rootPart
-    
-    BodyAngularVelocity = Instance.new("BodyAngularVelocity")
-    BodyAngularVelocity.MaxTorque = Vector3.new(0, 0, 0) -- Disable rotation
-    BodyAngularVelocity.AngularVelocity = Vector3.new(0, 0, 0)
-    BodyAngularVelocity.Parent = rootPart
-    
-    humanoid.PlatformStand = true
-    
-    FlyConnection = RunService.Heartbeat:Connect(function()
-        if Flying and BodyVelocity and BodyVelocity.Parent then
-            local direction = getDirectionVector()
-            BodyVelocity.Velocity = direction * FlySpeed
-            rootPart.CFrame *= CFrame.new(Vector3.new(0, 10, 0)) -- Apply lift
-            humanoid.PlatformStand = true -- Ensure platform stand is maintained
-        end
-    end)
-    
-    print("Flying enabled at speed: " .. FlySpeed)
+    if not Flying then
+        Flying = true
+        Fly()
+    end
 end
 
 local function stopFly()
-    local character = LocalPlayer.Character
-    if character then
-        local humanoid = character:FindFirstChild("Humanoid")
-        if humanoid then
-            humanoid.PlatformStand = false
-        end
-    end
-    
-    if BodyVelocity then
-        BodyVelocity:Destroy()
-        BodyVelocity = nil
-    end
-    
-    if BodyAngularVelocity then
-        BodyAngularVelocity:Destroy()
-        BodyAngularVelocity = nil
-    end
-    
-    if FlyConnection then
-        FlyConnection:Disconnect()
-        FlyConnection = nil
-    end
-    if HealthConnection then
-        HealthConnection:Disconnect()
-        HealthConnection = nil
-    end
-    
-    print("Flying disabled")
+    Flying = false
 end
 
 -- God Mode Functions
@@ -566,10 +544,8 @@ local FlyToggle = PlayerTab:CreateToggle({
         
         if Flying then
             startFly()
-            createNotification("Flying Enabled")
         else
             stopFly()
-            createNotification("Flying Disabled")
         end
     end,
 })
@@ -583,12 +559,43 @@ local FlySpeedSlider = PlayerTab:CreateSlider({
     CurrentValue = 50,
     Flag = "FlySpeed",
     Callback = function(Value)
-        FlySpeed = Value
-        if Flying and BodyVelocity then
-            BodyVelocity.Velocity = getDirectionVector() * FlySpeed
-        end
+        maxspeed = Value
     end,
 })
+
+-- Controls
+local mouse = LocalPlayer:GetMouse()
+mouse.KeyDown:Connect(function(key)
+    if key:lower() == "e" then
+        if Flying then
+            Flying = false
+            stopFly()
+        else
+            Flying = true
+            startFly()
+        end
+    elseif key:lower() == "w" then
+        ctrl.f = 1
+    elseif key:lower() == "s" then
+        ctrl.b = -1
+    elseif key:lower() == "a" then
+        ctrl.l = -1
+    elseif key:lower() == "d" then
+        ctrl.r = 1
+    end
+end)
+
+mouse.KeyUp:Connect(function(key)
+    if key:lower() == "w" then
+        ctrl.f = 0
+    elseif key:lower() == "s" then
+        ctrl.b = 0
+    elseif key:lower() == "a" then
+        ctrl.l = 0
+    elseif key:lower() == "d" then
+        ctrl.r = 0
+    end
+end)
 
 -- Load configuration
 Rayfield:LoadConfiguration()
