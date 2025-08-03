@@ -1,138 +1,96 @@
--- Load PickleLibrary from a GitHub URL (replace with your actual URL)
 local PickleLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/picklelibrary.lua"))()
 
--- Check if the library loaded successfully
-if not PickleLibrary then
-    warn("Failed to load PickleLibrary. Check the URL or internet connection.")
-    return
-end
-
--- Create a window to start using PickleLibrary
 local Window = PickleLibrary:CreateWindow({
-    Name = "PickleLibrary Tutorial Window", -- The title of the window
-    LoadingTitle = "Loading Tutorial Interface", -- Title during loading
-    LoadingSubtitle = "by Your Name", -- Subtitle during loading
+    Name = "Test Interface",
+    LoadingTitle = "Test Interface Suite",
+    LoadingSubtitle = "by TestUser",
     ConfigurationSaving = {
-        Enabled = true, -- Enables saving settings
-        FileName = "TutorialConfig" -- Name of the config file
+        Enabled = true,
+        FileName = "TestConfig"
     },
     Discord = {
         Enabled = true,
-        Invite = "bpsNUH5sVb", -- Just the invite code, not full URL
-        RememberJoins = true -- Remembers if the user has joined
-    }
+        Invite = "https://discord.gg/donutsmp",
+        RememberJoins = true
+    },
+    Theme = "PickleTheme"
 })
 
--- Create a tab
-local Tab = Window:CreateTab({
-    Name = "Tutorial Tab", -- Name of the tab
-    Image = "settings" -- Optional: Use a Lucide icon name (e.g., "settings")
-})
+local Tab = Window:CreateTab({Name = "Test Tab"})
 
--- Create a section within the tab
-local Section = Tab:CreateSection({
-    Name = "Tutorial Section" -- Name of the section
-})
+local Section1 = Tab:CreateSection({Name = "Basic Elements"})
 
--- Example elements to demonstrate usage
-
--- Button Example
-Section:CreateButton({
-    Name = "Click Me!",
+Section1:CreateButton({
+    Name = "Test Button",
     Callback = function()
         PickleLibrary:Notify({
             Title = "Button Pressed",
-            Content = "You clicked the button!",
-            Duration = 5 -- Duration in seconds
+            Content = "The Test Button was clicked!",
+            Duration = 5
         })
     end
 })
 
--- Toggle Example
-Section:CreateToggle({
-    Name = "Toggle Me",
-    CurrentValue = false, -- Default value
+Section1:CreateToggle({
+    Name = "Test Toggle",
+    CurrentValue = false,
     Callback = function(Value)
         PickleLibrary:Notify({
-            Title = "Toggle State",
+            Title = "Toggle Changed",
             Content = "Toggle is now " .. tostring(Value),
-            Duration = 3
+            Duration = 5
         })
     end
 })
 
--- Slider Example
-Section:CreateSlider({
-    Name = "Volume Slider",
-    Min = 0, -- Minimum value
-    Max = 100, -- Maximum value
-    Default = 50, -- Default value
+Section1:CreateSlider({
+    Name = "Test Slider",
+    Min = 0,
+    Max = 100,
+    Default = 50,
     Callback = function(Value)
         PickleLibrary:Notify({
-            Title = "Volume Changed",
-            Content = "Volume set to " .. Value,
-            Duration = 3
+            Title = "Slider Moved",
+            Content = "Slider value: " .. tostring(Value),
+            Duration = 5
         })
     end
 })
 
--- Dropdown Example
-Section:CreateDropdown({
-    Name = "Select Option",
-    Options = {"Option 1", "Option 2", "Option 3"}, -- List of options
-    CurrentOption = "Option 1", -- Default option
-    Callback = function(Value)
+Section1:CreateDropdown({
+    Name = "Test Dropdown",
+    Options = {"Option 1", "Option 2", "Option 3"},
+    CurrentOption = "Option 1",
+    Callback = function(Option)
         PickleLibrary:Notify({
-            Title = "Option Selected",
-            Content = "Selected: " .. Value,
-            Duration = 3
+            Title = "Dropdown Changed",
+            Content = "Selected: " .. Option,
+            Duration = 5
         })
     end
 })
 
--- Input Example
-Section:CreateInput({
-    Name = "Enter Text",
-    Placeholder = "Type here...",
+Section1:CreateInput({
+    Name = "Test Input",
     Default = "Hello",
+    Placeholder = "Enter text...",
     Callback = function(Text, EnterPressed)
         PickleLibrary:Notify({
-            Title = "Input Received",
-            Content = "You entered: " .. Text .. (EnterPressed and " (Enter pressed)" or ""),
-            Duration = 3
+            Title = "Input Changed",
+            Content = "Input: " .. Text .. " (Enter: " .. tostring(EnterPressed) .. ")",
+            Duration = 5
         })
     end
 })
 
--- ColorPicker Example
-Section:CreateColorPicker({
-    Name = "Pick a Color",
-    Default = Color3.fromRGB(255, 0, 0), -- Default color
+Section1:CreateColorPicker({
+    Name = "Test ColorPicker",
+    Default = Color3.fromRGB(255, 0, 0),
     Callback = function(Value)
         PickleLibrary:Notify({
-            Title = "Color Picked",
-            Content = string.format("New color: RGB(%d, %d, %d)", 
-                Value.R * 255, Value.G * 255, Value.B * 255),
-            Duration = 3
+            Title = "Color Changed",
+            Content = "New color: R" .. math.floor(Value.R * 255) .. " G" .. math.floor(Value.G * 255) .. " B" .. math.floor(Value.B * 255),
+            Duration = 5
         })
     end
 })
-
--- Wait for UI to fully load before attempting to load configuration
-task.wait(2)
-
--- Load configuration if it exists
-local configLoaded = PickleLibrary:LoadConfiguration()
-if configLoaded then
-    PickleLibrary:Notify({
-        Title = "Configuration Loaded",
-        Content = "Your saved settings have been restored!",
-        Duration = 3
-    })
-else
-    PickleLibrary:Notify({
-        Title = "Welcome!",
-        Content = "No previous configuration found. Settings will be saved automatically.",
-        Duration = 5
-    })
-end
