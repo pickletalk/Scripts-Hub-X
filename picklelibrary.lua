@@ -1,8 +1,13 @@
 --[[
-	PickleLibrary Interface Suite
-	by Pickle (Adapted for PickleLibrary)
 
-	pickle  | Solo Developer 
+	PickleLibrary Interface Suite
+	by Sirius
+
+	shlex  | Designing + Programming
+	iRay   | Programming
+	Max    | Programming
+	Damian | Programming
+
 ]]
 
 if debugX then
@@ -14,6 +19,8 @@ local function getService(name)
 	return if cloneref then cloneref(service) else service
 end
 
+-- Loads and executes a function hosted on a remote URL. Cancels the request if the requested URL takes too long to respond.
+-- Errors with the function are caught and logged to the output
 local function loadWithTimeout(url: string, timeout: number?): ...any
 	assert(type(url) == "string", "Expected string, got " .. type(url))
 	timeout = timeout or 5
@@ -21,16 +28,17 @@ local function loadWithTimeout(url: string, timeout: number?): ...any
 	local success, result = false, nil
 
 	local requestThread = task.spawn(function()
-		local fetchSuccess, fetchResult = pcall(game.HttpGet, game, url)
+		local fetchSuccess, fetchResult = pcall(game.HttpGet, game, url) -- game:HttpGet(url)
+		-- If the request fails the content can be empty, even if fetchSuccess is true
 		if not fetchSuccess or #fetchResult == 0 then
 			if #fetchResult == 0 then
-				fetchResult = "Empty response"
+				fetchResult = "Empty response" -- Set the error message
 			end
 			success, result = false, fetchResult
 			requestCompleted = true
 			return
 		end
-		local content = fetchResult
+		local content = fetchResult -- Fetched content
 		local execSuccess, execResult = pcall(function()
 			return loadstring(content)()
 		end)
@@ -47,9 +55,11 @@ local function loadWithTimeout(url: string, timeout: number?): ...any
 		end
 	end)
 
+	-- Wait for completion or timeout
 	while not requestCompleted do
 		task.wait()
 	end
+	-- Cancel timeout thread if still running when request completes
 	if coroutine.status(timeoutThread) ~= "dead" then
 		task.cancel(timeoutThread)
 	end
@@ -59,22 +69,28 @@ local function loadWithTimeout(url: string, timeout: number?): ...any
 	return if success then result else nil
 end
 
-local requestsDisabled = true
+local requestsDisabled = true --getgenv and getgenv().DISABLE_PICKLE_REQUESTS
 local InterfaceBuild = '3K3W'
 local Release = "Build 1.68"
 local PickleFolder = "PickleLibrary"
 local ConfigurationFolder = PickleFolder.."/Configurations"
-local ConfigurationExtension = ".pld"
+local ConfigurationExtension = ".pfld"
 local settingsTable = {
 	General = {
+		-- if needs be in order just make getSetting(name)
 		pickleOpen = {Type = 'bind', Value = 'K', Name = 'PickleLibrary Keybind'},
+		-- buildwarnings
+		-- pickleprompts
+
 	},
 	System = {
 		usageAnalytics = {Type = 'toggle', Value = true, Name = 'Anonymised Analytics'},
 	}
 }
 
-local overriddenSettings: { [string]: any } = {}
+-- Settings that have been overridden by the developer. These will not be saved to the user's configuration file
+-- Overridden settings always take precedence over settings in the configuration file, and are cleared if the user changes the setting in the UI
+local overriddenSettings: { [string]: any } = {} -- For example, overriddenSettings["System.pickleOpen"] = "J"
 local function overrideSetting(category: string, name: string, value: any)
 	overriddenSettings[`{category}.{name}`] = value
 end
@@ -87,28 +103,34 @@ local function getSetting(category: string, name: string): any
 	end
 end
 
+-- If requests/analytics have been disabled by developer, set the user-facing setting to false as well
 if requestsDisabled then
 	overrideSetting("System", "usageAnalytics", false)
 end
 
 local HttpService = getService('HttpService')
 local RunService = getService('RunService')
+
+-- Environment Check
 local useStudio = RunService:IsStudio() or false
 
 local settingsCreated = false
-local settingsInitialized = false
+local settingsInitialized = false -- Whether the UI elements in the settings page have been set to the proper values
 local cachedSettings
-local prompt = nil
+local prompt = useStudio and require(script.Parent.prompt) or loadWithTimeout('https://raw.githubusercontent.com/SiriusSoftwareLtd/Sirius/refs/heads/request/prompt.lua')
 local requestFunc = (syn and syn.request) or (fluxus and fluxus.request) or (http and http.request) or http_request or request
 
-if not prompt then
+-- Validate prompt loaded correctly
+if not prompt and not useStudio then
+	warn("Failed to load prompt library, using fallback")
 	prompt = {
-		create = function() end
+		create = function() end -- No-op fallback
 	}
 end
 
 local function loadSettings()
 	local file = nil
+
 	local success, result = pcall(function()
 		task.spawn(function()
 			if isfolder and isfolder(PickleFolder) then
@@ -116,6 +138,14 @@ local function loadSettings()
 					file = readfile(PickleFolder..'/settings'..ConfigurationExtension)
 				end
 			end
+
+			-- for debug in studio
+			if useStudio then
+				file = [[
+		{"General":{"pickleOpen":{"Value":"K","Type":"bind","Name":"PickleLibrary Keybind","Element":{"HoldToInteract":false,"Ext":true,"Name":"PickleLibrary Keybind","Set":null,"CallOnChange":true,"Callback":null,"CurrentKeybind":"K"}}},"System":{"usageAnalytics":{"Value":false,"Type":"toggle","Name":"Anonymised Analytics","Element":{"Ext":true,"Name":"Anonymised Analytics","Set":null,"CurrentValue":false,"Callback":null}}}}
+	]]
+			end
+
 			if file then
 				local success, decodedFile = pcall(function() return HttpService:JSONDecode(file) end)
 				if success then
@@ -126,19 +156,19 @@ local function loadSettings()
 			else
 				file = {}
 			end
+
 			if not settingsCreated then 
 				cachedSettings = file
 				return
 			end
+
 			if file ~= {} then
 				for categoryName, settingCategory in pairs(settingsTable) do
 					if file[categoryName] then
 						for settingName, setting in pairs(settingCategory) do
 							if file[categoryName][settingName] then
 								setting.Value = file[categoryName][settingName].Value
-								if setting.Element then
-									setting.Element:Set(getSetting(categoryName, settingName))
-								end
+								setting.Element:Set(getSetting(categoryName, settingName))
 							end
 						end
 					end
@@ -147,6 +177,7 @@ local function loadSettings()
 			settingsInitialized = true
 		end)
 	end)
+
 	if not success then 
 		if writefile then
 			warn('PickleLibrary had an issue accessing configuration saving capability.')
@@ -165,358 +196,150 @@ if debugX then
 end
 
 local analyticsLib
-local sendReport = function(ev_n, sc_n) 
+local sendReport = function(ev_n, sc_n) warn("Failed to load report function") end
+if not requestsDisabled then
 	if debugX then
-		warn("Analytics disabled or failed to load")
+		warn('Querying Settings for Reporter Information')
+	end	
+	analyticsLib = loadWithTimeout("https://analytics.sirius.menu/script")
+	if not analyticsLib then
+		warn("Failed to load analytics reporter")
+		analyticsLib = nil
+	elseif analyticsLib and type(analyticsLib.load) == "function" then
+		analyticsLib:load()
+	else
+		warn("Analytics library loaded but missing load function")
+		analyticsLib = nil
+	end
+	sendReport = function(ev_n, sc_n)
+		if not (type(analyticsLib) == "table" and type(analyticsLib.isLoaded) == "function" and analyticsLib:isLoaded()) then
+			warn("Analytics library not loaded")
+			return
+		end
+		if useStudio then
+			print('Sending Analytics')
+		else
+			if debugX then warn('Reporting Analytics') end
+			analyticsLib:report(
+				{
+					["name"] = ev_n,
+					["script"] = {["name"] = sc_n, ["version"] = Release}
+				},
+				{
+					["version"] = InterfaceBuild
+				}
+			)
+			if debugX then warn('Finished Report') end
+		end
+	end
+	if cachedSettings and (#cachedSettings == 0 or (cachedSettings.System and cachedSettings.System.usageAnalytics and cachedSettings.System.usageAnalytics.Value)) then
+		sendReport("execution", "PickleLibrary")
+	elseif not cachedSettings then
+		sendReport("execution", "PickleLibrary")
 	end
 end
 
+local promptUser = math.random(1,6)
+
+if promptUser == 1 and prompt and type(prompt.create) == "function" then
+	prompt.create(
+		'Be cautious when running scripts',
+	    [[Please be careful when running scripts from unknown developers. This script has already been ran.
+
+<font transparency='0.3'>Some scripts may steal your items or in-game goods.</font>]],
+		'Okay',
+		'',
+		function()
+
+		end
+	)
+end
+
+if debugX then
+	warn('Moving on to continue initialisation')
+end
+
+local PickleLibrary = {
+	Flags = {},
+	Theme = {
+		Custom = {
+			TextColor = Color3.fromRGB(230, 230, 230),
+
+			Background = Color3.fromRGB(30, 60, 90), -- A bit darker blue for main window
+			Topbar = Color3.fromRGB(70, 130, 180), -- Light blue for title bar
+			Shadow = Color3.fromRGB(20, 40, 60),
+
+			NotificationBackground = Color3.fromRGB(20, 40, 60),
+			NotificationActionsBackground = Color3.fromRGB(230, 230, 230),
+
+			TabBackground = Color3.fromRGB(20, 40, 60), -- Dark blue for elements
+			TabStroke = Color3.fromRGB(25, 50, 75),
+			TabBackgroundSelected = Color3.fromRGB(40, 80, 120),
+			TabTextColor = Color3.fromRGB(230, 230, 230),
+			SelectedTabTextColor = Color3.fromRGB(255, 255, 255),
+
+			ElementBackground = Color3.fromRGB(20, 40, 60), -- Dark blue for elements
+			ElementBackgroundHover = Color3.fromRGB(25, 50, 75),
+			SecondaryElementBackground = Color3.fromRGB(15, 30, 45),
+			ElementStroke = Color3.fromRGB(30, 60, 90),
+			SecondaryElementStroke = Color3.fromRGB(25, 50, 75),
+
+			SliderBackground = Color3.fromRGB(20, 40, 60), -- Dark blue for elements
+			SliderProgress = Color3.fromRGB(25, 50, 75),
+			SliderStroke = Color3.fromRGB(30, 60, 90),
+
+			ToggleBackground = Color3.fromRGB(20, 40, 60), -- Dark blue for elements
+			ToggleEnabled = Color3.fromRGB(25, 50, 75),
+			ToggleDisabled = Color3.fromRGB(70, 70, 70),
+			ToggleEnabledStroke = Color3.fromRGB(30, 60, 90),
+			ToggleDisabledStroke = Color3.fromRGB(80, 80, 80),
+			ToggleEnabledOuterStroke = Color3.fromRGB(40, 80, 120),
+			ToggleDisabledOuterStroke = Color3.fromRGB(50, 50, 50),
+
+			DropdownSelected = Color3.fromRGB(20, 40, 60), -- Dark blue for elements
+			DropdownUnselected = Color3.fromRGB(15, 30, 45),
+
+			InputBackground = Color3.fromRGB(20, 40, 60), -- Dark blue for elements
+			InputStroke = Color3.fromRGB(30, 60, 90),
+			PlaceholderColor = Color3.fromRGB(150, 150, 150)
+		}
+	}
+}
+
+-- Services
 local UserInputService = getService("UserInputService")
 local TweenService = getService("TweenService")
 local Players = getService("Players")
 local CoreGui = getService("CoreGui")
 
-local function createPickleGUI()
-	local ScreenGui = Instance.new("ScreenGui")
-	ScreenGui.Name = "Pickle"
-	ScreenGui.ResetOnSpawn = false
-	ScreenGui.IgnoreGuiInset = true
-	
-	local Main = Instance.new("Frame")
-	Main.Name = "Main"
-	-- Match RayfieldLibrary size: 430x225
-	Main.Size = UDim2.new(0, 430, 0, 225)
-	Main.Position = UDim2.new(0.5, -215, 0.5, -112.5)
-	Main.BackgroundColor3 = Color3.fromRGB(25, 40, 60) -- Changed to a darker blue theme
-	Main.BorderSizePixel = 0
-	Main.Parent = ScreenGui
-	
-	local Corner = Instance.new("UICorner")
-	Corner.CornerRadius = UDim.new(0, 5)
-	Corner.Parent = Main
-	
-	local Shadow = Instance.new("Frame")
-	Shadow.Name = "Shadow"
-	Shadow.Size = UDim2.new(1, 10, 1, 10)
-	Shadow.Position = UDim2.new(0, -5, 0, -5)
-	Shadow.BackgroundTransparency = 1
-	Shadow.Parent = Main
-	
-	local ShadowImage = Instance.new("ImageLabel")
-	ShadowImage.Name = "Image"
-	ShadowImage.Size = UDim2.new(1, 0, 1, 0)
-	ShadowImage.BackgroundTransparency = 1
-	ShadowImage.Image = "rbxassetid://1316045217"
-	ShadowImage.ImageColor3 = Color3.fromRGB(0, 0, 0)
-	ShadowImage.ImageTransparency = 0.8
-	ShadowImage.ScaleType = Enum.ScaleType.Slice
-	ShadowImage.SliceCenter = Rect.new(10, 10, 118, 118)
-	ShadowImage.Parent = Shadow
-	
-	local Topbar = Instance.new("Frame")
-	Topbar.Name = "Topbar"
-	Topbar.Size = UDim2.new(1, 0, 0, 30)
-	Topbar.BackgroundColor3 = Color3.fromRGB(35, 55, 80) -- Darker topbar color
-	Topbar.BorderSizePixel = 0
-	Topbar.Parent = Main
-	
-	local TopbarCorner = Instance.new("UICorner")
-	TopbarCorner.CornerRadius = UDim.new(0, 5)
-	TopbarCorner.Parent = Topbar
-	
-	local CornerRepair = Instance.new("Frame")
-	CornerRepair.Name = "CornerRepair"
-	CornerRepair.Size = UDim2.new(1, 0, 0, 5)
-	CornerRepair.Position = UDim2.new(0, 0, 1, -5)
-	CornerRepair.BackgroundColor3 = Color3.fromRGB(35, 55, 80)
-	CornerRepair.BorderSizePixel = 0
-	CornerRepair.Parent = Topbar
-	
-	local Title = Instance.new("TextLabel")
-	Title.Name = "Title"
-	Title.Size = UDim2.new(1, -100, 1, 0)
-	Title.Position = UDim2.new(0, 10, 0, 0)
-	Title.BackgroundTransparency = 1
-	Title.Text = "NewFieldLibrary" -- Changed name
-	Title.TextColor3 = Color3.fromRGB(200, 220, 255) -- Lighter text for contrast
-	Title.TextSize = 16
-	Title.Font = Enum.Font.GothamBold
-	Title.TextXAlignment = Enum.TextXAlignment.Left
-	Title.Parent = Topbar
-	
-	local Icon = Instance.new("ImageLabel")
-	Icon.Name = "Icon"
-	Icon.Size = UDim2.new(0, 24, 0, 24)
-	Icon.Position = UDim2.new(0, 5, 0, 3)
-	Icon.BackgroundTransparency = 1
-	Icon.Image = ""
-	Icon.Parent = Topbar
-	
-	local Minimize = Instance.new("ImageButton")
-	Minimize.Name = "Minimize"
-	Minimize.Size = UDim2.new(0, 20, 0, 20)
-	Minimize.Position = UDim2.new(1, -40, 0, 5)
-	Minimize.BackgroundTransparency = 1
-	Minimize.Image = "rbxassetid://6031094678" -- Minimize icon
-	Minimize.ImageColor3 = Color3.fromRGB(200, 220, 255)
-	Minimize.Parent = Topbar
-	
-	local Hide = Instance.new("ImageButton")
-	Hide.Name = "Hide"
-	Hide.Size = UDim2.new(0, 20, 0, 20)
-	Hide.Position = UDim2.new(1, -20, 0, 5)
-	Hide.BackgroundTransparency = 1
-	Hide.Image = "rbxassetid://6031094678" -- Hide icon (same as minimize for now)
-	Hide.ImageColor3 = Color3.fromRGB(200, 220, 255)
-	Hide.Parent = Topbar
-	
-	local TabList = Instance.new("Frame")
-	TabList.Name = "TabList"
-	TabList.Size = UDim2.new(0, 120, 1, -30)
-	TabList.Position = UDim2.new(0, 0, 0, 30)
-	TabList.BackgroundTransparency = 1
-	TabList.Parent = Main
-	
-	local TabListLayout = Instance.new("UIListLayout")
-	TabListLayout.Padding = UDim.new(0, 2)
-	TabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	TabListLayout.Parent = TabList
-	
-	local TabListPadding = Instance.new("UIPadding")
-	TabListPadding.PaddingTop = UDim.new(0, 5)
-	TabListPadding.PaddingLeft = UDim.new(0, 5)
-	TabListPadding.Parent = TabList
-	
-	local TabTemplate = Instance.new("TextButton")
-	TabTemplate.Name = "Template"
-	TabTemplate.Size = UDim2.new(1, -10, 0, 25)
-	TabTemplate.BackgroundColor3 = Color3.fromRGB(30, 50, 70)
-	TabTemplate.BackgroundTransparency = 0.8
-	TabTemplate.BorderSizePixel = 0
-	TabTemplate.Text = "Tab"
-	TabTemplate.TextColor3 = Color3.fromRGB(200, 220, 255)
-	TabTemplate.TextSize = 14
-	TabTemplate.Font = Enum.Font.Gotham
-	TabTemplate.TextXAlignment = Enum.TextXAlignment.Center
-	TabTemplate.Visible = false
-	TabTemplate.Parent = TabList
-	
-	local TabTemplateCorner = Instance.new("UICorner")
-	TabTemplateCorner.CornerRadius = UDim.new(0, 3)
-	TabTemplateCorner.Parent = TabTemplate
-	
-	local Elements = Instance.new("Frame")
-	Elements.Name = "Elements"
-	Elements.Size = UDim2.new(1, -120, 1, -30)
-	Elements.Position = UDim2.new(0, 120, 0, 30)
-	Elements.BackgroundTransparency = 1
-	Elements.Parent = Main
-	
-	local ElementsLayout = Instance.new("UIPageLayout")
-	ElementsLayout.Name = "UIPageLayout"
-	ElementsLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	ElementsLayout.TweenTime = 0.3
-	ElementsLayout.EasingStyle = Enum.EasingStyle.Quad
-	ElementsLayout.Parent = Elements
-	
-	local SearchFrame = Instance.new("Frame")
-	SearchFrame.Name = "Search"
-	SearchFrame.Size = UDim2.new(1, -55, 0, 25)
-	SearchFrame.Position = UDim2.new(0.5, 0, 0, 40)
-	SearchFrame.BackgroundColor3 = Color3.fromRGB(35, 55, 80)
-	SearchFrame.BackgroundTransparency = 0.5
-	SearchFrame.BorderSizePixel = 0
-	SearchFrame.Visible = false
-	SearchFrame.Parent = Main
-	
-	local SearchCorner = Instance.new("UICorner")
-	SearchCorner.CornerRadius = UDim.new(0, 3)
-	SearchCorner.Parent = SearchFrame
-	
-	local SearchStroke = Instance.new("UIStroke")
-	SearchStroke.Name = "UIStroke"
-	SearchStroke.Color = Color3.fromRGB(40, 60, 90)
-	SearchStroke.Transparency = 0.5
-	SearchStroke.Parent = SearchFrame
-	
-	local SearchShadow = Instance.new("ImageLabel")
-	SearchShadow.Name = "Shadow"
-	SearchShadow.Size = UDim2.new(1, 10, 1, 10)
-	SearchShadow.Position = UDim2.new(0, -5, 0, -5)
-	SearchShadow.BackgroundTransparency = 1
-	SearchShadow.Image = "rbxassetid://1316045217"
-	SearchShadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-	SearchShadow.ImageTransparency = 0.9
-	SearchShadow.ScaleType = Enum.ScaleType.Slice
-	SearchShadow.SliceCenter = Rect.new(10, 10, 118, 118)
-	SearchShadow.Parent = SearchFrame
-	
-	local SearchInput = Instance.new("TextBox")
-	SearchInput.Name = "Input"
-	SearchInput.Size = UDim2.new(1, -30, 1, 0)
-	SearchInput.Position = UDim2.new(0, 5, 0, 0)
-	SearchInput.BackgroundTransparency = 1
-	SearchInput.Text = ""
-	SearchInput.PlaceholderText = "Search..."
-	SearchInput.PlaceholderColor3 = Color3.fromRGB(150, 170, 200)
-	SearchInput.TextColor3 = Color3.fromRGB(200, 220, 255)
-	SearchInput.TextSize = 14
-	SearchInput.Font = Enum.Font.Gotham
-	SearchInput.TextXAlignment = Enum.TextXAlignment.Left
-	SearchInput.Parent = SearchFrame
-	
-	local SearchIcon = Instance.new("ImageLabel")
-	SearchIcon.Name = "Search"
-	SearchIcon.Size = UDim2.new(0, 20, 0, 20)
-	SearchIcon.Position = UDim2.new(1, -25, 0.5, -10)
-	SearchIcon.BackgroundTransparency = 1
-	SearchIcon.Image = "rbxassetid://6031154871"
-	SearchIcon.ImageColor3 = Color3.fromRGB(200, 220, 255)
-	SearchIcon.Parent = SearchFrame
-	
-	local LoadingFrame = Instance.new("Frame")
-	LoadingFrame.Name = "LoadingFrame"
-	LoadingFrame.Size = UDim2.new(0, 200, 0, 100)
-	LoadingFrame.Position = UDim2.new(0.5, -100, 0.5, -50)
-	LoadingFrame.BackgroundColor3 = Color3.fromRGB(25, 40, 60)
-	LoadingFrame.BackgroundTransparency = 1
-	LoadingFrame.BorderSizePixel = 0
-	LoadingFrame.Visible = false
-	LoadingFrame.Parent = ScreenGui
-	
-	local LoadingCorner = Instance.new("UICorner")
-	LoadingCorner.CornerRadius = UDim.new(0, 5)
-	LoadingCorner.Parent = LoadingFrame
-	
-	local LoadingStroke = Instance.new("UIStroke")
-	LoadingStroke.Name = "UIStroke"
-	LoadingStroke.Color = Color3.fromRGB(40, 60, 90)
-	LoadingStroke.Transparency = 1
-	LoadingStroke.Parent = LoadingFrame
-	
-	local LoadingTitle = Instance.new("TextLabel")
-	LoadingTitle.Name = "Title"
-	LoadingTitle.Size = UDim2.new(1, 0, 0, 30)
-	LoadingTitle.Position = UDim2.new(0, 0, 0, 20)
-	LoadingTitle.BackgroundTransparency = 1
-	LoadingTitle.Text = "Loading..."
-	LoadingTitle.TextColor3 = Color3.fromRGB(200, 220, 255)
-	LoadingTitle.TextSize = 18
-	LoadingTitle.Font = Enum.Font.GothamBold
-	LoadingTitle.TextTransparency = 1
-	LoadingTitle.Parent = LoadingFrame
-	
-	local LoadingSubtitle = Instance.new("TextLabel")
-	LoadingSubtitle.Name = "Subtitle"
-	LoadingSubtitle.Size = UDim2.new(1, 0, 0, 20)
-	LoadingSubtitle.Position = UDim2.new(0, 0, 0, 50)
-	LoadingSubtitle.BackgroundTransparency = 1
-	LoadingSubtitle.Text = "Please wait..."
-	LoadingSubtitle.TextColor3 = Color3.fromRGB(150, 170, 200)
-	LoadingSubtitle.TextSize = 14
-	LoadingSubtitle.Font = Enum.Font.Gotham
-	LoadingSubtitle.TextTransparency = 1
-	LoadingSubtitle.Parent = LoadingFrame
-	
-	local LoadingVersion = Instance.new("TextLabel")
-	LoadingVersion.Name = "Version"
-	LoadingVersion.Size = UDim2.new(1, 0, 0, 20)
-	LoadingVersion.Position = UDim2.new(0, 0, 0, 70)
-	LoadingVersion.BackgroundTransparency = 1
-	LoadingVersion.Text = Release
-	LoadingVersion.TextColor3 = Color3.fromRGB(150, 170, 200)
-	LoadingVersion.TextSize = 12
-	LoadingVersion.Font = Enum.Font.Gotham
-	LoadingVersion.TextTransparency = 1
-	LoadingVersion.Parent = LoadingFrame
-	
-	local Notifications = Instance.new("Frame")
-	Notifications.Name = "Notifications"
-	Notifications.Size = UDim2.new(0, 250, 1, 0)
-	Notifications.Position = UDim2.new(1, -260, 0, 10)
-	Notifications.BackgroundTransparency = 1
-	Notifications.Parent = ScreenGui
-	
-	local NotificationsLayout = Instance.new("UIListLayout")
-	NotificationsLayout.Padding = UDim.new(0, 5)
-	NotificationsLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	NotificationsLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-	NotificationsLayout.Parent = Notifications
-	
-	local NotificationTemplate = Instance.new("Frame")
-	NotificationTemplate.Name = "Template"
-	NotificationTemplate.Size = UDim2.new(1, 0, 0, 50)
-	NotificationTemplate.BackgroundColor3 = Color3.fromRGB(25, 40, 60)
-	NotificationTemplate.BackgroundTransparency = 1
-	NotificationTemplate.BorderSizePixel = 0
-	NotificationTemplate.Visible = false
-	NotificationTemplate.Parent = Notifications
-	
-	local NotificationCorner = Instance.new("UICorner")
-	NotificationCorner.CornerRadius = UDim.new(0, 5)
-	NotificationCorner.Parent = NotificationTemplate
-	
-	local NotificationStroke = Instance.new("UIStroke")
-	NotificationStroke.Name = "UIStroke"
-	NotificationStroke.Color = Color3.fromRGB(40, 60, 90)
-	NotificationStroke.Transparency = 1
-	NotificationStroke.Parent = NotificationTemplate
-	
-	local NotificationShadow = Instance.new("ImageLabel")
-	NotificationShadow.Name = "Shadow"
-	NotificationShadow.Size = UDim2.new(1, 10, 1, 10)
-	NotificationShadow.Position = UDim2.new(0, -5, 0, -5)
-	NotificationShadow.BackgroundTransparency = 1
-	NotificationShadow.Image = "rbxassetid://1316045217"
-	NotificationShadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-	NotificationShadow.ImageTransparency = 1
-	NotificationShadow.ScaleType = Enum.ScaleType.Slice
-	NotificationShadow.SliceCenter = Rect.new(10, 10, 118, 118)
-	NotificationShadow.Parent = NotificationTemplate
-	
-	local NotificationIcon = Instance.new("ImageLabel")
-	NotificationIcon.Name = "Icon"
-	NotificationIcon.Size = UDim2.new(0, 24, 0, 24)
-	NotificationIcon.Position = UDim2.new(0, 10, 0.5, -12)
-	NotificationIcon.BackgroundTransparency = 1
-	NotificationIcon.ImageTransparency = 1
-	NotificationIcon.Parent = NotificationTemplate
-	
-	local NotificationTitle = Instance.new("TextLabel")
-	NotificationTitle.Name = "Title"
-	NotificationTitle.Size = UDim2.new(1, -60, 0, 20)
-	NotificationTitle.Position = UDim2.new(0, 40, 0, 5)
-	NotificationTitle.BackgroundTransparency = 1
-	NotificationTitle.Text = "Notification"
-	NotificationTitle.TextColor3 = Color3.fromRGB(200, 220, 255)
-	NotificationTitle.TextSize = 14
-	NotificationTitle.Font = Enum.Font.GothamBold
-	NotificationTitle.TextXAlignment = Enum.TextXAlignment.Left
-	NotificationTitle.TextTransparency = 1
-	NotificationTitle.Parent = NotificationTemplate
-	
-	local NotificationDescription = Instance.new("TextLabel")
-	NotificationDescription.Name = "Description"
-	NotificationDescription.Size = UDim2.new(1, -60, 0, 20)
-	NotificationDescription.Position = UDim2.new(0, 40, 0, 25)
-	NotificationDescription.BackgroundTransparency = 1
-	NotificationDescription.Text = "Description"
-	NotificationDescription.TextColor3 = Color3.fromRGB(150, 170, 200)
-	NotificationDescription.TextSize = 12
-	NotificationDescription.Font = Enum.Font.Gotham
-	NotificationDescription.TextXAlignment = Enum.TextXAlignment.Left
-	NotificationDescription.TextTransparency = 1
-	NotificationDescription.Parent = NotificationTemplate
-	
-	return ScreenGui
-end
+-- Interface Management
 
-local Pickle = createPickleGUI()
+local Pickle = useStudio and script.Parent:FindFirstChild('Pickle') or game:GetObjects("rbxassetid://10804731440")[1]
 local buildAttempts = 0
-local correctBuild = true
-local warned = false
-local globalLoaded = false
-local pickleDestroyed = false
+local correctBuild = false
+local warned
+local globalLoaded
+local pickleDestroyed = false -- True when PickleLibrary:Destroy() is called
+
+repeat
+	if Pickle:FindFirstChild('Build') and Pickle.Build.Value == InterfaceBuild then
+		correctBuild = true
+		break
+	end
+
+	correctBuild = false
+
+	if not warned then
+		warn('PickleLibrary | Build Mismatch')
+		print('PickleLibrary may encounter issues as you are running an incompatible interface version ('.. ((Pickle:FindFirstChild('Build') and Pickle.Build.Value) or 'No Build') ..').\n\nThis version of PickleLibrary is intended for interface build '..InterfaceBuild..'.')
+		warned = true
+	end
+
+	toDestroy, Pickle = Pickle, useStudio and script.Parent:FindFirstChild('Pickle') or game:GetObjects("rbxassetid://10804731440")[1]
+	if toDestroy and not useStudio then toDestroy:Destroy() end
+
+	buildAttempts = buildAttempts + 1
+until buildAttempts >= 2
 
 Pickle.Enabled = false
 
@@ -528,8 +351,6 @@ elseif syn and syn.protect_gui then
 elseif not useStudio and CoreGui:FindFirstChild("RobloxGui") then
 	Pickle.Parent = CoreGui:FindFirstChild("RobloxGui")
 elseif not useStudio then
-	Pickle.Parent = CoreGui
-else
 	Pickle.Parent = CoreGui
 end
 
@@ -550,36 +371,37 @@ elseif not useStudio then
 end
 
 local minSize = Vector2.new(1024, 768)
-local useMobileSizing = false
+local useMobileSizing
+
 if Pickle.AbsoluteSize.X < minSize.X and Pickle.AbsoluteSize.Y < minSize.Y then
 	useMobileSizing = true
 end
-local useMobilePrompt = false
+
 if UserInputService.TouchEnabled then
 	useMobilePrompt = true
 end
+
+-- Object Variables
 
 local Main = Pickle.Main
 local MPrompt = Pickle:FindFirstChild('Prompt')
 local Topbar = Main.Topbar
 local Elements = Main.Elements
-local LoadingFrame = Pickle.LoadingFrame
+local LoadingFrame = Main.LoadingFrame
 local TabList = Main.TabList
 local dragBar = Pickle:FindFirstChild('Drag')
-local dragInteract = dragBar and dragBar.Interact or Topbar
+local dragInteract = dragBar and dragBar.Interact or nil
 local dragBarCosmetic = dragBar and dragBar.Drag or nil
+
 local dragOffset = 255
 local dragOffsetMobile = 150
+
 Pickle.DisplayOrder = 100
 LoadingFrame.Version.Text = Release
 
-local function getIcon(name: string)
-	return {
-		id = 0,
-		imageRectSize = Vector2.new(24, 24),
-		imageRectOffset = Vector2.new(0, 0)
-	}
-end
+-- Thanks to Latte Softworks for the Lucide integration for Roblox
+local Icons = useStudio and require(script.Parent.icons) or loadWithTimeout('https://raw.githubusercontent.com/SiriusSoftwareLtd/Rayfield/refs/heads/main/icons.lua')
+-- Variables
 
 local CFileName = nil
 local CEnabled = false
@@ -588,76 +410,92 @@ local Hidden = false
 local Debounce = false
 local searchOpen = false
 local Notifications = Pickle.Notifications
-local SelectedTheme = {
-	TextColor = Color3.fromRGB(200, 220, 255),
-	Background = Color3.fromRGB(25, 40, 60),
-	Topbar = Color3.fromRGB(35, 55, 80),
-	Shadow = Color3.fromRGB(20, 30, 40),
-	NotificationBackground = Color3.fromRGB(25, 40, 60),
-	NotificationActionsBackground = Color3.fromRGB(35, 55, 80),
-	TabBackground = Color3.fromRGB(30, 50, 70),
-	TabStroke = Color3.fromRGB(40, 60, 90),
-	TabBackgroundSelected = Color3.fromRGB(45, 70, 100),
-	TabTextColor = Color3.fromRGB(150, 170, 200),
-	SelectedTabTextColor = Color3.fromRGB(200, 220, 255),
-	ElementBackground = Color3.fromRGB(30, 50, 70),
-	ElementBackgroundHover = Color3.fromRGB(35, 55, 80),
-	SecondaryElementBackground = Color3.fromRGB(25, 45, 65),
-	ElementStroke = Color3.fromRGB(40, 60, 90),
-	SecondaryElementStroke = Color3.fromRGB(35, 55, 80),
-	SliderBackground = Color3.fromRGB(40, 60, 90),
-	SliderProgress = Color3.fromRGB(45, 70, 100),
-	SliderStroke = Color3.fromRGB(50, 75, 110),
-	ToggleBackground = Color3.fromRGB(30, 50, 70),
-	ToggleEnabled = Color3.fromRGB(45, 70, 100),
-	ToggleDisabled = Color3.fromRGB(35, 55, 80),
-	ToggleEnabledStroke = Color3.fromRGB(50, 75, 110),
-	ToggleDisabledStroke = Color3.fromRGB(40, 60, 90),
-	ToggleEnabledOuterStroke = Color3.fromRGB(40, 60, 90),
-	ToggleDisabledOuterStroke = Color3.fromRGB(30, 50, 70),
-	DropdownSelected = Color3.fromRGB(35, 55, 80),
-	DropdownUnselected = Color3.fromRGB(30, 50, 70),
-	InputBackground = Color3.fromRGB(30, 50, 70),
-	InputStroke = Color3.fromRGB(40, 60, 90),
-	PlaceholderColor = Color3.fromRGB(150, 170, 200)
-}
 
-local PickleLibrary = {
-	Flags = {},
-	Theme = {
-		PickleTheme = SelectedTheme
-	}
-}
+local SelectedTheme = PickleLibrary.Theme.Custom
 
 local function ChangeTheme(Theme)
 	if typeof(Theme) == 'string' then
-		SelectedTheme = PickleLibrary.Theme[Theme] or PickleLibrary.Theme.PickleTheme
+		SelectedTheme = PickleLibrary.Theme[Theme]
 	elseif typeof(Theme) == 'table' then
 		SelectedTheme = Theme
 	end
-	
-	Main.BackgroundColor3 = SelectedTheme.Background
-	Topbar.BackgroundColor3 = SelectedTheme.Topbar
-	Topbar.CornerRepair.BackgroundColor3 = SelectedTheme.Topbar
-	Main.Shadow.Image.ImageColor3 = SelectedTheme.Shadow
-	Topbar.Minimize.ImageColor3 = SelectedTheme.TextColor
-	Topbar.Hide.ImageColor3 = SelectedTheme.TextColor
-	
+
+	Pickle.Main.BackgroundColor3 = SelectedTheme.Background
+	Pickle.Main.Topbar.BackgroundColor3 = SelectedTheme.Topbar
+	Pickle.Main.Topbar.CornerRepair.BackgroundColor3 = SelectedTheme.Topbar
+	Pickle.Main.Shadow.Image.ImageColor3 = SelectedTheme.Shadow
+
+	Pickle.Main.Topbar.ChangeSize.ImageColor3 = SelectedTheme.TextColor
+	Pickle.Main.Topbar.Hide.ImageColor3 = SelectedTheme.TextColor
+	Pickle.Main.Topbar.Search.ImageColor3 = SelectedTheme.TextColor
+	if Topbar:FindFirstChild('Settings') then
+		Pickle.Main.Topbar.Settings.ImageColor3 = SelectedTheme.TextColor
+		Pickle.Main.Topbar.Divider.BackgroundColor3 = SelectedTheme.ElementStroke
+	end
+
+	Main.Search.BackgroundColor3 = SelectedTheme.TextColor
+	Main.Search.Shadow.ImageColor3 = SelectedTheme.TextColor
+	Main.Search.Search.ImageColor3 = SelectedTheme.TextColor
+	Main.Search.Input.PlaceholderColor3 = SelectedTheme.TextColor
+	Main.Search.UIStroke.Color = SelectedTheme.SecondaryElementStroke
+
+	if Main:FindFirstChild('Notice') then
+		Main.Notice.BackgroundColor3 = SelectedTheme.Background
+	end
+
 	for _, text in ipairs(Pickle:GetDescendants()) do
 		if text.Parent.Parent ~= Notifications then
-			if text:IsA('TextLabel') or text:IsA('TextBox') then 
-				text.TextColor3 = SelectedTheme.TextColor 
+			if text:IsA('TextLabel') or text:IsA('TextBox') then text.TextColor3 = SelectedTheme.TextColor end
+		end
+	end
+
+	for _, TabPage in ipairs(Elements:GetChildren()) do
+		for _, Element in ipairs(TabPage:GetChildren()) do
+			if Element.ClassName == "Frame" and Element.Name ~= "Placeholder" and Element.Name ~= "SectionSpacing" and Element.Name ~= "Divider" and Element.Name ~= "SectionTitle" and Element.Name ~= "SearchTitle-fsefsefesfsefesfesfThanks" then
+				Element.BackgroundColor3 = SelectedTheme.ElementBackground
+				Element.UIStroke.Color = SelectedTheme.ElementStroke
 			end
 		end
 	end
 end
 
+local function getIcon(name : string): {id: number, imageRectSize: Vector2, imageRectOffset: Vector2}
+	if not Icons then
+		warn("Lucide Icons: Cannot use icons as icons library is not loaded")
+		return
+	end
+	name = string.match(string.lower(name), "^%s*(.*)%s*$") :: string
+	local sizedicons = Icons['48px']
+	local r = sizedicons[name]
+	if not r then
+		error(`Lucide Icons: Failed to find icon by the name of "{name}"`, 2)
+	end
+
+	local rirs = r[2]
+	local riro = r[3]
+
+	if type(r[1]) ~= "number" or type(rirs) ~= "table" or type(riro) ~= "table" then
+		error("Lucide Icons: Internal error: Invalid auto-generated asset entry")
+	end
+
+	local irs = Vector2.new(rirs[1], rirs[2])
+	local iro = Vector2.new(riro[1], riro[2])
+
+	local asset = {
+		id = r[1],
+		imageRectSize = irs,
+		imageRectOffset = iro,
+	}
+
+	return asset
+end
+-- Converts ID to asset URI. Returns rbxassetid://0 if ID is not a number
 local function getAssetUri(id: any): string
-	local assetUri = "rbxassetid://0"
+	local assetUri = "rbxassetid://0" -- Default to empty image
 	if type(id) == "number" then
 		assetUri = "rbxassetid://" .. id
-	elseif type(id) == "string" then
-		assetUri = "rbxassetid://0"
+	elseif type(id) == "string" and not Icons then
+		warn("PickleLibrary | Cannot use Lucide icons as icons library is not loaded")
 	else
 		warn("PickleLibrary | The icon argument must either be an icon ID (number) or a Lucide icon name (string)")
 	end
@@ -667,36 +505,75 @@ end
 local function makeDraggable(object, dragObject, enableTaptic, tapticOffset)
 	local dragging = false
 	local relative = nil
+
 	local offset = Vector2.zero
 	local screenGui = object:FindFirstAncestorWhichIsA("ScreenGui")
 	if screenGui and screenGui.IgnoreGuiInset then
 		offset += getService('GuiService'):GetGuiInset()
 	end
-	
+
+	local function connectFunctions()
+		if dragBar and enableTaptic then
+			dragBar.MouseEnter:Connect(function()
+				if not dragging and not Hidden then
+					TweenService:Create(dragBarCosmetic, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {BackgroundTransparency = 0.5, Size = UDim2.new(0, 120, 0, 4)}):Play()
+				end
+			end)
+
+			dragBar.MouseLeave:Connect(function()
+				if not dragging and not Hidden then
+					TweenService:Create(dragBarCosmetic, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {BackgroundTransparency = 0.7, Size = UDim2.new(0, 100, 0, 4)}):Play()
+				end
+			end)
+		end
+	end
+
+	connectFunctions()
+
 	dragObject.InputBegan:Connect(function(input, processed)
 		if processed then return end
+
 		local inputType = input.UserInputType.Name
 		if inputType == "MouseButton1" or inputType == "Touch" then
 			dragging = true
+
 			relative = object.AbsolutePosition + object.AbsoluteSize * object.AnchorPoint - UserInputService:GetMouseLocation()
+			if enableTaptic and not Hidden then
+				TweenService:Create(dragBarCosmetic, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 110, 0, 4), BackgroundTransparency = 0}):Play()
+			end
 		end
 	end)
-	
+
 	local inputEnded = UserInputService.InputEnded:Connect(function(input)
 		if not dragging then return end
+
 		local inputType = input.UserInputType.Name
 		if inputType == "MouseButton1" or inputType == "Touch" then
 			dragging = false
+
+			connectFunctions()
+
+			if enableTaptic and not Hidden then
+				TweenService:Create(dragBarCosmetic, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 100, 0, 4), BackgroundTransparency = 0.7}):Play()
+			end
 		end
 	end)
-	
+
 	local renderStepped = RunService.RenderStepped:Connect(function()
 		if dragging and not Hidden then
 			local position = UserInputService:GetMouseLocation() + relative + offset
-			object.Position = UDim2.fromOffset(position.X, position.Y)
+			if enableTaptic and tapticOffset then
+				TweenService:Create(object, TweenInfo.new(0.4, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {Position = UDim2.fromOffset(position.X, position.Y)}):Play()
+				TweenService:Create(dragObject.Parent, TweenInfo.new(0.05, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {Position = UDim2.fromOffset(position.X, position.Y + ((useMobileSizing and tapticOffset[2]) or tapticOffset[1]))}):Play()
+			else
+				if dragBar and tapticOffset then
+					dragBar.Position = UDim2.fromOffset(position.X, position.Y + ((useMobileSizing and tapticOffset[2]) or tapticOffset[1]))
+				end
+				object.Position = UDim2.fromOffset(position.X, position.Y)
+			end
 		end
 	end)
-	
+
 	object.Destroying:Connect(function()
 		if inputEnded then inputEnded:Disconnect() end
 		if renderStepped then renderStepped:Disconnect() end
@@ -713,14 +590,14 @@ end
 
 local function LoadConfiguration(Configuration)
 	local success, Data = pcall(function() return HttpService:JSONDecode(Configuration) end)
-	local changed = false
-	if not success then 
-		warn('PickleLibrary had an issue decoding the configuration file, please try delete the file and reopen PickleLibrary.') 
-		return false
-	end
-	
+	local changed
+
+	if not success then warn('PickleLibrary had an issue decoding the configuration file, please try delete the file and reopen PickleLibrary.') return end
+
+	-- Iterate through current UI elements' flags
 	for FlagName, Flag in pairs(PickleLibrary.Flags) do
 		local FlagValue = Data[FlagName]
+
 		if (typeof(FlagValue) == 'boolean' and FlagValue == false) or FlagValue then
 			task.spawn(function()
 				if Flag.Type == "ColorPicker" then
@@ -735,16 +612,20 @@ local function LoadConfiguration(Configuration)
 			end)
 		else
 			warn("PickleLibrary | Unable to find '"..FlagName.. "' in the save file.")
+			print("The error above may not be an issue if new elements have been added or not been set values.")
 		end
 	end
+
 	return changed
 end
 
 local function SaveConfiguration()
 	if not CEnabled or not globalLoaded then return end
+
 	if debugX then
 		print('Saving')
 	end
+
 	local Data = {}
 	for i, v in pairs(PickleLibrary.Flags) do
 		if v.Type == "ColorPicker" then
@@ -761,855 +642,1568 @@ local function SaveConfiguration()
 			end
 		end
 	end
-	
+
+	if useStudio then
+		if script.Parent:FindFirstChild('configuration') then script.Parent.configuration:Destroy() end
+
+		local ScreenGui = Instance.new("ScreenGui")
+		ScreenGui.Parent = script.Parent
+		ScreenGui.Name = 'configuration'
+
+		local TextBox = Instance.new("TextBox")
+		TextBox.Parent = ScreenGui
+		TextBox.Size = UDim2.new(0, 800, 0, 50)
+		TextBox.AnchorPoint = Vector2.new(0.5, 0)
+		TextBox.Position = UDim2.new(0.5, 0, 0, 30)
+		TextBox.Text = HttpService:JSONEncode(Data)
+		TextBox.ClearTextOnFocus = false
+	end
+
 	if debugX then
 		warn(HttpService:JSONEncode(Data))
 	end
+
 	if writefile then
 		writefile(ConfigurationFolder .. "/" .. CFileName .. ConfigurationExtension, tostring(HttpService:JSONEncode(Data)))
 	end
 end
 
-function PickleLibrary:Notify(data)
+function PickleLibrary:Notify(data) -- action e.g open messages
 	task.spawn(function()
+
+		-- Notification Object Creation
 		local newNotification = Notifications.Template:Clone()
 		newNotification.Name = data.Title or 'No Title Provided'
 		newNotification.Parent = Notifications
 		newNotification.LayoutOrder = #Notifications:GetChildren()
 		newNotification.Visible = false
+
+		-- Set Data
 		newNotification.Title.Text = data.Title or "Unknown Title"
 		newNotification.Description.Text = data.Content or "Unknown Content"
-		
+
 		if data.Image then
-			newNotification.Icon.Image = getAssetUri(data.Image)
+			if typeof(data.Image) == 'string' and Icons then
+				local asset = getIcon(data.Image)
+
+				newNotification.Icon.Image = 'rbxassetid://'..asset.id
+				newNotification.Icon.ImageRectOffset = asset.imageRectOffset
+				newNotification.Icon.ImageRectSize = asset.imageRectSize
+			else
+				newNotification.Icon.Image = getAssetUri(data.Image)
+			end
 		else
-			newNotification.Icon.Image = "rbxassetid://0"
+			newNotification.Icon.Image = "rbxassetid://" .. 0
 		end
-		
+
+		-- Set initial transparency values
+
 		newNotification.Title.TextColor3 = SelectedTheme.TextColor
 		newNotification.Description.TextColor3 = SelectedTheme.TextColor
 		newNotification.BackgroundColor3 = SelectedTheme.Background
 		newNotification.UIStroke.Color = SelectedTheme.TextColor
 		newNotification.Icon.ImageColor3 = SelectedTheme.TextColor
-		
+
 		newNotification.BackgroundTransparency = 1
 		newNotification.Title.TextTransparency = 1
 		newNotification.Description.TextTransparency = 1
 		newNotification.UIStroke.Transparency = 1
 		newNotification.Shadow.ImageTransparency = 1
+		newNotification.Size = UDim2.new(1, 0, 0, 800)
 		newNotification.Icon.ImageTransparency = 1
-		
+		newNotification.Icon.BackgroundTransparency = 1
+
 		task.wait()
+
 		newNotification.Visible = true
-		
+
+		if data.Actions then
+			warn('PickleLibrary | Not seeing your actions in notifications?')
+			print("Notification Actions are being sunset for now, keep up to date on when they're back in the discord. (sirius.menu/discord)")
+		end
+
+		-- Calculate textbounds and set initial values
 		local bounds = {newNotification.Title.TextBounds.Y, newNotification.Description.TextBounds.Y}
-		newNotification.Size = UDim2.new(1, 0, 0, math.max(bounds[1] + bounds[2] + 29, 50))
-		
-		TweenService:Create(newNotification, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {BackgroundTransparency = 0.6}):Play()
-		TweenService:Create(newNotification.Title, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {TextTransparency = 0}):Play()
+		newNotification.Size = UDim2.new(1, -60, 0, -Notifications:FindFirstChild("UIListLayout").Padding.Offset)
+
+		newNotification.Icon.Size = UDim2.new(0, 32, 0, 32)
+		newNotification.Icon.Position = UDim2.new(0, 20, 0.5, 0)
+
+		TweenService:Create(newNotification, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Size = UDim2.new(1, 0, 0, math.max(bounds[1] + bounds[2] + 31, 60))}):Play()
+
+		task.wait(0.15)
+		TweenService:Create(newNotification, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.45}):Play()
+		TweenService:Create(newNotification.Title, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+
 		task.wait(0.05)
-		TweenService:Create(newNotification.Icon, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {ImageTransparency = 0}):Play()
+
+		TweenService:Create(newNotification.Icon, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {ImageTransparency = 0}):Play()
+
 		task.wait(0.05)
-		TweenService:Create(newNotification.Description, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {TextTransparency = 0.4}):Play()
-		TweenService:Create(newNotification.UIStroke, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {Transparency = 0.9}):Play()
-		TweenService:Create(newNotification.Shadow, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {ImageTransparency = 0.85}):Play()
-		
+		TweenService:Create(newNotification.Description, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {TextTransparency = 0.35}):Play()
+		TweenService:Create(newNotification.UIStroke, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {Transparency = 0.95}):Play()
+		TweenService:Create(newNotification.Shadow, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {ImageTransparency = 0.82}):Play()
+
 		local waitDuration = math.min(math.max((#newNotification.Description.Text * 0.1) + 2.5, 3), 10)
 		task.wait(data.Duration or waitDuration)
-		
-		TweenService:Create(newNotification, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {BackgroundTransparency = 1}):Play()
-		TweenService:Create(newNotification.UIStroke, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {Transparency = 1}):Play()
-		TweenService:Create(newNotification.Shadow, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {ImageTransparency = 1}):Play()
-		TweenService:Create(newNotification.Title, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {TextTransparency = 1}):Play()
-		TweenService:Create(newNotification.Description, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {TextTransparency = 1}):Play()
-		TweenService:Create(newNotification.Icon, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {ImageTransparency = 1}):Play()
-		
-		task.wait(0.5)
+
+		newNotification.Icon.Visible = false
+		TweenService:Create(newNotification, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {BackgroundTransparency = 1}):Play()
+		TweenService:Create(newNotification.UIStroke, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+		TweenService:Create(newNotification.Shadow, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {ImageTransparency = 1}):Play()
+		TweenService:Create(newNotification.Title, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {TextTransparency = 1}):Play()
+		TweenService:Create(newNotification.Description, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {TextTransparency = 1}):Play()
+
+		TweenService:Create(newNotification, TweenInfo.new(1, Enum.EasingStyle.Exponential), {Size = UDim2.new(1, -90, 0, 0)}):Play()
+
+		task.wait(1)
+
+		TweenService:Create(newNotification, TweenInfo.new(1, Enum.EasingStyle.Exponential), {Size = UDim2.new(1, -90, 0, -Notifications:FindFirstChild("UIListLayout").Padding.Offset)}):Play()
+
+		newNotification.Visible = false
 		newNotification:Destroy()
 	end)
 end
 
-function PickleLibrary:LoadConfiguration()
-	if CEnabled and CFileName and isfile and isfile(ConfigurationFolder .. "/" .. CFileName .. ConfigurationExtension) then
-		local configData = readfile(ConfigurationFolder .. "/" .. CFileName .. ConfigurationExtension)
-		return LoadConfiguration(configData)
+local function openSearch()
+	searchOpen = true
+
+	Main.Search.BackgroundTransparency = 1
+	Main.Search.Shadow.ImageTransparency = 1
+	Main.Search.Input.TextTransparency = 1
+	Main.Search.Search.ImageTransparency = 1
+	Main.Search.UIStroke.Transparency = 1
+	Main.Search.Size = UDim2.new(1, 0, 0, 80)
+	Main.Search.Position = UDim2.new(0.5, 0, 0, 70)
+
+	Main.Search.Input.Interactable = true
+
+	Main.Search.Visible = true
+
+	for _, tabbtn in ipairs(TabList:GetChildren()) do
+		if tabbtn.ClassName == "Frame" and tabbtn.Name ~= "Placeholder" then
+			tabbtn.Interact.Visible = false
+			TweenService:Create(tabbtn, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {BackgroundTransparency = 1}):Play()
+			TweenService:Create(tabbtn.Title, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {TextTransparency = 1}):Play()
+			TweenService:Create(tabbtn.Image, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {ImageTransparency = 1}):Play()
+			TweenService:Create(tabbtn.UIStroke, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+		end
 	end
-	return false
+
+	Main.Search.Input:CaptureFocus()
+	TweenService:Create(Main.Search.Shadow, TweenInfo.new(0.05, Enum.EasingStyle.Quint), {ImageTransparency = 0.95}):Play()
+	TweenService:Create(Main.Search, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {Position = UDim2.new(0.5, 0, 0, 57), BackgroundTransparency = 0.9}):Play()
+	TweenService:Create(Main.Search.UIStroke, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {Transparency = 0.8}):Play()
+	TweenService:Create(Main.Search.Input, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {TextTransparency = 0.2}):Play()
+	TweenService:Create(Main.Search.Search, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {ImageTransparency = 0.5}):Play()
+	TweenService:Create(Main.Search, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Size = UDim2.new(1, -35, 0, 35)}):Play()
+end
+
+local function closeSearch()
+	searchOpen = false
+
+	TweenService:Create(Main.Search, TweenInfo.new(0.35, Enum.EasingStyle.Quint), {BackgroundTransparency = 1, Size = UDim2.new(1, -55, 0, 30)}):Play()
+	TweenService:Create(Main.Search.Search, TweenInfo.new(0.15, Enum.EasingStyle.Quint), {ImageTransparency = 1}):Play()
+	TweenService:Create(Main.Search.Shadow, TweenInfo.new(0.15, Enum.EasingStyle.Quint), {ImageTransparency = 1}):Play()
+	TweenService:Create(Main.Search.UIStroke, TweenInfo.new(0.15, Enum.EasingStyle.Quint), {Transparency = 1}):Play()
+	TweenService:Create(Main.Search.Input, TweenInfo.new(0.15, Enum.EasingStyle.Quint), {TextTransparency = 1}):Play()
+
+	for _, tabbtn in ipairs(TabList:GetChildren()) do
+		if tabbtn.ClassName == "Frame" and tabbtn.Name ~= "Placeholder" then
+			tabbtn.Interact.Visible = true
+			if tostring(Elements.UIPageLayout.CurrentPage) == tabbtn.Title.Text then
+				TweenService:Create(tabbtn, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+				TweenService:Create(tabbtn.Image, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {ImageTransparency = 0}):Play()
+				TweenService:Create(tabbtn.Title, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+				TweenService:Create(tabbtn.UIStroke, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+			else
+				TweenService:Create(tabbtn, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.7}):Play()
+				TweenService:Create(tabbtn.Image, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {ImageTransparency = 0.2}):Play()
+				TweenService:Create(tabbtn.Title, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {TextTransparency = 0.2}):Play()
+				TweenService:Create(tabbtn.UIStroke, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {Transparency = 0.5}):Play()
+			end
+		end
+	end
 end
 
 function PickleLibrary:CreateWindow(Settings)
-	local Window = {}
-	CFileName = Settings.ConfigurationSaving and Settings.ConfigurationSaving.FileName or nil
-	CEnabled = Settings.ConfigurationSaving and Settings.ConfigurationSaving.Enabled or false
-	
-	if Settings.ConfigurationSaving and Settings.ConfigurationSaving.FolderName then
-		ConfigurationFolder = Settings.ConfigurationSaving.FolderName
-	end
-	
-	Topbar.Title.Text = Settings.Name or "NewFieldLibrary Interface"
-	LoadingFrame.Title.Text = Settings.LoadingTitle or "NewFieldLibrary Interface Suite"
-	LoadingFrame.Subtitle.Text = Settings.LoadingSubtitle or "by Sirius"
-	
-	if Settings.Icon then
-		Topbar.Icon.Image = getAssetUri(Settings.Icon)
-	end
-	
-	if Settings.Theme then
-		ChangeTheme(Settings.Theme)
-	end
-	
-	if Settings.ConfigurationSaving and Settings.ConfigurationSaving.Enabled then
-		if makefolder and not isfolder(ConfigurationFolder) then
+	local Window = {
+		Tabs = {},
+	}
+
+	local WindowFunction = {}
+
+	CFileName = Settings.ConfigurationSaving and Settings.ConfigurationSaving.FileName
+	CEnabled = Settings.ConfigurationSaving and Settings.ConfigurationSaving.Enabled
+
+	if Settings.ConfigurationSaving then
+		if not isfolder(PickleFolder) then
+			makefolder(PickleFolder)
+		end
+
+		if not isfolder(ConfigurationFolder) then
 			makefolder(ConfigurationFolder)
 		end
 	end
-	
-	if Settings.Discord and Settings.Discord.Enabled and Settings.Discord.Invite then
-		if not Settings.Discord.RememberJoins or not (isfile and isfile("PickleLibrary/DiscordJoin")) then
-			if writefile then
-				writefile("PickleLibrary/DiscordJoin", "Joined")
+
+	Pickle.Main.Topbar.Title.Text = Settings.Name or "PickleLibrary Interface Suite"
+	Pickle.Main.Topbar.Subtitle.Text = Settings.LoadingSubtitle or "by Sirius"
+	Pickle.Main.BackgroundColor3 = SelectedTheme.Background
+	Pickle.Main.Topbar.BackgroundColor3 = SelectedTheme.Topbar
+	Pickle.Main.Shadow.Image.ImageColor3 = SelectedTheme.Shadow
+	Pickle.Main.Topbar.CornerRepair.BackgroundColor3 = SelectedTheme.Topbar
+
+	local function Maximise()
+		Debounce = true
+
+		TweenService:Create(Pickle.Main, TweenInfo.new(0.5, Enum.EasingStyle.Exponential, Enum.EasingDirection.InOut), {Size = useMobileSizing and UDim2.new(0, 500, 0, 275) or UDim2.new(0, 500, 0, 475)}):Play()
+		TweenService:Create(Pickle.Main.Topbar.ChangeSize, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {ImageTransparency = 0.8}):Play()
+
+		for _, v in ipairs(Elements:GetChildren()) do
+			if v.ClassName == "Frame" and v.Name ~= "Placeholder" then
+				TweenService:Create(v, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+				for _, x in ipairs(v:GetDescendants()) do
+					if x.ClassName == "TextLabel" or x.ClassName == "TextBox" then
+						TweenService:Create(x, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+					elseif x.ClassName == "ImageLabel" or x.ClassName == "ImageButton" then
+						TweenService:Create(x, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 0}):Play()
+					end
+				end
 			end
-			PickleLibrary:Notify({
-				Title = "Join our Discord!",
-				Content = "Join our Discord server to stay updated and get support: " .. Settings.Discord.Invite,
-				Duration = 10
-			})
 		end
+
+		for _, v in ipairs(TabList:GetChildren()) do
+			if v.ClassName == "Frame" and v.Name ~= "Placeholder" then
+				if tostring(Elements.UIPageLayout.CurrentPage) == v.Title.Text then
+					TweenService:Create(v, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+					TweenService:Create(v.Image, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 0}):Play()
+					TweenService:Create(v.Title, Tween NICE:Create(v.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+					TweenService:Create(v.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+				else
+					TweenService:Create(v, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.7}):Play()
+					TweenService:Create(v.Image, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 0.2}):Play()
+					TweenService:Create(v.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0.2}):Play()
+					TweenService:Create(v.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0.5}):Play()
+				end
+			end
+		end
+
+		task.wait(0.5)
+		Debounce = false
 	end
-	
-	-- Minimize button functionality
-	Minimize.MouseButton1Click:Connect(function()
-		Minimised = not Minimised
-		if Minimised then
-			TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 430, 0, 30)}):Play()
-			Elements.Visible = false
-			TabList.Visible = false
-		else
-			TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 430, 0, 225)}):Play()
-			Elements.Visible = true
-			TabList.Visible = true
+
+	local function Minimise()
+		Debounce = true
+
+		for _, v in ipairs(Elements:GetChildren()) do
+			if46 v.ClassName == "Frame" and v.Name ~= "Placeholder" then
+				TweenService:Create(v, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 1}):Play()
+				for _, x in ipairs(v:GetDescendants()) do
+					if x.ClassName == "TextLabel" or x.ClassName == "TextBox" then
+						TweenService:Create(x, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 1}):Play()
+					elseif x.ClassName == "ImageLabel" or x.ClassName == "ImageButton" then
+						TweenService:Create(x, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 1}):Play()
+					end
+				end
+			end
 		end
-	end)
-	
-	-- Hide button functionality
-	Hide.MouseButton1Click:Connect(function()
-		Hidden = not Hidden
-		if Hidden then
-			Main.Visible = false
-			Hide.Rotation = 180
-		else
-			Main.Visible = true
-			Hide.Rotation = 0
+
+		for _, v in ipairs(TabList:GetChildren()) do
+			if v.ClassName == "Frame" and v.Name ~= "Placeholder" then
+				TweenService:Create(v, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 1}):Play()
+				TweenService:Create(v.Image, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 1}):Play()
+				TweenService:Create(v.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 1}):Play()
+				TweenService:Create(v.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+			end
 		end
-	end)
-	
-	makeDraggable(Pickle, Topbar, true, {dragOffset, dragOffsetMobile})
-	
-	Pickle.Enabled = true
-	LoadingFrame.Visible = true
-	
-	TweenService:Create(LoadingFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {BackgroundTransparency = 0}):Play()
-	TweenService:Create(LoadingFrame.UIStroke, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {Transparency = 0}):Play()
-	TweenService:Create(LoadingFrame.Title, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {TextTransparency = 0}):Play()
-	TweenService:Create(LoadingFrame.Subtitle, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {TextTransparency = 0}):Play()
-	TweenService:Create(LoadingFrame.Version, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {TextTransparency = 0}):Play()
-	
-	task.wait(0.5)
-	
-	TweenService:Create(LoadingFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 0, 0, 0)}):Play()
-	TweenService:Create(LoadingFrame.UIStroke, TweenInfo.new(0.5, Enum.EasingStyle.Quad), {Transparency = 1}):Play()
-	TweenService:Create(LoadingFrame.Title, TweenInfo.new(0.5, Enum.EasingStyle.Quad), {TextTransparency = 1}):Play()
-	TweenService:Create(LoadingFrame.Subtitle, TweenInfo.new(0.5, Enum.EasingStyle.Quad), {TextTransparency = 1}):Play()
-	TweenService:Create(LoadingFrame.Version, TweenInfo.new(0.5, Enum.EasingStyle.Quad), {TextTransparency = 1}):Play()
-	
-	task.wait(0.5)
-	LoadingFrame.Visible = false
-	globalLoaded = true
-	
-	Window.Name = Settings.Name or "NewFieldLibrary Interface"
-	Window.CurrentTab = nil
-	
-	function Window:CreateTab(TabSettings)
-		local Tab = {}
+
+		TweenService:Create(Pickle.Main, TweenInfo.new(0.5, Enum.EasingStyle.Exponential, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 390, 0, 90)}):Play()
+		TweenService:Create(Pickle.Main.Topbar.ChangeSize, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {ImageTransparency = 0}):Play()
+
+		task.wait(0.5)
+		Debounce = false
+	end
+
+	local function Hide(notify)
+		Debounce = true
+
+		for _, v in ipairs(Elements:GetChildren()) do
+			if v.ClassName == "Frame" and v.Name ~= "Placeholder" then
+				TweenService:Create(v, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 1}):Play()
+				for _, x in ipairs(v:GetDescendants()) do
+					if x.ClassName == "TextLabel" or x.ClassName == "TextBox" then
+						TweenService:Create(x, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 1}):Play()
+					elseif x.ClassName == "ImageLabel" or x.ClassName == "ImageButton" then
+						TweenService:Create(x, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 1}):Play()
+					end
+				end
+			end
+		end
+
+		for _, v in ipairs(TabList:GetChildren()) do
+			if v.ClassName == "Frame" and v.Name ~= "Placeholder" then
+				TweenService:Create(v, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 1}):Play()
+				TweenService:Create(v.Image, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 1}):Play()
+				TweenService:Create(v.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 1}):Play()
+				TweenService:Create(v.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+			end
+		end
+
+		TweenService:Create(Pickle.Main, TweenInfo.new(0.5, Enum.EasingStyle.Exponential, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 390, 0, 90)}):Play()
+		TweenService:Create(Pickle.Main.Shadow.Image, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {ImageTransparency = 1}):Play()
+		TweenService:Create(Pickle.Main.Topbar, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 1}):Play()
+		TweenService:Create(Pickle.Main.Topbar.CornerRepair, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 1}):Play()
+		TweenService:Create(Pickle.Main.Topbar.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 1}):Play()
+		TweenService:Create(Pickle.Main.Topbar.Subtitle, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 1}):Play()
+		TweenService:Create(Pickle.Main.Topbar.ChangeSize, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 1}):Play()
+		TweenService:Create(Pickle.Main.Topbar.Search, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 1}):Play()
+		TweenService:Create(Pickle.Main.Topbar.Hide, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 1}):Play()
+		if Topbar:FindFirstChild('Settings') then
+			TweenService:Create(Pickle.Main.Topbar.Settings, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 1}):Play()
+		end
+		if dragBar then
+			TweenService:Create(dragBarCosmetic, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 1}):Play()
+		end
+
+		if notify then
+			PickleLibrary:Notify({Title = "PickleLibrary Interface", Content = "The interface has been hidden, you can unhide it with the keybind.", Image = 4400704299})
+		end
+
+		task.wait(0.5)
+		Pickle.Enabled = false
+		Debounce = false
+	end
+
+	local function Unhide()
+		Debounce = true
+
+		Pickle.Enabled = true
+		TweenService:Create(Pickle.Main, TweenInfo.new(0.5, Enum.EasingStyle.Exponential, Enum.EasingDirection.InOut), {Size = useMobileSizing and UDim2.new(0, 500, 0, 275) or UDim2.new(0, 500, 0, 475)}):Play()
+		TweenService:Create(Pickle.Main.Shadow.Image, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {ImageTransparency = 0.6}):Play()
+		TweenService:Create(Pickle.Main.Topbar, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+		TweenService:Create(Pickle.Main.Topbar.CornerRepair, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+		TweenService:Create(Pickle.Main.Topbar.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+		TweenService:Create(Pickle.Main.Topbar.Subtitle, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+		TweenService:Create(Pickle.Main.Topbar.ChangeSize, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 0.8}):Play()
+		TweenService:Create(Pickle.Main.Topbar.Search, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 0.8}):Play()
+		TweenService:Create(Pickle.Main.Topbar.Hide, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 0.8}):Play()
+		if Topbar:FindFirstChild('Settings') then
+			TweenService:Create(Pickle.Main.Topbar.Settings, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 0.8}):Play()
+		end
+		if dragBar then
+			TweenService:Create(dragBarCosmetic, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.7}):Play()
+		end
+
+		for _, v in ipairs(Elements:GetChildren()) do
+			if v.ClassName == "Frame" and v.Name ~= "Placeholder" then
+				TweenService:Create(v, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+				for _, x in ipairs(v:GetDescendants()) do
+					if x.ClassName == "TextLabel" or x.ClassName == "TextBox" then
+						TweenService:Create(x, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+					elseif x.ClassName == "ImageLabel" or x.ClassName == "ImageButton" then
+						TweenService:Create(x, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 0}):Play()
+					end
+				end
+			end
+		end
+
+		for _, v in ipairs(TabList:GetChildren()) do
+			if v.ClassName == "Frame" and v.Name ~= "Placeholder" then
+				if tostring(Elements.UIPageLayout.CurrentPage) == v.Title.Text then
+					TweenService:Create(v, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+					TweenService:Create(v.Image, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 0}):Play()
+					TweenService:Create(v.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+					TweenService:Create(v.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+				else
+					TweenService:Create(v, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.7}):Play()
+					TweenService:Create(v.Image, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 0.2}):Play()
+					TweenService:Create(v.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0.2}):Play()
+					TweenService:Create(v.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0.5}):Play()
+				end
+			end
+		end
+
+		task.wait(0.5)
+		Debounce = false
+	end
+
+	function Window:CreateTab(Name, Image)
+		local Tab = {
+			Elements = {},
+		}
+
 		local TabButton = TabList.Template:Clone()
-		TabButton.Name = TabSettings.Name
-		TabButton.Text = TabSettings.Name
-		TabButton.BackgroundTransparency = 0.8
-		TabButton.TextColor3 = SelectedTheme.TabTextColor
-		
-		if TabSettings.Image then
-			TabButton.Image = getAssetUri(TabSettings.Image)
-		end
-		
+		TabButton.Name = Name
+		TabButton.Title.Text = Name
 		TabButton.Parent = TabList
+		TabButton.BackgroundColor3 = SelectedTheme.TabBackground
+		TabButton.UIStroke.Color = SelectedTheme.TabStroke
 		TabButton.Visible = true
-		
-		local TabPage = Instance.new("ScrollingFrame")
-		TabPage.Name = TabSettings.Name
-		TabPage.Size = UDim2.new(1, 0, 1, 0)
-		TabPage.BackgroundTransparency = 1
-		TabPage.BorderSizePixel = 0
-		TabPage.ScrollBarThickness = 4
-		TabPage.ScrollBarImageColor3 = SelectedTheme.ElementStroke
-		TabPage.CanvasSize = UDim2.new(0, 0, 0, 0)
-		TabPage.AutomaticCanvasSize = Enum.AutomaticSize.Y
-		TabPage.Parent = Elements
-		
-		local Layout = Instance.new("UIListLayout")
-		Layout.Name = "UIListLayout"
-		Layout.Padding = UDim.new(0, 5)
-		Layout.SortOrder = Enum.SortOrder.LayoutOrder
-		Layout.Parent = TabPage
-		
-		local Padding = Instance.new("UIPadding")
-		Padding.Name = "UIPadding"
-		Padding.PaddingTop = UDim.new(0, 5)
-		Padding.PaddingLeft = UDim.new(0, 5)
-		Padding.PaddingRight = UDim.new(0, 10)
-		Padding.Parent = TabPage
-		
-		TabButton.MouseButton1Click:Connect(function()
-			if Window.CurrentTab then
-				TweenService:Create(Window.CurrentTab.Button, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {BackgroundTransparency = 0.8, TextTransparency = 0.2}):Play()
-				Window.CurrentTab.Page.Visible = false
+
+		if Image then
+			if typeof(Image) == 'string' then
+				local asset = getIcon(Image)
+				TabButton.Image.Image = 'rbxassetid://'..asset.id
+				TabButton.Image.ImageRectOffset = asset.imageRectOffset
+				TabButton.Image.ImageRectSize = asset.imageRectSize
+			else
+				TabButton.Image.Image = getAssetUri(Image)
 			end
-			
-			Window.CurrentTab = Tab
-			TweenService:Create(TabButton, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {BackgroundTransparency = 0, TextColor3 = SelectedTheme.SelectedTabTextColor}):Play()
-			TabPage.Visible = true
-			Elements.UIPageLayout:JumpTo(TabPage)
-			SaveConfiguration()
-		end)
-		
-		if #TabList:GetChildren() == 2 then
-			TabButton.MouseButton1Click:Fire()
+		else
+			TabButton.Image.Image = "rbxassetid://0"
 		end
-		
-		Tab.Button = TabButton
-		Tab.Page = TabPage
-		
-		function Tab:CreateSection(SectionSettings)
-			local Section = {}
-			
-			local SectionTitle = Instance.new("TextLabel")
-			SectionTitle.Name = "SectionTitle"
-			SectionTitle.Size = UDim2.new(1, -10, 0, 25)
-			SectionTitle.BackgroundTransparency = 1
-			SectionTitle.Text = SectionSettings.Name or "New Section"
-			SectionTitle.TextColor3 = SelectedTheme.TextColor
-			SectionTitle.TextSize = 16
-			SectionTitle.Font = Enum.Font.GothamBold
-			SectionTitle.TextXAlignment = Enum.TextXAlignment.Left
-			SectionTitle.Parent = TabPage
-			
-			TweenService:Create(SectionTitle, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {TextTransparency = 0}):Play()
-			
-			function Section:CreateButton(ButtonSettings)
-				local Button = {}
-				
-				local ButtonFrame = Instance.new("Frame")
-				ButtonFrame.Name = "Button"
-				ButtonFrame.Size = UDim2.new(1, -10, 0, 30)
-				ButtonFrame.BackgroundColor3 = SelectedTheme.ElementBackground
-				ButtonFrame.BorderSizePixel = 0
-				ButtonFrame.Parent = TabPage
-				
-				local ButtonCorner = Instance.new("UICorner")
-				ButtonCorner.CornerRadius = UDim.new(0, 3)
-				ButtonCorner.Parent = ButtonFrame
-				
-				local ButtonStroke = Instance.new("UIStroke")
-				ButtonStroke.Name = "UIStroke"
-				ButtonStroke.Thickness = 1
-				ButtonStroke.Color = SelectedTheme.ElementStroke
-				ButtonStroke.Parent = ButtonFrame
-				
-				local ButtonInteract = Instance.new("TextButton")
-				ButtonInteract.Name = "Interact"
-				ButtonInteract.Size = UDim2.new(1, 0, 1, 0)
-				ButtonInteract.BackgroundTransparency = 1
-				ButtonInteract.Text = ButtonSettings.Name or "New Button"
-				ButtonInteract.TextColor3 = SelectedTheme.TextColor
-				ButtonInteract.TextSize = 14
-				ButtonInteract.Font = Enum.Font.Gotham
-				ButtonInteract.Parent = ButtonFrame
-				
-				ButtonInteract.MouseEnter:Connect(function()
-					TweenService:Create(ButtonFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {BackgroundColor3 = SelectedTheme.ElementBackgroundHover}):Play()
-				end)
-				
-				ButtonInteract.MouseLeave:Connect(function()
-					TweenService:Create(ButtonFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
-				end)
-				
-				ButtonInteract.MouseButton1Click:Connect(function()
-					if ButtonSettings.Callback then 
-						ButtonSettings.Callback() 
-					end
-				end)
-				
-				TweenService:Create(ButtonFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(1, -10, 0, 30), BackgroundTransparency = 0}):Play()
-				
-				Button.Frame = ButtonFrame
-				Button.Type = "Button"
-				if ButtonSettings.Name then
-					PickleLibrary.Flags[ButtonSettings.Name] = Button
+
+		local TabPage = Elements.Template:Clone()
+		TabPage.Name = Name
+		TabPage.Visible = false
+		TabPage.Parent = Elements
+
+		TabButton.Interact.MouseButton1Click:Connect(function()
+			for _, OtherTabButton in ipairs(TabList:GetChildren()) do
+				if OtherTabButton.Name ~= "Template" and OtherTabButton.ClassName == "Frame" and OtherTabButton ~= TabButton and OtherTabButton.Name ~= "Placeholder" then
+					TweenService:Create(OtherTabButton, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.TabBackground}):Play()
+					TweenService:Create(OtherTabButton.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextColor3 = SelectedTheme.TabTextColor}):Play()
+					TweenService:Create(OtherTabButton.Image, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageColor3 = SelectedTheme.TabTextColor}):Play()
+					TweenService:Create(OtherTabButton, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.7}):Play()
+					TweenService:Create(OtherTabButton.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0.2}):Play()
+					TweenService:Create(OtherTabButton.Image, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 0.2}):Play()
+					TweenService:Create(OtherTabButton.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0.5}):Play()
 				end
-				
-				return Button
 			end
-			
-			function Section:CreateToggle(ToggleSettings)
-				local Toggle = {}
-				
-				local ToggleFrame = Instance.new("Frame")
-				ToggleFrame.Name = "Toggle"
-				ToggleFrame.Size = UDim2.new(1, -10, 0, 30)
-				ToggleFrame.BackgroundColor3 = SelectedTheme.ElementBackground
-				ToggleFrame.BorderSizePixel = 0
-				ToggleFrame.Parent = TabPage
-				
-				local ToggleCorner = Instance.new("UICorner")
-				ToggleCorner.CornerRadius = UDim.new(0, 3)
-				ToggleCorner.Parent = ToggleFrame
-				
-				local ToggleStroke = Instance.new("UIStroke")
-				ToggleStroke.Name = "UIStroke"
-				ToggleStroke.Thickness = 1
-				ToggleStroke.Color = SelectedTheme.ElementStroke
-				ToggleStroke.Parent = ToggleFrame
-				
-				local ToggleLabel = Instance.new("TextLabel")
-				ToggleLabel.Name = "Label"
-				ToggleLabel.Size = UDim2.new(1, -40, 1, 0)
-				ToggleLabel.Position = UDim2.new(0, 10, 0, 0)
-				ToggleLabel.BackgroundTransparency = 1
-				ToggleLabel.Text = ToggleSettings.Name or "New Toggle"
-				ToggleLabel.TextColor3 = SelectedTheme.TextColor
-				ToggleLabel.TextSize = 14
-				ToggleLabel.Font = Enum.Font.Gotham
-				ToggleLabel.TextXAlignment = Enum.TextXAlignment.Left
-				ToggleLabel.Parent = ToggleFrame
-				
-				local ToggleSwitch = Instance.new("Frame")
-				ToggleSwitch.Name = "Switch"
-				ToggleSwitch.Size = UDim2.new(0, 20, 0, 20)
-				ToggleSwitch.Position = UDim2.new(1, -25, 0.5, -10)
-				ToggleSwitch.BackgroundColor3 = SelectedTheme.ToggleBackground
-				ToggleSwitch.BorderSizePixel = 0
-				ToggleSwitch.Parent = ToggleFrame
-				
-				local SwitchCorner = Instance.new("UICorner")
-				SwitchCorner.CornerRadius = UDim.new(0, 3)
-				SwitchCorner.Parent = ToggleSwitch
-				
-				local ToggleIndicator = Instance.new("Frame")
-				ToggleIndicator.Name = "Indicator"
-				ToggleIndicator.Size = UDim2.new(0, 14, 0, 14)
-				ToggleIndicator.Position = UDim2.new(0, 3, 0, 3)
-				ToggleIndicator.BackgroundColor3 = SelectedTheme.ToggleDisabled
-				ToggleIndicator.BorderSizePixel = 0
-				ToggleIndicator.Parent = ToggleSwitch
-				
-				local IndicatorCorner = Instance.new("UICorner")
-				IndicatorCorner.CornerRadius = UDim.new(0, 2)
-				IndicatorCorner.Parent = ToggleIndicator
-				
-				local ToggleInteract = Instance.new("TextButton")
-				ToggleInteract.Name = "Interact"
-				ToggleInteract.Size = UDim2.new(1, 0, 1, 0)
-				ToggleInteract.BackgroundTransparency = 1
-				ToggleInteract.Text = ""
-				ToggleInteract.Parent = ToggleFrame
-				
-				Toggle.CurrentValue = ToggleSettings.CurrentValue or false
-				Toggle.Type = "Toggle"
-				
-				function Toggle:Set(Value)
-					Toggle.CurrentValue = Value
-					if Value then
-						TweenService:Create(ToggleIndicator, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {BackgroundColor3 = SelectedTheme.ToggleEnabled, Position = UDim2.new(0, 3, 0, 3)}):Play()
+
+			TweenService:Create(TabButton, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.TabBackgroundSelected}):Play()
+			TweenService:Create(TabButton.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextColor3 = SelectedTheme.SelectedTabTextColor}):Play()
+			TweenService:Create(TabButton.Image, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageColor3 = SelectedTheme.SelectedTabTextColor}):Play()
+			TweenService:Create(TabButton, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+			TweenService:Create(TabButton.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+			TweenService:Create(TabButton.Image, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 0}):Play()
+			TweenService:Create(TabButton.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+
+			Elements.UIPageLayout:JumpTo(TabPage)
+		end)
+
+		function Tab:CreateSection(SectionName)
+			local Section = Elements.Template.SectionTitle:Clone()
+			Section.Title.Text = SectionName
+			Section.Name = SectionName
+			Section.Parent = TabPage
+			Section.Visible = true
+			return Section
+		end
+
+		function Tab:CreateButton(ButtonSettings)
+			local Button = Elements.Template.Button:Clone()
+			Button.Name = ButtonSettings.Name
+			Button.Title.Text = ButtonSettings.Name
+			Button.Parent = TabPage
+			Button.Visible = true
+
+			Button.BackgroundTransparency = 1
+			Button.UIStroke.Transparency = 1
+			Button.Title.TextTransparency = 1
+
+			TweenService:Create(Button, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+			TweenService:Create(Button.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
+			TweenService:Create(Button.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+
+			Button.Interact.MouseButton1Click:Connect(function()
+				local Success, Response = pcall(ButtonSettings.Callback)
+				if not Success then
+					TweenService:Create(Button, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
+					TweenService:Create(Button.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+					Button.Title.Text = "Callback Error"
+					print("PickleLibrary | "..ButtonSettings.Name.." Callback Error " ..tostring(Response))
+					warn('Check docs.sirius.menu for help with PickleLibrary specific development.')
+					task.wait(0.5)
+					Button.Title.Text = ButtonSettings.Name
+					TweenService:Create(Button, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
+					TweenService:Create(Button.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
+				end
+			end)
+
+			Button.MouseEnter:Connect(function()
+				TweenService:Create(Button, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackgroundHover}):Play()
+			end)
+
+			Button.MouseLeave:Connect(function()
+				TweenService:Create(Button, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
+			end)
+
+			return ButtonSettings
+		end
+
+		function Tab:CreateLabel(LabelText, Image, Color, Error)
+			local Label = Elements.Template.Label:Clone()
+			Label.Name = LabelText
+			Label.Title.Text = LabelText
+			Label.Parent = TabPage
+			Label.Visible = true
+
+			Label.BackgroundTransparency = 1
+			Label.UIStroke.Transparency = 1
+			Label.Title.TextTransparency = 1
+
+			if Image then
+				if typeof(Image) == 'string' then
+					local asset = getIcon(Image)
+					Label.Image.Image = 'rbxassetid://'..asset.id
+					Label.Image.ImageRectOffset = asset.imageRectOffset
+					Label.Image.ImageRectSize = asset.imageRectSize
+				else
+					Label.Image.Image = getAssetUri(Image)
+				end
+			end
+
+			if Color then
+				Label.Title.TextColor3 = Color
+			end
+
+			if Error then
+				Label.UIStroke.Enabled = true
+			end
+
+			TweenService:Create(Label, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+			TweenService:Create(Label.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
+			TweenService:Create(Label.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+			TweenService:Create(Label.Image, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 0}):Play()
+
+			function Label:Set(NewText)
+				Label.Title.Text = NewText
+				Label.Name = NewText
+			end
+
+			return Label
+		end
+
+		function Tab:CreateParagraph(ParagraphSettings)
+			local Paragraph = Elements.Template.Paragraph:Clone()
+			Paragraph.Name = ParagraphSettings.Title
+			Paragraph.Title.Text = ParagraphSettings.Title
+			Paragraph.Content.Text = ParagraphSettings.Content
+			Paragraph.Parent = TabPage
+			Paragraph.Visible = true
+
+			Paragraph.BackgroundTransparency = 1
+			Paragraph.UIStroke.Transparency = 1
+			Paragraph.Title.TextTransparency = 1
+			Paragraph.Content.TextTransparency = 1
+
+			TweenService:Create(Paragraph, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+			TweenService:Create(Paragraph.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
+			TweenService:Create(Paragraph.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+			TweenService:Create(Paragraph.Content, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+
+			function Paragraph:Set(NewParagraphSettings)
+				Paragraph.Title.Text = NewParagraphSettings.Title
+				Paragraph.Content.Text = NewParagraphSettings.Content
+				Paragraph.Name = NewParagraphSettings.Title
+			end
+
+			return Paragraph
+		end
+
+		function Tab:CreateInput(InputSettings)
+			local Input = Elements.Template.Input:Clone()
+			Input.Name = InputSettings.Name
+			Input.Title.Text = InputSettings.Name
+			Input.Visible = true
+			Input.Parent = TabPage
+
+			Input.BackgroundTransparency = 1
+			Input.UIStroke.Transparency = 1
+			Input.Title.TextTransparency = 1
+
+			Input.InputFrame.BackgroundColor3 = SelectedTheme.InputBackground
+			Input.InputFrame.UIStroke.Color = SelectedTheme.InputStroke
+			Input.InputFrame.InputBox.PlaceholderColor3 = SelectedTheme.PlaceholderColor
+			Input.InputFrame.InputBox.Text = InputSettings.CurrentValue or ""
+			Input.InputFrame.InputBox.PlaceholderText = InputSettings.PlaceholderText or ""
+
+			TweenService:Create(Input, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+			TweenService:Create(Input.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
+			TweenService:Create(Input.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+
+			Input.MouseEnter:Connect(function()
+				TweenService:Create(Input, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackgroundHover}):Play()
+			end)
+
+			Input.MouseLeave:Connect(function()
+				TweenService:Create(Input, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
+			end)
+
+			Input.InputFrame.InputBox.FocusLost:Connect(function(EnterPressed)
+				if InputSettings.RemoveTextAfterFocusLost and not EnterPressed then
+					Input.InputFrame.InputBox.Text = ""
+				end
+				local Success, Response = pcall(function()
+					InputSettings.Callback(Input.InputFrame.InputBox.Text)
+				end)
+				if not Success then
+					TweenService:Create(Input, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
+					TweenService:Create(Input.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+					Input.Title.Text = "Callback Error"
+					print("PickleLibrary | "..InputSettings.Name.." Callback Error " ..tostring(Response))
+					warn('Check docs.sirius.menu for help with PickleLibrary specific development.')
+					task.wait(0.5)
+					Input.Title.Text = InputSettings.Name
+					TweenService:Create(Input, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
+					TweenService:Create(Input.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
+				end
+				InputSettings.CurrentValue = Input.InputFrame.InputBox.Text
+				if not InputSettings.Ext then
+					SaveConfiguration()
+				end
+			end)
+
+			function InputSettings:Set(NewText)
+				Input.InputFrame.InputBox.Text = NewText
+				InputSettings.CurrentValue = NewText
+				local Success, Response = pcall(function()
+					InputSettings.Callback(NewText)
+				end)
+				if not Success then
+					TweenService:Create(Input, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
+					TweenService:Create(Input.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+					Input.Title.Text = "Callback Error"
+					print("PickleLibrary | "..InputSettings.Name.." Callback Error " ..tostring(Response))
+					warn('Check docs.sirius.menu for help with PickleLibrary specific development.')
+					task.wait(0.5)
+					Input.Title.Text = InputSettings.Name
+					TweenService:Create(Input, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
+					TweenService:Create(Input.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
+				end
+				if not InputSettings.Ext then
+					SaveConfiguration()
+				end
+			end
+
+			if Settings.ConfigurationSaving then
+				if Settings.ConfigurationSaving.Enabled and InputSettings.Flag then
+					PickleLibrary.Flags[InputSettings.Flag] = InputSettings
+				end
+			end
+
+			Pickle.Main:GetPropertyChangedSignal('BackgroundColor3'):Connect(function()
+				Input.InputFrame.BackgroundColor3 = SelectedTheme.InputBackground
+				Input.InputFrame.UIStroke.Color = SelectedTheme.InputStroke
+				Input.InputFrame.InputBox.PlaceholderColor3 = SelectedTheme.PlaceholderColor
+			end)
+
+			return InputSettings
+		end
+
+		function Tab:CreateDropdown(DropdownSettings)
+			local Dropdown = Elements.Template.Dropdown:Clone()
+			Dropdown.Name = DropdownSettings.Name
+			Dropdown.Title.Text = DropdownSettings.Name
+			Dropdown.Visible = true
+			Dropdown.Parent = TabPage
+
+			Dropdown.BackgroundTransparency = 1
+			Dropdown.UIStroke.Transparency = 1
+			Dropdown.Title.TextTransparency = 1
+
+			if DropdownSettings.MultipleOptions then
+				DropdownSettings.CurrentOption = DropdownSettings.CurrentOption or {}
+			else
+				DropdownSettings.CurrentOption = DropdownSettings.CurrentOption or {DropdownSettings.Options[1]}
+			end
+
+			local function RefreshTitle()
+				if DropdownSettings.MultipleOptions then
+					local OptionsText = ""
+					for i, Option in ipairs(DropdownSettings.CurrentOption) do
+						OptionsText = OptionsText .. Option
+						if i < #DropdownSettings.CurrentOption then
+							OptionsText = OptionsText .. ", "
+						end
+					end
+					Dropdown.DropdownFrame.Button.Text = OptionsText
+				else
+					Dropdown.DropdownFrame.Button.Text = DropdownSettings.CurrentOption[1]
+				end
+			end
+
+			RefreshTitle()
+
+			for _, Option in ipairs(DropdownSettings.Options) do
+				local OptionButton = Dropdown.DropdownFrame.DropdownList.Template:Clone()
+				OptionButton.Name = Option
+				OptionButton.Title.Text = Option
+				OptionButton.Parent = Dropdown.DropdownFrame.DropdownList
+				OptionButton.Visible = true
+
+				OptionButton.BackgroundTransparency = 1
+				OptionButton.UIStroke.Transparency = 1
+				OptionButton.Title.TextTransparency = 1
+
+				TweenService:Create(OptionButton, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+				TweenService:Create(OptionButton.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
+				TweenService:Create(OptionButton.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+
+				OptionButton.MouseButton1Click:Connect(function()
+					if DropdownSettings.MultipleOptions then
+						if table.find(DropdownSettings.CurrentOption, Option) then
+							table.remove(DropdownSettings.CurrentOption, table.find(DropdownSettings.CurrentOption, Option))
+						else
+							table.insert(DropdownSettings.CurrentOption, Option)
+						end
 					else
-						TweenService:Create(ToggleIndicator, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {BackgroundColor3 = SelectedTheme.ToggleDisabled, Position = UDim2.new(0, 3, 0, 3)}):Play()
+						DropdownSettings.CurrentOption = {Option}
+						TweenService:Create(Dropdown.DropdownFrame.DropdownList, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Size = UDim2.new(1, 0, 0, 0)}):Play()
+						TweenService:Create(Dropdown.DropdownFrame, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {BackgroundTransparency = 1}):Play()
+						TweenService:Create(Dropdown.DropdownFrame.UIStroke, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+						TweenService:Create(Dropdown.DropdownFrame.Button, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {TextTransparency = 1}):Play()
+						Dropdown.DropdownFrame.Visible = false
 					end
-					SaveConfiguration()
-				end
-				
-				ToggleInteract.MouseButton1Click:Connect(function()
-					local newValue = not Toggle.CurrentValue
-					Toggle:Set(newValue)
-					if ToggleSettings.Callback then 
-						ToggleSettings.Callback(newValue) 
+					RefreshTitle()
+					local Success, Response = pcall(function()
+						DropdownSettings.Callback(DropdownSettings.CurrentOption)
+					end)
+					if not Success then
+						TweenService:Create(Dropdown, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
+						TweenService:Create(Dropdown.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+						Dropdown.Title.Text = "Callback Error"
+						print("PickleLibrary | "..DropdownSettings.Name.." Callback Error " ..tostring(Response))
+						warn('Check docs.sirius.menu for help with PickleLibrary specific development.')
+						task.wait(0.5)
+						Dropdown.Title.Text = DropdownSettings.Name
+						TweenService:Create(Dropdown, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
+						TweenService:Create(Dropdown.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
+					end
+					if not DropdownSettings.Ext then
+						SaveConfiguration()
 					end
 				end)
-				
-				Toggle:Set(Toggle.CurrentValue)
-				
-				TweenService:Create(ToggleFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(1, -10, 0, 30), BackgroundTransparency = 0}):Play()
-				
-				Toggle.Frame = ToggleFrame
-				if ToggleSettings.Name then
-					PickleLibrary.Flags[ToggleSettings.Name] = Toggle
-				end
-				
-				return Toggle
 			end
-			
-			function Section:CreateSlider(SliderSettings)
-				local Slider = {}
-				
-				local SliderFrame = Instance.new("Frame")
-				SliderFrame.Name = "Slider"
-				SliderFrame.Size = UDim2.new(1, -10, 0, 50)
-				SliderFrame.BackgroundColor3 = SelectedTheme.ElementBackground
-				SliderFrame.BorderSizePixel = 0
-				SliderFrame.Parent = TabPage
-				
-				local SliderCorner = Instance.new("UICorner")
-				SliderCorner.CornerRadius = UDim.new(0, 3)
-				SliderCorner.Parent = SliderFrame
-				
-				local SliderStroke = Instance.new("UIStroke")
-				SliderStroke.Name = "UIStroke"
-				SliderStroke.Thickness = 1
-				SliderStroke.Color = SelectedTheme.ElementStroke
-				SliderStroke.Parent = SliderFrame
-				
-				local SliderLabel = Instance.new("TextLabel")
-				SliderLabel.Name = "Label"
-				SliderLabel.Size = UDim2.new(1, -60, 0, 20)
-				SliderLabel.Position = UDim2.new(0, 10, 0, 5)
-				SliderLabel.BackgroundTransparency = 1
-				SliderLabel.Text = SliderSettings.Name or "New Slider"
-				SliderLabel.TextColor3 = SelectedTheme.TextColor
-				SliderLabel.TextSize = 14
-				SliderLabel.Font = Enum.Font.Gotham
-				SliderLabel.TextXAlignment = Enum.TextXAlignment.Left
-				SliderLabel.Parent = SliderFrame
-				
-				local SliderValue = Instance.new("TextLabel")
-				SliderValue.Name = "Value"
-				SliderValue.Size = UDim2.new(0, 50, 0, 20)
-				SliderValue.Position = UDim2.new(1, -55, 0, 5)
-				SliderValue.BackgroundTransparency = 1
-				SliderValue.Text = tostring(SliderSettings.CurrentValue or SliderSettings.Default or 0)
-				SliderValue.TextColor3 = SelectedTheme.TextColor
-				SliderValue.TextSize = 14
-				SliderValue.Font = Enum.Font.Gotham
-				SliderValue.TextXAlignment = Enum.TextXAlignment.Right
-				SliderValue.Parent = SliderFrame
-				
-				local SliderBar = Instance.new("Frame")
-				SliderBar.Name = "Bar"
-				SliderBar.Size = UDim2.new(1, -20, 0, 5)
-				SliderBar.Position = UDim2.new(0, 10, 0, 30)
-				SliderBar.BackgroundColor3 = SelectedTheme.SliderBackground
-				SliderBar.BorderSizePixel = 0
-				SliderBar.Parent = SliderFrame
-				
-				local BarCorner = Instance.new("UICorner")
-				BarCorner.CornerRadius = UDim.new(0, 2)
-				BarCorner.Parent = SliderBar
-				
-				local SliderProgress = Instance.new("Frame")
-				SliderProgress.Name = "Progress"
-				SliderProgress.Size = UDim2.new(0, 0, 1, 0)
-				SliderProgress.BackgroundColor3 = SelectedTheme.SliderProgress
-				SliderProgress.BorderSizePixel = 0
-				SliderProgress.Parent = SliderBar
-				
-				local ProgressCorner = Instance.new("UICorner")
-				ProgressCorner.CornerRadius = UDim.new(0, 2)
-				ProgressCorner.Parent = SliderProgress
-				
-				Slider.CurrentValue = SliderSettings.CurrentValue or SliderSettings.Default or 0
-				Slider.Min = SliderSettings.Min or 0
-				Slider.Max = SliderSettings.Max or 100
-				Slider.Type = "Slider"
-				
-				local dragging = false
-				
-				function Slider:Set(Value)
-					Slider.CurrentValue = math.clamp(Value, Slider.Min, Slider.Max)
-					local percentage = (Slider.CurrentValue - Slider.Min) / (Slider.Max - Slider.Min)
-					TweenService:Create(SliderProgress, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(percentage, 0, 1, 0)}):Play()
-					SliderValue.Text = tostring(Slider.CurrentValue)
+
+			Dropdown.MouseEnter:Connect(function()
+				TweenService:Create(Dropdown, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackgroundHover}):Play()
+			end)
+
+			Dropdown.MouseLeave:Connect(function()
+				TweenService:Create(Dropdown, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
+			end)
+
+			Dropdown.DropdownFrame.Button.MouseButton1Click:Connect(function()
+				if Dropdown.DropdownFrame.Visible then
+					TweenService:Create(Dropdown.DropdownFrame.DropdownList, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Size = UDim2.new(1, 0, 0, 0)}):Play()
+					TweenService:Create(Dropdown.DropdownFrame, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {BackgroundTransparency = 1}):Play()
+					TweenService:Create(Dropdown.DropdownFrame.UIStroke, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+					TweenService:Create(Dropdown.DropdownFrame.Button, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {TextTransparency = 1}):Play()
+					Dropdown.DropdownFrame.Visible = false
+				else
+					Dropdown.DropdownFrame.Visible = true
+					TweenService:Create(Dropdown.DropdownFrame, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+					TweenService:Create(Dropdown.DropdownFrame.UIStroke, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
+					TweenService:Create(Dropdown.DropdownFrame.Button, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+					TweenService:Create(Dropdown.DropdownFrame.DropdownList, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Size = UDim2.new(1, 0, 0, math.min(Dropdown.DropdownFrame.DropdownList.UIListLayout.AbsoluteContentSize.Y, 150))}):Play()
+				end
+			end)
+
+			function DropdownSettings:Set(NewOption)
+				if DropdownSettings.MultipleOptions then
+					DropdownSettings.CurrentOption = NewOption
+				else
+					DropdownSettings.CurrentOption = {NewOption}
+				end
+				RefreshTitle()
+				local Success, Response = pcall(function()
+					DropdownSettings.Callback(DropdownSettings.CurrentOption)
+				end)
+				if not Success then
+					TweenService:Create(Dropdown, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
+					TweenService:Create(Dropdown.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+					Dropdown.Title.Text = "Callback Error"
+					print("PickleLibrary | "..DropdownSettings.Name.." Callback Error " ..tostring(Response))
+					warn('Check docs.sirius.menu for help with PickleLibrary specific development.')
+					task.wait(0.5)
+					Dropdown.Title.Text = DropdownSettings.Name
+					TweenService:Create(Dropdown, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
+					TweenService:Create(Dropdown.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
+				end
+				if not DropdownSettings.Ext then
 					SaveConfiguration()
 				end
-				
-				SliderBar.InputBegan:Connect(function(input)
-					if input.UserInputType == Enum.UserInputType.MouseButton1 then
-						dragging = true
+			end
+
+			TweenService:Create(Dropdown, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+			TweenService:Create(Dropdown.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
+			TweenService:Create(Dropdown.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+			TweenService:Create(Dropdown.DropdownFrame, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 1}):Play()
+			TweenService:Create(Dropdown.DropdownFrame.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+			TweenService:Create(Dropdown.DropdownFrame.Button, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 1}):Play()
+
+			if Settings.ConfigurationSaving then
+				if Settings.ConfigurationSaving.Enabled and DropdownSettings.Flag then
+					PickleLibrary.Flags[DropdownSettings.Flag] = DropdownSettings
+				end
+			end
+
+			Pickle.Main:GetPropertyChangedSignal('BackgroundColor3'):Connect(function()
+				Dropdown.DropdownFrame.BackgroundColor3 = SelectedTheme.DropdownUnselected
+				Dropdown.DropdownFrame.UIStroke.Color = SelectedTheme.ElementStroke
+				for _, OptionButton in ipairs(Dropdown.DropdownFrame.DropdownList:GetChildren()) do
+					if OptionButton.ClassName == "Frame" and OptionButton.Name ~= "Template" then
+						OptionButton.BackgroundColor3 = SelectedTheme.DropdownUnselected
+						OptionButton.UIStroke.Color = SelectedTheme.ElementStroke
 					end
+				end
+			end)
+
+			return DropdownSettings
+		end
+
+		function Tab:CreateToggle(ToggleSettings)
+			local Toggle = Elements.Template.Toggle:Clone()
+			Toggle.Name = ToggleSettings.Name
+			Toggle.Title.Text = ToggleSettings.Name
+			Toggle.Visible = true
+			Toggle.Parent = TabPage
+
+			Toggle.BackgroundTransparency = 1
+			Toggle.UIStroke.Transparency = 1
+			Toggle.Title.TextTransparency = 1
+			Toggle.Switch.BackgroundTransparency = 1
+			Toggle.Switch.UIStroke.Transparency = 1
+			Toggle.Switch.Knob.BackgroundTransparency = 1
+			Toggle.Switch.Knob.UIStroke.Transparency = 1
+
+			Toggle.Switch.BackgroundColor3 = SelectedTheme.ToggleBackground
+			Toggle.Switch.UIStroke.Color = SelectedTheme.ToggleDisabledStroke
+			Toggle.Switch.Knob.BackgroundColor3 = ToggleSettings.CurrentValue and SelectedTheme.ToggleEnabled or SelectedTheme.ToggleDisabled
+			Toggle.Switch.Knob.UIStroke.Color = ToggleSettings.CurrentValue and SelectedTheme.ToggleEnabledStroke or SelectedTheme.ToggleDisabledStroke
+
+			TweenService:Create(Toggle, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+			TweenService:Create(Toggle.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
+			Toggle.Title.TextTransparency = 0
+			TweenService:Create(Toggle.Switch, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+			TweenService:Create(Toggle.Switch.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
+			TweenService:Create(Toggle.Switch.Knob, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+			TweenService:Create(Toggle.Switch.Knob.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
+
+			Toggle.MouseEnter:Connect(function()
+				TweenService:Create(Toggle, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackgroundHover}):Play()
+			end)
+
+			Toggle.MouseLeave:Connect(function()
+				TweenService:Create(Toggle, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
+			end)
+
+			Toggle.Interact.MouseButton1Click:Connect(function()
+				ToggleSettings.CurrentValue = not ToggleSettings.CurrentValue
+				TweenService:Create(Toggle.Switch.Knob, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {Position = ToggleSettings.CurrentValue and UDim2.new(1, -20, 0.5, 0) or UDim2.new(0, 2, 0.5, 0)}):Play()
+				TweenService:Create(Toggle.Switch.Knob, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {BackgroundColor3 = ToggleSettings.CurrentValue and SelectedTheme.ToggleEnabled or SelectedTheme.ToggleDisabled}):Play()
+				TweenService:Create(Toggle.Switch.Knob.UIStroke, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {Color = ToggleSettings.CurrentValue and SelectedTheme.ToggleEnabledStroke or SelectedTheme.ToggleDisabledStroke}):Play()
+				local Success, Response = pcall(function()
+					ToggleSettings.Callback(ToggleSettings.CurrentValue)
 				end)
-				
-				SliderBar.InputEnded:Connect(function(input)
-					if input.UserInputType == Enum.UserInputType.MouseButton1 then
-						dragging = false
-					end
+				if not Success then
+					TweenService:Create(Toggle, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
+					TweenService:Create(Toggle.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+					Toggle.Title.Text = "Callback Error"
+					print("PickleLibrary | "..ToggleSettings.Name.." Callback Error " ..tostring(Response))
+					warn('Check docs.sirius.menu for help with PickleLibrary specific development.')
+					task.wait(0.5)
+					Toggle.Title.Text = ToggleSettings.Name
+					TweenService:Create(Toggle, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
+					TweenService:Create(Toggle.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
+				end
+				if not ToggleSettings.Ext then
+					SaveConfiguration()
+				end
+			end)
+
+			function ToggleSettings:Set(NewToggleValue)
+				ToggleSettings.CurrentValue = NewToggleValue
+				TweenService:Create(Toggle.Switch.Knob, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {Position = ToggleSettings.CurrentValue and UDim2.new(1, -20, 0.5, 0) or UDim2.new(0, 2, 0.5, 0)}):Play()
+				TweenService:Create(Toggle.Switch.Knob, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {BackgroundColor3 = ToggleSettings.CurrentValue and SelectedTheme.ToggleEnabled or SelectedTheme.ToggleDisabled}):Play()
+				TweenService:Create(Toggle.Switch.Knob.UIStroke, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {Color = ToggleSettings.CurrentValue and SelectedTheme.ToggleEnabledStroke or SelectedTheme.ToggleDisabledStroke}):Play()
+				local Success, Response = pcall(function()
+					ToggleSettings.Callback(ToggleSettings.CurrentValue)
 				end)
-				
-				RunService.RenderStepped:Connect(function()
-					if dragging then
-						local mousePos = UserInputService:GetMouseLocation()
-						local barAbsPos = SliderBar.AbsolutePosition
-						local barAbsSize = SliderBar.AbsoluteSize
-						local newValue = math.clamp((mousePos.X - barAbsPos.X) / barAbsSize.X, 0, 1) * (Slider.Max - Slider.Min) + Slider.Min
-						newValue = math.floor(newValue + 0.5)
-						if Slider.CurrentValue ~= newValue then
-							Slider:Set(newValue)
-							if SliderSettings.Callback then 
-								SliderSettings.Callback(newValue) 
-							end
+				if not Success then
+					TweenService:Create(Toggle, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
+					TweenService:Create(Toggle.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+					Toggle.Title.Text = "Callback Error"
+					print("PickleLibrary | "..ToggleSettings.Name.." Callback Error " ..tostring(Response))
+					warn('Check docs.sirius.menu for help with PickleLibrary specific development.')
+					task.wait(0.5)
+					Toggle.Title.Text = ToggleSettings.Name
+					TweenService:Create(Toggle, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
+					TweenService:Create(Toggle.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
+				end
+				if not ToggleSettings.Ext then
+					SaveConfiguration()
+				end
+			end
+
+			if Settings.ConfigurationSaving then
+				if Settings.ConfigurationSaving.Enabled and ToggleSettings.Flag then
+					PickleLibrary.Flags[ToggleSettings.Flag] = ToggleSettings
+				end
+			end
+
+			Pickle.Main:GetPropertyChangedSignal('BackgroundColor3'):Connect(function()
+				Toggle.Switch.BackgroundColor3 = SelectedTheme.ToggleBackground
+				Toggle.Switch.UIStroke.Color = SelectedTheme.ToggleDisabledStroke
+				Toggle.Switch.Knob.BackgroundColor3 = ToggleSettings.CurrentValue and SelectedTheme.ToggleEnabled or SelectedTheme.ToggleDisabled
+				Toggle.Switch.Knob.UIStroke.Color = ToggleSettings.CurrentValue and SelectedTheme.ToggleEnabledStroke or SelectedTheme.ToggleDisabledStroke
+			end)
+
+			return ToggleSettings
+		end
+
+		function Tab:CreateSlider(SliderSettings)
+			local Slider = Elements.Template.Slider:Clone()
+			Slider.Name = SliderSettings.Name
+			Slider.Title.Text = SliderSettings.Name
+			Slider.Visible = true
+			Slider.Parent = TabPage
+
+			Slider.BackgroundTransparency = 1
+			Slider.UIStroke.Transparency = 1
+			Slider.Title.TextTransparency = 1
+
+			Slider.SliderFrame.BackgroundColor3 = SelectedTheme.SliderBackground
+			Slider.SliderFrame.UIStroke.Color = SelectedTheme.SliderStroke
+			Slider.SliderFrame.SliderBar.BackgroundColor3 = SelectedTheme.SliderProgress
+
+			local function UpdateSlider()
+				local Percent = (SliderSettings.CurrentValue - SliderSettings.Range[1]) / (SliderSettings.Range[2] - SliderSettings.Range[1])
+				Slider.SliderFrame.SliderBar.Size = UDim2.new(Percent, 0, 1, 0)
+				Slider.SliderFrame.Value.Text = tostring(SliderSettings.CurrentValue)
+			end
+
+			UpdateSlider()
+
+			Slider.SliderFrame.Interact.MouseButton1Down:Connect(function()
+				local MouseMove, MouseKill
+				MouseMove = UserInputService.InputChanged:Connect(function(input)
+					if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+						local MouseLocation = UserInputService:GetMouseLocation()
+						local Relative = (MouseLocation - Slider.SliderFrame.AbsolutePosition).X
+						local Percent = math.clamp(Relative / Slider.SliderFrame.AbsoluteSize.X, 0, 1)
+						SliderSettings.CurrentValue = math.floor(((SliderSettings.Range[2] - SliderSettings.Range[1]) * Percent) + SliderSettings.Range[1])
+						UpdateSlider()
+						local Success, Response = pcall(function()
+							SliderSettings.Callback(SliderSettings.CurrentValue)
+						end)
+						if not Success then
+							TweenService:Create(Slider, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
+							TweenService:Create(Slider.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+							Slider.Title.Text = "Callback Error"
+							print("PickleLibrary | "..SliderSettings.Name.." Callback Error " ..tostring(Response))
+							warn('Check docs.sirius.menu for help with PickleLibrary specific development.')
+							task.wait(0.5)
+							Slider.Title.Text = SliderSettings.Name
+							TweenService:Create(Slider, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
+							TweenService:Create(Slider.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
+						end
+						if not SliderSettings.Ext then
+							SaveConfiguration()
 						end
 					end
 				end)
-				
-				Slider:Set(Slider.CurrentValue)
-				
-				TweenService:Create(SliderFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(1, -10, 0, 50), BackgroundTransparency = 0}):Play()
-				
-				Slider.Frame = SliderFrame
-				if SliderSettings.Name then
-					PickleLibrary.Flags[SliderSettings.Name] = Slider
-				end
-				
-				return Slider
-			end
-			
-			function Section:CreateDropdown(DropdownSettings)
-				local Dropdown = {}
-				
-				local DropdownFrame = Instance.new("Frame")
-				DropdownFrame.Name = "Dropdown"
-				DropdownFrame.Size = UDim2.new(1, -10, 0, 30)
-				DropdownFrame.BackgroundColor3 = SelectedTheme.ElementBackground
-				DropdownFrame.BorderSizePixel = 0
-				DropdownFrame.Parent = TabPage
-				
-				local DropdownCorner = Instance.new("UICorner")
-				DropdownCorner.CornerRadius = UDim.new(0, 3)
-				DropdownCorner.Parent = DropdownFrame
-				
-				local DropdownStroke = Instance.new("UIStroke")
-				DropdownStroke.Name = "UIStroke"
-				DropdownStroke.Thickness = 1
-				DropdownStroke.Color = SelectedTheme.ElementStroke
-				DropdownStroke.Parent = DropdownFrame
-				
-				local DropdownLabel = Instance.new("TextLabel")
-				DropdownLabel.Name = "Label"
-				DropdownLabel.Size = UDim2.new(1, -40, 1, 0)
-				DropdownLabel.Position = UDim2.new(0, 10, 0, 0)
-				DropdownLabel.BackgroundTransparency = 1
-				DropdownLabel.Text = (DropdownSettings.Name or "New Dropdown") .. ": " .. (DropdownSettings.CurrentOption or (DropdownSettings.Options and DropdownSettings.Options[1]) or "None")
-				DropdownLabel.TextColor3 = SelectedTheme.TextColor
-				DropdownLabel.TextSize = 14
-				DropdownLabel.Font = Enum.Font.Gotham
-				DropdownLabel.TextXAlignment = Enum.TextXAlignment.Left
-				DropdownLabel.Parent = DropdownFrame
-				
-				local DropdownArrow = Instance.new("ImageLabel")
-				DropdownArrow.Name = "Arrow"
-				DropdownArrow.Size = UDim2.new(0, 16, 0, 16)
-				DropdownArrow.Position = UDim2.new(1, -26, 0.5, -8)
-				DropdownArrow.BackgroundTransparency = 1
-				DropdownArrow.Image = "rbxassetid://6031090990"
-				DropdownArrow.ImageColor3 = SelectedTheme.TextColor
-				DropdownArrow.Parent = DropdownFrame
-				
-				local DropdownList = Instance.new("Frame")
-				DropdownList.Name = "List"
-				DropdownList.Size = UDim2.new(1, -10, 0, 0)
-				DropdownList.Position = UDim2.new(0, 5, 0, 35)
-				DropdownList.BackgroundColor3 = SelectedTheme.DropdownUnselected
-				DropdownList.BorderSizePixel = 0
-				DropdownList.Visible = false
-				DropdownList.Parent = DropdownFrame
-				
-				local ListCorner = Instance.new("UICorner")
-				ListCorner.CornerRadius = UDim.new(0, 3)
-				ListCorner.Parent = DropdownList
-				
-				local DropdownLayout = Instance.new("UIListLayout")
-				DropdownLayout.Name = "UIListLayout"
-				DropdownLayout.Padding = UDim.new(0, 2)
-				DropdownLayout.SortOrder = Enum.SortOrder.LayoutOrder
-				DropdownLayout.Parent = DropdownList
-				
-				local DropdownPadding = Instance.new("UIPadding")
-				DropdownPadding.Name = "UIPadding"
-				DropdownPadding.PaddingTop = UDim.new(0, 5)
-				DropdownPadding.PaddingBottom = UDim.new(0, 5)
-				DropdownPadding.PaddingLeft = UDim.new(0, 5)
-				DropdownPadding.PaddingRight = UDim.new(0, 5)
-				DropdownPadding.Parent = DropdownList
-				
-				local DropdownInteract = Instance.new("TextButton")
-				DropdownInteract.Name = "Interact"
-				DropdownInteract.Size = UDim2.new(1, 0, 0, 30)
-				DropdownInteract.BackgroundTransparency = 1
-				DropdownInteract.Text = ""
-				DropdownInteract.Parent = DropdownFrame
-				
-				local options = DropdownSettings.Options or {}
-				Dropdown.CurrentOption = DropdownSettings.CurrentOption or options[1] or ""
-				Dropdown.Type = "Dropdown"
-				
-				function Dropdown:Set(Value)
-					Dropdown.CurrentOption = Value
-					DropdownLabel.Text = (DropdownSettings.Name or "New Dropdown") .. ": " .. Value
-					if DropdownSettings.Callback then 
-						DropdownSettings.Callback(Value) 
-					end
-					SaveConfiguration()
-				end
-				
-				DropdownInteract.MouseButton1Click:Connect(function()
-					DropdownList.Visible = not DropdownList.Visible
-					if DropdownList.Visible then
-						TweenService:Create(DropdownFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(1, -10, 0, 40 + (#options * 20))}):Play()
-						TweenService:Create(DropdownArrow, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Rotation = 180}):Play()
-						TweenService:Create(DropdownList, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(1, -10, 0, #options * 20), BackgroundColor3 = SelectedTheme.DropdownSelected}):Play()
-					else
-						TweenService:Create(DropdownFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(1, -10, 0, 30)}):Play()
-						TweenService:Create(DropdownArrow, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Rotation = 0}):Play()
-						TweenService:Create(DropdownList, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(1, -10, 0, 0), BackgroundColor3 = SelectedTheme.DropdownUnselected}):Play()
+				MouseKill = UserInputService.InputEnded:Connect(function(input)
+					if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+						MouseMove:Disconnect()
+						MouseKill:Disconnect()
 					end
 				end)
-				
-				for i, option in ipairs(options) do
-					local OptionButton = Instance.new("TextButton")
-					OptionButton.Name = "Option" .. i
-					OptionButton.Size = UDim2.new(1, 0, 0, 18)
-					OptionButton.BackgroundTransparency = 1
-					OptionButton.Text = option
-					OptionButton.TextColor3 = SelectedTheme.TextColor
-					OptionButton.TextSize = 13
-					OptionButton.Font = Enum.Font.Gotham
-					OptionButton.TextXAlignment = Enum.TextXAlignment.Left
-					OptionButton.Parent = DropdownList
-					
-					OptionButton.MouseButton1Click:Connect(function()
-						Dropdown:Set(option)
-						DropdownList.Visible = false
-						TweenService:Create(DropdownFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(1, -10, 0, 30)}):Play()
-						TweenService:Create(DropdownArrow, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Rotation = 0}):Play()
-						TweenService:Create(DropdownList, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(1, -10, 0, 0)}):Play()
-					end)
-				end
-				
-				TweenService:Create(DropdownFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(1, -10, 0, 30), BackgroundTransparency = 0}):Play()
-				
-				Dropdown.Frame = DropdownFrame
-				if DropdownSettings.Name then
-					PickleLibrary.Flags[DropdownSettings.Name] = Dropdown
-				end
-				
-				return Dropdown
-			end
-			
-			function Section:CreateInput(InputSettings)
-				local Input = {}
-				
-				local InputFrame = Instance.new("Frame")
-				InputFrame.Name = "Input"
-				InputFrame.Size = UDim2.new(1, -10, 0, 30)
-				InputFrame.BackgroundColor3 = SelectedTheme.ElementBackground
-				InputFrame.BorderSizePixel = 0
-				InputFrame.Parent = TabPage
-				
-				local InputCorner = Instance.new("UICorner")
-				InputCorner.CornerRadius = UDim.new(0, 3)
-				InputCorner.Parent = InputFrame
-				
-				local InputStroke = Instance.new("UIStroke")
-				InputStroke.Name = "UIStroke"
-				InputStroke.Thickness = 1
-				InputStroke.Color = SelectedTheme.ElementStroke
-				InputStroke.Parent = InputFrame
-				
-				local InputLabel = Instance.new("TextLabel")
-				InputLabel.Name = "Label"
-				InputLabel.Size = UDim2.new(0.5, -5, 1, 0)
-				InputLabel.Position = UDim2.new(0, 10, 0, 0)
-				InputLabel.BackgroundTransparency = 1
-				InputLabel.Text = InputSettings.Name or "New Input"
-				InputLabel.TextColor3 = SelectedTheme.TextColor
-				InputLabel.TextSize = 14
-				InputLabel.Font = Enum.Font.Gotham
-				InputLabel.TextXAlignment = Enum.TextXAlignment.Left
-				InputLabel.Parent = InputFrame
-				
-				local InputBox = Instance.new("TextBox")
-				InputBox.Name = "Box"
-				InputBox.Size = UDim2.new(0.5, -10, 0, 20)
-				InputBox.Position = UDim2.new(0.5, 5, 0.5, -10)
-				InputBox.BackgroundColor3 = SelectedTheme.InputBackground
-				InputBox.BorderSizePixel = 0
-				InputBox.Text = InputSettings.Default or ""
-				InputBox.TextColor3 = SelectedTheme.TextColor
-				InputBox.PlaceholderText = InputSettings.Placeholder or "Enter text"
-				InputBox.PlaceholderColor3 = SelectedTheme.PlaceholderColor
-				InputBox.TextSize = 13
-				InputBox.Font = Enum.Font.Gotham
-				InputBox.ClearTextOnFocus = false
-				InputBox.Parent = InputFrame
-				
-				local BoxCorner = Instance.new("UICorner")
-				BoxCorner.CornerRadius = UDim.new(0, 3)
-				BoxCorner.Parent = InputBox
-				
-				local BoxStroke = Instance.new("UIStroke")
-				BoxStroke.Name = "UIStroke"
-				BoxStroke.Thickness = 1
-				BoxStroke.Color = SelectedTheme.InputStroke
-				BoxStroke.Parent = InputBox
-				
-				Input.CurrentValue = InputSettings.Default or ""
-				Input.Type = "Input"
-				
-				function Input:Set(Value)
-					Input.CurrentValue = Value
-					InputBox.Text = Value
-					if InputSettings.Callback then 
-						InputSettings.Callback(Value, false) 
-					end
-					SaveConfiguration()
-				end
-				
-				InputBox.FocusLost:Connect(function(enterPressed)
-					Input.CurrentValue = InputBox.Text
-					if InputSettings.Callback then 
-						InputSettings.Callback(InputBox.Text, enterPressed) 
-					end
-					SaveConfiguration()
+			end)
+
+			function SliderSettings:Set(NewValue)
+				SliderSettings.CurrentValue = math.clamp(math.floor(NewValue), SliderSettings.Range[1], SliderSettings.Range[2])
+				UpdateSlider()
+				local Success, Response = pcall(function()
+					SliderSettings.Callback(SliderSettings.CurrentValue)
 				end)
-				
-				TweenService:Create(InputFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(1, -10, 0, 30), BackgroundTransparency = 0}):Play()
-				
-				Input.Frame = InputFrame
-				if InputSettings.Name then
-					PickleLibrary.Flags[InputSettings.Name] = Input
+				if not Success then
+					TweenService:Create(Slider, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
+					TweenService:Create(Slider.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+					Slider.Title.Text = "Callback Error"
+					print("PickleLibrary | "..SliderSettings.Name.." Callback Error " ..tostring(Response))
+					warn('Check docs.sirius.menu for help with PickleLibrary specific development.')
+					task.wait(0.5)
+					Slider.Title.Text = SliderSettings.Name
+					TweenService:Create(Slider, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
+					TweenService:Create(Slider.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
 				end
-				
-				return Input
-			end
-			
-			function Section:CreateColorPicker(ColorPickerSettings)
-				local ColorPicker = {}
-				
-				local ColorPickerFrame = Instance.new("Frame")
-				ColorPickerFrame.Name = "ColorPicker"
-				ColorPickerFrame.Size = UDim2.new(1, -10, 0, 30)
-				ColorPickerFrame.BackgroundColor3 = SelectedTheme.ElementBackground
-				ColorPickerFrame.BorderSizePixel = 0
-				ColorPickerFrame.Parent = TabPage
-				
-				local ColorPickerCorner = Instance.new("UICorner")
-				ColorPickerCorner.CornerRadius = UDim.new(0, 3)
-				ColorPickerCorner.Parent = ColorPickerFrame
-				
-				local ColorPickerStroke = Instance.new("UIStroke")
-				ColorPickerStroke.Name = "UIStroke"
-				ColorPickerStroke.Thickness = 1
-				ColorPickerStroke.Color = SelectedTheme.ElementStroke
-				ColorPickerStroke.Parent = ColorPickerFrame
-				
-				local ColorPickerLabel = Instance.new("TextLabel")
-				ColorPickerLabel.Name = "Label"
-				ColorPickerLabel.Size = UDim2.new(1, -40, 1, 0)
-				ColorPickerLabel.Position = UDim2.new(0, 10, 0, 0)
-				ColorPickerLabel.BackgroundTransparency = 1
-				ColorPickerLabel.Text = ColorPickerSettings.Name or "New ColorPicker"
-				ColorPickerLabel.TextColor3 = SelectedTheme.TextColor
-				ColorPickerLabel.TextSize = 14
-				ColorPickerLabel.Font = Enum.Font.Gotham
-				ColorPickerLabel.TextXAlignment = Enum.TextXAlignment.Left
-				ColorPickerLabel.Parent = ColorPickerFrame
-				
-				local ColorPreview = Instance.new("Frame")
-				ColorPreview.Name = "Preview"
-				ColorPreview.Size = UDim2.new(0, 20, 0, 20)
-				ColorPreview.Position = UDim2.new(1, -25, 0.5, -10)
-				ColorPreview.BackgroundColor3 = ColorPickerSettings.Default or Color3.fromRGB(255, 255, 255)
-				ColorPreview.BorderSizePixel = 0
-				ColorPreview.Parent = ColorPickerFrame
-				
-				local PreviewCorner = Instance.new("UICorner")
-				PreviewCorner.CornerRadius = UDim.new(0, 3)
-				PreviewCorner.Parent = ColorPreview
-				
-				local ColorPickerInteract = Instance.new("TextButton")
-				ColorPickerInteract.Name = "Interact"
-				ColorPickerInteract.Size = UDim2.new(1, 0, 1, 0)
-				ColorPickerInteract.BackgroundTransparency = 1
-				ColorPickerInteract.Text = ""
-				ColorPickerInteract.Parent = ColorPickerFrame
-				
-				ColorPicker.Color = ColorPickerSettings.Default or Color3.fromRGB(255, 255, 255)
-				ColorPicker.Type = "ColorPicker"
-				
-				function ColorPicker:Set(Value)
-					ColorPicker.Color = Value
-					ColorPreview.BackgroundColor3 = Value
-					if ColorPickerSettings.Callback then 
-						ColorPickerSettings.Callback(Value) 
-					end
+				if not SliderSettings.Ext then
 					SaveConfiguration()
 				end
-				
-				local colors = {
-					Color3.fromRGB(255, 0, 0),
-					Color3.fromRGB(0, 255, 0),
-					Color3.fromRGB(0, 0, 255),
-					Color3.fromRGB(255, 255, 0),
-					Color3.fromRGB(255, 0, 255),
-					Color3.fromRGB(0, 255, 255),
-					Color3.fromRGB(255, 255, 255),
-					Color3.fromRGB(0, 0, 0)
-				}
-				local currentColorIndex = 1
-				
-				ColorPickerInteract.MouseButton1Click:Connect(function()
-					currentColorIndex = currentColorIndex + 1
-					if currentColorIndex > #colors then
-						currentColorIndex = 1
-					end
-					ColorPicker:Set(colors[currentColorIndex])
-				end)
-				
-				TweenService:Create(ColorPickerFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(1, -10, 0, 30), BackgroundTransparency = 0}):Play()
-				
-				ColorPicker.Frame = ColorPickerFrame
-				if ColorPickerSettings.Name then
-					PickleLibrary.Flags[ColorPickerSettings.Name] = ColorPicker
-				end
-				
-				return ColorPicker
 			end
-			
-			return Section
+
+			TweenService:Create(Slider, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+			TweenService:Create(Slider.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
+			TweenService:Create(Slider.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+
+			if Settings.ConfigurationSaving then
+				if Settings.ConfigurationSaving.Enabled and SliderSettings.Flag then
+					PickleLibrary.Flags[SliderSettings.Flag] = SliderSettings
+				end
+			end
+
+			Pickle.Main:GetPropertyChangedSignal('BackgroundColor3'):Connect(function()
+				Slider.SliderFrame.BackgroundColor3 = SelectedTheme.SliderBackground
+				Slider.SliderFrame.UIStroke.Color = SelectedTheme.SliderStroke
+				Slider.SliderFrame.SliderBar.BackgroundColor3 = SelectedTheme.SliderProgress
+			end)
+
+			return SliderSettings
 		end
-		
+
+		function Tab:CreateKeybind(KeybindSettings)
+			local Keybind = Elements.Template.Keybind:Clone()
+			Keybind.Name = KeybindSettings.Name
+			Keybind.Title.Text = KeybindSettings.Name
+			Keybind.Visible = true
+			Keybind.Parent = TabPage
+
+			Keybind.BackgroundTransparency = 1
+			Keybind.UIStroke.Transparency = 1
+			Keybind.Title.TextTransparency = 1
+			Keybind.KeybindFrame.BackgroundTransparency = 1
+			Keybind.KeybindFrame.UIStroke.Transparency = 1
+			Keybind.KeybindFrame.Keybind.TextTransparency = 1
+
+			Keybind.KeybindFrame.Keybind.Text = KeybindSettings.CurrentKeybind or "None"
+			Keybind.KeybindFrame.Size = UDim2.new(0, Keybind.KeybindFrame.Keybind.TextBounds.X + 24, 0, 30)
+
+			Keybind.MouseEnter:Connect(function()
+				TweenService:Create(Keybind, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackgroundHover}):Play()
+			end)
+
+			Keybind.MouseLeave:Connect(function()
+				TweenService:Create(Keybind, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
+			end)
+
+			local KeyPressed
+			KeyPressed = UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+				if KeybindSettings.HoldToInteract and not gameProcessedEvent and Keybind.KeybindFrame.Keybind.Text == "..." then
+					local Key = input.KeyCode.Name ~= "Unknown" and input.KeyCode.Name or input.UserInputType.Name
+					if KeybindSettings.CurrentKeybind ~= Key then
+						KeybindSettings.CurrentKeybind = Key
+						Keybind.KeybindFrame.Keybind.Text = Key
+						Keybind.KeybindFrame.Size = UDim2.new(0, Keybind.KeybindFrame.Keybind.TextBounds.X + 24, 0, 30)
+						local Success, Response = pcall(function()
+							KeybindSettings.Callback(KeybindSettings.CurrentKeybind)
+						end)
+						if not Success then
+							TweenService:Create(Keybind, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
+							TweenService:Create(Keybind.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+							Keybind.Title.Text = "Callback Error"
+							print("PickleLibrary | "..KeybindSettings.Name.." Callback Error " ..tostring(Response))
+							warn('Check docs.sirius.menu for help with PickleLibrary specific development.')
+							task.wait(0.5)
+							Keybind.Title.Text = KeybindSettings.Name
+							TweenService:Create(Keybind, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
+							TweenService:Create(Keybind.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
+						end
+						if not KeybindSettings.Ext then
+							SaveConfiguration()
+						end
+					end
+				end
+			end)
+
+			Keybind.KeybindFrame.Interact.MouseButton1Click:Connect(function()
+				Keybind.KeybindFrame.Keybind.Text = "..."
+				Keybind.KeybindFrame.Size = UDim2.new(0, Keybind.KeybindFrame.Keybind.TextBounds.X + 24, 0, 30)
+				local InputBegan
+				InputBegan = UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+					if not gameProcessedEvent then
+						local Key = input.KeyCode.Name ~= "Unknown" and input.KeyCode.Name or input.UserInputType.Name
+						if not KeybindSettings.HoldToInteract then
+							KeybindSettings.CurrentKeybind = Key
+							Keybind.KeybindFrame.Keybind.Text = Key
+							Keybind.KeybindFrame.Size = UDim2.new(0, Keybind.KeybindFrame.Keybind.TextBounds.X + 24, 0, 30)
+							local Success, Response = pcall(function()
+								KeybindSettings.Callback(KeybindSettings.CurrentKeybind)
+							end)
+							if not Success then
+								TweenService:Create(Keybind, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
+								TweenService:Create(Keybind.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+								Keybind.Title.Text = "Callback Error"
+								print("PickleLibrary | "..KeybindSettings.Name.." Callback Error " ..tostring(Response))
+								warn('Check docs.sirius.menu for help with PickleLibrary specific development.')
+								task.wait(0.5)
+								Keybind.Title.Text = KeybindSettings.Name
+								TweenService:Create(Keybind, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
+								TweenService:Create(Keybind.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
+							end
+							if not KeybindSettings.Ext then
+								SaveConfiguration()
+							end
+							InputBegan:Disconnect()
+						end
+					end
+				end)
+			end)
+
+			function KeybindSettings:Set(NewKeybind)
+				KeybindSettings.CurrentKeybind = NewKeybind
+				Keybind.KeybindFrame.Keybind.Text = NewKeybind
+				Keybind.KeybindFrame.Size = UDim2.new(0, Keybind.KeybindFrame.Keybind.TextBounds.X + 24, 0, 30)
+				local Success, Response = pcall(function()
+					KeybindSettings.Callback(KeybindSettings.CurrentKeybind)
+				end)
+				if not Success then
+					TweenService:Create(Keybind, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
+					TweenService:Create(Keybind.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+					Keybind.Title.Text = "Callback Error"
+					print("PickleLibrary | "..KeybindSettings.Name.." Callback Error " ..tostring(Response))
+					warn('Check docs.sirius.menu for help with PickleLibrary specific development.')
+					task.wait(0.5)
+					Keybind.Title.Text = KeybindSettings.Name
+					TweenService:Create(Keybind, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
+					TweenService:Create(Keybind.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
+				end
+				if not KeybindSettings.Ext then
+					SaveConfiguration()
+				end
+			end
+
+			TweenService:Create(Keybind, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+			TweenService:Create(Keybind.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
+			TweenService:Create(Keybind.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+			TweenService:Create(Keybind.KeybindFrame, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+			TweenService:Create(Keybind.KeybindFrame.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
+			TweenService:Create(Keybind.KeybindFrame.Keybind, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+
+			if Settings.ConfigurationSaving then
+				if Settings.ConfigurationSaving.Enabled and KeybindSettings.Flag then
+					PickleLibrary.Flags[KeybindSettings.Flag] = KeybindSettings
+				end
+			end
+
+			Pickle.Main:GetPropertyChangedSignal('BackgroundColor3'):Connect(function()
+				Keybind.KeybindFrame.BackgroundColor3 = SelectedTheme.InputBackground
+				Keybind.KeybindFrame.UIStroke.Color = SelectedTheme.InputStroke
+			end)
+
+			return KeybindSettings
+		end
+
+		function Tab:CreateColorPicker(ColorPickerSettings)
+			local ColorPicker = Elements.Template.ColorPicker:Clone()
+			ColorPicker.Name = ColorPickerSettings.Name
+			ColorPicker.Title.Text = ColorPickerSettings.Name
+			ColorPicker.Visible = true
+			ColorPicker.Parent = TabPage
+
+			ColorPicker.BackgroundTransparency = 1
+			ColorPicker.UIStroke.Transparency = 1
+			ColorPicker.Title.TextTransparency = 1
+
+			ColorPicker.ColorFrame.BackgroundColor3 = ColorPickerSettings.Color
+			ColorPicker.ColorFrame.UIStroke.Color = SelectedTheme.ElementStroke
+
+			local function UpdateColor()
+				ColorPicker.ColorFrame.BackgroundColor3 = ColorPickerSettings.Color
+				local Success, Response = pcall(function()
+					ColorPickerSettings.Callback(ColorPickerSettings.Color)
+				end)
+				if not Success then
+					TweenService:Create(ColorPicker, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
+					TweenService:Create(ColorPicker.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+					ColorPicker.Title.Text = "Callback Error"
+					print("PickleLibrary | "..ColorPickerSettings.Name.." Callback Error " ..tostring(Response))
+					warn('Check docs.sirius.menu for help with PickleLibrary specific development.')
+					task.wait(0.5)
+					ColorPicker.Title.Text = ColorPickerSettings.Name
+					TweenService:Create(ColorPicker, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
+					TweenService:Create(ColorPicker.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
+				end
+				if not ColorPickerSettings.Ext then
+					SaveConfiguration()
+				end
+			end
+
+			ColorPicker.ColorFrame.Interact.MouseButton1Click:Connect(function()
+				local ColorPickerUI = MPrompt.ColorPicker:Clone()
+				ColorPickerUI.Parent = Pickle
+				ColorPickerUI.Visible = true
+				ColorPickerUI.BackgroundTransparency = 1
+				ColorPickerUI.Picker.BackgroundTransparency = 1
+				ColorPickerUI.Picker.UIStroke.Transparency = 1
+				ColorPickerUI.Picker.Hue.BackgroundTransparency = 1
+				ColorPickerUI.Picker.Saturation.BackgroundTransparency = 1
+				ColorPickerUI.Picker.RGB.BackgroundTransparency = 1
+				ColorPickerUI.Picker.RGB.RInput.TextTransparency = 1
+				ColorPickerUI.Picker.RGB.GInput.TextTransparency = 1
+				ColorPickerUI.Picker.RGB.BInput.TextTransparency = 1
+
+				local H, S, V = ColorPickerSettings.Color:ToHSV()
+				ColorPickerUI.Picker.Hue.Slider.Position = UDim2.new(0, 0, 1 - H, 0)
+				ColorPickerUI.Picker.Saturation.Slider.Position = UDim2.new(S, 0, 1 - V, 0)
+				ColorPickerUI.Picker.RGB.RInput.Text = math.floor(ColorPickerSettings.Color.R * 255)
+				ColorPickerUI.Picker.RGB.GInput.Text = math.floor(ColorPickerSettings.Color.G * 255)
+				ColorPickerUI.Picker.RGB.BInput.Text = math.floor(ColorPickerSettings.Color.B * 255)
+
+				TweenService:Create(ColorPickerUI, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.5}):Play()
+				TweenService:Create(ColorPickerUI.Picker, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+				TweenService:Create(ColorPickerUI.Picker.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
+				TweenService:Create(ColorPickerUI.Picker.Hue, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+				TweenService:Create(ColorPickerUI.Picker.Saturation, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+				TweenService:Create(ColorPickerUI.Picker.RGB, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+				TweenService:Create(ColorPickerUI.Picker.RGB.RInput, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+				TweenService:Create(ColorPickerUI.Picker.RGB.GInput, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+				TweenService:Create(ColorPickerUI.Picker.RGB.BInput, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+
+				local function UpdateFromInputs()
+					local R = tonumber(ColorPickerUI.Picker.RGB.RInput.Text) or 0
+					local G = tonumber(ColorPickerUI.Picker.RGB.GInput.Text) or 0
+					local B = tonumber(ColorPickerUI.Picker.RGB.BInput.Text) or 0
+					R = math.clamp(R, 0, 255)
+					G = math.clamp(G, 0, 255)
+					B = math.clamp(B, 0, 255)
+					ColorPickerSettings.Color = Color3.fromRGB(R, G, B)
+					H, S, V = ColorPickerSettings.Color:ToHSV()
+					ColorPickerUI.Picker.Hue.Slider.Position = UDim2.new(0, 0, 1 - H, 0)
+					ColorPickerUI.Picker.Saturation.Slider.Position = UDim2.new(S, 0, 1 - V, 0)
+					UpdateColor()
+				end
+
+				ColorPickerUI.Picker.Hue.Interact.MouseButton1Down:Connect(function()
+					local MouseMove, MouseKill
+					MouseMove = UserInputService.InputChanged:Connect(function(input)
+						if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+							local MouseLocation = UserInputService:GetMouseLocation()
+							local Percent = math.clamp((MouseLocation.Y - ColorPickerUI.Picker.Hue.AbsolutePosition.Y) / ColorPickerUI.Picker.Hue.AbsoluteSize.Y, 0, 1)
+							H = 1 - Percent
+							ColorPickerSettings.Color = Color3.fromHSV(H, S, V)
+							ColorPickerUI.Picker.Saturation.Slider.Position = UDim2.new(S, 0, 1 - V, 0)
+							ColorPickerUI.Picker.RGB.RInput.Text = math.floor(ColorPickerSettings.Color.R * 255)
+							ColorPickerUI.Picker.RGB.GInput.Text = math.floor(ColorPickerSettings.Color.G * 255)
+							ColorPickerUI.Picker.RGB.BInput.Text = math.floor(ColorPickerSettings.Color.B * 255)
+							UpdateColor()
+						end
+					end)
+					MouseKill = UserInputService.InputEnded:Connect(function(input)
+						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+							MouseMove:Disconnect()
+							MouseKill:Disconnect()
+						end
+					end)
+				end)
+
+				ColorPickerUI.Picker.Saturation.Interact.MouseButton1Down:Connect(function()
+					local MouseMove, MouseKill
+					MouseMove = UserInputService.InputChanged:Connect(function(input)
+						if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+							local MouseLocation = UserInputService:GetMouseLocation()
+							local XPercent = math.clamp((MouseLocation.X - ColorPickerUI.Picker.Saturation.AbsolutePosition.X) / ColorPickerUI.Picker.Saturation.AbsoluteSize.X, 0, 1)
+							local YPercent = math.clamp((MouseLocation.Y - ColorPickerUI.Picker.Saturation.AbsolutePosition.Y) / ColorPickerUI.Picker.Saturation.AbsoluteSize.Y, 0, 1)
+							S = XPercent
+							V = 1 - YPercent
+							ColorPickerSettings.Color = Color3.fromHSV(H, S, V)
+							ColorPickerUI.Picker.RGB.RInput.Text = math.floor(ColorPickerSettings.Color.R * 255)
+							ColorPickerUI.Picker.RGB.GInput.Text = math.floor(ColorPickerSettings.Color.G * 255)
+							ColorPickerUI.Picker.RGB.BInput.Text = math.floor(ColorPickerSettings.Color.B * 255)
+							UpdateColor()
+						end
+					end)
+					MouseKill = UserInputService.InputEnded:Connect(function(input)
+						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+							MouseMove:Disconnect()
+							MouseKill:Disconnect()
+						end
+					end)
+				end)
+
+				ColorPickerUI.Picker.RGB.RInput.FocusLost:Connect(UpdateFromInputs)
+				ColorPickerUI.Picker.RGB.GInput.FocusLost:Connect(UpdateFromInputs)
+				ColorPickerUI.Picker.RGB.BInput.FocusLost:Connect(UpdateFromInputs)
+
+				ColorPickerUI.Picker.Close.Interact.MouseButton1Click:Connect(function()
+					TweenService:Create(ColorPickerUI, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 1}):Play()
+					TweenService:Create(ColorPickerUI.Picker, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 1}):Play()
+					TweenService:Create(ColorPickerUI.Picker.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+					TweenService:Create(ColorPickerUI.Picker.Hue, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 1}):Play()
+					TweenService:Create(ColorPickerUI.Picker.Saturation, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 1}):Play()
+					TweenService:Create(ColorPickerUI.Picker.RGB, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 1}):Play()
+					TweenService:Create(ColorPickerUI.Picker.RGB.RInput, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 1}):Play()
+					TweenService:Create(ColorPickerUI.Picker.RGB.GInput, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 1}):Play()
+					TweenService:Create(ColorPickerUI.Picker.RGB.BInput, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 1}):Play()
+					task.wait(0.7)
+					ColorPickerUI:Destroy()
+				end)
+			end)
+
+			function ColorPickerSettings:Set(NewColor)
+				ColorPickerSettings.Color = NewColor
+				UpdateColor()
+			end
+
+			TweenService:Create(ColorPicker, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+			TweenService:Create(ColorPicker.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
+			TweenService:Create(ColorPicker.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+
+			if Settings.ConfigurationSaving then
+				if Settings.ConfigurationSaving.Enabled and ColorPickerSettings.Flag then
+					PickleLibrary.Flags[ColorPickerSettings.Flag] = ColorPickerSettings
+				end
+			end
+
+			Pickle.Main:GetPropertyChangedSignal('BackgroundColor3'):Connect(function()
+				ColorPicker.ColorFrame.UIStroke.Color = SelectedTheme.ElementStroke
+			end)
+
+			return ColorPickerSettings
+		end
+
+		function Tab:CreateDivider()
+			local Divider = Elements.Template.Divider:Clone()
+			Divider.Visible = true
+			Divider.Parent = TabPage
+			Divider.BackgroundTransparency = 1
+			TweenService:Create(Divider, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+			return Divider
+		end
+
+		function Tab:CreateSpacing()
+			local Spacing = Elements.Template.SectionSpacing:Clone()
+			Spacing.Visible = true
+			Spacing.Parent = TabPage
+			return Spacing
+		end
+
+		TabPage.Visible = (#TabList:GetChildren() - 1) == 1
+		table.insert(Window.Tabs, Tab)
 		return Tab
 	end
-	
+
+	function Window:CreateSettingsTab(SettingsTabSettings)
+		local SettingsTab = Window:CreateTab(SettingsTabSettings.Name or "Settings", SettingsTabSettings.Image or 3926305904)
+		local SettingsSection = SettingsTab:CreateSection("PickleLibrary Settings")
+		local KeybindSettings = SettingsTab:CreateKeybind({
+			Name = settingsTable.General.pickleOpen.Name,
+			CurrentKeybind = getSetting("General", "pickleOpen"),
+			HoldToInteract = settingsTable.General.pickleOpen.HoldToInteract or false,
+			Flag = "PickleOpenBind",
+			Ext = true,
+			Callback = function(Key)
+				settingsTable.General.pickleOpen.Value = Key
+				if not settingsInitialized then return end
+				local Data = {}
+				for categoryName, settingCategory in pairs(settingsTable) do
+					Data[categoryName] = {}
+					for settingName, setting in pairs(settingCategory) do
+						Data[categoryName][settingName] = {
+							Value = setting.Value,
+							Type = setting.Type,
+							Name = setting.Name,
+							Element = setting.Element
+						}
+					end
+				end
+				if writefile then
+					if not isfolder(PickleFolder) then
+						makefolder(PickleFolder)
+					end
+					writefile(PickleFolder..'/settings'..ConfigurationExtension, HttpService:JSONEncode(Data))
+				end
+			end,
+		})
+		settingsTable.General.pickleOpen.Element = KeybindSettings
+
+		local AnalyticsToggle = SettingsTab:CreateToggle({
+			Name = settingsTable.System.usageAnalytics.Name,
+			CurrentValue = getSetting("System", "usageAnalytics"),
+			Flag = "AnalyticsToggle",
+			Ext = true,
+			Callback = function(Value)
+				if requestsDisabled then
+					PickleLibrary:Notify({
+						Title = "PickleLibrary Analytics",
+						Content = "Analytics cannot be enabled as requests have been disabled by the developer.",
+						Duration = 5
+					})
+					AnalyticsToggle:Set(false)
+					return
+				end
+				settingsTable.System.usageAnalytics.Value = Value
+				if not settingsInitialized then return end
+				local Data = {}
+				for categoryName, settingCategory in pairs(settingsTable) do
+					Data[categoryName] = {}
+					for settingName, setting in pairs(settingCategory) do
+						Data[categoryName][settingName] = {
+							Value = setting.Value,
+							Type = setting.Type,
+							Name = setting.Name,
+							Element = setting.Element
+						}
+					end
+				end
+				if writefile then
+					if not isfolder(PickleFolder) then
+						makefolder(PickleFolder)
+					end
+					writefile(PickleFolder..'/settings'..ConfigurationExtension, HttpService:JSONEncode(Data))
+				end
+				if Value then
+					sendReport("execution", "PickleLibrary")
+				end
+			end,
+		})
+		settingsTable.System.usageAnalytics.Element = AnalyticsToggle
+
+		if not settingsCreated then
+			settingsCreated = true
+			loadSettings()
+		end
+		return SettingsTab
+	end
+
+	Pickle.Main.Topbar.ChangeSize.MouseButton1Click:Connect(function()
+		if not Debounce then
+			if Minimised then
+				Maximise()
+			else
+				Minimise()
+			end
+			Minimised = not Minimised
+		end
+	end)
+
+	Pickle.Main.Topbar.Search.MouseButton1Click:Connect(function()
+		if not Debounce then
+			if searchOpen then
+				closeSearch()
+			else
+				openSearch()
+			end
+		end
+	end)
+
+	Pickle.Main.Topbar.Hide.MouseButton1Click:Connect(function()
+		if not Debounce then
+			Hidden = true
+			Hide(true)
+		end
+	end)
+
+	Pickle.Main.Search.Input:GetPropertyChangedSignal("Text"):Connect(function()
+		local searchText = string.lower(Pickle.Main.Search.Input.Text)
+		for _, tab in ipairs(Window.Tabs) do
+			for _, element in ipairs(tab.Elements) do
+				if element:IsA("Frame") and element.Name ~= "SectionTitle" and element.Name ~= "SectionSpacing" and element.Name ~= "Divider" then
+					if string.find(string.lower(element.Name), searchText) then
+						element.Visible = true
+					else
+						element.Visible = false
+					end
+				end
+			end
+		end
+	end)
+
+	Pickle.Main.Search.Input.FocusLost:Connect(function()
+		if searchOpen then
+			closeSearch()
+		end
+	end)
+
+	local KeybindConnection
+	KeybindConnection = UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+		if not gameProcessedEvent and not pickleDestroyed then
+			local Key = input.KeyCode.Name ~= "Unknown" and input.KeyCode.Name or input.UserInputType.Name
+			if Key == getSetting("General", "pickleOpen") then
+				if Hidden then
+					Hidden = false
+					Unhide()
+				else
+					Hidden = true
+					Hide(true)
+				end
+			end
+		end
+	end)
+
+	if dragBar and dragInteract then
+		makeDraggable(Pickle.Main, dragInteract, true, {dragOffset, dragOffsetMobile})
+	end
+
+	function Window:Destroy()
+		Pickle:Destroy()
+		if KeybindConnection then
+			KeybindConnection:Disconnect()
+		end
+		pickleDestroyed = true
+	end
+
+	function Window:LoadConfiguration()
+		if CEnabled and isfile and isfile(ConfigurationFolder .. "/" .. CFileName .. ConfigurationExtension) then
+			local FileContents = readfile(ConfigurationFolder .. "/" .. CFileName .. ConfigurationExtension)
+			local Changed = LoadConfiguration(FileContents)
+			if Changed then
+				PickleLibrary:Notify({
+					Title = "Configuration Loaded",
+					Content = "The configuration file was loaded successfully.",
+					Duration = 5
+				})
+			end
+		end
+	end
+
+	Pickle.Enabled = true
+	TweenService:Create(Pickle.Main.Shadow.Image, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {ImageTransparency = 0.6}):Play()
+	TweenService:Create(Pickle.Main, TweenInfo.new(0.5, Enum.EasingStyle.Exponential, Enum.EasingDirection.InOut), {Size = useMobileSizing and UDim2.new(0, 500, 0, 275) or UDim2.new(0, 500, 0, 475)}):Play()
+	TweenService:Create(Pickle.Main.Topbar, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+	TweenService:Create(Pickle.Main.Topbar.CornerRepair, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+	TweenService:Create(Pickle.Main.Topbar.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+	TweenService:Create(Pickle.Main.Topbar.Subtitle, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+	TweenService:Create(Pickle.Main.Topbar.ChangeSize, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 0.8}):Play()
+	TweenService:Create(Pickle.Main.Topbar.Search, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 0.8}):Play()
+	TweenService:Create(Pickle.Main.Topbar.Hide, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 0.8}):Play()
+	if dragBar then
+		TweenService:Create(dragBarCosmetic, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.7}):Play()
+	end
+
+	task.wait(0.5)
+	Pickle.Main.LoadingFrame.Visible = false
+	for _, v in ipairs(Elements:GetChildren()) do
+		if v.ClassName == "Frame" and v.Name ~= "Placeholder" then
+			TweenService:Create(v, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+			for _, x in ipairs(v:GetDescendants()) do
+				if x.ClassName == "TextLabel" or x.ClassName == "TextBox" then
+					TweenService:Create(x, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+				elseif x.ClassName == "ImageLabel" or x.ClassName == "ImageButton" then
+					TweenService:Create(x, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 0}):Play()
+				end
+			end
+		end
+	end
+
+	for _, v in ipairs(TabList:GetChildren()) do
+		if v.ClassName == "Frame" and v.Name ~= "Placeholder" and v.Name ~= "Template" then
+			if tostring(Elements.UIPageLayout.CurrentPage) == v.Title.Text then
+				TweenService:Create(v, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+				TweenService:Create(v.Image, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 0}):Play()
+				TweenService:Create(v.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+				TweenService:Create(v.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+			else
+				TweenService:Create(v, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.7}):Play()
+				TweenService:Create(v.Image, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 0.2}):Play()
+				TweenService:Create(v.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0.2}):Play()
+				TweenService:Create(v.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0.5}):Play()
+			end
+		end
+	end
+
+	if Topbar:FindFirstChild('Settings') then
+		TweenService:Create(Pickle.Main.Topbar.Settings, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 0.8}):Play()
+	end
+
+	if not requestsDisabled and not globalLoaded then
+		sendReport("execution", "PickleLibrary")
+	end
+	globalLoaded = true
+
 	return Window
 end
 
-UserInputService.InputBegan:Connect(function(input, processed)
-	if not processed and input.KeyCode == Enum.KeyCode[getSetting("General", "pickleOpen")] then
-		if Pickle then
-			Pickle.Enabled = not Pickle.Enabled
-		end
-	end
-end)
-
-function PickleLibrary:Destroy()
-	if pickleDestroyed then return end
-	pickleDestroyed = true
-	Pickle:Destroy()
-end
-
-return PickleLibrary
+return PickleLibrary 
