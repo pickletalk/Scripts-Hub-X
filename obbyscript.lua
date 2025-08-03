@@ -16,7 +16,7 @@ local Window = Rayfield:CreateWindow({
    ConfigurationSaving = {
       Enabled = true,
       FolderName = "PickleField", -- Create a custom folder for your hub/game
-      FileName = "Config"
+      FileName = "Config.txt"
    },
 
    Discord = {
