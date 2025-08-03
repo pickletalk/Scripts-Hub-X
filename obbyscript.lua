@@ -292,6 +292,7 @@ local function startFly()
         if Flying and BodyVelocity and BodyVelocity.Parent then
             local direction = getDirectionVector()
             BodyVelocity.Velocity = direction * FlySpeed
+            rootPart.CFrame *= CFrame.new(Vector3.new(0, 10, 0)) -- Apply lift
             humanoid.PlatformStand = true -- Ensure platform stand is maintained
         end
     end)
