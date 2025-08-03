@@ -51,10 +51,7 @@ local Games = {
     
     -- Doors
     [6516141723] = "https://raw.githubusercontent.com/KINGHUB01/BlackKing-obf/main/Doors%20Blackking%20And%20BobHub",
-
-    -- Tower Of Hell
-    [1962086868] = "https://rawscripts.net/raw/Tower-of-Hell-Script-(Proxima-Hub)-2870",
-
+    
     -- piggy
     [4623386862] = "https://raw.githubusercontent.com/StarHackScripts/StarHack-Hub-Deepstar-Hub/refs/heads/main/StarHack%20Hub%20-%20Piggy%20Pro%20Hub.txt",
 
@@ -99,7 +96,22 @@ local Games = {
     [137541498231955] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/shrinkhideandseek.lua",
 
     -- Troll Slapping Tower
-    [128829279907343] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua"
+    [128829279907343] = "https://raw.githubusercontent.com/lotretscript/Lo-Tret-Script/refs/heads/main/Lo-Tret-Script.lua.txt",
+
+    -- Troll Is Pining
+    [83312952548612] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua",
+
+    -- Slap Tower
+    [95508886069297] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua", -- 1
+    [79089892790758] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua", -- 2
+    [105612566642310] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua", -- 3
+    [86082995079744] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua", -- 4
+    [94638025587676] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua", -- 5
+    [120759571391756] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua", -- 6
+    [91711653427804] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua", -- 7
+
+    -- Tower Of Hell
+    [1962086868] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua"
 }
 
 return Games
