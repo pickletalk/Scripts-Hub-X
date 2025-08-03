@@ -2,9 +2,9 @@
 
 local DrRayLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/PickleLibrary.lua"))()
 
-local window = DrRayLibrary:Load("Shrink Hide And Seek", "Default")
 
-local tab = DrRayLibrary.newTab("Script", "5009915812")
+local window = PickleLibrary:Load("Shrink Hide And Seek", "Default")
+local tab = window.newTab("Scripts")
 local window = Color3.fromRGB(30, 60, 120)
 local tab = Color3.fromRGB(20, 40, 80)
 
