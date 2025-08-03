@@ -45,14 +45,14 @@ local LocalPlayer = Players.LocalPlayer
 
 -- Variables
 local Flying = false
-local FlySpeed = 50
+local FlySpeed = 20
 local BodyVelocity = nil
 local BodyAngularVelocity = nil
 local FlyConnection = nil
 
 local JumpPowerEnabled = false
-local CustomJumpPower = 50
-local OriginalJumpPower = 50
+local CustomJumpPower = 35
+local OriginalJumpPower = 35
 
 local NoclipEnabled = false
 local NoclipConnection = nil
