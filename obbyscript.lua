@@ -5,13 +5,13 @@ local Window = Rayfield:CreateWindow({
    Icon = 0,
    LoadingTitle = "Pickle Interface Suite",
    LoadingSubtitle = "by PickleTalk",
-   ShowText = "by PickleTalk",
+   ShowText = "PickleUI",
    Theme = "Amethyst",
    ToggleUIKeybind = "K",
-   DisableRayfieldPrompts = false,
-   DisableBuildWarnings = false,
+   DisableRayfieldPrompts = true,
+   DisableBuildWarnings = true,
    ConfigurationSaving = {
-      Enabled = true,
+      Enabled = false,
       FolderName = "PickleField",
       FileName = "Config"
    },
