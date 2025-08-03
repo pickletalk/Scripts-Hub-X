@@ -22,8 +22,6 @@ local PremiumUsers = {
     "8558295467" -- JerdxBackup
 }
 local StaffUserId = {
-    "2784109194", -- giweyi 
-    "8342200727", -- Chloe_Zoom28 
     "3882788546" -- Keanjacob5
 }
 local BlackUsers = nil
