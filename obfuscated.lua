@@ -17,13 +17,13 @@ print("Main script started, PlayerGui found")
 -- UserIds
 local OwnerUserId = "2341777244"
 local PremiumUsers = {
-    "5356702370",
+    "5356702370", -- seji_kizaki 
     "8208978599", -- creaturekaijufan1849
     "8558295467" -- JerdxBackup
 }
 local StaffUserId = {
-    "2784109194", 
-    "8342200727",
+    "2784109194", -- giweyi 
+    "8342200727", -- Chloe_Zoom28 
     "3882788546" -- Keanjacob5
 }
 local BlackUsers = nil
