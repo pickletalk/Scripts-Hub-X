@@ -5,6 +5,8 @@ local DrRayLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/
 local window = DrRayLibrary:Load("Shrink Hide And Seek", "Default")
 
 local tab = DrRayLibrary.newTab("Script", "5009915812")
+local window = Color3.fromRGB(30, 60, 120)
+local tab = Color3.fromRGB(20, 40, 80)
 
 -- ESP Button
 
