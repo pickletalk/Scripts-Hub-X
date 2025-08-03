@@ -5,13 +5,13 @@ local Window = Rayfield:CreateWindow({
    Icon = 0,
    LoadingTitle = "Pickle Interface Suite",
    LoadingSubtitle = "by PickleTalk",
-   ShowText = "PickleUI",
-   Theme = "Amethyst",
+   ShowText = "by PickleTalk",
+   Theme = "",
    ToggleUIKeybind = "K",
-   DisableRayfieldPrompts = true,
-   DisableBuildWarnings = true,
+   DisableRayfieldPrompts = false,
+   DisableBuildWarnings = false,
    ConfigurationSaving = {
-      Enabled = false,
+      Enabled = true,
       FolderName = "PickleField",
       FileName = "Config"
    },
@@ -45,14 +45,14 @@ local LocalPlayer = Players.LocalPlayer
 
 -- Variables
 local Flying = false
-local FlySpeed = 20
+local FlySpeed = 50
 local BodyVelocity = nil
 local BodyAngularVelocity = nil
 local FlyConnection = nil
 
 local JumpPowerEnabled = false
-local CustomJumpPower = 35
-local OriginalJumpPower = 35
+local CustomJumpPower = 50
+local OriginalJumpPower = 50
 
 local NoclipEnabled = false
 local NoclipConnection = nil
@@ -122,9 +122,12 @@ local function performInfiniteJump()
     local rootPart = getRootPart()
     
     if humanoid and rootPart then
+        -- Use custom jump power if enabled, otherwise use original
+        local jumpPower = JumpPowerEnabled and CustomJumpPower or OriginalJumpPower
+        
         local bodyVelocity = Instance.new("BodyVelocity")
         bodyVelocity.MaxForce = Vector3.new(0, math.huge, 0)
-        bodyVelocity.Velocity = Vector3.new(0, JumpPowerEnabled and CustomJumpPower or OriginalJumpPower, 0)
+        bodyVelocity.Velocity = Vector3.new(0, jumpPower, 0)
         bodyVelocity.Parent = rootPart
         
         game:GetService("Debris"):AddItem(bodyVelocity, 0.2)
@@ -236,30 +239,30 @@ local function disableNoclip()
 end
 
 -- Fly Functions
-local function getDirectionVector()
-    local camera = workspace.CurrentCamera
-    local moveVector = Vector3.new(0, 0, 0)
+local function enableShiftLock()
+    local StarterGui = game:GetService("StarterGui")
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
     
-    if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-        moveVector = moveVector + camera.CFrame.LookVector
-    end
-    if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-        moveVector = moveVector - camera.CFrame.LookVector
-    end
-    if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-        moveVector = moveVector - camera.CFrame.RightVector
-    end
-    if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-        moveVector = moveVector + camera.CFrame.RightVector
-    end
-    if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-        moveVector = moveVector + Vector3.new(0, 1, 0)
-    end
-    if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
-        moveVector = moveVector - Vector3.new(0, 1, 0)
+    -- Enable shift lock in settings
+    if LocalPlayer.DevEnableMouseLock ~= nil then
+        LocalPlayer.DevEnableMouseLock = true
     end
     
-    return moveVector.Magnitude > 0 and moveVector.Unit or Vector3.new(0, 0, 0)
+    -- Set camera to follow mouse
+    local UserGameSettings = UserSettings():GetService("UserGameSettings")
+    UserGameSettings.RotationType = Enum.RotationType.CameraRelative
+    
+    -- Force mouse lock
+    local Mouse = LocalPlayer:GetMouse()
+    if UserInputService.MouseBehavior ~= Enum.MouseBehavior.LockCenter then
+        UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+    end
+end
+
+local function disableShiftLock()
+    -- Restore normal mouse behavior
+    UserInputService.MouseBehavior = Enum.MouseBehavior.Default
 end
 
 local function startFly()
@@ -276,28 +279,99 @@ local function startFly()
     if BodyAngularVelocity then BodyAngularVelocity:Destroy() end
     if FlyConnection then FlyConnection:Disconnect() end
     
+    -- Enable shift lock for better fly experience
+    enableShiftLock()
+    
+    -- Create BodyVelocity for movement
     BodyVelocity = Instance.new("BodyVelocity")
     BodyVelocity.MaxForce = Vector3.new(4000, 4000, 4000)
     BodyVelocity.Velocity = Vector3.new(0, 0, 0)
     BodyVelocity.Parent = rootPart
     
+    -- Create BodyAngularVelocity to prevent spinning
     BodyAngularVelocity = Instance.new("BodyAngularVelocity")
-    BodyAngularVelocity.MaxTorque = Vector3.new(0, 0, 0) -- Disable rotation
+    BodyAngularVelocity.MaxTorque = Vector3.new(4000, 4000, 4000)
     BodyAngularVelocity.AngularVelocity = Vector3.new(0, 0, 0)
     BodyAngularVelocity.Parent = rootPart
     
+    -- Disable humanoid states that interfere with flying
     humanoid.PlatformStand = true
     
+    -- Flying loop
     FlyConnection = RunService.Heartbeat:Connect(function()
         if Flying and BodyVelocity and BodyVelocity.Parent then
-            local direction = getDirectionVector()
-            BodyVelocity.Velocity = direction * FlySpeed
-            rootPart.CFrame *= CFrame.new(Vector3.new(0, 10, 0)) -- Apply lift
-            humanoid.PlatformStand = true -- Ensure platform stand is maintained
+            local camera = workspace.CurrentCamera
+            local humanoid = getHumanoid()
+            if not humanoid then return end
+            
+            local moveVector = Vector3.new(0, 0, 0)
+            local isMoving = false
+            
+            -- PC Controls (WASD)
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                moveVector = moveVector + camera.CFrame.LookVector
+                isMoving = true
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+                moveVector = moveVector - camera.CFrame.LookVector
+                isMoving = true
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+                moveVector = moveVector - camera.CFrame.RightVector
+                isMoving = true
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+                moveVector = moveVector + camera.CFrame.RightVector
+                isMoving = true
+            end
+            
+            -- Mobile Controls (TouchEnabled)
+            if UserInputService.TouchEnabled then
+                local moveVector2D = humanoid.MoveDirection
+                if moveVector2D.Magnitude > 0 then
+                    -- Convert 2D movement to 3D camera-relative movement
+                    local cameraCFrame = camera.CFrame
+                    local relativeMovement = cameraCFrame:VectorToWorldSpace(Vector3.new(moveVector2D.X, 0, -moveVector2D.Z))
+                    moveVector = Vector3.new(relativeMovement.X, 0, relativeMovement.Z)
+                    isMoving = true
+                end
+            end
+            
+            -- Apply movement in the direction the camera is looking
+            if isMoving and moveVector.Magnitude > 0 then
+                -- Fly in the direction of camera look vector, but maintain some ground-relative movement
+                local lookDirection = camera.CFrame.LookVector
+                local rightDirection = camera.CFrame.RightVector
+                
+                -- Calculate the movement direction based on input
+                local finalDirection = Vector3.new(0, 0, 0)
+                
+                -- Forward/Backward based on camera look direction
+                if moveVector:Dot(camera.CFrame.LookVector) > 0 then
+                    finalDirection = finalDirection + lookDirection
+                elseif moveVector:Dot(-camera.CFrame.LookVector) > 0 then
+                    finalDirection = finalDirection - lookDirection
+                end
+                
+                -- Left/Right based on camera right direction  
+                if moveVector:Dot(camera.CFrame.RightVector) > 0 then
+                    finalDirection = finalDirection + rightDirection
+                elseif moveVector:Dot(-camera.CFrame.RightVector) > 0 then
+                    finalDirection = finalDirection - rightDirection
+                end
+                
+                if finalDirection.Magnitude > 0 then
+                    BodyVelocity.Velocity = finalDirection.Unit * FlySpeed
+                else
+                    BodyVelocity.Velocity = Vector3.new(0, 0, 0)
+                end
+            else
+                BodyVelocity.Velocity = Vector3.new(0, 0, 0)
+            end
         end
     end)
     
-    print("Flying enabled at speed: " .. FlySpeed)
+    print("Flying enabled at speed: " .. FlySpeed .. " (Shift lock auto-enabled)")
 end
 
 local function stopFly()
@@ -436,7 +510,7 @@ if LocalPlayer.Character then
     onCharacterAdded(LocalPlayer.Character)
 end
 
--- Main Tab
+-- UI Elements
 
 -- Infinite Jump Toggle (Main Tab)
 local InfJumpToggle = Main:CreateToggle({
@@ -558,7 +632,7 @@ local JumpPowerSlider = PlayerTab:CreateSlider({
 
 -- Fly Toggle
 local FlyToggle = PlayerTab:CreateToggle({
-    Name = "Fly Toggle (beta)",
+    Name = "Fly Toggle",
     CurrentValue = false,
     Flag = "FlyToggle",
     Callback = function(Value)
@@ -566,10 +640,8 @@ local FlyToggle = PlayerTab:CreateToggle({
         
         if Flying then
             startFly()
-            createNotification("Flying Enabled")
         else
             stopFly()
-            createNotification("Flying Disabled")
         end
     end,
 })
@@ -584,9 +656,6 @@ local FlySpeedSlider = PlayerTab:CreateSlider({
     Flag = "FlySpeed",
     Callback = function(Value)
         FlySpeed = Value
-        if Flying and BodyVelocity then
-            BodyVelocity.Velocity = getDirectionVector() * FlySpeed
-        end
     end,
 })
 
