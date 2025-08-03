@@ -5,10 +5,8 @@ local PickleLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com
 local window = PickleLibrary:Load("Shrink Hide And Seek", "Default")
 local tab = window.newTab("Scripts")
 window:SetTheme(
-    Color3.fromRGB(30, 60, 120)
-)
-tab:SetTheme(
-    Color3.fromRGB(20, 40, 80)
+    Color3.fromRGB(30, 60, 120),  -- Main color (window background)
+    Color3.fromRGB(100, 200, 255) -- Accent color (buttons, toggles)
 )
 
 
@@ -150,8 +148,9 @@ local function enableInfiniteJump(toggle)
 end
 
 -- Infinite Jump
-tab.newButton("Inf Jump", "Inf Jump Enabled!", function(toggle)
-        enableInfiniteJump(not isInfiniteJumpEnabled)
+tab.newButton("Inf Jump", "Inf Jump Enabled!", false, function(toggle)
+        enableInfiniteJump(toggle)
+        createNotification()
 end)
 
 -- ESP Button
