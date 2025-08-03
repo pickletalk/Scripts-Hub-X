@@ -338,13 +338,21 @@ coroutine.wrap(function()
         return
     end
 
-    if userStatus == "owner" or userStatus == "staff" or userStatus == "premium" or userStatus == "platoboost_whitelisted" then
+    if userStatus == "owner" or userStatus == "staff" then
+        print(userStatus .. " detected, skipping key system and loading screen")
+        local scriptLoaded = loadGameScript(scriptUrl)
+        if scriptLoaded then
+            print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
+        else
+            showErrorNotification()
+        end
+    elseif userStatus == "premium" or userStatus == "platoboost_whitelisted" then
         print(userStatus .. " detected, skipping key system")
         local success, LoadingScreen = loadLoadingScreen()
         if success then
             pcall(function()
                 LoadingScreen.initialize()
-                LoadingScreen.setLoadingText(userStatus == "premium" and "Premium User Verified" or userStatus == "platoboost_whitelisted" and "Platoboost Whitelisted" or userStatus .. " Verified", Color3.fromRGB(0, 150, 0))
+                LoadingScreen.setLoadingText(userStatus == "premium" and "Premium User Verified" or "Platoboost Whitelisted", Color3.fromRGB(0, 150, 0))
                 wait(2)
                 LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
                 LoadingScreen.animateLoadingBar(function()
@@ -391,7 +399,7 @@ coroutine.wrap(function()
                             print("Scripts Hub X | Loading Complete for black user!")
                         else
                             showErrorNotification()
-                        end)
+                        end
                     end)
                 end)
             end)
