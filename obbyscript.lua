@@ -183,3 +183,5 @@ local Button = Main:CreateButton({
        enableInfiniteJump(not isInfiniteJumpEnabled)
    end,
 })
+
+Rayfield:LoadConfiguration()
