@@ -1,72 +1,76 @@
-local PickleLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/picklelibrary.lua"))() -- Replace with your actual GitHub raw URL
-
-if not PickleLibrary then
-    warn("Failed to load PickleLibrary from GitHub")
+-- Load essential services
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+if not Players.LocalPlayer then
+    warn("Error: LocalPlayer not found")
     return
 end
 
--- Create a new window with configuration saving enabled
+-- Load PickleLibrary from GitHub
+local PickleLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/picklelibrary.lua"))() -- Replace with your GitHub raw URL
+if not PickleLibrary then
+    warn("Failed to load PickleLibrary")
+    return
+end
+
+-- Create window
 local Window = PickleLibrary:CreateWindow({
-    Name = "PickleLibrary Test Suite",
-    LoadingSubtitle = "Testing by Pickle",
+    Name = "PickleLibrary Test",
+    LoadingSubtitle = "Testing by Grok",
     ConfigurationSaving = {
         Enabled = true,
         FileName = "PickleTestConfig"
     }
 })
 
--- Create a main tab for general controls
-local MainTab = Window:CreateTab("Test Controls", "home")
+-- Main tab
+local MainTab = Window:CreateTab("Main Controls", "home")
 
--- Add a section
+-- Basic controls section
 MainTab:CreateSection("Basic Controls")
 
--- Test Button
+-- Button
 MainTab:CreateButton({
     Name = "Test Button",
     Callback = function()
-        print("Button clicked!")
-        PickleLibrary:Notify({
-            Title = "Button Pressed",
-            Content = "You clicked the test button!",
-            Duration = 3
-        })
+        print("Button clicked")
+        PickleLibrary:Notify({Title = "Button Pressed", Content = "Test button clicked!", Duration = 3})
     end
 })
 
--- Test Toggle
+-- Toggle
 MainTab:CreateToggle({
     Name = "Test Toggle",
     CurrentValue = false,
     Flag = "TestToggle",
     Callback = function(value)
-        print("Toggle changed to: " .. tostring(value))
+        print("Toggle: " .. tostring(value))
     end
 })
 
--- Test Slider
+-- Slider
 MainTab:CreateSlider({
     Name = "Test Slider",
     Range = {0, 100},
     CurrentValue = 50,
     Flag = "TestSlider",
     Callback = function(value)
-        print("Slider changed to: " .. value)
+        print("Slider: " .. value)
     end
 })
 
--- Test Dropdown (Single selection)
+-- Dropdown (single)
 MainTab:CreateDropdown({
     Name = "Test Dropdown",
     Options = {"Option 1", "Option 2", "Option 3"},
     CurrentOption = {"Option 1"},
     Flag = "TestDropdown",
     Callback = function(option)
-        print("Dropdown selected: " .. table.concat(option, ", "))
+        print("Dropdown: " .. table.concat(option, ", "))
     end
 })
 
--- Test Dropdown (Multiple selection)
+-- Dropdown (multiple)
 MainTab:CreateDropdown({
     Name = "Multi Dropdown",
     Options = {"Apple", "Banana", "Orange", "Grape"},
@@ -74,62 +78,59 @@ MainTab:CreateDropdown({
     MultipleOptions = true,
     Flag = "TestMultiDropdown",
     Callback = function(options)
-        print("Multi Dropdown selected: " .. table.concat(options, ", "))
+        print("Multi Dropdown: " .. table.concat(options, ", "))
     end
 })
 
--- Test Keybind
+-- Keybind
 MainTab:CreateKeybind({
     Name = "Test Keybind",
     CurrentKeybind = "E",
     Flag = "TestKeybind",
     Callback = function(key)
-        print("Keybind changed to: " .. key)
+        print("Keybind: " .. key)
     end
 })
 
--- Test ColorPicker
+-- ColorPicker
 MainTab:CreateColorPicker({
     Name = "Test ColorPicker",
     Color = Color3.fromRGB(255, 0, 0),
     Flag = "TestColorPicker",
     Callback = function(color)
-        print("Color changed to: R=" .. math.floor(color.R * 255) .. ", G=" .. math.floor(color.G * 255) .. ", B=" .. math.floor(color.B * 255))
+        print("Color: R=" .. math.floor(color.R * 255) .. ", G=" .. math.floor(color.G * 255) .. ", B=" .. math.floor(color.B * 255))
     end
 })
 
--- Test Label
+-- Label
 local TestLabel = MainTab:CreateLabel("Test Label", "info", Color3.fromRGB(100, 200, 100))
-TestLabel:Set("Updated Label Text")
+TestLabel:Set("Updated Label")
 
--- Test Paragraph
+-- Paragraph
 MainTab:CreateParagraph({
     Title = "Test Paragraph",
-    Content = "This is a test paragraph to demonstrate the paragraph element in PickleLibrary."
+    Content = "Demonstrating PickleLibrary's paragraph element."
 })
 
--- Add a divider
+-- Divider
 MainTab:CreateDivider()
 
--- Add another section
+-- Advanced controls section
 MainTab:CreateSection("Advanced Controls")
 
--- Test Spacing
+-- Spacing
 MainTab:CreateSpacing()
 
--- Test Button with Error
+-- Error Button
 MainTab:CreateButton({
     Name = "Error Button",
     Callback = function()
-        error("This is a test error")
+        error("Test error")
     end
 })
 
--- Create a settings tab
-Window:CreateSettingsTab({
-    Name = "Settings",
-    Image = "settings"
-})
+-- Settings tab
+Window:CreateSettingsTab({Name = "Settings", Image = "settings"})
 
--- Load configuration to test loading functionality
+-- Load configuration
 Window:LoadConfiguration()
