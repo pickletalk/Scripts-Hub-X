@@ -298,11 +298,12 @@ local function teleportToPlot()
         end
     end
     
-    -- Teleport with speed of 60 studs per second
-    local teleportSpeed = 60 -- studs per second
-    local teleportTime = distance / teleportSpeed
+    -- Teleport with constant speed of 55 studs/second
+    local teleportSpeed = 55 -- studs per second
+    local travelTime = distance / teleportSpeed
     
-    local tweenInfo = TweenInfo.new(teleportTime, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+    -- Use Linear easing for constant speed (no acceleration)
+    local tweenInfo = TweenInfo.new(travelTime, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut)
     local tween = TweenService:Create(rootPart, tweenInfo, {CFrame = targetCFrame})
     tween:Play()
     
@@ -313,7 +314,7 @@ local function teleportToPlot()
                 if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
                     part.CanCollide = true
                 end
-            end
+            end)
         end)
         statusLabel.Text = "Teleported successfully!"
     end)
