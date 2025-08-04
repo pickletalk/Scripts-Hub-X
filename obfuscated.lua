@@ -19,7 +19,8 @@ local OwnerUserId = "2341777244"
 local PremiumUsers = {
     "5356702370", -- seji_kizaki 
     "8208978599", -- creaturekaijufan1849
-    "8558295467" -- JerdxBackup
+    "8558295467", -- JerdxBackup
+    "4196292931" -- jvpogi233jj
 }
 local StaffUserId = {
     "3882788546", -- Keanjacob5
