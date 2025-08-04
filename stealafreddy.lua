@@ -1,54 +1,19 @@
-loadstring(game:HttpGet("https://raw.githubusercontent.com/gumanba/Scripts/main/StealaFreddy"))()
+-- stealafreddy.lua
+-- Combined script for Infinite Jump, Plot Teleporter, and God Mode
+-- by pickletalk (modified for clarity and functionality)
 
-
--- Infinite Jump Script (Fixed - Natural Jump Height)
--- by pickletalk
-
+-- Services
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 
--- Configuration
 local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- == Infinite Jump ==
 local isInfiniteJumpEnabled = false
-local connections = {}
-
-local function createNotification()
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-    screenGui.Name = "InfiniteJumpNotification"
-
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 200, 0, 0)
-    frame.Position = UDim2.new(0.5, -100, 0.9, -40)
-    frame.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-    frame.BorderSizePixel = 0
-    frame.Parent = screenGui
-
-    local uiCorner = Instance.new("UICorner")
-    uiCorner.CornerRadius = UDim.new(0, 10)
-    uiCorner.Parent = frame
-
-    local textLabel = Instance.new("TextLabel")
-    textLabel.Size = UDim2.new(1, 0, 1, 0)
-    textLabel.BackgroundTransparency = 1
-    textLabel.Text = "Infinite Jump Enabled"
-    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    textLabel.Font = Enum.Font.SourceSansBold
-    textLabel.TextSize = 16
-    textLabel.Parent = frame
-
-    local tweenIn = TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 200, 0, 40)})
-    tweenIn:Play()
-
-    wait(1)
-    local tweenOut = TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0, 200, 0, 0)})
-    tweenOut:Play()
-    tweenOut.Completed:Connect(function()
-        wait(0.5)
-        screenGui:Destroy()
-    end)
-end
+local jumpConnections = {}
 
 local function connectInfiniteJump()
     local connection = UserInputService.JumpRequest:Connect(function()
@@ -57,18 +22,13 @@ local function connectInfiniteJump()
             local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
             
             if rootPart and humanoid and humanoid.Health > 0 then
-                -- Temporarily set the humanoid state to allow jumping from any state
                 humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, false)
                 humanoid:SetStateEnabled(Enum.HumanoidStateType.Flying, false)
                 
-                -- Force the humanoid to think it's on the ground so it can jump naturally
                 humanoid:ChangeState(Enum.HumanoidStateType.Landed)
-                
-                -- Wait a tiny bit then allow the jump to happen naturally
                 wait()
                 humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
                 
-                -- Re-enable the states after a short delay
                 wait(0.1)
                 humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, true)
                 humanoid:SetStateEnabled(Enum.HumanoidStateType.Flying, true)
@@ -76,7 +36,7 @@ local function connectInfiniteJump()
         end
     end)
     
-    table.insert(connections, connection)
+    table.insert(jumpConnections, connection)
     return connection
 end
 
@@ -87,49 +47,30 @@ local function enableInfiniteJump(toggle)
 
     if toggle then
         isInfiniteJumpEnabled = true
-        
-        -- Connect for current character
         connectInfiniteJump()
         
-        -- Handle character respawning
-        local characterConnection = player.CharacterAdded:Connect(function(newCharacter)
+        local characterConnection = player.CharacterAdded:Connect(function()
             if isInfiniteJumpEnabled then
                 wait(0.1)
                 connectInfiniteJump()
             end
         end)
         
-        table.insert(connections, characterConnection)
-        
-        -- Show notification when enabled
-        createNotification()
+        table.insert(jumpConnections, characterConnection)
+        print("Infinite Jump enabled")
     else
         isInfiniteJumpEnabled = false
-        
-        -- Disconnect all connections
-        for _, connection in pairs(connections) do
+        for _, connection in pairs(jumpConnections) do
             if connection then
                 connection:Disconnect()
             end
         end
-        connections = {}
+        jumpConnections = {}
+        print("Infinite Jump disabled")
     end
 end
 
--- Enable infinite jump
-enableInfiniteJump(true)
-
--- Draggable UI for Plot Teleporter (Roblox)
--- Place ID: 137167142636546
-
-local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
-
+-- == Plot Teleporter ==
 -- Create ScreenGui
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "PlotTeleporterUI"
@@ -145,7 +86,6 @@ mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 mainFrame.BorderSizePixel = 0
 mainFrame.Parent = screenGui
 
--- Add corner radius
 local mainCorner = Instance.new("UICorner")
 mainCorner.CornerRadius = UDim.new(0, 8)
 mainCorner.Parent = mainFrame
@@ -154,7 +94,6 @@ mainCorner.Parent = mainFrame
 local titleBar = Instance.new("Frame")
 titleBar.Name = "TitleBar"
 titleBar.Size = UDim2.new(1, 0, 0, 30)
-titleBar.Position = UDim2.new(0, 0, 0, 0)
 titleBar.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 titleBar.BorderSizePixel = 0
 titleBar.Parent = mainFrame
@@ -192,7 +131,7 @@ local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 4)
 closeCorner.Parent = closeButton
 
--- Teleport to Plot Button
+-- Teleport Button
 local teleportButton = Instance.new("TextButton")
 teleportButton.Name = "TeleportButton"
 teleportButton.Size = UDim2.new(0, 220, 0, 35)
@@ -254,7 +193,7 @@ titleBar.InputChanged:Connect(function(input)
     end
 end)
 
--- Find Player's Plot Function
+-- Find Player's Plot
 local function findPlayerPlot()
     local workspace = game:GetService("Workspace")
     local plotsFolder = workspace:FindFirstChild("Plots")
@@ -264,7 +203,6 @@ local function findPlayerPlot()
         return nil
     end
     
-    -- Get player's plot value
     local plotValue = player:FindFirstChild("Plot")
     if not plotValue then
         statusLabel.Text = "Plot value not found in player!"
@@ -274,7 +212,6 @@ local function findPlayerPlot()
     local plotNumber = plotValue.Value
     statusLabel.Text = "Looking for plot " .. tostring(plotNumber) .. "..."
     
-    -- Find the specific plot by number/name
     local targetPlot = plotsFolder:FindFirstChild(tostring(plotNumber))
     if targetPlot then
         statusLabel.Text = "Found your plot: " .. tostring(plotNumber)
@@ -285,7 +222,7 @@ local function findPlayerPlot()
     end
 end
 
--- Teleport Function with Anti-Cheat Bypass
+-- Teleport Function
 local function teleportToPlot()
     if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
         statusLabel.Text = "Character not found!"
@@ -297,7 +234,6 @@ local function teleportToPlot()
         return
     end
     
-    -- Look for the teleport destination
     local collectZone = playerPlot:FindFirstChild("CollectZone")
     if not collectZone then
         statusLabel.Text = "CollectZone not found in plot!"
@@ -310,8 +246,7 @@ local function teleportToPlot()
         return
     end
     
-    -- Get teleport position
-    local targetPosition = collectPart.Position + Vector3.new(0, 5, 0) -- Teleport slightly above
+    local targetPosition = collectPart.Position + Vector3.new(0, 5, 0)
     local targetCFrame = CFrame.new(targetPosition)
     
     local rootPart = player.Character.HumanoidRootPart
@@ -320,7 +255,6 @@ local function teleportToPlot()
     
     statusLabel.Text = "Teleporting... (" .. math.floor(distance) .. " studs)"
     
-    -- Enable noclip for movement
     local function enableNoclip()
         for _, part in pairs(player.Character:GetChildren()) do
             if part:IsA("BasePart") then
@@ -329,7 +263,6 @@ local function teleportToPlot()
         end
     end
     
-    -- Disable noclip
     local function disableNoclip()
         spawn(function()
             wait(0.5)
@@ -345,9 +278,7 @@ local function teleportToPlot()
     
     enableNoclip()
     
-    -- Teleport method based on distance
     if distance <= 100 then
-        -- Short distance tween
         local tweenInfo = TweenInfo.new(
             math.max(0.3, distance / 200),
             Enum.EasingStyle.Sine,
@@ -361,20 +292,17 @@ local function teleportToPlot()
             statusLabel.Text = "Teleported successfully!"
         end)
     else
-        -- Long distance waypoint system
         local waypoints = {}
         local numWaypoints = math.min(math.floor(distance / 150), 4)
         
         for i = 1, numWaypoints do
             local progress = i / (numWaypoints + 1)
             local lerpedPos = currentPos:lerp(targetPosition, progress)
-            
             local randomOffset = Vector3.new(
                 math.random(-20, 20),
                 math.random(-10, 30),
                 math.random(-20, 20)
             )
-            
             table.insert(waypoints, lerpedPos + randomOffset)
         end
         
@@ -416,7 +344,6 @@ local function teleportToPlot()
         moveToNextWaypoint()
     end
     
-    -- Visual feedback
     spawn(function()
         local originalColor = teleportButton.BackgroundColor3
         teleportButton.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
@@ -427,13 +354,11 @@ end
 
 -- Button connections
 teleportButton.MouseButton1Click:Connect(teleportToPlot)
-
--- Close button
 closeButton.MouseButton1Click:Connect(function()
     screenGui:Destroy()
 end)
 
--- Button hover effects
+-- Hover effects
 local function addHoverEffect(button, hoverColor, originalColor)
     button.MouseEnter:Connect(function()
         button.BackgroundColor3 = hoverColor
@@ -444,31 +369,22 @@ local function addHoverEffect(button, hoverColor, originalColor)
     end)
 end
 
--- Add hover effects
 addHoverEffect(teleportButton, Color3.fromRGB(70, 170, 220), Color3.fromRGB(50, 150, 200))
 addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
 
-print("Plot Teleporter loaded! Click the button to teleport to your owned plot.")
-
--- Services
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-
--- Variables
+-- == God Mode ==
 local GodModeEnabled = false
 local OriginalMaxHealth = 100
 local HealthConnection = nil
 
--- Helper Functions
 local function getHumanoid()
-    local character = LocalPlayer.Character
+    local character = player.Character
     if character then
         return character:FindFirstChild("Humanoid")
     end
     return nil
 end
 
--- God Mode Functions
 local function enableGodMode()
     local humanoid = getHumanoid()
     if not humanoid then 
@@ -476,20 +392,15 @@ local function enableGodMode()
         return 
     end
     
-    -- Store original max health
     if not GodModeEnabled then
         OriginalMaxHealth = humanoid.MaxHealth
         print("Stored original health:", OriginalMaxHealth)
     end
     
-    -- Set the flag first
     GodModeEnabled = true
-    
-    -- Set health to infinite
     humanoid.MaxHealth = math.huge
     humanoid.Health = math.huge
     
-    -- Create connection to maintain infinite health
     if HealthConnection then
         HealthConnection:Disconnect()
     end
@@ -505,7 +416,6 @@ end
 
 local function disableGodMode()
     GodModeEnabled = false
-    
     local humanoid = getHumanoid()
     if humanoid then
         humanoid.MaxHealth = OriginalMaxHealth
@@ -519,93 +429,29 @@ local function disableGodMode()
     end
 end
 
--- Wait for character to load before enabling
-if LocalPlayer.Character then
+-- == Initialize Features ==
+
+-- Enable External Script
+loadstring(game:HttpGet("https://raw.githubusercontent.com/gumanba/Scripts/main/StealaFreddy"))()
+
+-- Enable Infinite Jump
+enableInfiniteJump(true)
+
+-- Enable God Mode
+if player.Character then
     enableGodMode()
 else
-    LocalPlayer.CharacterAdded:Connect(function()
-        wait(0.5) -- Small delay to ensure humanoid is loaded
+    player.CharacterAdded:Connect(function()
+        wait(0.5)
         enableGodMode()
     end)
 end
 
--- Handle respawning
-LocalPlayer.CharacterAdded:Connect(function()
+player.CharacterAdded:Connect(function()
     wait(0.5)
     if GodModeEnabled then
         enableGodMode()
     end
 end)
-racter:FindFirstChild("Humanoid")
-    end
-    return nil
-end
 
--- God Mode Functions
-local function enableGodMode()
-    local humanoid = getHumanoid()
-    if not humanoid then 
-        print("No humanoid found!")
-        return 
-    end
-    
-    -- Store original max health
-    if not GodModeEnabled then
-        OriginalMaxHealth = humanoid.MaxHealth
-        print("Stored original health:", OriginalMaxHealth)
-    end
-    
-    -- Set the flag first
-    GodModeEnabled = true
-    
-    -- Set health to infinite
-    humanoid.MaxHealth = math.huge
-    humanoid.Health = math.huge
-    
-    -- Create connection to maintain infinite health
-    if HealthConnection then
-        HealthConnection:Disconnect()
-    end
-    
-    HealthConnection = humanoid.HealthChanged:Connect(function(health)
-        if GodModeEnabled and health < math.huge then
-            humanoid.Health = math.huge
-        end
-    end)
-    
-    print("God Mode enabled")
-end
-
-local function disableGodMode()
-    GodModeEnabled = false
-    
-    local humanoid = getHumanoid()
-    if humanoid then
-        humanoid.MaxHealth = OriginalMaxHealth
-        humanoid.Health = OriginalMaxHealth
-        print("God Mode disabled, health restored to:", OriginalMaxHealth)
-    end
-    
-    if HealthConnection then
-        HealthConnection:Disconnect()
-        HealthConnection = nil
-    end
-end
-
--- Wait for character to load before enabling
-if LocalPlayer.Character then
-    enableGodMode()
-else
-    LocalPlayer.CharacterAdded:Connect(function()
-        wait(0.5) -- Small delay to ensure humanoid is loaded
-        enableGodMode()
-    end)
-end
-
--- Handle respawning
-LocalPlayer.CharacterAdded:Connect(function()
-    wait(0.5)
-    if GodModeEnabled then
-        enableGodMode()
-    end
-end)
+print("stealafreddy.lua loaded! Infinite Jump, Plot Teleporter, and God Mode enabled.")
