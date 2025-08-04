@@ -151,7 +151,7 @@ titleText.Name = "TitleText"
 titleText.Size = UDim2.new(1, -30, 1, 0)
 titleText.Position = UDim2.new(0, 5, 0, 0)
 titleText.BackgroundTransparency = 1
-titleText.Text = "Plot Teleporter"
+titleText.Text = "by PickleTalk"
 titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleText.TextScaled = true
 titleText.Font = Enum.Font.GothamBold
@@ -178,7 +178,7 @@ teleportButton.Name = "TeleportButton"
 teleportButton.Size = UDim2.new(0, 220, 0, 35)
 teleportButton.Position = UDim2.new(0, 15, 0, 45)
 teleportButton.BackgroundColor3 = Color3.fromRGB(50, 150, 200)
-teleportButton.Text = "Teleport to My Plot"
+teleportButton.Text = "Teleport"
 teleportButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 teleportButton.TextScaled = true
 teleportButton.Font = Enum.Font.GothamBold
@@ -194,7 +194,7 @@ statusLabel.Name = "StatusLabel"
 statusLabel.Size = UDim2.new(1, -20, 0, 25)
 statusLabel.Position = UDim2.new(0, 10, 0, 90)
 statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "Ready to teleport"
+statusLabel.Text = "Are you ready to teleport?"
 statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 statusLabel.TextScaled = true
 statusLabel.Font = Enum.Font.Gotham
@@ -299,7 +299,7 @@ local function teleportToPlot()
     -- Step 1: Teleport 300 studs above current position in 2 seconds, but stop at 200 studs
     local currentPosition = rootPart.Position
     local targetAbovePosition = currentPosition + Vector3.new(0, 300, 0)
-    local stopPosition = currentPosition + Vector3.new(0, 200, 0)
+    local stopPosition = currentPosition + Vector3.new(0, 220, 0)
     
     statusLabel.Text = "Teleporting 200 studs up..."
     
