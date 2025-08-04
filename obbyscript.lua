@@ -1,24 +1,94 @@
--- Load the original Steal-a-Freddy script first
-loadstring(game:HttpGet("https://raw.githubusercontent.com/gumanba/Scripts/main/StealaFreddy"))()
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
--- Wait a moment for the original script to load
-wait(1)
+local Window = Rayfield:CreateWindow({
+   Name = "Obby Script - by PickleTalk",
+   Icon = 0,
+   LoadingTitle = "Pickle Interface Suite",
+   LoadingSubtitle = "by PickleTalk",
+   ShowText = "by PickleTalk",
+   Theme = "",
+   ToggleUIKeybind = "K",
+   DisableRayfieldPrompts = false,
+   DisableBuildWarnings = false,
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = "PickleField",
+      FileName = "Config"
+   },
+   Discord = {
+      Enabled = true,
+      Invite = "bpsNUH5sVb",
+      RememberJoins = true
+   },
+   KeySystem = false,
+   KeySettings = {
+      Title = "Untitled",
+      Subtitle = "Key System",
+      Note = "No method of obtaining the key is provided",
+      FileName = "Key",
+      SaveKey = true,
+      GrabKeyFromSite = false,
+      Key = {"Hello"}
+   }
+})
 
--- ========================================
--- INFINITE JUMP SCRIPT
--- ========================================
+local Main = Window:CreateTab("Main", "layers")
+local PlayerTab = Window:CreateTab("Player", "person-standing")
+
+-- Services
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
-local player = Players.LocalPlayer
-local isInfiniteJumpEnabled = false
-local jumpConnections = {}
+local LocalPlayer = Players.LocalPlayer
 
-local function createJumpNotification()
+-- Variables
+local Flying = false
+local FlySpeed = 50
+local BodyVelocity = nil
+local BodyAngularVelocity = nil
+local FlyConnection = nil
+
+local JumpPowerEnabled = false
+local CustomJumpPower = 50
+local OriginalJumpPower = 50
+
+local NoclipEnabled = false
+local NoclipConnection = nil
+
+local SpeedEnabled = false
+local CustomSpeed = 50
+local OriginalSpeed = 16
+
+local InfiniteJumpEnabled = false
+local InfiniteJumpConnection = nil
+
+local GodModeEnabled = false
+local OriginalMaxHealth = 100
+local HealthConnection = nil
+
+-- Helper Functions
+local function getRootPart()
+    local character = LocalPlayer.Character
+    if character then
+        return character:FindFirstChild("HumanoidRootPart")
+    end
+    return nil
+end
+
+local function getHumanoid()
+    local character = LocalPlayer.Character
+    if character then
+        return character:FindFirstChild("Humanoid")
+    end
+    return nil
+end
+
+local function createNotification(text)
     local screenGui = Instance.new("ScreenGui")
-    screenGui.Parent = player:WaitForChild("PlayerGui")
-    screenGui.Name = "InfiniteJumpNotification"
+    screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+    screenGui.Name = "Notification"
 
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(0, 200, 0, 0)
@@ -34,7 +104,7 @@ local function createJumpNotification()
     local textLabel = Instance.new("TextLabel")
     textLabel.Size = UDim2.new(1, 0, 1, 0)
     textLabel.BackgroundTransparency = 1
-    textLabel.Text = "Infinite Jump Enabled"
+    textLabel.Text = text or "Notification"
     textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     textLabel.Font = Enum.Font.SourceSansBold
     textLabel.TextSize = 16
@@ -43,378 +113,313 @@ local function createJumpNotification()
     local tweenIn = TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 200, 0, 40)})
     tweenIn:Play()
 
-    spawn(function()
-        wait(2)
-        local tweenOut = TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0, 200, 0, 0)})
-        tweenOut:Play()
-        tweenOut.Completed:Connect(function()
-            wait(0.5)
-            screenGui:Destroy()
-        end)
-    end)
+    game:GetService("Debris"):AddItem(screenGui, 2)
 end
 
-local function connectInfiniteJump()
-    local connection = UserInputService.JumpRequest:Connect(function()
-        if player.Character and player.Character:FindFirstChild("Humanoid") then
-            local humanoid = player.Character:FindFirstChild("Humanoid")
-            local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
-            
-            if rootPart and humanoid and humanoid.Health > 0 then
-                humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, false)
-                humanoid:SetStateEnabled(Enum.HumanoidStateType.Flying, false)
-                
-                humanoid:ChangeState(Enum.HumanoidStateType.Landed)
-                
-                spawn(function()
-                    wait()
-                    humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-                    
-                    wait(0.1)
-                    humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, true)
-                    humanoid:SetStateEnabled(Enum.HumanoidStateType.Flying, true)
-                end)
-            end
-        end
-    end)
+-- Infinite Jump Functions
+local function performInfiniteJump()
+    local humanoid = getHumanoid()
+    local rootPart = getRootPart()
     
-    table.insert(jumpConnections, connection)
-    return connection
+    if humanoid and rootPart then
+        -- Use custom jump power if enabled, otherwise use original
+        local jumpPower = JumpPowerEnabled and CustomJumpPower or OriginalJumpPower
+        
+        local bodyVelocity = Instance.new("BodyVelocity")
+        bodyVelocity.MaxForce = Vector3.new(0, math.huge, 0)
+        bodyVelocity.Velocity = Vector3.new(0, jumpPower, 0)
+        bodyVelocity.Parent = rootPart
+        
+        game:GetService("Debris"):AddItem(bodyVelocity, 0.2)
+        humanoid.Jump = true
+    end
 end
 
 local function enableInfiniteJump()
-    if isInfiniteJumpEnabled then return end
-    
-    isInfiniteJumpEnabled = true
-    
-    -- Connect for current character
-    if player.Character then
-        connectInfiniteJump()
+    if InfiniteJumpConnection then
+        InfiniteJumpConnection:Disconnect()
     end
     
-    -- Handle character respawning
-    local characterConnection = player.CharacterAdded:Connect(function(newCharacter)
-        if isInfiniteJumpEnabled then
-            wait(0.1)
-            connectInfiniteJump()
+    InfiniteJumpConnection = UserInputService.JumpRequest:Connect(function()
+        if InfiniteJumpEnabled then
+            performInfiniteJump()
         end
     end)
     
-    table.insert(jumpConnections, characterConnection)
-    createJumpNotification()
+    print("Infinite Jump enabled")
 end
 
--- Enable infinite jump
-enableInfiniteJump()
-
--- ========================================
--- PLOT TELEPORTER
--- ========================================
-local RunService = game:GetService("RunService")
-
-local playerGui = player:WaitForChild("PlayerGui")
-
--- Create ScreenGui
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "PlotTeleporterUI"
-screenGui.Parent = playerGui
-screenGui.ResetOnSpawn = false
-
--- Main Frame
-local mainFrame = Instance.new("Frame")
-mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 250, 0, 120)
-mainFrame.Position = UDim2.new(0, 100, 0, 100)
-mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-mainFrame.BorderSizePixel = 0
-mainFrame.Parent = screenGui
-
-local mainCorner = Instance.new("UICorner")
-mainCorner.CornerRadius = UDim.new(0, 8)
-mainCorner.Parent = mainFrame
-
--- Title Bar
-local titleBar = Instance.new("Frame")
-titleBar.Name = "TitleBar"
-titleBar.Size = UDim2.new(1, 0, 0, 30)
-titleBar.Position = UDim2.new(0, 0, 0, 0)
-titleBar.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-titleBar.BorderSizePixel = 0
-titleBar.Parent = mainFrame
-
-local titleCorner = Instance.new("UICorner")
-titleCorner.CornerRadius = UDim.new(0, 8)
-titleCorner.Parent = titleBar
-
-local titleText = Instance.new("TextLabel")
-titleText.Name = "TitleText"
-titleText.Size = UDim2.new(1, -30, 1, 0)
-titleText.Position = UDim2.new(0, 5, 0, 0)
-titleText.BackgroundTransparency = 1
-titleText.Text = "by PickleTalk"
-titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleText.TextScaled = true
-titleText.Font = Enum.Font.GothamBold
-titleText.Parent = titleBar
-
-local closeButton = Instance.new("TextButton")
-closeButton.Name = "CloseButton"
-closeButton.Size = UDim2.new(0, 25, 0, 25)
-closeButton.Position = UDim2.new(1, -27, 0, 2)
-closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-closeButton.Text = "X"
-closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-closeButton.TextScaled = true
-closeButton.Font = Enum.Font.GothamBold
-closeButton.BorderSizePixel = 0
-closeButton.Parent = titleBar
-
-local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(0, 4)
-closeCorner.Parent = closeButton
-
-local teleportButton = Instance.new("TextButton")
-teleportButton.Name = "TeleportButton"
-teleportButton.Size = UDim2.new(0, 220, 0, 35)
-teleportButton.Position = UDim2.new(0, 15, 0, 45)
-teleportButton.BackgroundColor3 = Color3.fromRGB(50, 150, 200)
-teleportButton.Text = "Teleport"
-teleportButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-teleportButton.TextScaled = true
-teleportButton.Font = Enum.Font.GothamBold
-teleportButton.BorderSizePixel = 0
-teleportButton.Parent = mainFrame
-
-local teleportCorner = Instance.new("UICorner")
-teleportCorner.CornerRadius = UDim.new(0, 6)
-teleportCorner.Parent = teleportButton
-
-local statusLabel = Instance.new("TextLabel")
-statusLabel.Name = "StatusLabel"
-statusLabel.Size = UDim2.new(1, -20, 0, 25)
-statusLabel.Position = UDim2.new(0, 10, 0, 90)
-statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "Ready to teleport"
-statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-statusLabel.TextScaled = true
-statusLabel.Font = Enum.Font.Gotham
-statusLabel.TextXAlignment = Enum.TextXAlignment.Left
-statusLabel.Parent = mainFrame
-
--- Dragging functionality
-local dragging = false
-local dragStart = nil
-local startPos = nil
-
-local function updateDrag(input)
-    local delta = input.Position - dragStart
-    mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+local function disableInfiniteJump()
+    if InfiniteJumpConnection then
+        InfiniteJumpConnection:Disconnect()
+        InfiniteJumpConnection = nil
+    end
+    print("Infinite Jump disabled")
 end
 
-titleBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = mainFrame.Position
-        
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
+-- Speed Functions
+local function applySpeed(speed)
+    local humanoid = getHumanoid()
+    if humanoid then
+        humanoid.WalkSpeed = speed
+    end
+end
+
+local function enableSpeed()
+    applySpeed(CustomSpeed)
+    print("Custom Speed enabled: " .. CustomSpeed)
+end
+
+local function disableSpeed()
+    applySpeed(OriginalSpeed)
+    print("Speed restored to original: " .. OriginalSpeed)
+end
+
+-- Jump Power Functions
+local function applyJumpPower(jumpPower)
+    local humanoid = getHumanoid()
+    if humanoid then
+        humanoid.JumpPower = jumpPower
+    end
+end
+
+local function enableJumpPower()
+    applyJumpPower(CustomJumpPower)
+    print("Custom Jump Power enabled: " .. CustomJumpPower)
+end
+
+local function disableJumpPower()
+    applyJumpPower(OriginalJumpPower)
+    print("Jump Power restored to original: " .. OriginalJumpPower)
+end
+
+-- Noclip Functions
+local function getCharacterParts()
+    local character = LocalPlayer.Character
+    if not character then return {} end
+    
+    local parts = {}
+    for _, part in pairs(character:GetChildren()) do
+        if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+            table.insert(parts, part)
+        end
+    end
+    return parts
+end
+
+local function enableNoclip()
+    if NoclipConnection then
+        NoclipConnection:Disconnect()
+    end
+    
+    NoclipConnection = RunService.Stepped:Connect(function()
+        for _, part in pairs(getCharacterParts()) do
+            if part and part:IsA("BasePart") then
+                part.CanCollide = false
             end
-        end)
-    end
-end)
+        end
+    end)
+    
+    print("Noclip enabled")
+end
 
-titleBar.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        if dragging then
-            updateDrag(input)
+local function disableNoclip()
+    if NoclipConnection then
+        NoclipConnection:Disconnect()
+        NoclipConnection = nil
+    end
+    
+    for _, part in pairs(getCharacterParts()) do
+        if part and part:IsA("BasePart") then
+            part.CanCollide = true
         end
     end
-end)
+    
+    print("Noclip disabled")
+end
 
--- Plot teleporter functions
-local function findPlayerPlot()
-    local workspace = game:GetService("Workspace")
-    local plotsFolder = workspace:FindFirstChild("Plots")
+-- Fly Functions
+local function enableShiftLock()
+    local StarterGui = game:GetService("StarterGui")
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
     
-    if not plotsFolder then
-        statusLabel.Text = "Plots folder not found!"
-        return nil
+    -- Enable shift lock in settings
+    if LocalPlayer.DevEnableMouseLock ~= nil then
+        LocalPlayer.DevEnableMouseLock = true
     end
     
-    local plotValue = player:FindFirstChild("Plot")
-    if not plotValue then
-        statusLabel.Text = "Plot value not found in player!"
-        return nil
-    end
+    -- Set camera to follow mouse
+    local UserGameSettings = UserSettings():GetService("UserGameSettings")
+    UserGameSettings.RotationType = Enum.RotationType.CameraRelative
     
-    local plotNumber = plotValue.Value
-    statusLabel.Text = "Looking for plot " .. tostring(plotNumber) .. "..."
-    
-    local targetPlot = plotsFolder:FindFirstChild(tostring(plotNumber))
-    if targetPlot then
-        statusLabel.Text = "Found your plot: " .. tostring(plotNumber)
-        return targetPlot
-    else
-        statusLabel.Text = "Plot " .. tostring(plotNumber) .. " not found!"
-        return nil
+    -- Force mouse lock
+    local Mouse = LocalPlayer:GetMouse()
+    if UserInputService.MouseBehavior ~= Enum.MouseBehavior.LockCenter then
+        UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
     end
 end
 
-local function teleportToPlot()
-    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
-        statusLabel.Text = "Character not found!"
-        return
-    end
+local function disableShiftLock()
+    -- Restore normal mouse behavior
+    UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+end
+
+local function startFly()
+    local character = LocalPlayer.Character
+    if not character then return end
     
-    local playerPlot = findPlayerPlot()
-    if not playerPlot then return end
+    local humanoid = character:FindFirstChild("Humanoid")
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
     
-    local collectZone = playerPlot:FindFirstChild("CollectZone")
-    if not collectZone then
-        statusLabel.Text = "CollectZone not found in plot!"
-        return
-    end
+    if not humanoid or not rootPart then return end
     
-    local collectPart = collectZone:FindFirstChild("Collect")
-    if not collectPart then
-        statusLabel.Text = "Collect part not found in CollectZone!"
-        return
-    end
+    -- Clean up existing objects
+    if BodyVelocity then BodyVelocity:Destroy() end
+    if BodyAngularVelocity then BodyAngularVelocity:Destroy() end
+    if FlyConnection then FlyConnection:Disconnect() end
     
-    local targetPosition = collectPart.Position + Vector3.new(0, 20, 0) -- 20 studs above plot
-    local rootPart = player.Character.HumanoidRootPart
+    -- Enable shift lock for better fly experience
+    enableShiftLock()
     
-    statusLabel.Text = "Teleporting..."
+    -- Create BodyVelocity for movement
+    BodyVelocity = Instance.new("BodyVelocity")
+    BodyVelocity.MaxForce = Vector3.new(4000, 4000, 4000)
+    BodyVelocity.Velocity = Vector3.new(0, 0, 0)
+    BodyVelocity.Parent = rootPart
     
-    -- Enable noclip temporarily
-    for _, part in pairs(player.Character:GetChildren()) do
-        if part:IsA("BasePart") then
-            part.CanCollide = false
-        end
-    end
+    -- Create BodyAngularVelocity to prevent spinning
+    BodyAngularVelocity = Instance.new("BodyAngularVelocity")
+    BodyAngularVelocity.MaxTorque = Vector3.new(4000, 4000, 4000)
+    BodyAngularVelocity.AngularVelocity = Vector3.new(0, 0, 0)
+    BodyAngularVelocity.Parent = rootPart
     
-    -- Step 1: Teleport 300 studs above current position in 2 seconds, but stop at 200 studs
-    local currentPosition = rootPart.Position
-    local targetHeight = currentPosition + Vector3.new(0, 300, 0)
-    local stopHeight = currentPosition + Vector3.new(0, 200, 0)
+    -- Disable humanoid states that interfere with flying
+    humanoid.PlatformStand = true
     
-    statusLabel.Text = "Teleporting 200 studs up..."
-    
-    -- Create tween to 300 studs but we'll stop it at 200
-    local tweenToAbove = TweenService:Create(rootPart, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {CFrame = CFrame.new(targetHeight)})
-    
-    -- Monitor the tween and stop at 200 studs
-    local connection
-    connection = RunService.Heartbeat:Connect(function()
-        local currentY = rootPart.Position.Y
-        local stopY = stopHeight.Y
-        
-        if currentY >= stopY then
-            -- Stop the tween at 200 studs
-            tweenToAbove:Cancel()
-            rootPart.CFrame = CFrame.new(stopHeight)
-            connection:Disconnect()
+    -- Flying loop
+    FlyConnection = RunService.Heartbeat:Connect(function()
+        if Flying and BodyVelocity and BodyVelocity.Parent then
+            local camera = workspace.CurrentCamera
+            local humanoid = getHumanoid()
+            if not humanoid then return end
             
-            statusLabel.Text = "Waiting 3 seconds..."
+            local moveVector = Vector3.new(0, 0, 0)
+            local isMoving = false
             
-            -- Step 2: Wait 3 seconds (no freeze, no functions, just wait)
-            spawn(function()
-                wait(3)
+            -- PC Controls (WASD)
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                moveVector = moveVector + camera.CFrame.LookVector
+                isMoving = true
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+                moveVector = moveVector - camera.CFrame.LookVector
+                isMoving = true
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+                moveVector = moveVector - camera.CFrame.RightVector
+                isMoving = true
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+                moveVector = moveVector + camera.CFrame.RightVector
+                isMoving = true
+            end
+            
+            -- Mobile Controls (TouchEnabled)
+            if UserInputService.TouchEnabled then
+                local moveVector2D = humanoid.MoveDirection
+                if moveVector2D.Magnitude > 0 then
+                    -- Convert 2D movement to 3D camera-relative movement
+                    local cameraCFrame = camera.CFrame
+                    local relativeMovement = cameraCFrame:VectorToWorldSpace(Vector3.new(moveVector2D.X, 0, -moveVector2D.Z))
+                    moveVector = Vector3.new(relativeMovement.X, 0, relativeMovement.Z)
+                    isMoving = true
+                end
+            end
+            
+            -- Apply movement in the direction the camera is looking
+            if isMoving and moveVector.Magnitude > 0 then
+                -- Fly in the direction of camera look vector, but maintain some ground-relative movement
+                local lookDirection = camera.CFrame.LookVector
+                local rightDirection = camera.CFrame.RightVector
                 
-                -- Step 3: Teleport to plot (20 studs above) at 45 studs per second
-                local distance = (stopHeight - targetPosition).Magnitude
-                local timeToTarget = distance / 50 -- 45 studs per second
+                -- Calculate the movement direction based on input
+                local finalDirection = Vector3.new(0, 0, 0)
                 
-                statusLabel.Text = "Moving to plot..."
+                -- Forward/Backward based on camera look direction
+                if moveVector:Dot(camera.CFrame.LookVector) > 0 then
+                    finalDirection = finalDirection + lookDirection
+                elseif moveVector:Dot(-camera.CFrame.LookVector) > 0 then
+                    finalDirection = finalDirection - lookDirection
+                end
                 
-                local tweenToTarget = TweenService:Create(rootPart, TweenInfo.new(timeToTarget, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {CFrame = CFrame.new(targetPosition)})
-                tweenToTarget:Play()
+                -- Left/Right based on camera right direction  
+                if moveVector:Dot(camera.CFrame.RightVector) > 0 then
+                    finalDirection = finalDirection + rightDirection
+                elseif moveVector:Dot(-camera.CFrame.RightVector) > 0 then
+                    finalDirection = finalDirection - rightDirection
+                end
                 
-                tweenToTarget.Completed:Connect(function()
-                    -- Turn off noclip when reached plot
-                    for _, part in pairs(player.Character:GetChildren()) do
-                        if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-                            part.CanCollide = true
-                        end
-                    end
-                    statusLabel.Text = "Teleported successfully!"
-                end)
-            end)
+                if finalDirection.Magnitude > 0 then
+                    BodyVelocity.Velocity = finalDirection.Unit * FlySpeed
+                else
+                    BodyVelocity.Velocity = Vector3.new(0, 0, 0)
+                end
+            else
+                BodyVelocity.Velocity = Vector3.new(0, 0, 0)
+            end
         end
     end)
     
-    tweenToAbove:Play()
-    
-    -- Fallback in case tween completes without stopping (shouldn't happen)
-    tweenToAbove.Completed:Connect(function()
-        if connection then
-            connection:Disconnect()
-        end
-    end)
-    
-    -- Visual feedback
-    spawn(function()
-        local originalColor = teleportButton.BackgroundColor3
-        teleportButton.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
-        wait(0.3)
-        teleportButton.BackgroundColor3 = originalColor
-    end)
+    print("Flying enabled at speed: " .. FlySpeed .. " (Shift lock auto-enabled)")
 end
 
--- Button connections
-teleportButton.MouseButton1Click:Connect(teleportToPlot)
-closeButton.MouseButton1Click:Connect(function()
-    screenGui:Destroy()
-end)
-
--- Hover effects
-local function addHoverEffect(button, hoverColor, originalColor)
-    button.MouseEnter:Connect(function()
-        button.BackgroundColor3 = hoverColor
-    end)
-    
-    button.MouseLeave:Connect(function()
-        button.BackgroundColor3 = originalColor
-    end)
-end
-
-addHoverEffect(teleportButton, Color3.fromRGB(70, 170, 220), Color3.fromRGB(50, 150, 200))
-addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
-
--- ========================================
--- GOD MODE
--- ========================================
-local GodModeEnabled = false
-local OriginalMaxHealth = 100
-local HealthConnection = nil
-
-local function getHumanoid()
-    local character = player.Character
+local function stopFly()
+    local character = LocalPlayer.Character
     if character then
-        return character:FindFirstChild("Humanoid")
+        local humanoid = character:FindFirstChild("Humanoid")
+        if humanoid then
+            humanoid.PlatformStand = false
+        end
     end
-    return nil
+    
+    if BodyVelocity then
+        BodyVelocity:Destroy()
+        BodyVelocity = nil
+    end
+    
+    if BodyAngularVelocity then
+        BodyAngularVelocity:Destroy()
+        BodyAngularVelocity = nil
+    end
+    
+    if FlyConnection then
+        FlyConnection:Disconnect()
+        FlyConnection = nil
+    end
+    if HealthConnection then
+        HealthConnection:Disconnect()
+        HealthConnection = nil
+    end
+    
+    print("Flying disabled")
 end
 
+-- God Mode Functions
 local function enableGodMode()
     local humanoid = getHumanoid()
-    if not humanoid then 
-        print("No humanoid found!")
-        return 
-    end
+    if not humanoid then return end
     
+    -- Store original max health
     if not GodModeEnabled then
         OriginalMaxHealth = humanoid.MaxHealth
-        print("Stored original health:", OriginalMaxHealth)
     end
     
-    GodModeEnabled = true
-    
+    -- Set health to infinite
     humanoid.MaxHealth = math.huge
     humanoid.Health = math.huge
     
+    -- Create connection to maintain infinite health
     if HealthConnection then
         HealthConnection:Disconnect()
     end
@@ -429,35 +434,230 @@ local function enableGodMode()
 end
 
 local function disableGodMode()
-    GodModeEnabled = false
-    
     local humanoid = getHumanoid()
     if humanoid then
         humanoid.MaxHealth = OriginalMaxHealth
         humanoid.Health = OriginalMaxHealth
-        print("God Mode disabled, health restored to:", OriginalMaxHealth)
     end
     
     if HealthConnection then
         HealthConnection:Disconnect()
         HealthConnection = nil
     end
+    
+    print("God Mode disabled")
 end
 
--- Initialize God Mode
-if player.Character then
-    enableGodMode()
-else
-    player.CharacterAdded:Connect(function()
-        wait(0.5)
-        enableGodMode()
-    end)
-end
-
--- Handle respawning
-player.CharacterAdded:Connect(function()
+-- Character Event Handlers
+local function onCharacterAdded(character)
     wait(0.5)
+    
+    local humanoid = character:WaitForChild("Humanoid")
+    
+    -- Store original values
+    if not SpeedEnabled then
+        OriginalSpeed = humanoid.WalkSpeed
+    end
+    if not JumpPowerEnabled then
+        OriginalJumpPower = humanoid.JumpPower
+    end
+    if not GodModeEnabled then
+        OriginalMaxHealth = humanoid.MaxHealth
+    end
+    
+    -- Reapply enabled features
+    if SpeedEnabled then
+        applySpeed(CustomSpeed)
+    end
+    if JumpPowerEnabled then
+        applyJumpPower(CustomJumpPower)
+    end
+    if InfiniteJumpEnabled then
+        enableInfiniteJump()
+    end
+    if NoclipEnabled then
+        enableNoclip()
+    end
+    if Flying then
+        startFly()
+    end
     if GodModeEnabled then
         enableGodMode()
     end
-end)
+end
+
+local function onCharacterRemoving()
+    if InfiniteJumpConnection then
+        InfiniteJumpConnection:Disconnect()
+        InfiniteJumpConnection = nil
+    end
+    if NoclipConnection then
+        NoclipConnection:Disconnect()
+        NoclipConnection = nil
+    end
+    if FlyConnection then
+        FlyConnection:Disconnect()
+        FlyConnection = nil
+    end
+end
+
+-- Connect character events
+LocalPlayer.CharacterAdded:Connect(onCharacterAdded)
+LocalPlayer.CharacterRemoving:Connect(onCharacterRemoving)
+
+-- Initialize if character already exists
+if LocalPlayer.Character then
+    onCharacterAdded(LocalPlayer.Character)
+end
+
+-- UI Elements
+
+-- Infinite Jump Toggle (Main Tab)
+local InfJumpToggle = Main:CreateToggle({
+   Name = "Infinite Jump",
+   CurrentValue = false,
+   Flag = "InfiniteJumpToggle",
+   Callback = function(Value)
+       InfiniteJumpEnabled = Value
+       
+       if InfiniteJumpEnabled then
+           enableInfiniteJump()
+           createNotification("Infinite Jump Enabled")
+       else
+           disableInfiniteJump()
+           createNotification("Infinite Jump Disabled")
+       end
+   end,
+})
+
+-- Noclip Toggle (Main Tab)
+local NoclipToggle = Main:CreateToggle({
+    Name = "Noclip Toggle",
+    CurrentValue = false,
+    Flag = "NoclipToggle",
+    Callback = function(Value)
+        NoclipEnabled = Value
+        
+        if NoclipEnabled then
+            enableNoclip()
+        else
+            disableNoclip()
+        end
+    end,
+})
+
+-- God Mode Toggle (Main Tab)
+local GodModeToggle = Main:CreateToggle({
+    Name = "God Mode",
+    CurrentValue = false,
+    Flag = "GodModeToggle",
+    Callback = function(Value)
+        GodModeEnabled = Value
+        
+        if GodModeEnabled then
+            enableGodMode()
+        else
+            disableGodMode()
+        end
+    end,
+})
+
+-- Player Tab Elements
+
+-- Speed Toggle
+local SpeedToggle = PlayerTab:CreateToggle({
+    Name = "Player Speed",
+    CurrentValue = false,
+    Flag = "SpeedToggle",
+    Callback = function(Value)
+        SpeedEnabled = Value
+        
+        if SpeedEnabled then
+            enableSpeed()
+        else
+            disableSpeed()
+        end
+    end,
+})
+
+-- Speed Slider
+local SpeedSlider = PlayerTab:CreateSlider({
+    Name = "Speed Value",
+    Range = {16, 200},
+    Increment = 8,
+    Suffix = " Speed",
+    CurrentValue = 50,
+    Flag = "SpeedSlider",
+    Callback = function(Value)
+        CustomSpeed = Value
+        
+        if SpeedEnabled then
+            applySpeed(CustomSpeed)
+        end
+    end,
+})
+
+-- Jump Power Toggle
+local JumpPowerToggle = PlayerTab:CreateToggle({
+    Name = "Jump Power Toggle",
+    CurrentValue = false,
+    Flag = "JumpPowerToggle",
+    Callback = function(Value)
+        JumpPowerEnabled = Value
+        
+        if JumpPowerEnabled then
+            enableJumpPower()
+        else
+            disableJumpPower()
+        end
+    end,
+})
+
+-- Jump Power Slider
+local JumpPowerSlider = PlayerTab:CreateSlider({
+    Name = "Jump Power Value",
+    Range = {50, 500},
+    Increment = 25,
+    Suffix = " Power",
+    CurrentValue = 50,
+    Flag = "JumpPowerSlider",
+    Callback = function(Value)
+        CustomJumpPower = Value
+        
+        if JumpPowerEnabled then
+            applyJumpPower(CustomJumpPower)
+        end
+    end,
+})
+
+-- Fly Toggle
+local FlyToggle = PlayerTab:CreateToggle({
+    Name = "Fly Toggle",
+    CurrentValue = false,
+    Flag = "FlyToggle",
+    Callback = function(Value)
+        Flying = Value
+        
+        if Flying then
+            startFly()
+        else
+            stopFly()
+        end
+    end,
+})
+
+-- Fly Speed Slider
+local FlySpeedSlider = PlayerTab:CreateSlider({
+    Name = "Fly Speed",
+    Range = {10, 200},
+    Increment = 10,
+    Suffix = " Speed",
+    CurrentValue = 50,
+    Flag = "FlySpeed",
+    Callback = function(Value)
+        FlySpeed = Value
+    end,
+})
+
+-- Load configuration
+Rayfield:LoadConfiguration()
