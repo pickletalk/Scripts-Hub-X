@@ -194,7 +194,7 @@ statusLabel.Name = "StatusLabel"
 statusLabel.Size = UDim2.new(1, -20, 0, 25)
 statusLabel.Position = UDim2.new(0, 10, 0, 90)
 statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "Ready to teleport"
+statusLabel.Text = "Are You ready to teleport"
 statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 statusLabel.TextScaled = true
 statusLabel.Font = Enum.Font.Gotham
@@ -321,11 +321,11 @@ local function teleportToPlot()
             
             -- Step 2: Wait 3 seconds (no freeze, no functions, just wait)
             spawn(function()
-                wait(3)
+                wait(4)
                 
                 -- Step 3: Teleport to plot (20 studs above) at 45 studs per second
                 local distance = (stopHeight - targetPosition).Magnitude
-                local timeToTarget = distance / 50 -- 45 studs per second
+                local timeToTarget = distance / 40 -- 45 studs per second
                 
                 statusLabel.Text = "Moving to plot..."
                 
