@@ -298,8 +298,8 @@ local function teleportToPlot()
         end
     end
     
-    -- Teleport with speed of 70 studs per second
-    local teleportSpeed = 70
+    -- Teleport with speed of 65 studs per second
+    local teleportSpeed = 65 -- studs per second
     local teleportTime = distance / teleportSpeed
     
     local tweenInfo = TweenInfo.new(teleportTime, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
