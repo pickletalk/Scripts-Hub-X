@@ -298,8 +298,8 @@ local function teleportToPlot()
     
     -- Step 1: Teleport 300 studs above current position in 2 seconds, but stop at 200 studs
     local currentPosition = rootPart.Position
-    local targetAbovePosition = currentPosition + Vector3.new(0, 300, 0)
-    local stopPosition = currentPosition + Vector3.new(0, 240, 0)
+    local targetAbovePosition = currentPosition + Vector3.new(0, 330, 0)
+    local stopPosition = currentPosition + Vector3.new(0, 250, 0)
     
     statusLabel.Text = "Teleporting 200 studs up..."
     
