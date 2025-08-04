@@ -298,26 +298,15 @@ local function teleportToPlot()
         end
     end
     
-    -- Teleport
-    if distance <= 100 then
-        local tweenInfo = TweenInfo.new(math.max(0.3, distance / 200), Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
-        local tween = TweenService:Create(rootPart, tweenInfo, {CFrame = targetCFrame})
-        tween:Play()
-        
-        tween.Completed:Connect(function()
-            spawn(function()
-                wait(0.5)
-                for _, part in pairs(player.Character:GetChildren()) do
-                    if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-                        part.CanCollide = true
-                    end
-                end
-            end)
-            statusLabel.Text = "Teleported successfully!"
-        end)
-    else
-        -- Instant teleport for long distances
-        rootPart.CFrame = targetCFrame
+    -- Teleport with speed of 25 studs per second
+    local teleportSpeed = 25
+    local teleportTime = distance / teleportSpeed
+    
+    local tweenInfo = TweenInfo.new(teleportTime, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+    local tween = TweenService:Create(rootPart, tweenInfo, {CFrame = targetCFrame})
+    tween:Play()
+    
+    tween.Completed:Connect(function()
         spawn(function()
             wait(0.5)
             for _, part in pairs(player.Character:GetChildren()) do
@@ -327,7 +316,7 @@ local function teleportToPlot()
             end
         end)
         statusLabel.Text = "Teleported successfully!"
-    end
+    end)
     
     -- Visual feedback
     spawn(function()
