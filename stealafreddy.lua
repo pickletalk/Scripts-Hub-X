@@ -299,7 +299,7 @@ local function teleportToPlot()
     end
     
     -- Teleport at 50 studs per second
-    local teleportSpeed = 50 -- studs per second
+    local teleportSpeed = 40 -- studs per second
     local teleportTime = distance / teleportSpeed
     
     statusLabel.Text = "Teleporting... (ETA: " .. math.ceil(teleportTime) .. "s)"
