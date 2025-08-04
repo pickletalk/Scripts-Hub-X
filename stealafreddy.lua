@@ -151,7 +151,7 @@ titleText.Name = "TitleText"
 titleText.Size = UDim2.new(1, -30, 1, 0)
 titleText.Position = UDim2.new(0, 5, 0, 0)
 titleText.BackgroundTransparency = 1
-titleText.Text = "by PickleTalk"
+titleText.Text = "Plot Teleporter"
 titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleText.TextScaled = true
 titleText.Font = Enum.Font.GothamBold
@@ -178,7 +178,7 @@ teleportButton.Name = "TeleportButton"
 teleportButton.Size = UDim2.new(0, 220, 0, 35)
 teleportButton.Position = UDim2.new(0, 15, 0, 45)
 teleportButton.BackgroundColor3 = Color3.fromRGB(50, 150, 200)
-teleportButton.Text = "Teleport"
+teleportButton.Text = "Teleport to My Plot"
 teleportButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 teleportButton.TextScaled = true
 teleportButton.Font = Enum.Font.GothamBold
@@ -194,7 +194,7 @@ statusLabel.Name = "StatusLabel"
 statusLabel.Size = UDim2.new(1, -20, 0, 25)
 statusLabel.Position = UDim2.new(0, 10, 0, 90)
 statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "Are You ready to teleport"
+statusLabel.Text = "Ready to teleport"
 statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 statusLabel.TextScaled = true
 statusLabel.Font = Enum.Font.Gotham
@@ -283,8 +283,9 @@ local function teleportToPlot()
         return
     end
     
-    local targetPosition = collectPart.Position + Vector3.new(0, 20, 0) -- 20 studs above plot
+    local targetPosition = collectPart.Position + Vector3.new(0, 5, 0)
     local rootPart = player.Character.HumanoidRootPart
+    local humanoid = player.Character:FindFirstChild("Humanoid")
     
     statusLabel.Text = "Teleporting..."
     
@@ -297,61 +298,43 @@ local function teleportToPlot()
     
     -- Step 1: Teleport 300 studs above current position in 2 seconds, but stop at 200 studs
     local currentPosition = rootPart.Position
-    local targetHeight = currentPosition + Vector3.new(0, 300, 0)
-    local stopHeight = currentPosition + Vector3.new(0, 200, 0)
+    local targetAbovePosition = currentPosition + Vector3.new(0, 300, 0)
+    local stopPosition = currentPosition + Vector3.new(0, 200, 0)
     
     statusLabel.Text = "Teleporting 200 studs up..."
     
-    -- Create tween to 300 studs but we'll stop it at 200
-    local tweenToAbove = TweenService:Create(rootPart, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {CFrame = CFrame.new(targetHeight)})
+    -- Calculate time to reach 200 studs (2/3 of the way to 300 studs in 2 seconds)
+    local timeToStop = 2 * (200 / 300) -- Proportional time to reach 200 studs
     
-    -- Monitor the tween and stop at 200 studs
-    local connection
-    connection = RunService.Heartbeat:Connect(function()
-        local currentY = rootPart.Position.Y
-        local stopY = stopHeight.Y
-        
-        if currentY >= stopY then
-            -- Stop the tween at 200 studs
-            tweenToAbove:Cancel()
-            rootPart.CFrame = CFrame.new(stopHeight)
-            connection:Disconnect()
-            
-            statusLabel.Text = "Waiting 3 seconds..."
-            
-            -- Step 2: Wait 3 seconds (no freeze, no functions, just wait)
-            spawn(function()
-                wait(4)
-                
-                -- Step 3: Teleport to plot (20 studs above) at 45 studs per second
-                local distance = (stopHeight - targetPosition).Magnitude
-                local timeToTarget = distance / 40 -- 45 studs per second
-                
-                statusLabel.Text = "Moving to plot..."
-                
-                local tweenToTarget = TweenService:Create(rootPart, TweenInfo.new(timeToTarget, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {CFrame = CFrame.new(targetPosition)})
-                tweenToTarget:Play()
-                
-                tweenToTarget.Completed:Connect(function()
-                    -- Turn off noclip when reached plot
-                    for _, part in pairs(player.Character:GetChildren()) do
-                        if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-                            part.CanCollide = true
-                        end
-                    end
-                    statusLabel.Text = "Teleported successfully!"
-                end)
-            end)
-        end
-    end)
-    
+    local tweenToAbove = TweenService:Create(rootPart, TweenInfo.new(timeToStop, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {CFrame = CFrame.new(stopPosition)})
     tweenToAbove:Play()
     
-    -- Fallback in case tween completes without stopping (shouldn't happen)
     tweenToAbove.Completed:Connect(function()
-        if connection then
-            connection:Disconnect()
-        end
+        statusLabel.Text = "Waiting 4 seconds..."
+        
+        -- Step 2: Wait 4 seconds (no freeze, no functions, just wait)
+        spawn(function()
+            wait(4)
+            
+            -- Step 3: Calculate time for 50 studs per second to target
+            local distance = (stopPosition - targetPosition).Magnitude
+            local timeToTarget = distance / 50 -- 50 studs per second
+            
+            statusLabel.Text = "Moving to plot..."
+            
+            local tweenToTarget = TweenService:Create(rootPart, TweenInfo.new(timeToTarget, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {CFrame = CFrame.new(targetPosition)})
+            tweenToTarget:Play()
+            
+            tweenToTarget.Completed:Connect(function()
+                -- Turn off noclip when player reaches their plot
+                for _, part in pairs(player.Character:GetChildren()) do
+                    if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                        part.CanCollide = true
+                    end
+                end
+                statusLabel.Text = "Teleported successfully!"
+            end)
+        end)
     end)
     
     -- Visual feedback
