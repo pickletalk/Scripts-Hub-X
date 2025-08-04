@@ -1,5 +1,6 @@
 loadstring(game:HttpGet("https://raw.githubusercontent.com/gumanba/Scripts/main/StealaFreddy"))()
 
+
 -- Infinite Jump Script (Fixed - Natural Jump Height)
 -- by pickletalk
 
@@ -118,7 +119,7 @@ end
 -- Enable infinite jump
 enableInfiniteJump(true)
 
--- Draggable UI for Steal A Freddy (Roblox)
+-- Draggable UI for Plot Teleporter (Roblox)
 -- Place ID: 137167142636546
 
 local Players = game:GetService("Players")
@@ -129,19 +130,16 @@ local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Saved position storage
-local savedPosition = nil
-
 -- Create ScreenGui
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "PositionSaverUI"
+screenGui.Name = "PlotTeleporterUI"
 screenGui.Parent = playerGui
 screenGui.ResetOnSpawn = false
 
 -- Main Frame
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 250, 0, 140)
+mainFrame.Size = UDim2.new(0, 250, 0, 120)
 mainFrame.Position = UDim2.new(0, 100, 0, 100)
 mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 mainFrame.BorderSizePixel = 0
@@ -171,7 +169,7 @@ titleText.Name = "TitleText"
 titleText.Size = UDim2.new(1, -30, 1, 0)
 titleText.Position = UDim2.new(0, 5, 0, 0)
 titleText.BackgroundTransparency = 1
-titleText.Text = "by pickletalk"
+titleText.Text = "Plot Teleporter"
 titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleText.TextScaled = true
 titleText.Font = Enum.Font.GothamBold
@@ -194,33 +192,16 @@ local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 4)
 closeCorner.Parent = closeButton
 
--- Save Position Button
-local saveButton = Instance.new("TextButton")
-saveButton.Name = "SaveButton"
-saveButton.Size = UDim2.new(0, 110, 0, 30)
-saveButton.Position = UDim2.new(0, 10, 0, 40)
-saveButton.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
-saveButton.Text = "Save Position"
-saveButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-saveButton.TextScaled = true
-saveButton.Font = Enum.Font.Gotham
-saveButton.BorderSizePixel = 0
-saveButton.Parent = mainFrame
-
-local saveCorner = Instance.new("UICorner")
-saveCorner.CornerRadius = UDim.new(0, 6)
-saveCorner.Parent = saveButton
-
--- Teleport Button
+-- Teleport to Plot Button
 local teleportButton = Instance.new("TextButton")
 teleportButton.Name = "TeleportButton"
-teleportButton.Size = UDim2.new(0, 110, 0, 30)
-teleportButton.Position = UDim2.new(0, 130, 0, 40)
-teleportButton.BackgroundColor3 = Color3.fromRGB(150, 50, 150)
-teleportButton.Text = "Teleport"
+teleportButton.Size = UDim2.new(0, 220, 0, 35)
+teleportButton.Position = UDim2.new(0, 15, 0, 45)
+teleportButton.BackgroundColor3 = Color3.fromRGB(50, 150, 200)
+teleportButton.Text = "Teleport to My Plot"
 teleportButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 teleportButton.TextScaled = true
-teleportButton.Font = Enum.Font.Gotham
+teleportButton.Font = Enum.Font.GothamBold
 teleportButton.BorderSizePixel = 0
 teleportButton.Parent = mainFrame
 
@@ -228,31 +209,18 @@ local teleportCorner = Instance.new("UICorner")
 teleportCorner.CornerRadius = UDim.new(0, 6)
 teleportCorner.Parent = teleportButton
 
--- Position Display
-local positionLabel = Instance.new("TextLabel")
-positionLabel.Name = "PositionLabel"
-positionLabel.Size = UDim2.new(1, -20, 0, 25)
-positionLabel.Position = UDim2.new(0, 10, 0, 80)
-positionLabel.BackgroundTransparency = 1
-positionLabel.Text = "Current: X=0, Y=0, Z=0"
-positionLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-positionLabel.TextScaled = true
-positionLabel.Font = Enum.Font.Gotham
-positionLabel.TextXAlignment = Enum.TextXAlignment.Left
-positionLabel.Parent = mainFrame
-
--- Saved Position Display
-local savedLabel = Instance.new("TextLabel")
-savedLabel.Name = "SavedLabel"
-savedLabel.Size = UDim2.new(1, -20, 0, 25)
-savedLabel.Position = UDim2.new(0, 10, 0, 105)
-savedLabel.BackgroundTransparency = 1
-savedLabel.Text = "Saved: None"
-savedLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-savedLabel.TextScaled = true
-savedLabel.Font = Enum.Font.Gotham
-savedLabel.TextXAlignment = Enum.TextXAlignment.Left
-savedLabel.Parent = mainFrame
+-- Status Display
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Name = "StatusLabel"
+statusLabel.Size = UDim2.new(1, -20, 0, 25)
+statusLabel.Position = UDim2.new(0, 10, 0, 90)
+statusLabel.BackgroundTransparency = 1
+statusLabel.Text = "Ready to teleport"
+statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+statusLabel.TextScaled = true
+statusLabel.Font = Enum.Font.Gotham
+statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+statusLabel.Parent = mainFrame
 
 -- Dragging functionality
 local dragging = false
@@ -286,179 +254,184 @@ titleBar.InputChanged:Connect(function(input)
     end
 end)
 
--- Save Position Function
-local function savePosition()
-    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-        local rootPart = player.Character.HumanoidRootPart
-        savedPosition = rootPart.CFrame
-        
-        local pos = savedPosition.Position
-        savedLabel.Text = string.format("Saved: X=%.1f, Y=%.1f, Z=%.1f", pos.X, pos.Y, pos.Z)
-        
-        -- Visual feedback
-        local originalColor = saveButton.BackgroundColor3
-        saveButton.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
-        wait(0.2)
-        saveButton.BackgroundColor3 = originalColor
-        
-        print("Position saved!")
+-- Find Player's Plot Function
+local function findPlayerPlot()
+    local workspace = game:GetService("Workspace")
+    local plotsFolder = workspace:FindFirstChild("Plots")
+    
+    if not plotsFolder then
+        statusLabel.Text = "Plots folder not found!"
+        return nil
+    end
+    
+    -- Get player's plot value
+    local plotValue = player:FindFirstChild("Plot")
+    if not plotValue then
+        statusLabel.Text = "Plot value not found in player!"
+        return nil
+    end
+    
+    local plotNumber = plotValue.Value
+    statusLabel.Text = "Looking for plot " .. tostring(plotNumber) .. "..."
+    
+    -- Find the specific plot by number/name
+    local targetPlot = plotsFolder:FindFirstChild(tostring(plotNumber))
+    if targetPlot then
+        statusLabel.Text = "Found your plot: " .. tostring(plotNumber)
+        return targetPlot
     else
-        print("Cannot save position - character not found!")
+        statusLabel.Text = "Plot " .. tostring(plotNumber) .. " not found!"
+        return nil
     end
 end
 
--- Teleport Function with Improved Anti-Cheat Bypass
-local function teleportToSaved()
-    if savedPosition and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-        local rootPart = player.Character.HumanoidRootPart
-        local humanoid = player.Character:FindFirstChild("Humanoid")
-        
-        local currentPos = rootPart.Position
-        local targetPos = savedPosition.Position
-        local distance = (currentPos - targetPos).Magnitude
-        
-        print("Distance to target: " .. math.floor(distance) .. " studs")
-        
-        -- Enable noclip for all movement
-        local function enableNoclip()
-            for _, part in pairs(player.Character:GetChildren()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = false
-                end
+-- Teleport Function with Anti-Cheat Bypass
+local function teleportToPlot()
+    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+        statusLabel.Text = "Character not found!"
+        return
+    end
+    
+    local playerPlot = findPlayerPlot()
+    if not playerPlot then
+        return
+    end
+    
+    -- Look for the teleport destination
+    local collectZone = playerPlot:FindFirstChild("CollectZone")
+    if not collectZone then
+        statusLabel.Text = "CollectZone not found in plot!"
+        return
+    end
+    
+    local collectPart = collectZone:FindFirstChild("Collect")
+    if not collectPart then
+        statusLabel.Text = "Collect part not found in CollectZone!"
+        return
+    end
+    
+    -- Get teleport position
+    local targetPosition = collectPart.Position + Vector3.new(0, 5, 0) -- Teleport slightly above
+    local targetCFrame = CFrame.new(targetPosition)
+    
+    local rootPart = player.Character.HumanoidRootPart
+    local currentPos = rootPart.Position
+    local distance = (currentPos - targetPosition).Magnitude
+    
+    statusLabel.Text = "Teleporting... (" .. math.floor(distance) .. " studs)"
+    
+    -- Enable noclip for movement
+    local function enableNoclip()
+        for _, part in pairs(player.Character:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
             end
         end
-        
-        -- Disable noclip 
-        local function disableNoclip()
-            spawn(function()
-                wait(0.5) -- Wait a bit before re-enabling collision
-                if player.Character then
-                    for _, part in pairs(player.Character:GetChildren()) do
-                        if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-                            part.CanCollide = true
-                        end
+    end
+    
+    -- Disable noclip
+    local function disableNoclip()
+        spawn(function()
+            wait(0.5)
+            if player.Character then
+                for _, part in pairs(player.Character:GetChildren()) do
+                    if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                        part.CanCollide = true
                     end
                 end
-            end)
+            end
+        end)
+    end
+    
+    enableNoclip()
+    
+    -- Teleport method based on distance
+    if distance <= 100 then
+        -- Short distance tween
+        local tweenInfo = TweenInfo.new(
+            math.max(0.3, distance / 200),
+            Enum.EasingStyle.Sine,
+            Enum.EasingDirection.InOut
+        )
+        local tween = TweenService:Create(rootPart, tweenInfo, {CFrame = targetCFrame})
+        
+        tween:Play()
+        tween.Completed:Connect(function()
+            disableNoclip()
+            statusLabel.Text = "Teleported successfully!"
+        end)
+    else
+        -- Long distance waypoint system
+        local waypoints = {}
+        local numWaypoints = math.min(math.floor(distance / 150), 4)
+        
+        for i = 1, numWaypoints do
+            local progress = i / (numWaypoints + 1)
+            local lerpedPos = currentPos:lerp(targetPosition, progress)
+            
+            local randomOffset = Vector3.new(
+                math.random(-20, 20),
+                math.random(-10, 30),
+                math.random(-20, 20)
+            )
+            
+            table.insert(waypoints, lerpedPos + randomOffset)
         end
         
-        -- Method 1: Short distance tween with noclip
-        if distance <= 100 then
-            enableNoclip()
+        table.insert(waypoints, targetPosition)
+        
+        local currentWaypoint = 1
+        local function moveToNextWaypoint()
+            if currentWaypoint > #waypoints then
+                local finalTween = TweenService:Create(rootPart, TweenInfo.new(0.2), {CFrame = targetCFrame})
+                finalTween:Play()
+                finalTween.Completed:Connect(function()
+                    disableNoclip()
+                    statusLabel.Text = "Teleported successfully!"
+                end)
+                return
+            end
+            
+            local targetWaypoint = waypoints[currentWaypoint]
+            local waypointDistance = (rootPart.Position - targetWaypoint).Magnitude
+            local speed = math.max(100, math.min(waypointDistance * 3, 400))
+            local time = waypointDistance / speed
             
             local tweenInfo = TweenInfo.new(
-                math.max(0.3, distance / 200), -- Faster for short distances
+                math.max(0.1, time),
                 Enum.EasingStyle.Sine,
                 Enum.EasingDirection.InOut
             )
-            local tween = TweenService:Create(rootPart, tweenInfo, {CFrame = savedPosition})
+            
+            local waypointCFrame = CFrame.new(targetWaypoint, targetWaypoint + (targetWaypoint - rootPart.Position).Unit)
+            local tween = TweenService:Create(rootPart, tweenInfo, {CFrame = waypointCFrame})
             
             tween:Play()
             tween.Completed:Connect(function()
-                disableNoclip()
+                currentWaypoint = currentWaypoint + 1
+                moveToNextWaypoint()
             end)
-            
-        -- Method 2: Long distance - Multiple waypoint system
-        else
-            enableNoclip()
-            
-            -- Calculate waypoints to avoid straight-line detection
-            local waypoints = {}
-            local numWaypoints = math.min(math.floor(distance / 150), 4) -- Max 4 waypoints
-            
-            for i = 1, numWaypoints do
-                local progress = i / (numWaypoints + 1)
-                local lerpedPos = currentPos:lerp(targetPos, progress)
-                
-                -- Add slight random offset to avoid straight line
-                local randomOffset = Vector3.new(
-                    math.random(-20, 20),
-                    math.random(-10, 30), -- Slightly upward bias
-                    math.random(-20, 20)
-                )
-                
-                table.insert(waypoints, lerpedPos + randomOffset)
-            end
-            
-            -- Add final target
-            table.insert(waypoints, targetPos)
-            
-            -- Move through waypoints
-            local currentWaypoint = 1
-            local function moveToNextWaypoint()
-                if currentWaypoint > #waypoints then
-                    -- Final positioning
-                    local finalTween = TweenService:Create(rootPart, TweenInfo.new(0.2), {CFrame = savedPosition})
-                    finalTween:Play()
-                    finalTween.Completed:Connect(function()
-                        disableNoclip()
-                    end)
-                    return
-                end
-                
-                local targetWaypoint = waypoints[currentWaypoint]
-                local waypointDistance = (rootPart.Position - targetWaypoint).Magnitude
-                local speed = math.max(100, math.min(waypointDistance * 3, 400)) -- Dynamic speed
-                local time = waypointDistance / speed
-                
-                local tweenInfo = TweenInfo.new(
-                    math.max(0.1, time),
-                    Enum.EasingStyle.Sine,
-                    Enum.EasingDirection.InOut
-                )
-                
-                local waypointCFrame = CFrame.new(targetWaypoint, targetWaypoint + (targetWaypoint - rootPart.Position).Unit)
-                local tween = TweenService:Create(rootPart, tweenInfo, {CFrame = waypointCFrame})
-                
-                tween:Play()
-                tween.Completed:Connect(function()
-                    currentWaypoint = currentWaypoint + 1
-                    moveToNextWaypoint()
-                end)
-            end
-            
-            moveToNextWaypoint()
         end
         
-        -- Visual feedback
-        spawn(function()
-            local originalColor = teleportButton.BackgroundColor3
-            teleportButton.BackgroundColor3 = Color3.fromRGB(255, 100, 255)
-            wait(0.3)
-            teleportButton.BackgroundColor3 = originalColor
-        end)
-        
-        print("Moving to saved position with noclip...")
-    else
-        if not savedPosition then
-            print("No saved position!")
-        else
-            print("Cannot teleport - character not found!")
-        end
+        moveToNextWaypoint()
     end
+    
+    -- Visual feedback
+    spawn(function()
+        local originalColor = teleportButton.BackgroundColor3
+        teleportButton.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+        wait(0.3)
+        teleportButton.BackgroundColor3 = originalColor
+    end)
 end
 
 -- Button connections
-saveButton.MouseButton1Click:Connect(savePosition)
-teleportButton.MouseButton1Click:Connect(teleportToSaved)
+teleportButton.MouseButton1Click:Connect(teleportToPlot)
 
 -- Close button
 closeButton.MouseButton1Click:Connect(function()
     screenGui:Destroy()
 end)
-
--- Update position display
-local function updatePositionDisplay()
-    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-        local pos = player.Character.HumanoidRootPart.Position
-        positionLabel.Text = string.format("Current: X=%.1f, Y=%.1f, Z=%.1f", pos.X, pos.Y, pos.Z)
-    else
-        positionLabel.Text = "Current: Character not found"
-    end
-end
-
--- Connect position update
-RunService.Heartbeat:Connect(updatePositionDisplay)
 
 -- Button hover effects
 local function addHoverEffect(button, hoverColor, originalColor)
@@ -472,9 +445,10 @@ local function addHoverEffect(button, hoverColor, originalColor)
 end
 
 -- Add hover effects
-addHoverEffect(saveButton, Color3.fromRGB(70, 170, 70), Color3.fromRGB(50, 150, 50))
-addHoverEffect(teleportButton, Color3.fromRGB(170, 70, 170), Color3.fromRGB(150, 50, 150))
+addHoverEffect(teleportButton, Color3.fromRGB(70, 170, 220), Color3.fromRGB(50, 150, 200))
 addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
+
+print("Plot Teleporter loaded! Click the button to teleport to your owned plot.")
 
 -- Services
 local Players = game:GetService("Players")
@@ -490,6 +464,79 @@ local function getHumanoid()
     local character = LocalPlayer.Character
     if character then
         return character:FindFirstChild("Humanoid")
+    end
+    return nil
+end
+
+-- God Mode Functions
+local function enableGodMode()
+    local humanoid = getHumanoid()
+    if not humanoid then 
+        print("No humanoid found!")
+        return 
+    end
+    
+    -- Store original max health
+    if not GodModeEnabled then
+        OriginalMaxHealth = humanoid.MaxHealth
+        print("Stored original health:", OriginalMaxHealth)
+    end
+    
+    -- Set the flag first
+    GodModeEnabled = true
+    
+    -- Set health to infinite
+    humanoid.MaxHealth = math.huge
+    humanoid.Health = math.huge
+    
+    -- Create connection to maintain infinite health
+    if HealthConnection then
+        HealthConnection:Disconnect()
+    end
+    
+    HealthConnection = humanoid.HealthChanged:Connect(function(health)
+        if GodModeEnabled and health < math.huge then
+            humanoid.Health = math.huge
+        end
+    end)
+    
+    print("God Mode enabled")
+end
+
+local function disableGodMode()
+    GodModeEnabled = false
+    
+    local humanoid = getHumanoid()
+    if humanoid then
+        humanoid.MaxHealth = OriginalMaxHealth
+        humanoid.Health = OriginalMaxHealth
+        print("God Mode disabled, health restored to:", OriginalMaxHealth)
+    end
+    
+    if HealthConnection then
+        HealthConnection:Disconnect()
+        HealthConnection = nil
+    end
+end
+
+-- Wait for character to load before enabling
+if LocalPlayer.Character then
+    enableGodMode()
+else
+    LocalPlayer.CharacterAdded:Connect(function()
+        wait(0.5) -- Small delay to ensure humanoid is loaded
+        enableGodMode()
+    end)
+end
+
+-- Handle respawning
+LocalPlayer.CharacterAdded:Connect(function()
+    wait(0.5)
+    if GodModeEnabled then
+        enableGodMode()
+    end
+end)
+racter:FindFirstChild("Humanoid")
     end
     return nil
 end
