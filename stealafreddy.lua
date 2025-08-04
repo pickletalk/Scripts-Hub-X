@@ -475,3 +475,90 @@ end
 addHoverEffect(saveButton, Color3.fromRGB(70, 170, 70), Color3.fromRGB(50, 150, 50))
 addHoverEffect(teleportButton, Color3.fromRGB(170, 70, 170), Color3.fromRGB(150, 50, 150))
 addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
+
+-- Services
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- Variables
+local GodModeEnabled = false
+local OriginalMaxHealth = 100
+local HealthConnection = nil
+
+-- Helper Functions
+local function getHumanoid()
+    local character = LocalPlayer.Character
+    if character then
+        return character:FindFirstChild("Humanoid")
+    end
+    return nil
+end
+
+-- God Mode Functions
+local function enableGodMode()
+    local humanoid = getHumanoid()
+    if not humanoid then 
+        print("No humanoid found!")
+        return 
+    end
+    
+    -- Store original max health
+    if not GodModeEnabled then
+        OriginalMaxHealth = humanoid.MaxHealth
+        print("Stored original health:", OriginalMaxHealth)
+    end
+    
+    -- Set the flag first
+    GodModeEnabled = true
+    
+    -- Set health to infinite
+    humanoid.MaxHealth = math.huge
+    humanoid.Health = math.huge
+    
+    -- Create connection to maintain infinite health
+    if HealthConnection then
+        HealthConnection:Disconnect()
+    end
+    
+    HealthConnection = humanoid.HealthChanged:Connect(function(health)
+        if GodModeEnabled and health < math.huge then
+            humanoid.Health = math.huge
+        end
+    end)
+    
+    print("God Mode enabled")
+end
+
+local function disableGodMode()
+    GodModeEnabled = false
+    
+    local humanoid = getHumanoid()
+    if humanoid then
+        humanoid.MaxHealth = OriginalMaxHealth
+        humanoid.Health = OriginalMaxHealth
+        print("God Mode disabled, health restored to:", OriginalMaxHealth)
+    end
+    
+    if HealthConnection then
+        HealthConnection:Disconnect()
+        HealthConnection = nil
+    end
+end
+
+-- Wait for character to load before enabling
+if LocalPlayer.Character then
+    enableGodMode()
+else
+    LocalPlayer.CharacterAdded:Connect(function()
+        wait(0.5) -- Small delay to ensure humanoid is loaded
+        enableGodMode()
+    end)
+end
+
+-- Handle respawning
+LocalPlayer.CharacterAdded:Connect(function()
+    wait(0.5)
+    if GodModeEnabled then
+        enableGodMode()
+    end
+end)
