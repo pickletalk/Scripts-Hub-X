@@ -97,10 +97,7 @@ local Games = {
 
     -- Troll Slapping Tower
     [128829279907343] = "https://raw.githubusercontent.com/lotretscript/Lo-Tret-Script/refs/heads/main/Lo-Tret-Script.lua.txt",
-
-    -- Troll Is Pining
-    [83312952548612] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua",
-
+    
     -- Slap Tower
     [95508886069297] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua", -- 1
     [79089892790758] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua", -- 2
@@ -118,6 +115,9 @@ local Games = {
 
     -- Tower Of Hell
     [1962086868] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua",
+
+    -- Troll Is Pining
+    [83312952548612] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/towerispining.lua"
 }
 
 return Games
