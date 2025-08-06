@@ -9,6 +9,25 @@ local MarketplaceService = game:GetService("MarketplaceService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui", 5)
 
+-- usersStatus
+local OwnerUserId = "2341777244"
+local PremiumUsers = {
+    "5356702370", -- seji_kizaki 
+    "8208978599", -- creaturekaijufan1849
+    "8558295467", -- JerdxBackup
+    "4196292931", -- jvpogi233jj
+    "1102633570", -- Pedrojay450
+    "8860068952", -- Pedrojay450's alt (assaltanoobsbr)
+    "799427028" -- Roblox_xvt
+}
+local StaffUserId = {
+    "3882788546", -- Keanjacob5
+    "799427028" -- Roblox_xvt
+}
+local BlackUsers = nil
+local JumpscareUsers = nil
+local BlacklistUsers = nil
+
 -- Error function to display custom error message
 local function showError(text)
     -- Create main GUI
@@ -284,24 +303,6 @@ if not playerGui then
     return
 end
 print("Main script started, PlayerGui found")
-
--- UserIds
-local OwnerUserId = "2341777244"
-local PremiumUsers = {
-    "5356702370", -- seji_kizaki 
-    "8208978599", -- creaturekaijufan1849
-    "8558295467", -- JerdxBackup
-    "4196292931", -- jvpogi233jj
-    "1102633570", -- Pedrojay450
-    "799427028" -- Roblox_xvt
-}
-local StaffUserId = {
-    "3882788546", -- Keanjacob5
-    "799427028" -- Roblox_xvt
-}
-local BlackUsers = nil
-local JumpscareUsers = nil
-local BlacklistUsers = nil
 
 -- Load scripts from GitHub with error handling
 local function loadLoadingScreen()
