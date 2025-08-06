@@ -117,7 +117,7 @@ local Games = {
     [1962086868] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua",
 
     -- Troll Is Pining
-    [83312952548612] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/towerispining.lua"
+    [83312952548612] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/trollispinning.lua"
 }
 
 return Games
