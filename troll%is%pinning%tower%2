@@ -1,7 +1,7 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "Troll Is Pinning - by PickleTalk",
+   Name = "Troll Is A Pinning Tower 2- by PickleTalk",
    Icon = 0,
    LoadingTitle = "Pickle Interface Suite",
    LoadingSubtitle = "by PickleTalk",
