@@ -1,7 +1,20 @@
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+-- Wait for game to load
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
+
+-- Load Rayfield with error handling
+local success, Rayfield = pcall(function()
+    return loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+end)
+
+if not success then
+    warn("Failed to load Rayfield UI library")
+    return
+end
 
 local Window = Rayfield:CreateWindow({
-   Name = "Troll Is A Pinning Tower 2- by PickleTalk",
+   Name = "Troll Is A Pinning Tower 2 - by PickleTalk",
    Icon = 0,
    LoadingTitle = "Pickle Interface Suite",
    LoadingSubtitle = "by PickleTalk",
@@ -40,9 +53,12 @@ local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
-local player = game.Players.LocalPlayer
-
 local LocalPlayer = Players.LocalPlayer
+
+-- Wait for player to spawn
+if not LocalPlayer.Character then
+    LocalPlayer.CharacterAdded:Wait()
+end
 
 -- Variables
 local Flying = false
@@ -75,50 +91,50 @@ local spamConnection = nil
 
 -- Helper Functions
 local function getRootPart()
-    local character = LocalPlayer.Character
-    if character then
-        return character:FindFirstChild("HumanoidRootPart")
+    if LocalPlayer.Character then
+        return LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     end
     return nil
 end
 
 local function getHumanoid()
-    local character = LocalPlayer.Character
-    if character then
-        return character:FindFirstChild("Humanoid")
+    if LocalPlayer.Character then
+        return LocalPlayer.Character:FindFirstChild("Humanoid")
     end
     return nil
 end
 
 local function createNotification(text)
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-    screenGui.Name = "Notification"
+    pcall(function()
+        local screenGui = Instance.new("ScreenGui")
+        screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+        screenGui.Name = "Notification_" .. tick()
 
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 200, 0, 0)
-    frame.Position = UDim2.new(0.5, -100, 0.9, -40)
-    frame.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-    frame.BorderSizePixel = 0
-    frame.Parent = screenGui
+        local frame = Instance.new("Frame")
+        frame.Size = UDim2.new(0, 200, 0, 0)
+        frame.Position = UDim2.new(0.5, -100, 0.9, -40)
+        frame.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+        frame.BorderSizePixel = 0
+        frame.Parent = screenGui
 
-    local uiCorner = Instance.new("UICorner")
-    uiCorner.CornerRadius = UDim.new(0, 10)
-    uiCorner.Parent = frame
+        local uiCorner = Instance.new("UICorner")
+        uiCorner.CornerRadius = UDim.new(0, 10)
+        uiCorner.Parent = frame
 
-    local textLabel = Instance.new("TextLabel")
-    textLabel.Size = UDim2.new(1, 0, 1, 0)
-    textLabel.BackgroundTransparency = 1
-    textLabel.Text = text or "Notification"
-    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    textLabel.Font = Enum.Font.SourceSansBold
-    textLabel.TextSize = 16
-    textLabel.Parent = frame
+        local textLabel = Instance.new("TextLabel")
+        textLabel.Size = UDim2.new(1, 0, 1, 0)
+        textLabel.BackgroundTransparency = 1
+        textLabel.Text = text or "Notification"
+        textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        textLabel.Font = Enum.Font.SourceSansBold
+        textLabel.TextSize = 16
+        textLabel.Parent = frame
 
-    local tweenIn = TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 200, 0, 40)})
-    tweenIn:Play()
+        local tweenIn = TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 200, 0, 40)})
+        tweenIn:Play()
 
-    game:GetService("Debris"):AddItem(screenGui, 2)
+        game:GetService("Debris"):AddItem(screenGui, 3)
+    end)
 end
 
 -- Infinite Jump Functions
@@ -127,7 +143,6 @@ local function performInfiniteJump()
     local rootPart = getRootPart()
     
     if humanoid and rootPart then
-        -- Use custom jump power if enabled, otherwise use original
         local jumpPower = JumpPowerEnabled and CustomJumpPower or OriginalJumpPower
         
         local bodyVelocity = Instance.new("BodyVelocity")
@@ -135,7 +150,7 @@ local function performInfiniteJump()
         bodyVelocity.Velocity = Vector3.new(0, jumpPower, 0)
         bodyVelocity.Parent = rootPart
         
-        game:GetService("Debris"):AddItem(bodyVelocity, 0.2)
+        game:GetService("Debris"):AddItem(bodyVelocity, 0.3)
         humanoid.Jump = true
     end
 end
@@ -200,11 +215,10 @@ end
 
 -- Noclip Functions
 local function getCharacterParts()
-    local character = LocalPlayer.Character
-    if not character then return {} end
+    if not LocalPlayer.Character then return {} end
     
     local parts = {}
-    for _, part in pairs(character:GetChildren()) do
+    for _, part in pairs(LocalPlayer.Character:GetChildren()) do
         if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
             table.insert(parts, part)
         end
@@ -218,11 +232,13 @@ local function enableNoclip()
     end
     
     NoclipConnection = RunService.Stepped:Connect(function()
-        for _, part in pairs(getCharacterParts()) do
-            if part and part:IsA("BasePart") then
-                part.CanCollide = false
+        pcall(function()
+            for _, part in pairs(getCharacterParts()) do
+                if part and part.Parent then
+                    part.CanCollide = false
+                end
             end
-        end
+        end)
     end)
     
     print("Noclip enabled")
@@ -234,42 +250,18 @@ local function disableNoclip()
         NoclipConnection = nil
     end
     
-    for _, part in pairs(getCharacterParts()) do
-        if part and part:IsA("BasePart") then
-            part.CanCollide = true
+    pcall(function()
+        for _, part in pairs(getCharacterParts()) do
+            if part and part.Parent then
+                part.CanCollide = true
+            end
         end
-    end
+    end)
     
     print("Noclip disabled")
 end
 
 -- Fly Functions
-local function enableShiftLock()
-    local StarterGui = game:GetService("StarterGui")
-    local Players = game:GetService("Players")
-    local LocalPlayer = Players.LocalPlayer
-    
-    -- Enable shift lock in settings
-    if LocalPlayer.DevEnableMouseLock ~= nil then
-        LocalPlayer.DevEnableMouseLock = true
-    end
-    
-    -- Set camera to follow mouse
-    local UserGameSettings = UserSettings():GetService("UserGameSettings")
-    UserGameSettings.RotationType = Enum.RotationType.CameraRelative
-    
-    -- Force mouse lock
-    local Mouse = LocalPlayer:GetMouse()
-    if UserInputService.MouseBehavior ~= Enum.MouseBehavior.LockCenter then
-        UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
-    end
-end
-
-local function disableShiftLock()
-    -- Restore normal mouse behavior
-    UserInputService.MouseBehavior = Enum.MouseBehavior.Default
-end
-
 local function startFly()
     local character = LocalPlayer.Character
     if not character then return end
@@ -283,9 +275,6 @@ local function startFly()
     if BodyVelocity then BodyVelocity:Destroy() end
     if BodyAngularVelocity then BodyAngularVelocity:Destroy() end
     if FlyConnection then FlyConnection:Disconnect() end
-    
-    -- Enable shift lock for better fly experience
-    enableShiftLock()
     
     -- Create BodyVelocity for movement
     BodyVelocity = Instance.new("BodyVelocity")
@@ -304,79 +293,41 @@ local function startFly()
     
     -- Flying loop
     FlyConnection = RunService.Heartbeat:Connect(function()
-        if Flying and BodyVelocity and BodyVelocity.Parent then
-            local camera = workspace.CurrentCamera
-            local humanoid = getHumanoid()
-            if not humanoid then return end
-            
-            local moveVector = Vector3.new(0, 0, 0)
-            local isMoving = false
-            
-            -- PC Controls (WASD)
-            if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-                moveVector = moveVector + camera.CFrame.LookVector
-                isMoving = true
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-                moveVector = moveVector - camera.CFrame.LookVector
-                isMoving = true
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-                moveVector = moveVector - camera.CFrame.RightVector
-                isMoving = true
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-                moveVector = moveVector + camera.CFrame.RightVector
-                isMoving = true
-            end
-            
-            -- Mobile Controls (TouchEnabled)
-            if UserInputService.TouchEnabled then
-                local moveVector2D = humanoid.MoveDirection
-                if moveVector2D.Magnitude > 0 then
-                    -- Convert 2D movement to 3D camera-relative movement
-                    local cameraCFrame = camera.CFrame
-                    local relativeMovement = cameraCFrame:VectorToWorldSpace(Vector3.new(moveVector2D.X, 0, -moveVector2D.Z))
-                    moveVector = Vector3.new(relativeMovement.X, 0, relativeMovement.Z)
-                    isMoving = true
+        pcall(function()
+            if Flying and BodyVelocity and BodyVelocity.Parent then
+                local camera = workspace.CurrentCamera
+                local moveVector = Vector3.new(0, 0, 0)
+                
+                -- PC Controls (WASD)
+                if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                    moveVector = moveVector + camera.CFrame.LookVector
                 end
-            end
-            
-            -- Apply movement in the direction the camera is looking
-            if isMoving and moveVector.Magnitude > 0 then
-                -- Fly in the direction of camera look vector, but maintain some ground-relative movement
-                local lookDirection = camera.CFrame.LookVector
-                local rightDirection = camera.CFrame.RightVector
-                
-                -- Calculate the movement direction based on input
-                local finalDirection = Vector3.new(0, 0, 0)
-                
-                -- Forward/Backward based on camera look direction
-                if moveVector:Dot(camera.CFrame.LookVector) > 0 then
-                    finalDirection = finalDirection + lookDirection
-                elseif moveVector:Dot(-camera.CFrame.LookVector) > 0 then
-                    finalDirection = finalDirection - lookDirection
+                if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+                    moveVector = moveVector - camera.CFrame.LookVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+                    moveVector = moveVector - camera.CFrame.RightVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+                    moveVector = moveVector + camera.CFrame.RightVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                    moveVector = moveVector + Vector3.new(0, 1, 0)
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+                    moveVector = moveVector - Vector3.new(0, 1, 0)
                 end
                 
-                -- Left/Right based on camera right direction  
-                if moveVector:Dot(camera.CFrame.RightVector) > 0 then
-                    finalDirection = finalDirection + rightDirection
-                elseif moveVector:Dot(-camera.CFrame.RightVector) > 0 then
-                    finalDirection = finalDirection - rightDirection
-                end
-                
-                if finalDirection.Magnitude > 0 then
-                    BodyVelocity.Velocity = finalDirection.Unit * FlySpeed
+                if moveVector.Magnitude > 0 then
+                    BodyVelocity.Velocity = moveVector.Unit * FlySpeed
                 else
                     BodyVelocity.Velocity = Vector3.new(0, 0, 0)
                 end
-            else
-                BodyVelocity.Velocity = Vector3.new(0, 0, 0)
             end
-        end
+        end)
     end)
     
-    print("Flying enabled at speed: " .. FlySpeed .. " (Shift lock auto-enabled)")
+    print("Flying enabled at speed: " .. FlySpeed)
 end
 
 local function stopFly()
@@ -403,9 +354,6 @@ local function stopFly()
         FlyConnection = nil
     end
     
-    -- Disable shift lock when stopping fly
-    disableShiftLock()
-    
     print("Flying disabled")
 end
 
@@ -414,23 +362,22 @@ local function enableGodMode()
     local humanoid = getHumanoid()
     if not humanoid then return end
     
-    -- Store original max health
     if not GodModeEnabled then
         OriginalMaxHealth = humanoid.MaxHealth
     end
     
-    -- Set health to infinite
     humanoid.MaxHealth = math.huge
     humanoid.Health = math.huge
     
-    -- Create connection to maintain infinite health
     if HealthConnection then
         HealthConnection:Disconnect()
     end
     
     HealthConnection = humanoid.HealthChanged:Connect(function(health)
         if GodModeEnabled and health < math.huge then
-            humanoid.Health = math.huge
+            pcall(function()
+                humanoid.Health = math.huge
+            end)
         end
     end)
     
@@ -453,16 +400,28 @@ local function disableGodMode()
 end
 
 -- Touch Spam Functions
-local function getPlayerParts()
-    local character = LocalPlayer.Character
-    if character then
-        return character:FindFirstChild("HumanoidRootPart"), character
-    end
-    return nil, nil
-end
-
 local function findTarget()
-    return workspace:FindFirstChild("Gudock")
+    -- Try multiple possible names for the target
+    local targets = {"Gudock", "TouchPart", "Goal", "Finish"}
+    for _, name in pairs(targets) do
+        local target = workspace:FindFirstChild(name)
+        if target then
+            return target
+        end
+    end
+    
+    -- Search recursively if not found at workspace root
+    local function searchForTouchPart(parent)
+        for _, child in pairs(parent:GetChildren()) do
+            if child.Name == "Gudock" or child:FindFirstChild("TouchInterest") then
+                return child
+            end
+            local found = searchForTouchPart(child)
+            if found then return found end
+        end
+    end
+    
+    return searchForTouchPart(workspace)
 end
 
 local function startTouchSpam()
@@ -472,19 +431,26 @@ local function startTouchSpam()
     
     spamConnection = RunService.Heartbeat:Connect(function()
         if spamming then
-            local humanoidRootPart, character = getPlayerParts()
-            local targetPart = findTarget()
-            
-            if humanoidRootPart and targetPart then
-                local touchInterest = targetPart:FindFirstChild("TouchInterest")
-                if touchInterest then
-                    -- Method 1: Try firetouchinterest
-                    pcall(function()
+            pcall(function()
+                local humanoidRootPart = getRootPart()
+                local targetPart = findTarget()
+                
+                if humanoidRootPart and targetPart then
+                    -- Multiple methods for touching
+                    -- Method 1: firetouchinterest
+                    if firetouchinterest then
                         firetouchinterest(humanoidRootPart, targetPart, 0)
                         firetouchinterest(humanoidRootPart, targetPart, 1)
-                    end)
+                    end
+                    
+                    -- Method 2: Alternative touch simulation
+                    if getconnections and targetPart:FindFirstChild("TouchInterest") then
+                        for _, connection in pairs(getconnections(targetPart.Touched)) do
+                            connection:Fire(humanoidRootPart)
+                        end
+                    end
                 end
-            end
+            end)
         end
     end)
 end
@@ -498,9 +464,10 @@ end
 
 -- Character Event Handlers
 local function onCharacterAdded(character)
-    wait(0.5)
+    wait(1)
     
-    local humanoid = character:WaitForChild("Humanoid")
+    local humanoid = character:WaitForChild("Humanoid", 5)
+    if not humanoid then return end
     
     -- Store original values
     if not SpeedEnabled then
@@ -532,25 +499,20 @@ local function onCharacterAdded(character)
     if GodModeEnabled then
         enableGodMode()
     end
+    if spamming then
+        startTouchSpam()
+    end
 end
 
 local function onCharacterRemoving()
-    if InfiniteJumpConnection then
-        InfiniteJumpConnection:Disconnect()
-        InfiniteJumpConnection = nil
-    end
-    if NoclipConnection then
-        NoclipConnection:Disconnect()
-        NoclipConnection = nil
-    end
-    if FlyConnection then
-        FlyConnection:Disconnect()
-        FlyConnection = nil
-    end
-    if spamConnection then
-        spamConnection:Disconnect()
-        spamConnection = nil
-    end
+    -- Clean up all connections
+    pcall(function()
+        if InfiniteJumpConnection then InfiniteJumpConnection:Disconnect() end
+        if NoclipConnection then NoclipConnection:Disconnect() end
+        if FlyConnection then FlyConnection:Disconnect() end
+        if spamConnection then spamConnection:Disconnect() end
+        if HealthConnection then HealthConnection:Disconnect() end
+    end)
 end
 
 -- Connect character events
@@ -559,7 +521,9 @@ LocalPlayer.CharacterRemoving:Connect(onCharacterRemoving)
 
 -- Initialize if character already exists
 if LocalPlayer.Character then
-    onCharacterAdded(LocalPlayer.Character)
+    spawn(function()
+        onCharacterAdded(LocalPlayer.Character)
+    end)
 end
 
 -- UI Elements
@@ -592,8 +556,10 @@ local NoclipToggle = Main:CreateToggle({
         
         if NoclipEnabled then
             enableNoclip()
+            createNotification("Noclip Enabled")
         else
             disableNoclip()
+            createNotification("Noclip Disabled")
         end
     end,
 })
@@ -608,15 +574,17 @@ local GodModeToggle = Main:CreateToggle({
         
         if GodModeEnabled then
             enableGodMode()
+            createNotification("God Mode Enabled")
         else
             disableGodMode()
+            createNotification("God Mode Disabled")
         end
     end,
 })
 
 -- Touch Spam Toggle (Main Tab)
 local TouchSpamToggle = Main:CreateToggle({
-   Name = "Auto Touch Spam",
+   Name = "Auto Touch Spam (Gudock)",
    CurrentValue = false,
    Flag = "TouchSpamToggle",
    Callback = function(Value)
@@ -625,6 +593,13 @@ local TouchSpamToggle = Main:CreateToggle({
        if spamming then
            startTouchSpam()
            createNotification("Auto Touch Spam Enabled")
+           print("Looking for target part...")
+           local target = findTarget()
+           if target then
+               print("Found target: " .. target.Name)
+           else
+               print("Target not found!")
+           end
        else
            stopTouchSpam()
            createNotification("Auto Touch Spam Disabled")
@@ -644,8 +619,10 @@ local SpeedToggle = PlayerTab:CreateToggle({
         
         if SpeedEnabled then
             enableSpeed()
+            createNotification("Speed Enabled: " .. CustomSpeed)
         else
             disableSpeed()
+            createNotification("Speed Disabled")
         end
     end,
 })
@@ -677,8 +654,10 @@ local JumpPowerToggle = PlayerTab:CreateToggle({
         
         if JumpPowerEnabled then
             enableJumpPower()
+            createNotification("Jump Power Enabled: " .. CustomJumpPower)
         else
             disableJumpPower()
+            createNotification("Jump Power Disabled")
         end
     end,
 })
@@ -710,8 +689,10 @@ local FlyToggle = PlayerTab:CreateToggle({
         
         if Flying then
             startFly()
+            createNotification("Fly Enabled")
         else
             stopFly()
+            createNotification("Fly Disabled")
         end
     end,
 })
@@ -727,6 +708,27 @@ local FlySpeedSlider = PlayerTab:CreateSlider({
     Callback = function(Value)
         FlySpeed = Value
     end,
+})
+
+-- Debug button to check for target
+local DebugButton = Main:CreateButton({
+   Name = "Find Touch Target (Debug)",
+   Callback = function()
+       local target = findTarget()
+       if target then
+           createNotification("Found: " .. target.Name)
+           print("Target found: " .. target.Name)
+           print("Path: " .. target:GetFullName())
+           if target:FindFirstChild("TouchInterest") then
+               print("TouchInterest found!")
+           else
+               print("No TouchInterest found")
+           end
+       else
+           createNotification("No target found!")
+           print("No valid target found in workspace")
+       end
+   end,
 })
 
 -- Load configuration
