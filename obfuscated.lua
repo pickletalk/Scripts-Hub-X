@@ -1,4 +1,4 @@
--- Scripts Hub X | Official Main Script
+-- Scripts Hub X | Official Main Script (Fixed)
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local SoundService = game:GetService("SoundService")
@@ -10,7 +10,7 @@ local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui", 5)
 
 -- Error function to display custom error message
-local function error(text)
+local function showError(text)
     -- Create main GUI
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "ErrorNotification"
@@ -108,12 +108,14 @@ local function error(text)
     -- Copy button functionality
     copyButton.MouseButton1Click:Connect(function()
         pcall(function()
-            setclipboard("https://discord.gg/bpsNUH5sVb")
-            copyButton.Text = "Copied!"
-            copyButton.BackgroundColor3 = Color3.fromRGB(60, 140, 235)
-            wait(1)
-            copyButton.Text = "Copy Link"
-            copyButton.BackgroundColor3 = Color3.fromRGB(80, 160, 255)
+            if setclipboard then
+                setclipboard("https://discord.gg/bpsNUH5sVb")
+                copyButton.Text = "Copied!"
+                copyButton.BackgroundColor3 = Color3.fromRGB(60, 140, 235)
+                wait(1)
+                copyButton.Text = "Copy Link"
+                copyButton.BackgroundColor3 = Color3.fromRGB(80, 160, 255)
+            end
         end)
     end)
 
@@ -278,7 +280,7 @@ local function error(text)
 end
 
 if not playerGui then
-    error("Player Gui not found, please contac he owner")
+    showError("Player Gui not found, please contact the owner")
     return
 end
 print("Main script started, PlayerGui found")
@@ -302,40 +304,38 @@ local BlacklistUsers = nil
 -- Load scripts from GitHub with error handling
 local function loadLoadingScreen()
     print("Attempting to load loading screen from GitHub")
-    local success, LoadingScreen = pcall(function()
+    local success, result = pcall(function()
         local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/main/loadingscreen.lua")
         return loadstring(script)()
     end)
     if not success then
-        warn("Failed to load loading screen: " .. tostring(LoadingScreen))
-        showErrorNotification()
+        warn("Failed to load loading screen: " .. tostring(result))
         return false, nil
     end
-    if not LoadingScreen or not LoadingScreen.playEntranceAnimations or not LoadingScreen.animateLoadingBar or not LoadingScreen.playExitAnimations or not LoadingScreen.setLoadingText or not LoadingScreen.initialize then
-        warn("Loading screen script missing required functions")
-        showErrorNotification()
+    if not result or type(result) ~= "table" then
+        warn("Loading screen script returned invalid data")
         return false, nil
     end
     print("Loading screen loaded successfully")
-    return true, LoadingScreen
+    return true, result
 end
 
 local function loadKeySystem()
     print("Attempting to load key system from GitHub")
-    local success, KeySystem = pcall(function()
+    local success, result = pcall(function()
         local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/main/keysystem.lua")
         return loadstring(script)()
     end)
     if not success then
-        warn("Failed to load key system: " .. tostring(KeySystem))
+        warn("Failed to load key system: " .. tostring(result))
         return false, nil
     end
-    if not KeySystem or not KeySystem.ShowKeySystem or not KeySystem.IsKeyVerified or not KeySystem.HideKeySystem then
-        warn("Key system missing required functions")
+    if not result or type(result) ~= "table" then
+        warn("Key system script returned invalid data")
         return false, nil
     end
     print("Key system loaded successfully")
-    return true, KeySystem
+    return true, result
 end
 
 local function checkGameSupport()
@@ -348,6 +348,12 @@ local function checkGameSupport()
         warn("Failed to load game list: " .. tostring(Games))
         return false, nil
     end
+    
+    if type(Games) ~= "table" then
+        warn("Game list returned invalid data")
+        return false, nil
+    end
+    
     for PlaceID, Execute in pairs(Games) do
         if PlaceID == game.PlaceId then
             print("Game supported, script URL: " .. Execute)
@@ -361,7 +367,8 @@ end
 local function loadGameScript(scriptUrl)
     print("Attempting to load game script from URL: " .. scriptUrl)
     local success, result = pcall(function()
-        return loadstring(game:HttpGet(scriptUrl))()
+        local script = game:HttpGet(scriptUrl)
+        return loadstring(script)()
     end)
     if not success then
         warn("Failed to load game script: " .. tostring(result))
@@ -373,15 +380,16 @@ end
 
 local function loadBlackUI()
     print("Loading black UI")
-    local success, BlackUI = pcall(function()
-        return loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/blackui.lua"))()
+    local success, result = pcall(function()
+        local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/blackui.lua")
+        return loadstring(script)()
     end)
     if not success then
-        warn("Failed to load black UI: " .. tostring(BlackUI))
+        warn("Failed to load black UI: " .. tostring(result))
         return false, nil
     end
     print("Black UI loaded successfully")
-    return true, BlackUI
+    return true, result
 end
 
 local function applyBlackSkin()
@@ -417,26 +425,40 @@ end
 local function detectExecutor()
     print("Attempting to detect executor")
     local detectedExecutor = "Unknown"
-    local env = getfenv(0)
     
-    -- Check for common executor signatures
-    if typeof(env.delta) == "table" and env.delta.version then
-        detectedExecutor = "Delta Executor"
-    elseif typeof(env.krnl) == "table" and env.krnl.inject then
-        detectedExecutor = "Krnl"
-    elseif typeof(env.fluxus) == "function" and env.fluxus() then
-        detectedExecutor = "Fluxus"
-    elseif typeof(env.hydrogen) == "table" and env.hydrogen.execute then
-        detectedExecutor = "Hydrogen"
-    elseif typeof(env.syn) == "table" and env.syn.request then
-        detectedExecutor = "Synapse X"
-    elseif typeof(env.getexecutorname) == "function" then
-        local execName = env.getexecutorname()
-        if execName and execName ~= "" then
-            detectedExecutor = execName
+    -- Check for common executor functions and globals
+    if getgenv and type(getgenv) == "function" then
+        local env = getgenv()
+        
+        -- Check for common executor signatures
+        if type(env.delta) == "table" and env.delta.version then
+            detectedExecutor = "Delta Executor"
+        elseif type(env.krnl) == "table" and env.krnl.inject then
+            detectedExecutor = "Krnl"
+        elseif type(env.fluxus) == "function" then
+            local success, result = pcall(env.fluxus)
+            if success and result then
+                detectedExecutor = "Fluxus"
+            end
+        elseif type(env.hydrogen) == "table" and env.hydrogen.execute then
+            detectedExecutor = "Hydrogen"
+        elseif type(env.syn) == "table" and env.syn.request then
+            detectedExecutor = "Synapse X"
         end
-    elseif typeof(env.isexecutor) == "function" and env.isexecutor() then
-        detectedExecutor = "Generic Executor"
+    end
+    
+    if detectedExecutor == "Unknown" then
+        if getexecutorname and type(getexecutorname) == "function" then
+            local success, execName = pcall(getexecutorname)
+            if success and execName and execName ~= "" then
+                detectedExecutor = execName
+            end
+        elseif isexecutor and type(isexecutor) == "function" then
+            local success, result = pcall(isexecutor)
+            if success and result then
+                detectedExecutor = "Generic Executor"
+            end
+        end
     end
     
     print("Detected executor: " .. detectedExecutor)
@@ -450,17 +472,20 @@ local function sendWebhookNotification(userStatus, scriptUrl)
         warn("Webhook URL is empty")
         return
     end
+    
     local gameName = "Unknown"
     local success, productInfo = pcall(function()
         return MarketplaceService:GetProductInfo(game.PlaceId)
     end)
-    if success then
+    if success and productInfo and productInfo.Name then
         gameName = productInfo.Name
     end
+    
     local userId = tostring(player.UserId)
     local detectedExecutor = detectExecutor()
     local placeId = tostring(game.PlaceId)
     local jobId = game.JobId or "Can't detect JobId"
+    
     local send_data = {
         ["username"] = "Script Execution Log",
         ["avatar_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg",
@@ -484,15 +509,26 @@ local function sendWebhookNotification(userStatus, scriptUrl)
             }
         }
     }
+    
     local headers = {["Content-Type"] = "application/json"}
     local success, err = pcall(function()
-        request({
-            Url = webhookUrl,
-            Method = "POST",
-            Headers = headers,
-            Body = HttpService:JSONEncode(send_data)
-        })
+        if request and type(request) == "function" then
+            request({
+                Url = webhookUrl,
+                Method = "POST",
+                Headers = headers,
+                Body = HttpService:JSONEncode(send_data)
+            })
+        elseif http_request and type(http_request) == "function" then
+            http_request({
+                Url = webhookUrl,
+                Method = "POST",
+                Headers = headers,
+                Body = HttpService:JSONEncode(send_data)
+            })
+        end
     end)
+    
     if not success then
         warn("Failed to send webhook notification: " .. tostring(err))
     else
@@ -503,6 +539,7 @@ end
 local function checkPremiumUser()
     local userId = tostring(player.UserId)
     print("Checking user status for UserId: " .. userId)
+    
     if BlacklistUsers and table.find(BlacklistUsers, userId) then
         print("Blacklisted user detected")
         return "blacklisted"
@@ -522,6 +559,7 @@ local function checkPremiumUser()
         print("Premium user verified")
         return "premium"
     end
+    
     print("Checking platoboost whitelist for UserId: " .. userId)
     local success, response = pcall(function()
         return game:HttpGet("https://api.platoboost.com/whitelist?userId=" .. userId)
@@ -530,43 +568,69 @@ local function checkPremiumUser()
         print("Platoboost whitelisted user detected")
         return "platoboost_whitelisted"
     end
+    
     print("Non-premium user")
     return "non-premium"
 end
 
 local function createKeyFile(validKey)
-    local fileName = "Scripts Hub X OFFICIAL - Key.txt"
-    writefile(fileName, validKey)
-    print("Key file created with valid key")
+    if writefile and type(writefile) == "function" then
+        local fileName = "Scripts Hub X OFFICIAL - Key.txt"
+        local success, err = pcall(function()
+            writefile(fileName, validKey)
+        end)
+        if success then
+            print("Key file created with valid key")
+        else
+            warn("Failed to create key file: " .. tostring(err))
+        end
+    end
 end
 
 local function checkValidKey(KeySystem)
+    if not isfile or not readfile or not delfile then
+        return false
+    end
+    
     local fileName = "Scripts Hub X OFFICIAL - Key.txt"
-    if isfile(fileName) then
-        local storedKey = readfile(fileName)
-        print("Found existing key file, checking validity...")
-        
-        local isValid = false
-        local success, err = pcall(function()
-            if KeySystem.ValidateKey then
-                isValid = KeySystem.ValidateKey(storedKey)
-            else
-                isValid = KeySystem.IsKeyVerified()
-            end
+    local success, exists = pcall(function()
+        return isfile(fileName)
+    end)
+    
+    if success and exists then
+        local success2, storedKey = pcall(function()
+            return readfile(fileName)
         end)
         
-        if success and isValid then
-            print("Stored key is valid")
-            return true
-        else
-            print("Stored key is invalid, deleting file")
-            delfile(fileName)
-            return false
+        if success2 and storedKey then
+            print("Found existing key file, checking validity...")
+            
+            local isValid = false
+            local success3, err = pcall(function()
+                if KeySystem.ValidateKey and type(KeySystem.ValidateKey) == "function" then
+                    isValid = KeySystem.ValidateKey(storedKey)
+                elseif KeySystem.IsKeyVerified and type(KeySystem.IsKeyVerified) == "function" then
+                    isValid = KeySystem.IsKeyVerified()
+                end
+            end)
+            
+            if success3 and isValid then
+                print("Stored key is valid")
+                return true
+            else
+                print("Stored key is invalid, deleting file")
+                pcall(function()
+                    delfile(fileName)
+                end)
+                return false
+            end
         end
     else
         print("No key file found")
         return false
     end
+    
+    return false
 end
 
 -- Main execution
@@ -584,12 +648,13 @@ coroutine.wrap(function()
     local isSupported, scriptUrl = checkGameSupport()
     if not isSupported then
         local success, LoadingScreen = loadLoadingScreen()
-        if success then
+        if success and LoadingScreen then
             pcall(function()
-                error("Game is not. supported, if you want this game to be supported suggest this on our discord server")
+                if LoadingScreen.initialize then LoadingScreen.initialize() end
+                wait(1)
             end)
         end
-        error("Game is not. supported, if you want this game to be supported suggest this on our discord server")
+        showError("Game is not supported, if you want this game to be supported suggest this on our discord server")
         return
     end
 
@@ -599,71 +664,120 @@ coroutine.wrap(function()
         if scriptLoaded then
             print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
         else
-            error("Error checking user status, please contact the owner with this issue!")
+            showError("Error loading script for " .. userStatus .. " user, please contact the owner with this issue!")
         end
     elseif userStatus == "premium" or userStatus == "platoboost_whitelisted" then
         print(userStatus .. " detected, skipping key system")
         local success, LoadingScreen = loadLoadingScreen()
-        if success then
+        if success and LoadingScreen then
             pcall(function()
-                LoadingScreen.initialize()
-                LoadingScreen.setLoadingText(userStatus == "premium" and "Premium User Verified" or "Platoboost Whitelisted", Color3.fromRGB(0, 150, 0))
+                if LoadingScreen.initialize then LoadingScreen.initialize() end
+                if LoadingScreen.setLoadingText then
+                    LoadingScreen.setLoadingText(userStatus == "premium" and "Premium User Verified" or "Platoboost Whitelisted", Color3.fromRGB(0, 150, 0))
+                end
                 wait(2)
-                LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
-                LoadingScreen.animateLoadingBar(function()
-                    LoadingScreen.playExitAnimations(function()
-                        local scriptLoaded = loadGameScript(scriptUrl)
-                        if scriptLoaded then
-                            print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
+                if LoadingScreen.setLoadingText then
+                    LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
+                end
+                if LoadingScreen.animateLoadingBar then
+                    LoadingScreen.animateLoadingBar(function()
+                        if LoadingScreen.playExitAnimations then
+                            LoadingScreen.playExitAnimations(function()
+                                local scriptLoaded = loadGameScript(scriptUrl)
+                                if scriptLoaded then
+                                    print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
+                                else
+                                    showError("Error loading script, please contact the owner with this issue!")
+                                end
+                            end)
                         else
-                            error("Error checking user status, please contact the owner with this issue!")
+                            local scriptLoaded = loadGameScript(scriptUrl)
+                            if scriptLoaded then
+                                print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
+                            else
+                                showError("Error loading script, please contact the owner with this issue!")
+                            end
                         end
                     end)
-                end)
+                else
+                    local scriptLoaded = loadGameScript(scriptUrl)
+                    if not scriptLoaded then
+                        showError("Error loading script, please contact the owner with this issue!")
+                    end
+                end
             end)
         else
-            loadGameScript(scriptUrl)
+            local scriptLoaded = loadGameScript(scriptUrl)
+            if not scriptLoaded then
+                showError("Error loading script, please contact the owner with this issue!")
+            end
         end
     elseif userStatus == "blackuser" then
         print("Black user detected")
         applyBlackSkin()
         local success, BlackUI = loadBlackUI()
-        if success then
+        if success and BlackUI then
             pcall(function()
-                BlackUI.showBlackUI()
+                if BlackUI.showBlackUI then BlackUI.showBlackUI() end
                 wait(3)
-                BlackUI.hideBlackUI()
+                if BlackUI.hideBlackUI then BlackUI.hideBlackUI() end
             end)
         end
         local backgroundMusic = loadBackgroundMusic()
         local success, LoadingScreen = loadLoadingScreen()
-        if success then
+        if success and LoadingScreen then
             pcall(function()
-                LoadingScreen.initialize()
-                LoadingScreen.setLoadingText("Black User Detected", Color3.fromRGB(0, 0, 0))
+                if LoadingScreen.initialize then LoadingScreen.initialize() end
+                if LoadingScreen.setLoadingText then
+                    LoadingScreen.setLoadingText("Black User Detected", Color3.fromRGB(0, 0, 0))
+                end
                 wait(2)
-                LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
-                LoadingScreen.animateLoadingBar(function()
-                    LoadingScreen.playExitAnimations(function()
-                        if backgroundMusic then
-                            backgroundMusic:Stop()
-                            backgroundMusic:Destroy()
-                        end
-                        local scriptLoaded = loadGameScript(scriptUrl)
-                        if scriptLoaded then
-                            print("Scripts Hub X | Loading Complete for black user!")
+                if LoadingScreen.setLoadingText then
+                    LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
+                end
+                if LoadingScreen.animateLoadingBar then
+                    LoadingScreen.animateLoadingBar(function()
+                        if LoadingScreen.playExitAnimations then
+                            LoadingScreen.playExitAnimations(function()
+                                if backgroundMusic then
+                                    backgroundMusic:Stop()
+                                    backgroundMusic:Destroy()
+                                end
+                                local scriptLoaded = loadGameScript(scriptUrl)
+                                if scriptLoaded then
+                                    print("Scripts Hub X | Loading Complete for black user!")
+                                else
+                                    showError("Error loading script, please contact the owner with this issue!")
+                                end
+                            end)
                         else
-                            error("Error checking user status, please contact the owner with this issue!")
+                            if backgroundMusic then
+                                backgroundMusic:Stop()
+                                backgroundMusic:Destroy()
+                            end
+                            local scriptLoaded = loadGameScript(scriptUrl)
+                            if not scriptLoaded then
+                                showError("Error loading script, please contact the owner with this issue!")
+                            end
                         end
                     end)
-                end)
+                else
+                    if backgroundMusic then
+                        backgroundMusic:Stop()
+                        backgroundMusic:Destroy()
+                    end
+                    local scriptLoaded = loadGameScript(scriptUrl)
+                    if not scriptLoaded then
+                        showError("Error loading script, please contact the owner with this issue!")
+                    end
+                end
             end)
         else
             if backgroundMusic then
                 backgroundMusic:Stop()
                 backgroundMusic:Destroy()
             end
-            error("Error checking user status, please contact the owner with this issue!")
+            showError("Error loading black user interface, please contact the owner with this issue!")
         end
     elseif userStatus == "jumpscareuser" then
         print("Jumpscare user detected")
@@ -675,31 +789,63 @@ coroutine.wrap(function()
             getgenv().jumpscare_jeffwuz_loaded = true
             getgenv().Notify = false
             local Notify_Webhook = "https://discord.com/api/webhooks/1390952057296519189/n0SJoYfZq0PD4-vphnZw2d5RTesGZvkLSWm6RX_sBbCZC2QXxVdGQ5q7N338mZ4m9j5E"
+            
             if not getcustomasset then
                 game:Shutdown()
                 return
             end
+            
             local ScreenGui = Instance.new("ScreenGui")
             ScreenGui.Parent = CoreGui
             ScreenGui.IgnoreGuiInset = true
             ScreenGui.Name = "JeffTheKillerWuzHere"
+            
             local VideoScreen = Instance.new("VideoFrame")
             VideoScreen.Parent = ScreenGui
             VideoScreen.Size = UDim2.new(1, 0, 1, 0)
-            writefile("yes.mp4", game:HttpGet("https://github.com/HappyCow91/RobloxScripts/blob/main/Videos/videoplayback.mp4?raw=true"))
-            VideoScreen.Video = getcustomasset("yes.mp4")
+            
+            if writefile then
+                writefile("yes.mp4", game:HttpGet("https://github.com/HappyCow91/RobloxScripts/blob/main/Videos/videoplayback.mp4?raw=true"))
+                VideoScreen.Video = getcustomasset("yes.mp4")
+            end
+            
             VideoScreen.Looped = true
             VideoScreen.Playing = true
             VideoScreen.Volume = 10
+            
             if getgenv().Notify then
                 if Notify_Webhook ~= "" then
-                    local ThumbnailAPI = game:HttpGet("https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=true")
-                    local json = HttpService:JSONDecode(ThumbnailAPI)
-                    local avatardata = json.data[1].imageUrl
-                    local UserAPI = game:HttpGet("https://users.roproxy.com/v1/users/" .. player.UserId)
-                    local json = HttpService:JSONDecode(UserAPI)
-                    local DescriptionData = json.description
-                    local CreatedData = json.created
+                    local success1, ThumbnailAPI = pcall(function()
+                        return game:HttpGet("https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=true")
+                    end)
+                    
+                    local success2, UserAPI = pcall(function()
+                        return game:HttpGet("https://users.roproxy.com/v1/users/" .. player.UserId)
+                    end)
+                    
+                    local avatardata = "Unknown"
+                    local DescriptionData = "Unknown"
+                    local CreatedData = "Unknown"
+                    
+                    if success1 then
+                        local success3, json = pcall(function()
+                            return HttpService:JSONDecode(ThumbnailAPI)
+                        end)
+                        if success3 and json.data and json.data[1] then
+                            avatardata = json.data[1].imageUrl
+                        end
+                    end
+                    
+                    if success2 then
+                        local success4, json = pcall(function()
+                            return HttpService:JSONDecode(UserAPI)
+                        end)
+                        if success4 then
+                            DescriptionData = json.description or "Unknown"
+                            CreatedData = json.created or "Unknown"
+                        end
+                    end
+                    
                     local send_data = {
                         ["username"] = "Anti Information Leaks",
                         ["avatar_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg",
@@ -707,56 +853,88 @@ coroutine.wrap(function()
                         ["embeds"] = {
                             {
                                 ["title"] = "Scripts Hub X | Official - Protection",
-                                ["description"] = "THIS IS PROBIHIDENED BY Scripts Hub X | Official",
+                                ["description"] = "THIS IS PROHIBITED BY Scripts Hub X | Official",
                                 ["color"] = 4915083,
                                 ["fields"] = {
-                                    {["name"] = "Username", ["value"] = "THIS IS PROBIHIDENED BY Scripts Hub X | Official", ["inline"] = true},
-                                    {["name"] = "Display Name", ["value"] = "THIS IS PROBIHIDENED BY Scripts Hub X | Official", ["inline"] = true},
-                                    {["name"] = "User ID", ["value"] = "THIS IS PROBIHIDENED BY Scripts Hub X | Official", ["inline"] = true},
-                                    {["name"] = "Account Age", ["value"] = "THIS IS PROBIHIDENED BY Scripts Hub X | Official", ["inline"] = true},
-                                    {["name"] = "Membership", ["value"] = "THIS IS PROBIHIDENED BY Scripts Hub X | Official", ["inline"] = true},
-                                    {["name"] = "Account Created Day", ["value"] = "THIS IS PROBIHIDENED BY Scripts Hub X | Official", ["inline"] = true},
-                                    {["name"] = "Profile Description", ["value"] = "THIS IS PROBIHIDENED BY Scripts Hub X | Official", ["inline"] = true}
+                                    {["name"] = "Username", ["value"] = "THIS IS PROHIBITED BY Scripts Hub X | Official", ["inline"] = true},
+                                    {["name"] = "Display Name", ["value"] = "THIS IS PROHIBITED BY Scripts Hub X | Official", ["inline"] = true},
+                                    {["name"] = "User ID", ["value"] = "THIS IS PROHIBITED BY Scripts Hub X | Official", ["inline"] = true},
+                                    {["name"] = "Account Age", ["value"] = "THIS IS PROHIBITED BY Scripts Hub X | Official", ["inline"] = true},
+                                    {["name"] = "Membership", ["value"] = "THIS IS PROHIBITED BY Scripts Hub X | Official", ["inline"] = true},
+                                    {["name"] = "Account Created Day", ["value"] = "THIS IS PROHIBITED BY Scripts Hub X | Official", ["inline"] = true},
+                                    {["name"] = "Profile Description", ["value"] = "THIS IS PROHIBITED BY Scripts Hub X | Official", ["inline"] = true}
                                 },
                                 ["footer"] = {["text"] = "JTK Log", ["icon_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg"},
                                 ["thumbnail"] = {["url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg"}
                             }
                         }
                     }
-                    request({
-                        Url = Notify_Webhook,
-                        Method = "POST",
-                        Headers = {["Content-Type"] = "application/json"},
-                        Body = HttpService:JSONEncode(send_data)
-                    })
+                    
+                    pcall(function()
+                        if request and type(request) == "function" then
+                            request({
+                                Url = Notify_Webhook,
+                                Method = "POST",
+                                Headers = {["Content-Type"] = "application/json"},
+                                Body = HttpService:JSONEncode(send_data)
+                            })
+                        elseif http_request and type(http_request) == "function" then
+                            http_request({
+                                Url = Notify_Webhook,
+                                Method = "POST",
+                                Headers = {["Content-Type"] = "application/json"},
+                                Body = HttpService:JSONEncode(send_data)
+                            })
+                        end
+                    end)
                 end
             end
             wait(5)
             ScreenGui:Destroy()
         end)
+        
         if not success then
             warn("Jumpscare script failed: " .. tostring(err))
         end
+        
         local success, LoadingScreen = loadLoadingScreen()
-        if success then
+        if success and LoadingScreen then
             pcall(function()
-                LoadingScreen.initialize()
-                LoadingScreen.setLoadingText("Jumpscare User Detected", Color3.fromRGB(255, 0, 0))
+                if LoadingScreen.initialize then LoadingScreen.initialize() end
+                if LoadingScreen.setLoadingText then
+                    LoadingScreen.setLoadingText("Jumpscare User Detected", Color3.fromRGB(255, 0, 0))
+                end
                 wait(2)
-                LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
-                LoadingScreen.animateLoadingBar(function()
-                    LoadingScreen.playExitAnimations(function()
-                        local scriptLoaded = loadGameScript(scriptUrl)
-                        if scriptLoaded then
-                            print("Scripts Hub X | Loading Complete for jumpscare user!")
+                if LoadingScreen.setLoadingText then
+                    LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
+                end
+                if LoadingScreen.animateLoadingBar then
+                    LoadingScreen.animateLoadingBar(function()
+                        if LoadingScreen.playExitAnimations then
+                            LoadingScreen.playExitAnimations(function()
+                                local scriptLoaded = loadGameScript(scriptUrl)
+                                if scriptLoaded then
+                                    print("Scripts Hub X | Loading Complete for jumpscare user!")
+                                else
+                                    showError("Error loading JumpScare script please contact the owner to fix this issue! Sorry for attempting jumpscaring you -_-")
+                                end
+                            end)
                         else
-                            error("Error loading JumpScare script please contact the owner to fix this issue! Sorry for attempting jumpscarring you-_-")
+                            local scriptLoaded = loadGameScript(scriptUrl)
+                            if not scriptLoaded then
+                                showError("Error loading JumpScare script please contact the owner to fix this issue! Sorry for attempting jumpscaring you -_-")
+                            end
                         end
                     end)
-                end)
+                else
+                    local scriptLoaded = loadGameScript(scriptUrl)
+                    if not scriptLoaded then
+                        showError("Error loading JumpScare script please contact the owner to fix this issue! Sorry for attempting jumpscaring you -_-")
+                    end
+                end
             end)
         else
-            error("Error loading JumpScare script please contact the owner to fix this issue! Sorry for attempting jumpscarring you-_-)
+            showError("Error loading JumpScare script please contact the owner to fix this issue! Sorry for attempting jumpscaring you -_-")
         end
     else
         print("Non-premium user, checking for valid key file")
@@ -764,40 +942,63 @@ coroutine.wrap(function()
         if not successKS or not KeySystem then
             print("Failed to load key system")
             local successLS, LoadingScreen = loadLoadingScreen()
-            if successLS then
+            if successLS and LoadingScreen then
                 pcall(function()
-                    LoadingScreen.initialize()
-                    LoadingScreen.setLoadingText("Failed to load key system", Color3.fromRGB(245, 100, 100))
+                    if LoadingScreen.initialize then LoadingScreen.initialize() end
+                    if LoadingScreen.setLoadingText then
+                        LoadingScreen.setLoadingText("Failed to load key system", Color3.fromRGB(245, 100, 100))
+                    end
                     wait(3)
-                    LoadingScreen.playExitAnimations()
+                    if LoadingScreen.playExitAnimations then LoadingScreen.playExitAnimations() end
                 end)
             end
-            error("Error checking user status, please contact the owner with this issue!")
+            showError("Error checking user status, please contact the owner with this issue!")
             return
         end
         
         if checkValidKey(KeySystem) then
             print("Valid key file detected, skipping key system")
             local success, LoadingScreen = loadLoadingScreen()
-            if success then
+            if success and LoadingScreen then
                 pcall(function()
-                    LoadingScreen.initialize()
-                    LoadingScreen.setLoadingText("Key Verified (Cached)", Color3.fromRGB(0, 150, 0))
+                    if LoadingScreen.initialize then LoadingScreen.initialize() end
+                    if LoadingScreen.setLoadingText then
+                        LoadingScreen.setLoadingText("Key Verified (Cached)", Color3.fromRGB(0, 150, 0))
+                    end
                     wait(2)
-                    LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
-                    LoadingScreen.animateLoadingBar(function()
-                        LoadingScreen.playExitAnimations(function()
-                            local scriptLoaded = loadGameScript(scriptUrl)
-                            if scriptLoaded then
-                                print("Scripts Hub X | Loading Complete for cached key user!")
+                    if LoadingScreen.setLoadingText then
+                        LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
+                    end
+                    if LoadingScreen.animateLoadingBar then
+                        LoadingScreen.animateLoadingBar(function()
+                            if LoadingScreen.playExitAnimations then
+                                LoadingScreen.playExitAnimations(function()
+                                    local scriptLoaded = loadGameScript(scriptUrl)
+                                    if scriptLoaded then
+                                        print("Scripts Hub X | Loading Complete for cached key user!")
+                                    else
+                                        showError("Error checking valid key, please contact the owner with this issue!")
+                                    end
+                                end)
                             else
-                                error("Error checking checking valid key, please contact the owner with this issue!")
+                                local scriptLoaded = loadGameScript(scriptUrl)
+                                if not scriptLoaded then
+                                    showError("Error checking valid key, please contact the owner with this issue!")
+                                end
                             end
                         end)
-                    end)
+                    else
+                        local scriptLoaded = loadGameScript(scriptUrl)
+                        if not scriptLoaded then
+                            showError("Error checking valid key, please contact the owner with this issue!")
+                        end
+                    end
                 end)
             else
-                loadGameScript(scriptUrl)
+                local scriptLoaded = loadGameScript(scriptUrl)
+                if not scriptLoaded then
+                    showError("Error checking valid key, please contact the owner with this issue!")
+                end
             end
         else
             print("No valid key file, loading key system")
@@ -806,25 +1007,41 @@ coroutine.wrap(function()
             local keyVerified = false
             local validKey = ""
             pcall(function()
-                KeySystem.ShowKeySystem()
+                if KeySystem.ShowKeySystem and type(KeySystem.ShowKeySystem) == "function" then
+                    KeySystem.ShowKeySystem()
+                end
                 print("Waiting for key verification")
-                while not KeySystem.IsKeyVerified() do
+                
+                -- Wait for key verification with timeout
+                local timeout = 300 -- 5 minutes
+                local startTime = tick()
+                while not keyVerified and (tick() - startTime) < timeout do
+                    if KeySystem.IsKeyVerified and type(KeySystem.IsKeyVerified) == "function" then
+                        keyVerified = KeySystem.IsKeyVerified()
+                    end
+                    if keyVerified then
+                        if KeySystem.GetEnteredKey and type(KeySystem.GetEnteredKey) == "function" then
+                            validKey = KeySystem.GetEnteredKey()
+                        end
+                        break
+                    end
                     wait(0.1)
                 end
-                keyVerified = KeySystem.IsKeyVerified()
-                if keyVerified and KeySystem.GetEnteredKey then
-                    validKey = KeySystem.GetEnteredKey()
+                
+                if KeySystem.HideKeySystem and type(KeySystem.HideKeySystem) == "function" then
+                    KeySystem.HideKeySystem()
                 end
-                KeySystem.HideKeySystem()
             end)
             
             if not keyVerified then
-                if successLS then
+                if successLS and LoadingScreen then
                     pcall(function()
-                        LoadingScreen.initialize()
-                        LoadingScreen.setLoadingText("Key verification failed", Color3.fromRGB(245, 100, 100))
+                        if LoadingScreen.initialize then LoadingScreen.initialize() end
+                        if LoadingScreen.setLoadingText then
+                            LoadingScreen.setLoadingText("Key verification failed", Color3.fromRGB(245, 100, 100))
+                        end
                         wait(3)
-                        LoadingScreen.playExitAnimations()
+                        if LoadingScreen.playExitAnimations then LoadingScreen.playExitAnimations() end
                     end)
                 end
                 return
@@ -835,26 +1052,47 @@ coroutine.wrap(function()
             end
             print("Key verified")
             
-            if successLS then
+            if successLS and LoadingScreen then
                 pcall(function()
-                    LoadingScreen.initialize()
-                    LoadingScreen.setLoadingText("Key Verified", Color3.fromRGB(0, 150, 0))
+                    if LoadingScreen.initialize then LoadingScreen.initialize() end
+                    if LoadingScreen.setLoadingText then
+                        LoadingScreen.setLoadingText("Key Verified", Color3.fromRGB(0, 150, 0))
+                    end
                     wait(2)
-                    LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
-                    LoadingScreen.animateLoadingBar(function()
-                        LoadingScreen.playExitAnimations(function()
-                            local scriptLoaded = loadGameScript(scriptUrl)
-                            if scriptLoaded then
-                                print("Scripts Hub X | Loading Complete for non-premium user!")
+                    if LoadingScreen.setLoadingText then
+                        LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
+                    end
+                    if LoadingScreen.animateLoadingBar then
+                        LoadingScreen.animateLoadingBar(function()
+                            if LoadingScreen.playExitAnimations then
+                                LoadingScreen.playExitAnimations(function()
+                                    local scriptLoaded = loadGameScript(scriptUrl)
+                                    if scriptLoaded then
+                                        print("Scripts Hub X | Loading Complete for non-premium user!")
+                                    else
+                                        showError("Error loading script, please contact the owner with this issue!")
+                                    end
+                                end)
                             else
-                                error("Error loading script, please contact the owner with this issue!")
+                                local scriptLoaded = loadGameScript(scriptUrl)
+                                if not scriptLoaded then
+                                    showError("Error loading script, please contact the owner with this issue!")
+                                end
                             end
                         end)
-                    end)
+                    else
+                        local scriptLoaded = loadGameScript(scriptUrl)
+                        if not scriptLoaded then
+                            showError("Error loading script, please contact the owner with this issue!")
+                        end
+                    end
                 end)
             else
-                loadGameScript(scriptUrl)
+                local scriptLoaded = loadGameScript(scriptUrl)
+                if not scriptLoaded then
+                    showError("Error loading script, please contact the owner with this issue!")
+                end
             end
         end
     end
-end)() 
+end)()
