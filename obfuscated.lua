@@ -291,7 +291,9 @@ local PremiumUsers = {
     "5356702370", -- seji_kizaki 
     "8208978599", -- creaturekaijufan1849
     "8558295467", -- JerdxBackup
-    "4196292931" -- jvpogi233jj
+    "4196292931", -- jvpogi233jj
+    "1102633570", -- Pedrojay450
+    "799427028" -- Roblox_xvt
 }
 local StaffUserId = {
     "3882788546", -- Keanjacob5
