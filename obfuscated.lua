@@ -18,7 +18,8 @@ local PremiumUsers = {
     "4196292931", -- jvpogi233jj
     "1102633570", -- Pedrojay450
     "8860068952", -- Pedrojay450's alt (assaltanoobsbr)
-    "799427028" -- Roblox_xvt
+    "799427028", -- Roblox_xvt
+    "5317421108" -- kolwneje
 }
 local StaffUserId = {
     "3882788546", -- Keanjacob5
