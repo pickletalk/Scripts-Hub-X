@@ -1,7 +1,7 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "Obby Script - by PickleTalk",
+   Name = "Tower Is Pinning - by PickleTalk",
    Icon = 0,
    LoadingTitle = "Pickle Interface Suite",
    LoadingSubtitle = "by PickleTalk",
@@ -40,10 +40,7 @@ local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
-local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
 local player = game.Players.LocalPlayer
-local character = player.Character
-
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -71,6 +68,10 @@ local InfiniteJumpConnection = nil
 local GodModeEnabled = false
 local OriginalMaxHealth = 100
 local HealthConnection = nil
+
+-- Touch Spam Variables
+local spamming = false
+local spamConnection = nil
 
 -- Helper Functions
 local function getRootPart()
@@ -178,10 +179,6 @@ local function disableSpeed()
     applySpeed(OriginalSpeed)
     print("Speed restored to original: " .. OriginalSpeed)
 end
-
--- Loop Spamming Functions
-local targetPart = workspace:FindFirstChild("Gudock")
-local touchInterest = targetPart and targetPart:FindFirstChild("TouchInterest")
 
 -- Jump Power Functions
 local function applyJumpPower(jumpPower)
@@ -405,10 +402,9 @@ local function stopFly()
         FlyConnection:Disconnect()
         FlyConnection = nil
     end
-    if HealthConnection then
-        HealthConnection:Disconnect()
-        HealthConnection = nil
-    end
+    
+    -- Disable shift lock when stopping fly
+    disableShiftLock()
     
     print("Flying disabled")
 end
@@ -454,6 +450,50 @@ local function disableGodMode()
     end
     
     print("God Mode disabled")
+end
+
+-- Touch Spam Functions
+local function getPlayerParts()
+    local character = LocalPlayer.Character
+    if character then
+        return character:FindFirstChild("HumanoidRootPart"), character
+    end
+    return nil, nil
+end
+
+local function findTarget()
+    return workspace:FindFirstChild("Gudock")
+end
+
+local function startTouchSpam()
+    if spamConnection then
+        spamConnection:Disconnect()
+    end
+    
+    spamConnection = RunService.Heartbeat:Connect(function()
+        if spamming then
+            local humanoidRootPart, character = getPlayerParts()
+            local targetPart = findTarget()
+            
+            if humanoidRootPart and targetPart then
+                local touchInterest = targetPart:FindFirstChild("TouchInterest")
+                if touchInterest then
+                    -- Method 1: Try firetouchinterest
+                    pcall(function()
+                        firetouchinterest(humanoidRootPart, targetPart, 0)
+                        firetouchinterest(humanoidRootPart, targetPart, 1)
+                    end)
+                end
+            end
+        end
+    end)
+end
+
+local function stopTouchSpam()
+    if spamConnection then
+        spamConnection:Disconnect()
+        spamConnection = nil
+    end
 end
 
 -- Character Event Handlers
@@ -506,6 +546,10 @@ local function onCharacterRemoving()
     if FlyConnection then
         FlyConnection:Disconnect()
         FlyConnection = nil
+    end
+    if spamConnection then
+        spamConnection:Disconnect()
+        spamConnection = nil
     end
 end
 
@@ -568,6 +612,24 @@ local GodModeToggle = Main:CreateToggle({
             disableGodMode()
         end
     end,
+})
+
+-- Touch Spam Toggle (Main Tab)
+local TouchSpamToggle = Main:CreateToggle({
+   Name = "Auto Touch Spam",
+   CurrentValue = false,
+   Flag = "TouchSpamToggle",
+   Callback = function(Value)
+       spamming = Value
+       
+       if spamming then
+           startTouchSpam()
+           createNotification("Auto Touch Spam Enabled")
+       else
+           stopTouchSpam()
+           createNotification("Auto Touch Spam Disabled")
+       end
+   end,
 })
 
 -- Player Tab Elements
@@ -665,21 +727,6 @@ local FlySpeedSlider = PlayerTab:CreateSlider({
     Callback = function(Value)
         FlySpeed = Value
     end,
-})
-
-local Button = Main:CreateButton({
-   Name = "Button Example",
-   Callback = function()
-         if humanoidRootPart and targetPart then
-            -- Spam the TouchInterest event in a loop
-            while true do
-            firetouchinterest(humanoidRootPart, targetPart, 1) -- Simulate touch start
-            firetouchinterest(humanoidRootPart, targetPart, 0) -- Simulate touch end
-            end
-            else
-            warn("Could not find HumanoidRootPart or Gudock/TouchInterest at workspace.Gudock")
-         end
-   end,
 })
 
 -- Load configuration
