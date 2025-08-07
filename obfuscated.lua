@@ -71,7 +71,7 @@ local function showError(text)
     titleLabel.Size = UDim2.new(1, -40, 0, 50)
     titleLabel.Position = UDim2.new(0, 20, 0, 20)
     titleLabel.BackgroundTransparency = 1
-    titleLabel.Text = "Script Failed To Execute"
+    titleLabel.Text = "Error"
     titleLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
     titleLabel.TextScaled = true
     titleLabel.TextSize = 24
