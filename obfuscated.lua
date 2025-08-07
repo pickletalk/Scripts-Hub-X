@@ -651,13 +651,6 @@ coroutine.wrap(function()
 
     local isSupported, scriptUrl = checkGameSupport()
     if not isSupported then
-        local success, LoadingScreen = loadLoadingScreen()
-        if success and LoadingScreen then
-            pcall(function()
-                if LoadingScreen.initialize then LoadingScreen.initialize() end
-                wait(1)
-            end)
-        end
         showError("Game is not supported, if you want this game to be supported suggest this on our discord server")
         return
     end
