@@ -108,7 +108,7 @@ local function createNotification(text)
     pcall(function()
         local screenGui = Instance.new("ScreenGui")
         screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-        screenGui.Name = "Notification_" .. tick()
+        screenGui.Name = "Notification_" .. tostring(tick())
 
         local frame = Instance.new("Frame")
         frame.Size = UDim2.new(0, 200, 0, 0)
@@ -419,6 +419,7 @@ local function findTarget()
             local found = searchForTouchPart(child)
             if found then return found end
         end
+        return nil
     end
     
     return searchForTouchPart(workspace)
@@ -521,7 +522,7 @@ LocalPlayer.CharacterRemoving:Connect(onCharacterRemoving)
 
 -- Initialize if character already exists
 if LocalPlayer.Character then
-    spawn(function()
+    task.spawn(function()
         onCharacterAdded(LocalPlayer.Character)
     end)
 end
