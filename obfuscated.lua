@@ -1,10 +1,13 @@
--- Scripts Hub X | Official Main Script (Fixed)
+-- Scripts Hub X | Official Main Script (Fixed with Radioactive Foxy Finder)
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local SoundService = game:GetService("SoundService")
 local HttpService = game:GetService("HttpService")
 local CoreGui = game:GetService("CoreGui")
 local MarketplaceService = game:GetService("MarketplaceService")
+local TeleportService = game:GetService("TeleportService")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui", 5)
@@ -30,44 +33,262 @@ local BlackUsers = nil
 local JumpscareUsers = nil
 local BlacklistUsers = nil
 
+-- ADDED: Radioactive Foxy Finder Configuration
+local TARGET_NAME = "Radioactive Foxy"
+local MAX_PLOTS = 8
+local MAX_PADS = 27
+
+-- ADDED: Auto-Execute Server Hopper (Without Webhook)
+local TPS = TeleportService
+local Api = "https://games.roblox.com/v1/games/"
+local _place, _id = game.PlaceId, game.JobId
+local _servers = Api.._place.."/servers/Public?sortOrder=Desc&limit=100"
+
+-- ADDED: Global auto-execute flag that persists
+if not _G.RadioactiveFoxyFinder then
+    _G.RadioactiveFoxyFinder = {
+        enabled = true,
+        originalServer = _id,
+        executionCount = 0,
+        isRunning = false
+    }
+    print("🆕 FIRST RUN: Initializing auto-finder")
+else
+    _G.RadioactiveFoxyFinder.executionCount = _G.RadioactiveFoxyFinder.executionCount + 1
+    print("🔄 AUTO-EXECUTE #" .. _G.RadioactiveFoxyFinder.executionCount .. ": Server " .. _id)
+end
+
+-- ADDED: Server listing function
+function ListServers(cursor)
+    local Raw = game:HttpGet(_servers .. ((cursor and "&cursor="..cursor) or ""))
+    return HttpService:JSONDecode(Raw)
+end
+
+-- ADDED: Notification function
+local function notify(title, text)
+    spawn(function()
+        pcall(function()
+            game:GetService("StarterGui"):SetCore("SendNotification", {Title = title, Text = text, Duration = 3})
+        end)
+    end)
+end
+
+-- ADDED: Main checking function for Radioactive Foxy
+local function checkAllPlots()
+    print("🔍 Checking server for " .. TARGET_NAME .. ": " .. game.JobId .. " (Attempt #" .. _G.RadioactiveFoxyFinder.executionCount .. ")")
+    
+    local plots = Workspace:FindFirstChild("Plots")
+    if not plots then
+        print("❌ No Plots folder found")
+        return false
+    end
+    
+    for plotNum = 1, MAX_PLOTS do
+        local plot = plots:FindFirstChild(tostring(plotNum))
+        if plot then
+            local pads = plot:FindFirstChild("Pads")
+            if pads then
+                for padNum = 1, MAX_PADS do
+                    local pad = pads:FindFirstChild(tostring(padNum))
+                    if pad then
+                        local objectFolder = pad:FindFirstChild("Object")
+                        if objectFolder then
+                            local target = objectFolder:FindFirstChild(TARGET_NAME)
+                            if target then
+                                print("🎯 FOUND! " .. TARGET_NAME .. " in Plot" .. plotNum .. " Pad" .. padNum)
+                                notify("SUCCESS!", "Found " .. TARGET_NAME .. "!")
+                                -- Disable auto-finder after success
+                                _G.RadioactiveFoxyFinder.enabled = false
+                                return true
+                            end
+                        end
+                    else
+                        break
+                    end
+                end
+            end
+        end
+    end
+    
+    print("❌ " .. TARGET_NAME .. " not found in server: " .. game.JobId)
+    return false
+end
+
+-- ADDED: Server joining function (No webhook)
+local function joinRandomServer()
+    print("🔄 Searching for new server...")
+    notify("Server Hop", "Finding different server...")
+    
+    spawn(function()
+        pcall(function()
+            local attempts = 0
+            local maxAttempts = 3
+            
+            local function tryJoin()
+                attempts = attempts + 1
+                print("🔄 Join attempt #" .. attempts)
+                
+                local Next
+                local serversChecked = 0
+                
+                repeat
+                    local success, Servers = pcall(ListServers, Next)
+                    if not success then
+                        print("❌ Failed to get server list")
+                        wait(2)
+                        if attempts < maxAttempts then
+                            tryJoin()
+                        end
+                        return
+                    end
+                    
+                    for i, v in pairs(Servers.data) do
+                        serversChecked = serversChecked + 1
+                        if v.playing < v.maxPlayers and v.id ~= _id then
+                            print("🎯 Trying server: " .. v.id .. " (" .. v.playing .. "/" .. v.maxPlayers .. " players)")
+                            
+                            local s, r = pcall(function()
+                                TPS:TeleportToPlaceInstance(_place, v.id, player)
+                            end)
+                            
+                            if s then
+                                print("✅ Teleporting to server: " .. v.id)
+                                return
+                            else
+                                print("❌ Failed to join " .. v.id .. ": " .. tostring(r))
+                            end
+                        end
+                        
+                        if serversChecked > 50 then break end
+                    end
+                    Next = Servers.nextPageCursor
+                until not Next or serversChecked > 50
+                
+                print("⚠️ No suitable servers found, retrying...")
+                wait(3)
+                if attempts < maxAttempts then
+                    tryJoin()
+                end
+            end
+            
+            tryJoin()
+        end)
+    end)
+end
+
+-- ADDED: Radioactive Foxy finder execution
+local function runRadioactiveFoxyFinder()
+    if _G.RadioactiveFoxyFinder.isRunning then
+        print("⚠️ Foxy finder already running, skipping...")
+        return false
+    end
+    
+    _G.RadioactiveFoxyFinder.isRunning = true
+    
+    -- Wait for game to load properly
+    if not game:IsLoaded() then
+        print("⏳ Waiting for game to load...")
+        game.Loaded:Wait()
+    end
+    
+    -- Wait for character
+    if not player.Character then
+        print("⏳ Waiting for character...")
+        player.CharacterAdded:Wait()
+    end
+    
+    if player.Character then
+        local humanoidRootPart = player.Character:WaitForChild("HumanoidRootPart", 30)
+        if not humanoidRootPart then
+            print("❌ Failed to find HumanoidRootPart")
+            _G.RadioactiveFoxyFinder.isRunning = false
+            return false
+        end
+    end
+    
+    -- Wait for plots to load
+    print("⏳ Waiting for plots to load...")
+    local plotsLoaded = false
+    for i = 1, 20 do
+        wait(1)
+        if Workspace:FindFirstChild("Plots") then
+            plotsLoaded = true
+            break
+        end
+    end
+    
+    if not plotsLoaded then
+        print("❌ Plots didn't load in time, server hopping...")
+        _G.RadioactiveFoxyFinder.isRunning = false
+        if _G.RadioactiveFoxyFinder.enabled then
+            joinRandomServer()
+        end
+        return false
+    end
+    
+    print("⚡ Starting " .. TARGET_NAME .. " check in server: " .. game.JobId)
+    
+    local found = checkAllPlots()
+    _G.RadioactiveFoxyFinder.isRunning = false
+    
+    if not found and _G.RadioactiveFoxyFinder.enabled then
+        wait(1)
+        joinRandomServer()
+        return false
+    end
+    
+    return found
+end
+
+-- ADDED: Auto-execute detection for server hopper
+local function shouldAutoExecute()
+    if not _G.RadioactiveFoxyFinder.enabled then
+        return false
+    end
+    
+    if game.JobId ~= _G.RadioactiveFoxyFinder.originalServer then
+        return true
+    end
+    
+    if _G.RadioactiveFoxyFinder.executionCount == 0 then
+        return true
+    end
+    
+    return false
+end
+
 -- Error function to display custom error message
 local function showError(text)
-    -- Create main GUI
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "ErrorNotification"
     screenGui.IgnoreGuiInset = true
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     screenGui.Parent = playerGui
 
-    -- Main background frame (hidden until animation completes)
     local mainFrame = Instance.new("Frame")
     mainFrame.Size = UDim2.new(1, 0, 1, 0)
     mainFrame.BackgroundColor3 = Color3.fromRGB(10, 20, 30)
-    mainFrame.BackgroundTransparency = 1 -- Hidden initially
+    mainFrame.BackgroundTransparency = 1
     mainFrame.Parent = screenGui
 
-    -- Content frame
     local contentFrame = Instance.new("Frame")
     contentFrame.Size = UDim2.new(0, 400, 0, 320)
     contentFrame.Position = UDim2.new(0.5, -200, 0.5, -160)
     contentFrame.BackgroundColor3 = Color3.fromRGB(20, 40, 60)
-    contentFrame.BackgroundTransparency = 1 -- Hidden until animation completes
+    contentFrame.BackgroundTransparency = 1
     contentFrame.BorderSizePixel = 0
     contentFrame.Parent = mainFrame
 
-    -- Content frame corner
     local contentFrameCorner = Instance.new("UICorner")
     contentFrameCorner.CornerRadius = UDim.new(0, 16)
     contentFrameCorner.Parent = contentFrame
 
-    -- Content frame glow
     local contentStroke = Instance.new("UIStroke")
     contentStroke.Color = Color3.fromRGB(80, 160, 255)
     contentStroke.Thickness = 1.5
-    contentStroke.Transparency = 1 -- Hidden until animation completes
+    contentStroke.Transparency = 1
     contentStroke.Parent = contentFrame
 
-    -- Error title label
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Size = UDim2.new(1, -40, 0, 50)
     titleLabel.Position = UDim2.new(0, 20, 0, 20)
@@ -77,24 +298,22 @@ local function showError(text)
     titleLabel.TextScaled = true
     titleLabel.TextSize = 24
     titleLabel.Font = Enum.Font.GothamBold
-    titleLabel.TextTransparency = 1 -- Hidden until animation completes
+    titleLabel.TextTransparency = 1
     titleLabel.Parent = contentFrame
 
-    -- Error message label
     local errorLabel = Instance.new("TextLabel")
     errorLabel.Size = UDim2.new(1, -40, 0, 60)
     errorLabel.Position = UDim2.new(0, 20, 0, 80)
     errorLabel.BackgroundTransparency = 1
-    errorLabel.Text = text -- Use custom error message
+    errorLabel.Text = text
     errorLabel.TextColor3 = Color3.fromRGB(150, 180, 200)
     errorLabel.TextScaled = true
     errorLabel.TextSize = 12
     errorLabel.Font = Enum.Font.Gotham
-    errorLabel.TextTransparency = 1 -- Hidden until animation completes
+    errorLabel.TextTransparency = 1
     errorLabel.TextWrapped = true
     errorLabel.Parent = contentFrame
 
-    -- Discord suggestion label
     local discordLabel = Instance.new("TextLabel")
     discordLabel.Size = UDim2.new(1, -40, 0, 60)
     discordLabel.Position = UDim2.new(0, 20, 0, 150)
@@ -104,29 +323,27 @@ local function showError(text)
     discordLabel.TextScaled = true
     discordLabel.TextSize = 12
     discordLabel.Font = Enum.Font.Gotham
-    discordLabel.TextTransparency = 1 -- Hidden until animation completes
+    discordLabel.TextTransparency = 1
     discordLabel.TextWrapped = true
     discordLabel.Parent = contentFrame
 
-    -- Copy button
     local copyButton = Instance.new("TextButton")
     copyButton.Size = UDim2.new(0, 80, 0, 28)
     copyButton.Position = UDim2.new(0.5, -40, 0, 220)
     copyButton.BackgroundColor3 = Color3.fromRGB(80, 160, 255)
-    copyButton.BackgroundTransparency = 1 -- Hidden until animation completes
+    copyButton.BackgroundTransparency = 1
     copyButton.Text = "Copy Link"
     copyButton.TextColor3 = Color3.fromRGB(230, 240, 255)
     copyButton.TextScaled = true
     copyButton.TextSize = 12
     copyButton.Font = Enum.Font.GothamBold
-    copyButton.TextTransparency = 1 -- Hidden until animation completes
+    copyButton.TextTransparency = 1
     copyButton.Parent = contentFrame
 
     local copyButtonCorner = Instance.new("UICorner")
     copyButtonCorner.CornerRadius = UDim.new(0, 6)
     copyButtonCorner.Parent = copyButton
 
-    -- Copy button functionality
     copyButton.MouseButton1Click:Connect(function()
         pcall(function()
             if setclipboard then
@@ -140,9 +357,7 @@ local function showError(text)
         end)
     end)
 
-    -- Fade-in animations
     local function playEntranceAnimations()
-        -- Ensure all elements are hidden during animation
         contentFrame.BackgroundTransparency = 1
         contentStroke.Transparency = 1
         titleLabel.TextTransparency = 1
@@ -151,63 +366,13 @@ local function showError(text)
         copyButton.TextTransparency = 1
         copyButton.BackgroundTransparency = 1
 
-        -- Fade-in animations
-        local mainFrameTween = TweenService:Create(mainFrame, TweenInfo.new(
-            0.6,
-            Enum.EasingStyle.Quad,
-            Enum.EasingDirection.Out
-        ), {
-            BackgroundTransparency = 0.7
-        })
-
-        local contentFrameTween = TweenService:Create(contentFrame, TweenInfo.new(
-            0.5,
-            Enum.EasingStyle.Sine,
-            Enum.EasingDirection.Out
-        ), {
-            BackgroundTransparency = 0.5
-        })
-
-        local contentStrokeTween = TweenService:Create(contentStroke, TweenInfo.new(
-            0.5,
-            Enum.EasingStyle.Sine,
-            Enum.EasingDirection.Out
-        ), {
-            Transparency = 0.4
-        })
-
-        local titleTween = TweenService:Create(titleLabel, TweenInfo.new(
-            0.5,
-            Enum.EasingStyle.Sine,
-            Enum.EasingDirection.Out
-        ), {
-            TextTransparency = 0
-        })
-
-        local errorTween = TweenService:Create(errorLabel, TweenInfo.new(
-            0.5,
-            Enum.EasingStyle.Sine,
-            Enum.EasingDirection.Out
-        ), {
-            TextTransparency = 0
-        })
-
-        local discordTween = TweenService:Create(discordLabel, TweenInfo.new(
-            0.5,
-            Enum.EasingStyle.Sine,
-            Enum.EasingDirection.Out
-        ), {
-            TextTransparency = 0
-        })
-
-        local copyButtonTween = TweenService:Create(copyButton, TweenInfo.new(
-            0.5,
-            Enum.EasingStyle.Sine,
-            Enum.EasingDirection.Out
-        ), {
-            TextTransparency = 0,
-            BackgroundTransparency = 0.2
-        })
+        local mainFrameTween = TweenService:Create(mainFrame, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.7})
+        local contentFrameTween = TweenService:Create(contentFrame, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {BackgroundTransparency = 0.5})
+        local contentStrokeTween = TweenService:Create(contentStroke, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {Transparency = 0.4})
+        local titleTween = TweenService:Create(titleLabel, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {TextTransparency = 0})
+        local errorTween = TweenService:Create(errorLabel, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {TextTransparency = 0})
+        local discordTween = TweenService:Create(discordLabel, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {TextTransparency = 0})
+        local copyButtonTween = TweenService:Create(copyButton, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {TextTransparency = 0, BackgroundTransparency = 0.2})
 
         mainFrameTween:Play()
         contentFrameTween:Play()
@@ -219,84 +384,34 @@ local function showError(text)
         discordTween:Play()
         wait(0.1)
         copyButtonTween:Play()
-
         copyButtonTween.Completed:Wait()
     end
 
-    -- Evaporation exit animations
     local function playExitAnimations()
-        local evaporateTween = TweenService:Create(contentFrame, TweenInfo.new(
-            0.7,
-            Enum.EasingStyle.Quad,
-            Enum.EasingDirection.In
-        ), {
-            BackgroundTransparency = 1,
-            Size = UDim2.new(0, 450, 0, 360),
-            Position = UDim2.new(0.5, -225, 0.5, -180)
-        })
-
-        local mainFrameTween = TweenService:Create(mainFrame, TweenInfo.new(
-            0.7,
-            Enum.EasingStyle.Quad,
-            Enum.EasingDirection.In
-        ), {
-            BackgroundTransparency = 1
-        })
-
-        local contentStrokeTween = TweenService:Create(contentStroke, TweenInfo.new(
-            0.7,
-            Enum.EasingStyle.Quad,
-            Enum.EasingDirection.In
-        ), {
-            Transparency = 1
-        })
+        local evaporateTween = TweenService:Create(contentFrame, TweenInfo.new(0.7, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundTransparency = 1, Size = UDim2.new(0, 450, 0, 360), Position = UDim2.new(0.5, -225, 0.5, -180)})
+        local mainFrameTween = TweenService:Create(mainFrame, TweenInfo.new(0.7, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundTransparency = 1})
+        local contentStrokeTween = TweenService:Create(contentStroke, TweenInfo.new(0.7, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Transparency = 1})
 
         for _, element in pairs({titleLabel, errorLabel, discordLabel, copyButton}) do
-            TweenService:Create(element, TweenInfo.new(
-                0.5,
-                Enum.EasingStyle.Quad,
-                Enum.EasingDirection.In
-            ), {
-                TextTransparency = 1
-            }):Play()
+            TweenService:Create(element, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {TextTransparency = 1}):Play()
         end
-
-        TweenService:Create(copyButton, TweenInfo.new(
-            0.5,
-            Enum.EasingStyle.Quad,
-            Enum.EasingDirection.In
-        ), {
-            BackgroundTransparency = 1
-        }):Play()
+        TweenService:Create(copyButton, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundTransparency = 1}):Play()
 
         evaporateTween:Play()
         mainFrameTween:Play()
         contentStrokeTween:Play()
-
         evaporateTween.Completed:Wait()
-
         screenGui:Destroy()
     end
 
-    -- Border pulse
     local function animatePulse()
-        local borderPulseTween = TweenService:Create(contentStroke, TweenInfo.new(
-            1.8,
-            Enum.EasingStyle.Sine,
-            Enum.EasingDirection.InOut,
-            -1,
-            true
-        ), {
-            Transparency = 0.2
-        })
-
+        local borderPulseTween = TweenService:Create(contentStroke, TweenInfo.new(1.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Transparency = 0.2})
         borderPulseTween:Play()
     end
 
-    -- Execute animations
     playEntranceAnimations()
     animatePulse()
-    wait(3) -- Display for 3 seconds
+    wait(3)
     playExitAnimations()
 end
 
@@ -306,7 +421,6 @@ if not playerGui then
 end
 print("Main script started, PlayerGui found")
 
--- Load scripts from GitHub with error handling
 local function loadLoadingScreen()
     print("Attempting to load loading screen from GitHub")
     local success, result = pcall(function()
@@ -431,11 +545,9 @@ local function detectExecutor()
     print("Attempting to detect executor")
     local detectedExecutor = "Unknown"
     
-    -- Check for common executor functions and globals
     if getgenv and type(getgenv) == "function" then
         local env = getgenv()
         
-        -- Check for common executor signatures
         if type(env.delta) == "table" and env.delta.version then
             detectedExecutor = "Delta Executor"
         elseif type(env.krnl) == "table" and env.krnl.inject then
@@ -639,6 +751,31 @@ local function checkValidKey(KeySystem)
     return false
 end
 
+-- ADDED: Auto-execute for server hopper (runs immediately on script load)
+if shouldAutoExecute() then
+    print("🚀 AUTO-EXECUTE: Running Radioactive Foxy finder...")
+    spawn(function()
+        local found = runRadioactiveFoxyFinder()
+        if found then
+            print("🎯 " .. TARGET_NAME .. " found! Stopping auto-finder.")
+        end
+    end)
+end
+
+-- ADDED: Backup auto-execute triggers
+spawn(function()
+    wait(5)
+    if shouldAutoExecute() and not _G.RadioactiveFoxyFinder.isRunning then
+        print("🔄 Backup auto-execute triggered")
+        spawn(function()
+            local found = runRadioactiveFoxyFinder()
+            if found then
+                print("🎯 " .. TARGET_NAME .. " found! Stopping auto-finder.")
+            end
+        end)
+    end
+end)
+
 -- Main execution
 coroutine.wrap(function()
     print("Starting main execution at " .. os.date("%H:%M:%S"))
@@ -657,43 +794,79 @@ coroutine.wrap(function()
         return
     end
 
-    if userStatus == "owner" or userStatus == "staff" then
-        print(userStatus .. " detected, skipping key system and loading screen")
-        local scriptLoaded = loadGameScript(scriptUrl)
-        if scriptLoaded then
-            print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
+    -- MODIFIED: For premium/owner/staff users, check for Radioactive Foxy first
+    if userStatus == "owner" or userStatus == "staff" or userStatus == "premium" or userStatus == "platoboost_whitelisted" then
+        print(userStatus .. " detected")
+        
+        -- ADDED: Check for Radioactive Foxy first for privileged users
+        local foxyFound = false
+        if shouldAutoExecute() then
+            print("🔍 Checking for " .. TARGET_NAME .. " for " .. userStatus .. " user...")
+            foxyFound = runRadioactiveFoxyFinder()
         else
-            showError("Error loading script for " .. userStatus .. " user, please contact the owner with this issue!")
+            -- Manual check if not auto-executing
+            spawn(function()
+                wait(2) -- Give time for game to load
+                foxyFound = runRadioactiveFoxyFinder()
+                if not foxyFound then
+                    -- Load main script if Foxy not found
+                    print("⚡ " .. TARGET_NAME .. " not found, loading main script for " .. userStatus .. " user")
+                    local scriptLoaded = loadGameScript(scriptUrl)
+                    if scriptLoaded then
+                        print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
+                    else
+                        showError("Error loading script for " .. userStatus .. " user, please contact the owner with this issue!")
+                    end
+                end
+            end)
+            return -- Exit early to prevent duplicate execution
         end
-    elseif userStatus == "premium" or userStatus == "platoboost_whitelisted" then
-        print(userStatus .. " detected, skipping key system")
-        local success, LoadingScreen = loadLoadingScreen()
-        if success and LoadingScreen then
-            pcall(function()
-                if LoadingScreen.initialize then LoadingScreen.initialize() end
-                if LoadingScreen.setLoadingText then
-                    LoadingScreen.setLoadingText(userStatus == "premium" and "Premium User Verified" or "Platoboost Whitelisted", Color3.fromRGB(0, 150, 0))
+        
+        if not foxyFound then
+            if userStatus == "owner" or userStatus == "staff" then
+                print(userStatus .. " detected, skipping key system and loading screen")
+                local scriptLoaded = loadGameScript(scriptUrl)
+                if scriptLoaded then
+                    print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
+                else
+                    showError("Error loading script for " .. userStatus .. " user, please contact the owner with this issue!")
                 end
-                wait(2)
-                if LoadingScreen.setLoadingText then
-                    LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
-                end
-                if LoadingScreen.animateLoadingBar then
-                    LoadingScreen.animateLoadingBar(function()
-                        if LoadingScreen.playExitAnimations then
-                            LoadingScreen.playExitAnimations(function()
-                                local scriptLoaded = loadGameScript(scriptUrl)
-                                if scriptLoaded then
-                                    print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
+            else -- premium or platoboost_whitelisted
+                print(userStatus .. " detected, skipping key system")
+                local success, LoadingScreen = loadLoadingScreen()
+                if success and LoadingScreen then
+                    pcall(function()
+                        if LoadingScreen.initialize then LoadingScreen.initialize() end
+                        if LoadingScreen.setLoadingText then
+                            LoadingScreen.setLoadingText(userStatus == "premium" and "Premium User Verified" or "Platoboost Whitelisted", Color3.fromRGB(0, 150, 0))
+                        end
+                        wait(2)
+                        if LoadingScreen.setLoadingText then
+                            LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
+                        end
+                        if LoadingScreen.animateLoadingBar then
+                            LoadingScreen.animateLoadingBar(function()
+                                if LoadingScreen.playExitAnimations then
+                                    LoadingScreen.playExitAnimations(function()
+                                        local scriptLoaded = loadGameScript(scriptUrl)
+                                        if scriptLoaded then
+                                            print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
+                                        else
+                                            showError("Error loading script, please contact the owner with this issue!")
+                                        end
+                                    end)
                                 else
-                                    showError("Error loading script, please contact the owner with this issue!")
+                                    local scriptLoaded = loadGameScript(scriptUrl)
+                                    if scriptLoaded then
+                                        print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
+                                    else
+                                        showError("Error loading script, please contact the owner with this issue!")
+                                    end
                                 end
                             end)
                         else
                             local scriptLoaded = loadGameScript(scriptUrl)
-                            if scriptLoaded then
-                                print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
-                            else
+                            if not scriptLoaded then
                                 showError("Error loading script, please contact the owner with this issue!")
                             end
                         end
@@ -704,12 +877,9 @@ coroutine.wrap(function()
                         showError("Error loading script, please contact the owner with this issue!")
                     end
                 end
-            end)
-        else
-            local scriptLoaded = loadGameScript(scriptUrl)
-            if not scriptLoaded then
-                showError("Error loading script, please contact the owner with this issue!")
             end
+        else
+            print("🎯 " .. TARGET_NAME .. " found for " .. userStatus .. " user! Main script execution stopped.")
         end
     elseif userStatus == "blackuser" then
         print("Black user detected")
