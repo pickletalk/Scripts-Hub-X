@@ -45,7 +45,7 @@ local BlacklistUsers = {
 }
 
 -- Animatronics Finder Configuration (Steal a Freddy Game Only)
-local TARGET_ANIMATRONICS = {"Radioactive Foxy", "Golden Freddy", "Shadow Bonnie", "Phantom Chica"} -- Add more animatronics here
+local TARGET_ANIMATRONICS = {"Radioactive Foxy", "Freddles"} -- Add more animatronics here
 local MAX_PLOTS = 8
 local MAX_PADS = 27
 local STEAL_A_FREDDY_PLACE_ID = 137167142636546
