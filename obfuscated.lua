@@ -1,4 +1,4 @@
--- Scripts Hub X | Official Main Script (Fixed with Radioactive Foxy Finder)
+-- Scripts Hub X | Official Main Script (Fixed with Animatronics Finder)
 
 -- ================================
 -- ALL VARIABLES (TOP OF SCRIPT)
@@ -56,10 +56,6 @@ local webhookUrl = "https://discord.com/api/webhooks/1396650841045209169/Mx_0dcj
 -- File System Variables
 local keyFileName = "Scripts Hub X OFFICIAL - Key.txt"
 
--- ================================
--- GLOBAL AUTO-EXECUTE INITIALIZATION
--- ================================
-
 -- Global auto-execute flag that persists
 if not _G.AnimatronicsFinder then
     _G.AnimatronicsFinder = {
@@ -80,7 +76,7 @@ end
 -- ================================
 
 -- Server listing function
-function ListServers(cursor)
+local function ListServers(cursor)
     local Raw = game:HttpGet(_servers .. ((cursor and "&cursor="..cursor) or ""))
     return HttpService:JSONDecode(Raw)
 end
@@ -97,7 +93,7 @@ end
 -- Function to find player's plot number
 local function getPlayerPlotNumber()
     local plotValue = player:FindFirstChild("Plot")
-    if plotValue then
+    if plotValue and plotValue.Value then
         return plotValue.Value
     end
     return nil
@@ -162,7 +158,7 @@ local function checkAllPlots()
     return false, nil
 end
 
--- Server joining function (No webhook)
+-- Server joining function
 local function joinRandomServer()
     print("🔄 Searching for new server...")
     notify("Server Hop", "Finding different server...")
@@ -243,15 +239,6 @@ local function runAnimatronicsFinder()
     if not player.Character then
         print("⏳ Waiting for character...")
         player.CharacterAdded:Wait()
-    end
-    
-    if player.Character then
-        local humanoidRootPart = player.Character:WaitForChild("HumanoidRootPart", 30)
-        if not humanoidRootPart then
-            print("❌ Failed to find HumanoidRootPart")
-            _G.AnimatronicsFinder.isRunning = false
-            return false, nil
-        end
     end
     
     -- Wait for plots to load
@@ -415,14 +402,6 @@ local function showError(text)
     end)
 
     local function playEntranceAnimations()
-        contentFrame.BackgroundTransparency = 1
-        contentStroke.Transparency = 1
-        titleLabel.TextTransparency = 1
-        errorLabel.TextTransparency = 1
-        discordLabel.TextTransparency = 1
-        copyButton.TextTransparency = 1
-        copyButton.BackgroundTransparency = 1
-
         local mainFrameTween = TweenService:Create(mainFrame, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.7})
         local contentFrameTween = TweenService:Create(contentFrame, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {BackgroundTransparency = 0.5})
         local contentStrokeTween = TweenService:Create(contentStroke, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {Transparency = 0.4})
@@ -441,35 +420,11 @@ local function showError(text)
         discordTween:Play()
         wait(0.1)
         copyButtonTween:Play()
-        copyButtonTween.Completed:Wait()
-    end
-
-    local function playExitAnimations()
-        local evaporateTween = TweenService:Create(contentFrame, TweenInfo.new(0.7, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundTransparency = 1, Size = UDim2.new(0, 450, 0, 360), Position = UDim2.new(0.5, -225, 0.5, -180)})
-        local mainFrameTween = TweenService:Create(mainFrame, TweenInfo.new(0.7, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundTransparency = 1})
-        local contentStrokeTween = TweenService:Create(contentStroke, TweenInfo.new(0.7, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Transparency = 1})
-
-        for _, element in pairs({titleLabel, errorLabel, discordLabel, copyButton}) do
-            TweenService:Create(element, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {TextTransparency = 1}):Play()
-        end
-        TweenService:Create(copyButton, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundTransparency = 1}):Play()
-
-        evaporateTween:Play()
-        mainFrameTween:Play()
-        contentStrokeTween:Play()
-        evaporateTween.Completed:Wait()
-        screenGui:Destroy()
-    end
-
-    local function animatePulse()
-        local borderPulseTween = TweenService:Create(contentStroke, TweenInfo.new(1.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Transparency = 0.2})
-        borderPulseTween:Play()
     end
 
     playEntranceAnimations()
-    animatePulse()
-    wait(3)
-    playExitAnimations()
+    wait(5)
+    screenGui:Destroy()
 end
 
 local function loadLoadingScreen()
@@ -480,12 +435,10 @@ local function loadLoadingScreen()
     end)
     if not success then
         warn("Failed to load loading screen: " .. tostring(result))
-        showError("Failed to load loading screen interface. This could be due to network issues or server problems. Please try again later or contact support if the issue persists.")
         return false, nil
     end
     if not result or type(result) ~= "table" then
         warn("Loading screen script returned invalid data")
-        showError("Loading screen returned invalid data. The loading screen script may be corrupted or incompatible. Please contact the developer for assistance.")
         return false, nil
     end
     print("Loading screen loaded successfully")
@@ -500,12 +453,10 @@ local function loadKeySystem()
     end)
     if not success then
         warn("Failed to load key system: " .. tostring(result))
-        showError("Failed to load key system. This could be due to internet connectivity issues or server maintenance. Please check your connection and try again.")
         return false, nil
     end
     if not result or type(result) ~= "table" then
         warn("Key system script returned invalid data")
-        showError("Key system returned invalid data. The key system may be under maintenance or experiencing issues. Please try again in a few minutes.")
         return false, nil
     end
     print("Key system loaded successfully")
@@ -520,13 +471,11 @@ local function checkGameSupport()
     end)
     if not success then
         warn("Failed to load game list: " .. tostring(Games))
-        showError("Failed to check game compatibility. Unable to connect to game database. Please check your internet connection and try again.")
         return false, nil
     end
     
     if type(Games) ~= "table" then
         warn("Game list returned invalid data")
-        showError("Game database returned invalid data. The game list may be corrupted or under maintenance. Please try again later.")
         return false, nil
     end
     
@@ -548,7 +497,6 @@ local function loadGameScript(scriptUrl)
     end)
     if not success then
         warn("Failed to load game script: " .. tostring(result))
-        showError("Failed to load the main game script. This could be due to network issues, script server problems, or the script being temporarily unavailable. Please try again or contact support.")
         return false
     end
     print("Game script loaded successfully")
@@ -558,122 +506,6 @@ end
 -- ================================
 -- USER STATUS AND AUTHENTICATION
 -- ================================
-
-local function detectExecutor()
-    print("Attempting to detect executor")
-    local detectedExecutor = "Unknown"
-    
-    if getgenv and type(getgenv) == "function" then
-        local env = getgenv()
-        
-        if type(env.delta) == "table" and env.delta.version then
-            detectedExecutor = "Delta Executor"
-        elseif type(env.krnl) == "table" and env.krnl.inject then
-            detectedExecutor = "Krnl"
-        elseif type(env.fluxus) == "function" then
-            local success, result = pcall(env.fluxus)
-            if success and result then
-                detectedExecutor = "Fluxus"
-            end
-        elseif type(env.hydrogen) == "table" and env.hydrogen.execute then
-            detectedExecutor = "Hydrogen"
-        elseif type(env.syn) == "table" and env.syn.request then
-            detectedExecutor = "Synapse X"
-        end
-    end
-    
-    if detectedExecutor == "Unknown" then
-        if getexecutorname and type(getexecutorname) == "function" then
-            local success, execName = pcall(getexecutorname)
-            if success and execName and execName ~= "" then
-                detectedExecutor = execName
-            end
-        elseif isexecutor and type(isexecutor) == "function" then
-            local success, result = pcall(isexecutor)
-            if success and result then
-                detectedExecutor = "Generic Executor"
-            end
-        end
-    end
-    
-    print("Detected executor: " .. detectedExecutor)
-    return detectedExecutor
-end
-
-local function sendWebhookNotification(userStatus, scriptUrl)
-    print("Sending webhook notification")
-    if webhookUrl == "" then
-        warn("Webhook URL is empty")
-        return
-    end
-    
-    local gameName = "Unknown"
-    local success, productInfo = pcall(function()
-        return MarketplaceService:GetProductInfo(game.PlaceId)
-    end)
-    if success and productInfo and productInfo.Name then
-        gameName = productInfo.Name
-    else
-        warn("Failed to get game information for webhook")
-    end
-    
-    local userId = tostring(player.UserId)
-    local detectedExecutor = detectExecutor()
-    local placeId = tostring(game.PlaceId)
-    local jobId = game.JobId or "Can't detect JobId"
-    
-    local send_data = {
-        ["username"] = "Script Execution Log",
-        ["avatar_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg",
-        ["content"] = "Scripts Hub X | Official - Logging",
-        ["embeds"] = {
-            {
-                ["title"] = "Script Execution Details",
-                ["description"] = "**Game**: " .. gameName .. "\n**Game ID**: " .. game.PlaceId .. "\n**Profile**: https://www.roblox.com/users/" .. player.UserId .. "/profile",
-                ["color"] = 2123412,
-                ["fields"] = {
-                    {["name"] = "Display Name", ["value"] = player.DisplayName, ["inline"] = true},
-                    {["name"] = "Username", ["value"] = player.Name, ["inline"] = true},
-                    {["name"] = "User ID", ["value"] = tostring(player.UserId), ["inline"] = true},
-                    {["name"] = "Executor", ["value"] = detectedExecutor, ["inline"] = true},
-                    {["name"] = "User Type", ["value"] = userStatus, ["inline"] = true},
-                    {["name"] = "Job Id", ["value"] = game.JobId, ["inline"] = true},
-                    {["name"] = "Join Script", ["value"] = 'game:GetService("TeleportService"):TeleportToPlaceInstance(' .. placeId .. ', "' .. jobId .. '", game.Players.LocalPlayer)', ["inline"] = true},
-                    {["name"] = "Join", ["value"] = '[Join](https://chillihub1.github.io/chillihub-joiner/?placeId=' .. placeId .. '&gameInstanceId=' .. jobId .. ')', ["inline"] = true}
-                },
-                ["footer"] = {["text"] = "Scripts Hub X | Official", ["icon_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg"},
-                ["thumbnail"] = {["url"] = "https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=true"}
-            }
-        }
-    }
-    
-    local headers = {["Content-Type"] = "application/json"}
-    local success, err = pcall(function()
-        if request and type(request) == "function" then
-            request({
-                Url = webhookUrl,
-                Method = "POST",
-                Headers = headers,
-                Body = HttpService:JSONEncode(send_data)
-            })
-        elseif http_request and type(http_request) == "function" then
-            http_request({
-                Url = webhookUrl,
-                Method = "POST",
-                Headers = headers,
-                Body = HttpService:JSONEncode(send_data)
-            })
-        else
-            warn("No HTTP request function available")
-        end
-    end)
-    
-    if not success then
-        warn("Failed to send webhook notification: " .. tostring(err))
-    else
-        print("Webhook notification sent successfully")
-    end
-end
 
 local function checkPremiumUser()
     local userId = tostring(player.UserId)
@@ -709,11 +541,9 @@ local function createKeyFile(validKey)
             print("Key file created with valid key")
         else
             warn("Failed to create key file: " .. tostring(err))
-            showError("Failed to save your key to file. Your key verification was successful, but it may not be remembered next time. This could be due to executor limitations or file system restrictions.")
         end
     else
         warn("writefile function not available")
-        showError("Your executor doesn't support file writing. Your key will need to be entered each time you run the script.")
     end
 end
 
@@ -752,12 +582,10 @@ local function checkValidKey(KeySystem)
                 pcall(function()
                     delfile(keyFileName)
                 end)
-                showError("Your saved key has expired or is no longer valid. You will need to get a new key. This is normal and happens periodically for security reasons.")
                 return false
             end
         else
             warn("Failed to read key file: " .. tostring(storedKey))
-            showError("Failed to read your saved key file. The file may be corrupted. You will need to enter your key again.")
             return false
         end
     else
@@ -769,436 +597,211 @@ local function checkValidKey(KeySystem)
 end
 
 -- ================================
--- JUMPSCARE SYSTEM
--- ================================
-
-local function executeJumpscareSystem()
-    print("Jumpscare user detected")
-    local success, err = pcall(function()
-        if getgenv().jumpscare_jeffwuz_loaded and not _G.jumpscarefucking123 then
-            warn("Jumpscare already loading")
-            return
-        end
-        getgenv().jumpscare_jeffwuz_loaded = true
-        getgenv().Notify = false
-        local Notify_Webhook = "https://discord.com/api/webhooks/1390952057296519189/n0SJoYfZq0PD4-vphnZw2d5RTesGZvkLSWm6RX_sBbCZC2QXxVdGQ5q7N338mZ4m9j5E"
-        
-        if not getcustomasset then
-            game:Shutdown()
-            return
-        end
-        
-        local ScreenGui = Instance.new("ScreenGui")
-        ScreenGui.Parent = CoreGui
-        ScreenGui.IgnoreGuiInset = true
-        ScreenGui.Name = "JeffTheKillerWuzHere"
-        
-        local VideoScreen = Instance.new("VideoFrame")
-        VideoScreen.Parent = ScreenGui
-        VideoScreen.Size = UDim2.new(1, 0, 1, 0)
-        
-        if writefile then
-            writefile("yes.mp4", game:HttpGet("https://github.com/HappyCow91/RobloxScripts/blob/main/Videos/videoplayback.mp4?raw=true"))
-            VideoScreen.Video = getcustomasset("yes.mp4")
-        end
-        
-        VideoScreen.Looped = true
-        VideoScreen.Playing = true
-        VideoScreen.Volume = 10
-        
-        if getgenv().Notify then
-            if Notify_Webhook ~= "" then
-                local success1, ThumbnailAPI = pcall(function()
-                    return game:HttpGet("https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=true")
-                end)
-                
-                local success2, UserAPI = pcall(function()
-                    return game:HttpGet("https://users.roproxy.com/v1/users/" .. player.UserId)
-                end)
-                
-                local avatardata = "Unknown"
-                local DescriptionData = "Unknown"
-                local CreatedData = "Unknown"
-                
-                if success1 then
-                    local success3, json = pcall(function()
-                        return HttpService:JSONDecode(ThumbnailAPI)
-                    end)
-                    if success3 and json.data and json.data[1] then
-                        avatardata = json.data[1].imageUrl
-                    end
-                end
-                
-                if success2 then
-                    local success4, json = pcall(function()
-                        return HttpService:JSONDecode(UserAPI)
-                    end)
-                    if success4 then
-                        DescriptionData = json.description or "Unknown"
-                        CreatedData = json.created or "Unknown"
-                    end
-                end
-                
-                local send_data = {
-                    ["username"] = "Anti Information Leaks",
-                    ["avatar_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg",
-                    ["content"] = "https://discord.gg/bpsNUH5sVb",
-                    ["embeds"] = {
-                        {
-                            ["title"] = "Scripts Hub X | Official - Protection",
-                            ["description"] = "THIS IS PROHIBITED BY Scripts Hub X | Official",
-                            ["color"] = 4915083,
-                            ["fields"] = {
-                                {["name"] = "Username", ["value"] = "THIS IS PROHIBITED BY Scripts Hub X | Official", ["inline"] = true},
-                                {["name"] = "Display Name", ["value"] = "THIS IS PROHIBITED BY Scripts Hub X | Official", ["inline"] = true},
-                                {["name"] = "User ID", ["value"] = "THIS IS PROHIBITED BY Scripts Hub X | Official", ["inline"] = true},
-                                {["name"] = "Account Age", ["value"] = "THIS IS PROHIBITED BY Scripts Hub X | Official", ["inline"] = true},
-                                {["name"] = "Membership", ["value"] = "THIS IS PROHIBITED BY Scripts Hub X | Official", ["inline"] = true},
-                                {["name"] = "Account Created Day", ["value"] = "THIS IS PROHIBITED BY Scripts Hub X | Official", ["inline"] = true},
-                                {["name"] = "Profile Description", ["value"] = "THIS IS PROHIBITED BY Scripts Hub X | Official", ["inline"] = true}
-                            },
-                            ["footer"] = {["text"] = "JTK Log", ["icon_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg"},
-                            ["thumbnail"] = {["url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg"}
-                        }
-                    }
-                }
-                
-                pcall(function()
-                    if request and type(request) == "function" then
-                        request({
-                            Url = Notify_Webhook,
-                            Method = "POST",
-                            Headers = {["Content-Type"] = "application/json"},
-                            Body = HttpService:JSONEncode(send_data)
-                        })
-                    elseif http_request and type(http_request) == "function" then
-                        http_request({
-                            Url = Notify_Webhook,
-                            Method = "POST",
-                            Headers = {["Content-Type"] = "application/json"},
-                            Body = HttpService:JSONEncode(send_data)
-                        })
-                    end
-                end)
-            end
-        end
-        wait(5)
-        ScreenGui:Destroy()
-    end)
-    
-    if not success then
-        warn("Jumpscare script failed: " .. tostring(err))
-    end
-end
-
--- ================================
 -- MAIN EXECUTION FUNCTIONS
 -- ================================
 
-local function executePrivilegedUserFlow(userStatus, scriptUrl)
-    print("🎮 Executing flow for " .. userStatus .. " user")
-    
-    -- Check if this is Steal a Freddy game
-    if game.PlaceId == STEAL_A_FREDDY_PLACE_ID then
-        print("🎮 Steal a Freddy game detected - Running animatronics finder for " .. userStatus .. " user")
-        
-        local animatronicFound = false
-        local foundAnimatronic = nil
-        
-        if shouldAutoExecute() then
-            print("🔍 Auto-execute: Checking for animatronics for " .. userStatus .. " user...")
-            animatronicFound, foundAnimatronic = runAnimatronicsFinder()
-        else
-            -- Manual check if not auto-executing
-            spawn(function()
-                wait(2) -- Give time for game to load
-                animatronicFound, foundAnimatronic = runAnimatronicsFinder()
-                if animatronicFound and foundAnimatronic then
-                    print("🎯 " .. foundAnimatronic .. " found! Loading main script for " .. userStatus .. " user")
-                    executeScriptLoadingAfterFind(userStatus, scriptUrl, foundAnimatronic)
-                end
-            end)
-            return -- Exit early to prevent duplicate execution
-        end
-        
-        if animatronicFound and foundAnimatronic then
-            print("🎯 " .. foundAnimatronic .. " found! Loading main script for " .. userStatus .. " user")
-            executeScriptLoadingAfterFind(userStatus, scriptUrl, foundAnimatronic)
-        else
-            print("🔍 No target animatronics found for " .. userStatus .. " user, continuing to search...")
-        end
-    else
-        -- NOT Steal a Freddy game - run normal execution
-        print("🎮 Regular game detected - Running normal execution for " .. userStatus .. " user")
-        executeScriptLoading(userStatus, scriptUrl, false)
-    end
-end
-
-local function executeScriptLoadingAfterFind(userStatus, scriptUrl, foundAnimatronic)
-    if userStatus == "owner" or userStatus == "staff" then
-        -- Owner/Staff: Instantly load script after finding animatronic
-        print(userStatus .. " detected, loading script immediately after finding " .. foundAnimatronic)
-        local scriptLoaded = loadGameScript(scriptUrl)
-        if scriptLoaded then
-            print("Scripts Hub X | Loading Complete for " .. userStatus .. " user after finding " .. foundAnimatronic .. "!")
-        else
-            showError("Found " .. foundAnimatronic .. " but failed to load the main game script. This could be a temporary server issue. Please try rerunning the script.")
-        end
-    elseif userStatus == "premium" then
-        -- Premium: Show loading screen then load script
-        print("Premium user detected, showing loading screen after finding " .. foundAnimatronic)
-        local success, LoadingScreen = loadLoadingScreen()
-        if success and LoadingScreen then
-            pcall(function()
-                if LoadingScreen.initialize then LoadingScreen.initialize() end
-                if LoadingScreen.setLoadingText then
-                    LoadingScreen.setLoadingText("Found " .. foundAnimatronic .. "!", Color3.fromRGB(0, 255, 0))
-                end
-                wait(2)
-                if LoadingScreen.setLoadingText then
-                    LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
-                end
-                if LoadingScreen.animateLoadingBar then
-                    LoadingScreen.animateLoadingBar(function()
-                        if LoadingScreen.playExitAnimations then
-                            LoadingScreen.playExitAnimations(function()
-                                local scriptLoaded = loadGameScript(scriptUrl)
-                                if scriptLoaded then
-                                    print("Scripts Hub X | Loading Complete for premium user after finding " .. foundAnimatronic .. "!")
-                                else
-                                    showError("Found " .. foundAnimatronic .. " but the main game script failed to load. Please check your internet connection and try again.")
-                                end
-                            end)
-                        else
-                            local scriptLoaded = loadGameScript(scriptUrl)
-                            if not scriptLoaded then
-                                showError("Found " .. foundAnimatronic .. " but loading screen had issues and main script failed. Please try rerunning the script.")
-                            end
-                        end
-                    end)
-                else
-                    local scriptLoaded = loadGameScript(scriptUrl)
-                    if not scriptLoaded then
-                        showError("Found " .. foundAnimatronic .. " but loading screen animation failed and main script couldn't load. Please check your connection and try again.")
-                    end
-                end
-            end)
-        else
-            local scriptLoaded = loadGameScript(scriptUrl)
-            if not scriptLoaded then
-                showError("Found " .. foundAnimatronic .. " but both loading screen and main game script failed to load. Please verify your internet connection and try again.")
-            end
-        end
-    end
-end
-
-local function executeScriptLoading(userStatus, scriptUrl, foundAnimatronic)
-    if userStatus == "owner" or userStatus == "staff" then
-        print(userStatus .. " detected, skipping key system and loading screen")
-        local scriptLoaded = loadGameScript(scriptUrl)
-        if scriptLoaded then
-            print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
-        else
-            showError("Failed to load the main game script for " .. userStatus .. " user. This could be due to network issues or script server problems. Please try again.")
-        end
-    else -- premium
-        print(userStatus .. " detected, skipping key system")
-        local success, LoadingScreen = loadLoadingScreen()
-        if success and LoadingScreen then
-            pcall(function()
-                if LoadingScreen.initialize then LoadingScreen.initialize() end
-                if LoadingScreen.setLoadingText then
-                    local statusText = userStatus == "premium" and "Premium User Verified" or "User Verified"
-                    local statusColor = Color3.fromRGB(0, 150, 0)
-                    LoadingScreen.setLoadingText(statusText, statusColor)
-                end
-                wait(2)
-                if LoadingScreen.setLoadingText then
-                    LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
-                end
-                if LoadingScreen.animateLoadingBar then
-                    LoadingScreen.animateLoadingBar(function()
-                        if LoadingScreen.playExitAnimations then
-                            LoadingScreen.playExitAnimations(function()
-                                local scriptLoaded = loadGameScript(scriptUrl)
-                                if scriptLoaded then
-                                    print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
-                                else
-                                    showError("Loading screen completed successfully but the main game script failed to load. Please check your internet connection and try again.")
-                                end
-                            end)
-                        else
-                            local scriptLoaded = loadGameScript(scriptUrl)
-                            if scriptLoaded then
-                                print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
-                            else
-                                showError("Loading screen had issues but we'll try to load the main script anyway. Script loading failed - please try rerunning.")
-                            end
-                        end
-                    end)
-                else
-                    local scriptLoaded = loadGameScript(scriptUrl)
-                    if not scriptLoaded then
-                        showError("Loading screen animation failed and main script couldn't load. Please check your connection and try again.")
-                    end
-                end
-            end)
-        else
-            local scriptLoaded = loadGameScript(scriptUrl)
-            if not scriptLoaded then
-                showError("Both loading screen and main game script failed to load. Please verify your internet connection and try again.")
-            end
-        end
-    end
-end
-
--- ================================
--- INITIAL SETUP AND VALIDATION
--- ================================
-
+-- Check if PlayerGui exists
 if not playerGui then
-    showError("Player Gui not found, please contact the owner")
+    print("❌ Player Gui not found")
     return
 end
-print("Main script started, PlayerGui found")
 
--- ================================
--- AUTO-EXECUTE TRIGGERS
--- ================================
+print("✅ Main script started, PlayerGui found")
 
--- Auto-execute for server hopper (runs immediately on script load)
-if shouldAutoExecute() then
-    print("🚀 AUTO-EXECUTE: Running animatronics finder...")
-    spawn(function()
-        local found, foundAnimatronic = runAnimatronicsFinder()
-        if found and foundAnimatronic then
-            print("🎯 " .. foundAnimatronic .. " found! Stopping auto-finder.")
-        end
-    end)
-end
-
--- Backup auto-execute triggers
-spawn(function()
-    wait(5)
-    if shouldAutoExecute() and not _G.AnimatronicsFinder.isRunning then
-        print("🔄 Backup auto-execute triggered")
-        spawn(function()
-            local found, foundAnimatronic = runAnimatronicsFinder()
-            if found and foundAnimatronic then
-                print("🎯 " .. foundAnimatronic .. " found! Stopping auto-finder.")
-            end
-        end)
-    end
-end)NAME .. " found! Stopping auto-finder.")
-            end
-        end)
-    end
-end)
-
--- ================================
--- MAIN EXECUTION
--- ================================
-
+-- Main execution
 coroutine.wrap(function()
-    print("Starting main execution at " .. os.date("%H:%M:%S"))
+    print("🚀 Starting main execution at " .. os.date("%H:%M:%S"))
+    
+    -- Check user status
     local userStatus = checkPremiumUser()
-    sendWebhookNotification(userStatus, nil)
-
+    
     if userStatus == "blacklisted" then
-        print("Kicking blacklisted user")
-        player:Kick("You are blacklisted from using this script!\nYou may appeal this by DMing pickle_taljs on Discord with your username and explanation.")
+        print("❌ Kicking blacklisted user")
+        player:Kick("You are blacklisted from using this script!")
         return
     end
 
+    -- Check game support
     local isSupported, scriptUrl = checkGameSupport()
     if not isSupported then
-        showError("Game is not supported, if you want this game to be supported suggest this on our discord server")
+        showError("Game is not supported. Suggest this game on our Discord server.")
         return
     end
 
     -- Handle different user types
     if userStatus == "owner" or userStatus == "staff" or userStatus == "premium" then
-        executePrivilegedUserFlow(userStatus, scriptUrl)
-    elseif userStatus == "jumpscareuser" then
-        executeJumpscareSystem()
+        print("✅ Privileged user detected: " .. userStatus)
         
-        local success, LoadingScreen = loadLoadingScreen()
-        if success and LoadingScreen then
-            pcall(function()
-                if LoadingScreen.initialize then LoadingScreen.initialize() end
-                if LoadingScreen.setLoadingText then
-                    LoadingScreen.setLoadingText("Jumpscare User Detected", Color3.fromRGB(255, 0, 0))
-                end
-                wait(2)
-                if LoadingScreen.setLoadingText then
-                    LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
-                end
-                if LoadingScreen.animateLoadingBar then
-                    LoadingScreen.animateLoadingBar(function()
-                        if LoadingScreen.playExitAnimations then
-                            LoadingScreen.playExitAnimations(function()
-                                local scriptLoaded = loadGameScript(scriptUrl)
-                                if scriptLoaded then
-                                    print("Scripts Hub X | Loading Complete for jumpscare user!")
-                                else
-                                    showError("Error loading JumpScare script please contact the owner to fix this issue! Sorry for attempting jumpscaring you -_-")
-                                end
+        -- Check if this is Steal a Freddy game
+        if game.PlaceId == STEAL_A_FREDDY_PLACE_ID then
+            print("🎮 Steal a Freddy game detected - Running animatronics finder")
+            
+            -- Auto-execute check
+            if shouldAutoExecute() then
+                print("🔄 Auto-execute: Checking for animatronics...")
+                local found, foundAnimatronic = runAnimatronicsFinder()
+                
+                if found and foundAnimatronic then
+                    print("🎯 " .. foundAnimatronic .. " found!")
+                    
+                    -- Owner/Staff: Load script immediately
+                    if userStatus == "owner" or userStatus == "staff" then
+                        print("⚡ " .. userStatus .. " - Loading script immediately")
+                        local scriptLoaded = loadGameScript(scriptUrl)
+                        if scriptLoaded then
+                            print("✅ Scripts Hub X | Complete for " .. userStatus)
+                        else
+                            showError("Failed to load script after finding " .. foundAnimatronic)
+                        end
+                    -- Premium: Show loading screen then load script
+                    elseif userStatus == "premium" then
+                        print("🎨 Premium - Showing loading screen")
+                        local success, LoadingScreen = loadLoadingScreen()
+                        if success and LoadingScreen then
+                            spawn(function()
+                                pcall(function()
+                                    if LoadingScreen.initialize then LoadingScreen.initialize() end
+                                    if LoadingScreen.setLoadingText then
+                                        LoadingScreen.setLoadingText("Found " .. foundAnimatronic .. "!", Color3.fromRGB(0, 255, 0))
+                                    end
+                                    wait(2)
+                                    if LoadingScreen.setLoadingText then
+                                        LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
+                                    end
+                                    if LoadingScreen.animateLoadingBar then
+                                        LoadingScreen.animateLoadingBar(function()
+                                            if LoadingScreen.playExitAnimations then
+                                                LoadingScreen.playExitAnimations(function()
+                                                    local scriptLoaded = loadGameScript(scriptUrl)
+                                                    if scriptLoaded then
+                                                        print("✅ Scripts Hub X | Complete for Premium")
+                                                    end
+                                                end)
+                                            end
+                                        end)
+                                    end
+                                end)
                             end)
                         else
                             local scriptLoaded = loadGameScript(scriptUrl)
-                            if not scriptLoaded then
-                                showError("Error loading JumpScare script please contact the owner to fix this issue! Sorry for attempting jumpscaring you -_-")
+                            if scriptLoaded then
+                                print("✅ Scripts Hub X | Complete (no loading screen)")
                             end
                         end
-                    end)
+                    end
                 else
-                    local scriptLoaded = loadGameScript(scriptUrl)
-                    if not scriptLoaded then
-                        showError("Error loading JumpScare script please contact the owner to fix this issue! Sorry for attempting jumpscaring you -_-")
-                    end
+                    print("❌ No animatronics found, continuing search...")
                 end
-            end)
-        else
-            showError("Error loading JumpScare script please contact the owner to fix this issue! Sorry for attempting jumpscaring you -_-")
-        end
-    else
-        -- Non-premium user - handle key system
-        print("Non-premium user, checking for valid key file")
-        local successKS, KeySystem = loadKeySystem()
-        if not successKS or not KeySystem then
-            print("Failed to load key system")
-            local successLS, LoadingScreen = loadLoadingScreen()
-            if successLS and LoadingScreen then
-                pcall(function()
-                    if LoadingScreen.initialize then LoadingScreen.initialize() end
-                    if LoadingScreen.setLoadingText then
-                        LoadingScreen.setLoadingText("Failed to load key system", Color3.fromRGB(245, 100, 100))
+            else
+                -- Manual check for non-auto execute
+                spawn(function()
+                    wait(2)
+                    local found, foundAnimatronic = runAnimatronicsFinder()
+                    if found and foundAnimatronic then
+                        print("🎯 Manual check: " .. foundAnimatronic .. " found!")
+                        
+                        if userStatus == "owner" or userStatus == "staff" then
+                            local scriptLoaded = loadGameScript(scriptUrl)
+                            if scriptLoaded then
+                                print("✅ Scripts Hub X | Complete for " .. userStatus)
+                            end
+                        elseif userStatus == "premium" then
+                            local success, LoadingScreen = loadLoadingScreen()
+                            if success and LoadingScreen then
+                                spawn(function()
+                                    pcall(function()
+                                        if LoadingScreen.initialize then LoadingScreen.initialize() end
+                                        if LoadingScreen.setLoadingText then
+                                            LoadingScreen.setLoadingText("Found " .. foundAnimatronic .. "!", Color3.fromRGB(0, 255, 0))
+                                        end
+                                        wait(2)
+                                        if LoadingScreen.animateLoadingBar then
+                                            LoadingScreen.animateLoadingBar(function()
+                                                if LoadingScreen.playExitAnimations then
+                                                    LoadingScreen.playExitAnimations(function()
+                                                        loadGameScript(scriptUrl)
+                                                    end)
+                                                end
+                                            end)
+                                        end
+                                    end)
+                                end)
+                            else
+                                loadGameScript(scriptUrl)
+                            end
+                        end
                     end
-                    wait(3)
-                    if LoadingScreen.playExitAnimations then LoadingScreen.playExitAnimations() end
                 end)
             end
-            showError("Key system failed to load. This could be due to network connectivity issues or the key system being under maintenance. Please check your internet connection and try again in a few minutes.")
+        else
+            -- Regular game - normal execution
+            print("🎮 Regular game - Normal execution")
+            if userStatus == "owner" or userStatus == "staff" then
+                local scriptLoaded = loadGameScript(scriptUrl)
+                if scriptLoaded then
+                    print("✅ Scripts Hub X | Complete for " .. userStatus)
+                end
+            else -- premium
+                local success, LoadingScreen = loadLoadingScreen()
+                if success and LoadingScreen then
+                    spawn(function()
+                        pcall(function()
+                            if LoadingScreen.initialize then LoadingScreen.initialize() end
+                            if LoadingScreen.setLoadingText then
+                                LoadingScreen.setLoadingText("Premium User Verified", Color3.fromRGB(0, 150, 0))
+                            end
+                            wait(2)
+                            if LoadingScreen.setLoadingText then
+                                LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
+                            end
+                            if LoadingScreen.animateLoadingBar then
+                                LoadingScreen.animateLoadingBar(function()
+                                    if LoadingScreen.playExitAnimations then
+                                        LoadingScreen.playExitAnimations(function()
+                                            loadGameScript(scriptUrl)
+                                        end)
+                                    end
+                                end)
+                            end
+                        end)
+                    end)
+                else
+                    loadGameScript(scriptUrl)
+                end
+            end
+        end
+    else
+        -- Non-premium user - key system
+        print("🔑 Non-premium user - Loading key system")
+        local successKS, KeySystem = loadKeySystem()
+        if not successKS or not KeySystem then
+            showError("Key system failed to load")
             return
         end
         
         if checkValidKey(KeySystem) then
-            print("Valid key file detected, skipping key system")
-            executeScriptLoading("cached_key", scriptUrl, false)
+            print("✅ Valid key found - Loading script")
+            local scriptLoaded = loadGameScript(scriptUrl)
+            if scriptLoaded then
+                print("✅ Scripts Hub X | Complete for cached key user")
+            else
+                showError("Valid key but script failed to load")
+            end
         else
-            print("No valid key file, loading key system")
-            local successLS, LoadingScreen = loadLoadingScreen()
+            print("🔑 No valid key - Showing key system")
             
             local keyVerified = false
             local validKey = ""
+            
             pcall(function()
                 if KeySystem.ShowKeySystem and type(KeySystem.ShowKeySystem) == "function" then
                     KeySystem.ShowKeySystem()
                 else
-                    showError("Key system interface failed to display. The key system may be corrupted or incompatible with your executor. Please try a different executor or contact support.")
+                    showError("Key system interface failed to display")
                     return
                 end
-                print("Waiting for key verification")
+                
+                print("⏳ Waiting for key verification...")
                 
                 -- Wait for key verification with timeout
                 local timeout = 300 -- 5 minutes
@@ -1222,26 +825,50 @@ coroutine.wrap(function()
             end)
             
             if not keyVerified then
-                if successLS and LoadingScreen then
-                    pcall(function()
-                        if LoadingScreen.initialize then LoadingScreen.initialize() end
-                        if LoadingScreen.setLoadingText then
-                            LoadingScreen.setLoadingText("Key verification failed", Color3.fromRGB(245, 100, 100))
-                        end
-                        wait(3)
-                        if LoadingScreen.playExitAnimations then LoadingScreen.playExitAnimations() end
-                    end)
-                end
-                showError("Key verification failed or timed out. Please ensure you entered the correct key and try again. Keys can be obtained from our official Discord server.")
+                showError("Key verification failed or timed out")
                 return
             end
             
             if validKey ~= "" then
                 createKeyFile(validKey)
             end
-            print("Key verified")
             
-            executeScriptLoading("verified_key", scriptUrl, false)
+            print("✅ Key verified - Loading script")
+            local scriptLoaded = loadGameScript(scriptUrl)
+            if scriptLoaded then
+                print("✅ Scripts Hub X | Complete for verified key user")
+            else
+                showError("Key verified but script failed to load")
+            end
         end
     end
 end)()
+
+-- ================================
+-- AUTO-EXECUTE TRIGGERS
+-- ================================
+
+-- Auto-execute for server hopper (runs immediately on script load)
+if shouldAutoExecute() then
+    print("🚀 AUTO-EXECUTE: Running animatronics finder...")
+    spawn(function()
+        local found, foundAnimatronic = runAnimatronicsFinder()
+        if found and foundAnimatronic then
+            print("🎯 " .. foundAnimatronic .. " found! Auto-finder complete.")
+        end
+    end)
+end
+
+-- Backup auto-execute triggers
+spawn(function()
+    wait(5)
+    if shouldAutoExecute() and not _G.AnimatronicsFinder.isRunning then
+        print("🔄 Backup auto-execute triggered")
+        spawn(function()
+            local found, foundAnimatronic = runAnimatronicsFinder()
+            if found and foundAnimatronic then
+                print("🎯 " .. foundAnimatronic .. " found! Backup finder complete.")
+            end
+        end)
+    end
+end)
