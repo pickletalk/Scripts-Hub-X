@@ -519,8 +519,8 @@ end
 -- Main loop to continuously check for auto lock
 spawn(function()
     while true do
+        wait(3)
         autoLock()
-        wait(2)
     end
 end)
 
