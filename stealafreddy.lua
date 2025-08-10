@@ -312,7 +312,7 @@ local function teleportToPlot()
             
             -- Step 3: Calculate time for 50 studs per second to target
             local distance = (stopPosition - targetPosition).Magnitude
-            local timeToTarget = distance / 50 -- 50 studs per second
+            local timeToTarget = distance / 40 -- 50 studs per second
             
             statusLabel.Text = "Moving to plot..."
             
