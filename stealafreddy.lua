@@ -520,7 +520,6 @@ end
 spawn(function()
     while true do
         autoLock()
-        wait(2) -- Check every 2 seconds
     end
 end)
 
