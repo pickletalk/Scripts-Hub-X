@@ -1,4 +1,4 @@
--- Scripts Hub X | Official Main Script
+-- Scripts Hub X | Official Main Script (Fixed with Animatronics Finder)
 
 -- ================================
 -- ALL VARIABLES (TOP OF SCRIPT)
@@ -144,16 +144,19 @@ local function checkAllPlots()
     
     local playerPlot, playerPlotNumber = findPlayerPlot()
     if playerPlotNumber then
-        print("🚫 Excluding player's plot: " .. tostring(playerPlotNumber))
+        print("🚫 Player plot detected: " .. tostring(playerPlotNumber) .. " - Will skip pad checking for this plot")
     end
     
     for plotNum = 1, MAX_PLOTS do
-        -- Skip player's own plot
+        print("🔍 Checking Plot " .. plotNum .. "...")
+        
+        -- Check if this is the player's plot
         if playerPlotNumber and plotNum == playerPlotNumber then
-            print("⏭️ Skipping player's plot: " .. plotNum)
+            print("⏭️ Plot " .. plotNum .. " is player's plot - Skipping pad checks but continuing to next plot")
         else
             local plot = plots:FindFirstChild(tostring(plotNum))
             if plot then
+                print("✅ Plot " .. plotNum .. " found - Checking pads...")
                 local pads = plot:FindFirstChild("Pads")
                 if pads then
                     for padNum = 1, MAX_PADS do
@@ -178,7 +181,12 @@ local function checkAllPlots()
                             break
                         end
                     end
+                    print("❌ Plot " .. plotNum .. " - No target animatronics found in any pads")
+                else
+                    print("❌ Plot " .. plotNum .. " - No Pads folder found")
                 end
+            else
+                print("❌ Plot " .. plotNum .. " - Plot doesn't exist")
             end
         end
     end
