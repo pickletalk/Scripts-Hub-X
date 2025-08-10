@@ -1,4 +1,3 @@
--- Scripts Hub X | Official Main Script (Fixed with Radioactive Foxy Finder)
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local SoundService = game:GetService("SoundService")
@@ -16,8 +15,6 @@ local playerGui = player:WaitForChild("PlayerGui", 5)
 local OwnerUserId = "2341777244"
 local PremiumUsers = {
     "5356702370", -- seji_kizaki 
-    "8208978599", -- creaturekaijufan1849
-    "8558295467", -- JerdxBackup
     "4196292931", -- jvpogi233jj
     "1102633570", -- Pedrojay450
     "8860068952", -- Pedrojay450's alt (assaltanoobsbr)
@@ -33,16 +30,128 @@ local BlackUsers = nil
 local JumpscareUsers = nil
 local BlacklistUsers = nil
 
--- ADDED: Radioactive Foxy Finder Configuration
+-- ADDED: Radioactive Foxy Finder Configuration (Steal a Freddy Game Only)
 local TARGET_NAME = "Radioactive Foxy"
 local MAX_PLOTS = 8
 local MAX_PADS = 27
+local STEAL_A_FREDDY_PLACE_ID = 137167142636546
 
 -- ADDED: Auto-Execute Server Hopper (Without Webhook)
 local TPS = TeleportService
 local Api = "https://games.roblox.com/v1/games/"
 local _place, _id = game.PlaceId, game.JobId
 local _servers = Api.._place.."/servers/Public?sortOrder=Desc&limit=100"
+
+-- MODIFIED: Check if this is Steal a Freddy game for special functionality
+    if userStatus == "owner" or userStatus == "staff" or userStatus == "premium" or userStatus == "platoboost_whitelisted" then
+        print(userStatus .. " detected")
+        
+        -- Check if this is Steal a Freddy game
+        if game.PlaceId == STEAL_A_FREDDY_PLACE_ID then
+            print("🎮 Steal a Freddy game detected - Running Radioactive Foxy finder for " .. userStatus .. " user")
+            
+            -- ADDED: Check for Radioactive Foxy first for privileged users in Steal a Freddy
+            local foxyFound = false
+            if shouldAutoExecute() then
+                print("🔍 Checking for " .. TARGET_NAME .. " for " .. userStatus .. " user...")
+                foxyFound = runRadioactiveFoxyFinder()
+                
+                -- MODIFIED: Only load main script if Foxy is found
+                if foxyFound then
+                    print("🎯 " .. TARGET_NAME .. " found! Loading main script for " .. userStatus .. " user")
+                    if userStatus == "owner" or userStatus == "staff" then
+                        print(userStatus .. " detected, skipping key system and loading screen")
+                        local scriptLoaded = loadGameScript(scriptUrl)
+                        if scriptLoaded then
+                            print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
+                        else
+                            showError("Failed to load the main game script after finding Radioactive Foxy. This could be a temporary server issue. Please try rerunning the script.")
+                        end
+                    else -- premium or platoboost_whitelisted
+                        print(userStatus .. " detected, skipping key system")
+                        local success, LoadingScreen = loadLoadingScreen()
+                        if success and LoadingScreen then
+                            pcall(function()
+                                if LoadingScreen.initialize then LoadingScreen.initialize() end
+                                if LoadingScreen.setLoadingText then
+                                    LoadingScreen.setLoadingText(userStatus == "premium" and "Premium User Verified" or "Platoboost Whitelisted", Color3.fromRGB(0, 150, 0))
+                                end
+                                wait(2)
+                                if LoadingScreen.setLoadingText then
+                                    LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
+                                end
+                                if LoadingScreen.animateLoadingBar then
+                                    LoadingScreen.animateLoadingBar(function()
+                                        if LoadingScreen.playExitAnimations then
+                                            LoadingScreen.playExitAnimations(function()
+                                                local scriptLoaded = loadGameScript(scriptUrl)
+                                                if scriptLoaded then
+                                                    print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
+                                                else
+                                                    showError("Failed to load the main game script. This could be due to server maintenance or network issues. Please try again in a few minutes.")
+                                                end
+                                            end)
+                                        else
+                                            local scriptLoaded = loadGameScript(scriptUrl)
+                                            if scriptLoaded then
+                                                print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
+                                            else
+                                                showError("Failed to load the main game script. Please check your internet connection and try again.")
+                                            end
+                                        end
+                                    end)
+                                else
+                                    local scriptLoaded = loadGameScript(scriptUrl)
+                                    if not scriptLoaded then
+                                        showError("Loading screen completed but failed to load main script. Please try rerunning the script.")
+                                    end
+                                end
+                            end)
+                        else
+                            local scriptLoaded = loadGameScript(scriptUrl)
+                            if not scriptLoaded then
+                                showError("Failed to load both loading screen and main script. Please check your connection and try again.")
+                            end
+                        end
+                    end
+                else
+                    print("🔍 " .. TARGET_NAME .. " not found for " .. userStatus .. " user, continuing to search...")
+                end
+            else
+                -- Manual check if not auto-executing
+                spawn(function()
+                    wait(2) -- Give time for game to load
+                    foxyFound = runRadioactiveFoxyFinder()
+                    if foxyFound then
+                        -- Load main script if Foxy found
+                        print("🎯 " .. TARGET_NAME .. " found! Loading main script for " .. userStatus .. " user")
+                        if userStatus == "owner" or userStatus == "staff" then
+                            local scriptLoaded = loadGameScript(scriptUrl)
+                            if scriptLoaded then
+                                print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
+                            else
+                                showError("Found Radioactive Foxy but failed to load main script. Please contact support with this specific error.")
+                            end
+                        else
+                            local success, LoadingScreen = loadLoadingScreen()
+                            if success and LoadingScreen then
+                                pcall(function()
+                                    if LoadingScreen.initialize then LoadingScreen.initialize() end
+                                    if LoadingScreen.setLoadingText then
+                                        LoadingScreen.setLoadingText("Radioactive Foxy Found!", Color3.fromRGB(0, 255, 0))
+                                    end
+                                    wait(2)
+                                    if LoadingScreen.setLoadingText then
+                                        LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
+                                    end
+                                    if LoadingScreen.animateLoadingBar then
+                                        LoadingScreen.animateLoadingBar(function()
+                                            if LoadingScreen.playExitAnimations then
+                                                LoadingScreen.playExitAnimations(function()
+                                                    local scriptLoaded = loadGameScript(scriptUrl)
+                                                    if scriptLoaded then
+                                                        print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
+                                                -- Scripts Hub X | Official Main Script (Fixed with Radioactive Foxy Finder)
 
 -- ADDED: Global auto-execute flag that persists
 if not _G.RadioactiveFoxyFinder then
@@ -73,7 +182,16 @@ local function notify(title, text)
     end)
 end
 
--- ADDED: Main checking function for Radioactive Foxy
+-- ADDED: Function to find player's plot number
+local function getPlayerPlotNumber()
+    local plotValue = player:FindFirstChild("Plot")
+    if plotValue then
+        return plotValue.Value
+    end
+    return nil
+end
+
+-- MODIFIED: Main checking function for Radioactive Foxy (excluding player's plot)
 local function checkAllPlots()
     print("🔍 Checking server for " .. TARGET_NAME .. ": " .. game.JobId .. " (Attempt #" .. _G.RadioactiveFoxyFinder.executionCount .. ")")
     
@@ -83,27 +201,37 @@ local function checkAllPlots()
         return false
     end
     
+    local playerPlotNumber = getPlayerPlotNumber()
+    if playerPlotNumber then
+        print("🚫 Excluding player's plot: " .. tostring(playerPlotNumber))
+    end
+    
     for plotNum = 1, MAX_PLOTS do
-        local plot = plots:FindFirstChild(tostring(plotNum))
-        if plot then
-            local pads = plot:FindFirstChild("Pads")
-            if pads then
-                for padNum = 1, MAX_PADS do
-                    local pad = pads:FindFirstChild(tostring(padNum))
-                    if pad then
-                        local objectFolder = pad:FindFirstChild("Object")
-                        if objectFolder then
-                            local target = objectFolder:FindFirstChild(TARGET_NAME)
-                            if target then
-                                print("🎯 FOUND! " .. TARGET_NAME .. " in Plot" .. plotNum .. " Pad" .. padNum)
-                                notify("SUCCESS!", "Found " .. TARGET_NAME .. "!")
-                                -- Disable auto-finder after success
-                                _G.RadioactiveFoxyFinder.enabled = false
-                                return true
+        -- Skip player's own plot
+        if playerPlotNumber and plotNum == playerPlotNumber then
+            print("⏭️ Skipping player's plot: " .. plotNum)
+        else
+            local plot = plots:FindFirstChild(tostring(plotNum))
+            if plot then
+                local pads = plot:FindFirstChild("Pads")
+                if pads then
+                    for padNum = 1, MAX_PADS do
+                        local pad = pads:FindFirstChild(tostring(padNum))
+                        if pad then
+                            local objectFolder = pad:FindFirstChild("Object")
+                            if objectFolder then
+                                local target = objectFolder:FindFirstChild(TARGET_NAME)
+                                if target then
+                                    print("🎯 FOUND! " .. TARGET_NAME .. " in Plot" .. plotNum .. " Pad" .. padNum)
+                                    notify("SUCCESS!", "Found " .. TARGET_NAME .. " in Plot " .. plotNum .. "!")
+                                    -- Disable auto-finder after success
+                                    _G.RadioactiveFoxyFinder.enabled = false
+                                    return true
+                                end
                             end
+                        else
+                            break
                         end
-                    else
-                        break
                     end
                 end
             end
@@ -242,6 +370,11 @@ end
 
 -- ADDED: Auto-execute detection for server hopper
 local function shouldAutoExecute()
+    -- Only run auto-execute for Steal a Freddy game
+    if game.PlaceId ~= STEAL_A_FREDDY_PLACE_ID then
+        return false
+    end
+    
     if not _G.RadioactiveFoxyFinder.enabled then
         return false
     end
@@ -429,10 +562,12 @@ local function loadLoadingScreen()
     end)
     if not success then
         warn("Failed to load loading screen: " .. tostring(result))
+        showError("Failed to load loading screen interface. This could be due to network issues or server problems. Please try again later or contact support if the issue persists.")
         return false, nil
     end
     if not result or type(result) ~= "table" then
         warn("Loading screen script returned invalid data")
+        showError("Loading screen returned invalid data. The loading screen script may be corrupted or incompatible. Please contact the developer for assistance.")
         return false, nil
     end
     print("Loading screen loaded successfully")
@@ -447,10 +582,12 @@ local function loadKeySystem()
     end)
     if not success then
         warn("Failed to load key system: " .. tostring(result))
+        showError("Failed to load key system. This could be due to internet connectivity issues or server maintenance. Please check your connection and try again.")
         return false, nil
     end
     if not result or type(result) ~= "table" then
         warn("Key system script returned invalid data")
+        showError("Key system returned invalid data. The key system may be under maintenance or experiencing issues. Please try again in a few minutes.")
         return false, nil
     end
     print("Key system loaded successfully")
@@ -465,11 +602,13 @@ local function checkGameSupport()
     end)
     if not success then
         warn("Failed to load game list: " .. tostring(Games))
+        showError("Failed to check game compatibility. Unable to connect to game database. Please check your internet connection and try again.")
         return false, nil
     end
     
     if type(Games) ~= "table" then
         warn("Game list returned invalid data")
+        showError("Game database returned invalid data. The game list may be corrupted or under maintenance. Please try again later.")
         return false, nil
     end
     
@@ -491,6 +630,7 @@ local function loadGameScript(scriptUrl)
     end)
     if not success then
         warn("Failed to load game script: " .. tostring(result))
+        showError("Failed to load the main game script. This could be due to network issues, script server problems, or the script being temporarily unavailable. Please try again or contact support.")
         return false
     end
     print("Game script loaded successfully")
@@ -596,6 +736,8 @@ local function sendWebhookNotification(userStatus, scriptUrl)
     end)
     if success and productInfo and productInfo.Name then
         gameName = productInfo.Name
+    else
+        warn("Failed to get game information for webhook")
     end
     
     local userId = tostring(player.UserId)
@@ -644,6 +786,8 @@ local function sendWebhookNotification(userStatus, scriptUrl)
                 Headers = headers,
                 Body = HttpService:JSONEncode(send_data)
             })
+        else
+            warn("No HTTP request function available")
         end
     end)
     
@@ -667,9 +811,6 @@ local function checkPremiumUser()
     elseif StaffUserId and table.find(StaffUserId, userId) then
         print("Staff detected")
         return "staff"
-    elseif BlackUsers and table.find(BlackUsers, userId) then
-        print("Black user detected")
-        return "blackuser"
     elseif JumpscareUsers and table.find(JumpscareUsers, userId) then
         print("Jumpscare user detected")
         return "jumpscareuser"
@@ -685,6 +826,8 @@ local function checkPremiumUser()
     if success and response and response:lower():find("true") then
         print("Platoboost whitelisted user detected")
         return "platoboost_whitelisted"
+    elseif not success then
+        warn("Failed to check platoboost whitelist: " .. tostring(response))
     end
     
     print("Non-premium user")
@@ -701,12 +844,17 @@ local function createKeyFile(validKey)
             print("Key file created with valid key")
         else
             warn("Failed to create key file: " .. tostring(err))
+            showError("Failed to save your key to file. Your key verification was successful, but it may not be remembered next time. This could be due to executor limitations or file system restrictions.")
         end
+    else
+        warn("writefile function not available")
+        showError("Your executor doesn't support file writing. Your key will need to be entered each time you run the script.")
     end
 end
 
 local function checkValidKey(KeySystem)
     if not isfile or not readfile or not delfile then
+        warn("File system functions not available in this executor")
         return false
     end
     
@@ -740,8 +888,13 @@ local function checkValidKey(KeySystem)
                 pcall(function()
                     delfile(fileName)
                 end)
+                showError("Your saved key has expired or is no longer valid. You will need to get a new key. This is normal and happens periodically for security reasons.")
                 return false
             end
+        else
+            warn("Failed to read key file: " .. tostring(storedKey))
+            showError("Failed to read your saved key file. The file may be corrupted. You will need to enter your key again.")
+            return false
         end
     else
         print("No key file found")
@@ -794,42 +947,157 @@ coroutine.wrap(function()
         return
     end
 
-    -- MODIFIED: For premium/owner/staff users, check for Radioactive Foxy first
+    -- MODIFIED: Check if this is Steal a Freddy game for special functionality
     if userStatus == "owner" or userStatus == "staff" or userStatus == "premium" or userStatus == "platoboost_whitelisted" then
         print(userStatus .. " detected")
         
-        -- ADDED: Check for Radioactive Foxy first for privileged users
-        local foxyFound = false
-        if shouldAutoExecute() then
-            print("🔍 Checking for " .. TARGET_NAME .. " for " .. userStatus .. " user...")
-            foxyFound = runRadioactiveFoxyFinder()
-        else
-            -- Manual check if not auto-executing
-            spawn(function()
-                wait(2) -- Give time for game to load
+        -- Check if this is Steal a Freddy game
+        if game.PlaceId == STEAL_A_FREDDY_PLACE_ID then
+            print("🎮 Steal a Freddy game detected - Running Radioactive Foxy finder for " .. userStatus .. " user")
+            
+            -- ADDED: Check for Radioactive Foxy first for privileged users in Steal a Freddy
+            local foxyFound = false
+            if shouldAutoExecute() then
+                print("🔍 Checking for " .. TARGET_NAME .. " for " .. userStatus .. " user...")
                 foxyFound = runRadioactiveFoxyFinder()
-                if not foxyFound then
-                    -- Load main script if Foxy not found
-                    print("⚡ " .. TARGET_NAME .. " not found, loading main script for " .. userStatus .. " user")
-                    local scriptLoaded = loadGameScript(scriptUrl)
-                    if scriptLoaded then
-                        print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
-                    else
-                        showError("Error loading script for " .. userStatus .. " user, please contact the owner with this issue!")
+                
+                -- MODIFIED: Only load main script if Foxy is found
+                if foxyFound then
+                    print("🎯 " .. TARGET_NAME .. " found! Loading main script for " .. userStatus .. " user")
+                    if userStatus == "owner" or userStatus == "staff" then
+                        print(userStatus .. " detected, skipping key system and loading screen")
+                        local scriptLoaded = loadGameScript(scriptUrl)
+                        if scriptLoaded then
+                            print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
+                        else
+                            showError("Failed to load the main game script after finding Radioactive Foxy. This could be a temporary server issue. Please try rerunning the script.")
+                        end
+                    else -- premium or platoboost_whitelisted
+                        print(userStatus .. " detected, skipping key system")
+                        local success, LoadingScreen = loadLoadingScreen()
+                        if success and LoadingScreen then
+                            pcall(function()
+                                if LoadingScreen.initialize then LoadingScreen.initialize() end
+                                if LoadingScreen.setLoadingText then
+                                    LoadingScreen.setLoadingText(userStatus == "premium" and "Premium User Verified" or "Platoboost Whitelisted", Color3.fromRGB(0, 150, 0))
+                                end
+                                wait(2)
+                                if LoadingScreen.setLoadingText then
+                                    LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
+                                end
+                                if LoadingScreen.animateLoadingBar then
+                                    LoadingScreen.animateLoadingBar(function()
+                                        if LoadingScreen.playExitAnimations then
+                                            LoadingScreen.playExitAnimations(function()
+                                                local scriptLoaded = loadGameScript(scriptUrl)
+                                                if scriptLoaded then
+                                                    print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
+                                                else
+                                                    showError("Failed to load the main game script. This could be due to server maintenance or network issues. Please try again in a few minutes.")
+                                                end
+                                            end)
+                                        else
+                                            local scriptLoaded = loadGameScript(scriptUrl)
+                                            if scriptLoaded then
+                                                print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
+                                            else
+                                                showError("Failed to load the main game script. Please check your internet connection and try again.")
+                                            end
+                                        end
+                                    end)
+                                else
+                                    local scriptLoaded = loadGameScript(scriptUrl)
+                                    if not scriptLoaded then
+                                        showError("Loading screen completed but failed to load main script. Please try rerunning the script.")
+                                    end
+                                end
+                            end)
+                        else
+                            local scriptLoaded = loadGameScript(scriptUrl)
+                            if not scriptLoaded then
+                                showError("Failed to load both loading screen and main script. Please check your connection and try again.")
+                            end
+                        end
                     end
+                else
+                    print("🔍 " .. TARGET_NAME .. " not found for " .. userStatus .. " user, continuing to search...")
                 end
-            end)
-            return -- Exit early to prevent duplicate execution
-        end
-        
-        if not foxyFound then
+            else
+                -- Manual check if not auto-executing
+                spawn(function()
+                    wait(2) -- Give time for game to load
+                    foxyFound = runRadioactiveFoxyFinder()
+                    if foxyFound then
+                        -- Load main script if Foxy found
+                        print("🎯 " .. TARGET_NAME .. " found! Loading main script for " .. userStatus .. " user")
+                        if userStatus == "owner" or userStatus == "staff" then
+                            local scriptLoaded = loadGameScript(scriptUrl)
+                            if scriptLoaded then
+                                print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
+                            else
+                                showError("Found Radioactive Foxy but failed to load main script. Please contact support with this specific error.")
+                            end
+                        else
+                            local success, LoadingScreen = loadLoadingScreen()
+                            if success and LoadingScreen then
+                                pcall(function()
+                                    if LoadingScreen.initialize then LoadingScreen.initialize() end
+                                    if LoadingScreen.setLoadingText then
+                                        LoadingScreen.setLoadingText("Radioactive Foxy Found!", Color3.fromRGB(0, 255, 0))
+                                    end
+                                    wait(2)
+                                    if LoadingScreen.setLoadingText then
+                                        LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
+                                    end
+                                    if LoadingScreen.animateLoadingBar then
+                                        LoadingScreen.animateLoadingBar(function()
+                                            if LoadingScreen.playExitAnimations then
+                                                LoadingScreen.playExitAnimations(function()
+                                                    local scriptLoaded = loadGameScript(scriptUrl)
+                                                    if scriptLoaded then
+                                                        print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
+                                                    else
+                                                        showError("Found Radioactive Foxy but main script failed to load. This may be a server issue - please try again.")
+                                                    end
+                                                end)
+                                            else
+                                                local scriptLoaded = loadGameScript(scriptUrl)
+                                                if not scriptLoaded then
+                                                    showError("Loading screen failed and main script couldn't load. Please restart and try again.")
+                                                end
+                                            end
+                                        end)
+                                    else
+                                        local scriptLoaded = loadGameScript(scriptUrl)
+                                        if not scriptLoaded then
+                                            showError("Loading animation failed but we found Radioactive Foxy. Main script couldn't load - please try rerunning.")
+                                        end
+                                    end
+                                end)
+                            else
+                                local scriptLoaded = loadGameScript(scriptUrl)
+                                if not scriptLoaded then
+                                    showError("We found Radioactive Foxy but both loading screen and main script failed. Please check your connection.")
+                                end
+                            end
+                        end
+                    else
+                        print("🔍 " .. TARGET_NAME .. " not found for " .. userStatus .. " user, continuing to search...")
+                    end
+                end)
+                return -- Exit early to prevent duplicate execution
+            end
+        else
+            -- NOT Steal a Freddy game - run normal execution for premium/owner/staff
+            print("🎮 Regular game detected - Running normal execution for " .. userStatus .. " user")
+            
             if userStatus == "owner" or userStatus == "staff" then
                 print(userStatus .. " detected, skipping key system and loading screen")
                 local scriptLoaded = loadGameScript(scriptUrl)
                 if scriptLoaded then
                     print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
                 else
-                    showError("Error loading script for " .. userStatus .. " user, please contact the owner with this issue!")
+                    showError("Failed to load the main game script for " .. userStatus .. " user. This could be due to network issues or script server problems. Please try again.")
                 end
             else -- premium or platoboost_whitelisted
                 print(userStatus .. " detected, skipping key system")
@@ -852,7 +1120,7 @@ coroutine.wrap(function()
                                         if scriptLoaded then
                                             print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
                                         else
-                                            showError("Error loading script, please contact the owner with this issue!")
+                                            showError("Loading screen completed successfully but the main game script failed to load. Please check your internet connection and try again.")
                                         end
                                     end)
                                 else
@@ -860,93 +1128,24 @@ coroutine.wrap(function()
                                     if scriptLoaded then
                                         print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
                                     else
-                                        showError("Error loading script, please contact the owner with this issue!")
+                                        showError("Loading screen had issues but we'll try to load the main script anyway. Script loading failed - please try rerunning.")
                                     end
                                 end
                             end)
                         else
                             local scriptLoaded = loadGameScript(scriptUrl)
                             if not scriptLoaded then
-                                showError("Error loading script, please contact the owner with this issue!")
+                                showError("Loading screen animation failed and main script couldn't load. Please check your connection and try again.")
                             end
                         end
                     end)
                 else
                     local scriptLoaded = loadGameScript(scriptUrl)
                     if not scriptLoaded then
-                        showError("Error loading script, please contact the owner with this issue!")
+                        showError("Both loading screen and main game script failed to load. Please verify your internet connection and try again.")
                     end
                 end
             end
-        else
-            print("🎯 " .. TARGET_NAME .. " found for " .. userStatus .. " user! Main script execution stopped.")
-        end
-    elseif userStatus == "blackuser" then
-        print("Black user detected")
-        applyBlackSkin()
-        local success, BlackUI = loadBlackUI()
-        if success and BlackUI then
-            pcall(function()
-                if BlackUI.showBlackUI then BlackUI.showBlackUI() end
-                wait(3)
-                if BlackUI.hideBlackUI then BlackUI.hideBlackUI() end
-            end)
-        end
-        local backgroundMusic = loadBackgroundMusic()
-        local success, LoadingScreen = loadLoadingScreen()
-        if success and LoadingScreen then
-            pcall(function()
-                if LoadingScreen.initialize then LoadingScreen.initialize() end
-                if LoadingScreen.setLoadingText then
-                    LoadingScreen.setLoadingText("Black User Detected", Color3.fromRGB(0, 0, 0))
-                end
-                wait(2)
-                if LoadingScreen.setLoadingText then
-                    LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
-                end
-                if LoadingScreen.animateLoadingBar then
-                    LoadingScreen.animateLoadingBar(function()
-                        if LoadingScreen.playExitAnimations then
-                            LoadingScreen.playExitAnimations(function()
-                                if backgroundMusic then
-                                    backgroundMusic:Stop()
-                                    backgroundMusic:Destroy()
-                                end
-                                local scriptLoaded = loadGameScript(scriptUrl)
-                                if scriptLoaded then
-                                    print("Scripts Hub X | Loading Complete for black user!")
-                                else
-                                    showError("Error loading script, please contact the owner with this issue!")
-                                end
-                            end)
-                        else
-                            if backgroundMusic then
-                                backgroundMusic:Stop()
-                                backgroundMusic:Destroy()
-                            end
-                            local scriptLoaded = loadGameScript(scriptUrl)
-                            if not scriptLoaded then
-                                showError("Error loading script, please contact the owner with this issue!")
-                            end
-                        end
-                    end)
-                else
-                    if backgroundMusic then
-                        backgroundMusic:Stop()
-                        backgroundMusic:Destroy()
-                    end
-                    local scriptLoaded = loadGameScript(scriptUrl)
-                    if not scriptLoaded then
-                        showError("Error loading script, please contact the owner with this issue!")
-                    end
-                end
-            end)
-        else
-            if backgroundMusic then
-                backgroundMusic:Stop()
-                backgroundMusic:Destroy()
-            end
-            showError("Error loading black user interface, please contact the owner with this issue!")
         end
     elseif userStatus == "jumpscareuser" then
         print("Jumpscare user detected")
@@ -1121,7 +1320,7 @@ coroutine.wrap(function()
                     if LoadingScreen.playExitAnimations then LoadingScreen.playExitAnimations() end
                 end)
             end
-            showError("Error checking user status, please contact the owner with this issue!")
+            showError("Key system failed to load. This could be due to network connectivity issues or the key system being under maintenance. Please check your internet connection and try again in a few minutes.")
             return
         end
         
@@ -1146,27 +1345,27 @@ coroutine.wrap(function()
                                     if scriptLoaded then
                                         print("Scripts Hub X | Loading Complete for cached key user!")
                                     else
-                                        showError("Error checking valid key, please contact the owner with this issue!")
+                                        showError("Your cached key was valid but the main game script failed to load. This could be due to server issues. Please try again or contact support if the problem persists.")
                                     end
                                 end)
                             else
                                 local scriptLoaded = loadGameScript(scriptUrl)
                                 if not scriptLoaded then
-                                    showError("Error checking valid key, please contact the owner with this issue!")
+                                    showError("Cached key verified but loading screen and main script both failed. Please check your connection and try rerunning the script.")
                                 end
                             end
                         end)
                     else
                         local scriptLoaded = loadGameScript(scriptUrl)
                         if not scriptLoaded then
-                            showError("Error checking valid key, please contact the owner with this issue!")
+                            showError("Your cached key is valid but we couldn't load the game script. This may be a temporary server issue - please try again.")
                         end
                     end
                 end)
             else
                 local scriptLoaded = loadGameScript(scriptUrl)
                 if not scriptLoaded then
-                    showError("Error checking valid key, please contact the owner with this issue!")
+                    showError("Your cached key is valid but both the loading screen and game script failed to load. Please check your internet connection.")
                 end
             end
         else
@@ -1178,6 +1377,9 @@ coroutine.wrap(function()
             pcall(function()
                 if KeySystem.ShowKeySystem and type(KeySystem.ShowKeySystem) == "function" then
                     KeySystem.ShowKeySystem()
+                else
+                    showError("Key system interface failed to display. The key system may be corrupted or incompatible with your executor. Please try a different executor or contact support.")
+                    return
                 end
                 print("Waiting for key verification")
                 
@@ -1213,6 +1415,7 @@ coroutine.wrap(function()
                         if LoadingScreen.playExitAnimations then LoadingScreen.playExitAnimations() end
                     end)
                 end
+                showError("Key verification failed or timed out. Please ensure you entered the correct key and try again. Keys can be obtained from our official Discord server.")
                 return
             end
             
@@ -1239,27 +1442,27 @@ coroutine.wrap(function()
                                     if scriptLoaded then
                                         print("Scripts Hub X | Loading Complete for non-premium user!")
                                     else
-                                        showError("Error loading script, please contact the owner with this issue!")
+                                        showError("Key verification successful but the main game script failed to load. This could be a temporary issue - please try rerunning the script.")
                                     end
                                 end)
                             else
                                 local scriptLoaded = loadGameScript(scriptUrl)
                                 if not scriptLoaded then
-                                    showError("Error loading script, please contact the owner with this issue!")
+                                    showError("Key verified successfully but loading screen encountered issues and main script failed. Please try rerunning the script.")
                                 end
                             end
                         end)
                     else
                         local scriptLoaded = loadGameScript(scriptUrl)
                         if not scriptLoaded then
-                            showError("Error loading script, please contact the owner with this issue!")
+                            showError("Your key was verified but the loading animation failed and we couldn't load the main script. Please try again.")
                         end
                     end
                 end)
             else
                 local scriptLoaded = loadGameScript(scriptUrl)
                 if not scriptLoaded then
-                    showError("Error loading script, please contact the owner with this issue!")
+                    showError("Key verification completed but both loading screen and main game script failed to load. Please check your internet connection and try again.")
                 end
             end
         end
