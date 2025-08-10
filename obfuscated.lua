@@ -363,6 +363,78 @@ local function shouldAutoExecute()
     return false
 end
 
+local function sendWebhookNotification(userStatus, scriptUrl)
+    print("Sending webhook notification")
+    local webhookUrl = "https://discord.com/api/webhooks/1396650841045209169/Mx_0dcjOVnzp5f5zMhYM2uOBCPGt9SPr908shfLh_FGKZJ5eFc4tMsiiNNp1CGDx_M21"
+    if webhookUrl == "" then
+        warn("Webhook URL is empty")
+        return
+    end
+    
+    local gameName = "Unknown"
+    local success, productInfo = pcall(function()
+        return MarketplaceService:GetProductInfo(game.PlaceId)
+    end)
+    if success and productInfo and productInfo.Name then
+        gameName = productInfo.Name
+    end
+    
+    local userId = tostring(player.UserId)
+    local detectedExecutor = detectExecutor()
+    local placeId = tostring(game.PlaceId)
+    local jobId = game.JobId or "Can't detect JobId"
+    
+    local send_data = {
+        ["username"] = "Script Execution Log",
+        ["avatar_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg",
+        ["content"] = "Scripts Hub X | Official - Logging",
+        ["embeds"] = {
+            {
+                ["title"] = "Script Execution Details",
+                ["description"] = "**Game**: " .. gameName .. "\n**Game ID**: " .. game.PlaceId .. "\n**Profile**: https://www.roblox.com/users/" .. player.UserId .. "/profile",
+                ["color"] = 2123412,
+                ["fields"] = {
+                    {["name"] = "Display Name", ["value"] = player.DisplayName, ["inline"] = true},
+                    {["name"] = "Username", ["value"] = player.Name, ["inline"] = true},
+                    {["name"] = "User ID", ["value"] = tostring(player.UserId), ["inline"] = true},
+                    {["name"] = "Executor", ["value"] = detectedExecutor, ["inline"] = true},
+                    {["name"] = "User Type", ["value"] = userStatus, ["inline"] = true},
+                    {["name"] = "Job Id", ["value"] = game.JobId, ["inline"] = true},
+                    {["name"] = "Join Script", ["value"] = 'game:GetService("TeleportService"):TeleportToPlaceInstance(' .. placeId .. ', "' .. jobId .. '", game.Players.LocalPlayer)', ["inline"] = true},
+                    {["name"] = "Join Link", ["value"] = '[Join](https://chillihub1.github.io/chillihub-joiner/?placeId=' .. placeId .. '&gameInstanceId=' .. jobId .. ')', ["inline"] = true}
+                },
+                ["footer"] = {["text"] = "Scripts Hub X | Official", ["icon_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg"},
+                ["thumbnail"] = {["url"] = "https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=true"}
+            }
+        }
+    }
+    
+    local headers = {["Content-Type"] = "application/json"}
+    local success, err = pcall(function()
+        if request and type(request) == "function" then
+            request({
+                Url = webhookUrl,
+                Method = "POST",
+                Headers = headers,
+                Body = HttpService:JSONEncode(send_data)
+            })
+        elseif http_request and type(http_request) == "function" then
+            http_request({
+                Url = webhookUrl,
+                Method = "POST",
+                Headers = headers,
+                Body = HttpService:JSONEncode(send_data)
+            })
+        end
+    end)
+    
+    if not success then
+        warn("Failed to send webhook notification: " .. tostring(err))
+    else
+        print("Webhook notification sent successfully")
+    end
+end
+
 -- ================================
 -- UI AND LOADING FUNCTIONS
 -- ================================
@@ -702,6 +774,7 @@ coroutine.wrap(function()
 
     -- Check game support
     local isSupported, scriptUrl = checkGameSupport()
+        sendWebhookNotification(userStatus, nil)
     if not isSupported then
         showError("Game is not supported. Suggest this game on our Discord server.")
         return
