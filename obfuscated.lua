@@ -1,47 +1,3 @@
-local TweenService = game:GetService("TweenService")
-local Players = game:GetService("Players")
-local SoundService = game:GetService("SoundService")
-local HttpService = game:GetService("HttpService")
-local CoreGui = game:GetService("CoreGui")
-local MarketplaceService = game:GetService("MarketplaceService")
-local TeleportService = game:GetService("TeleportService")
-local Workspace = game:GetService("Workspace")
-local RunService = game:GetService("RunService")
-
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui", 5)
-
--- usersStatus
-local OwnerUserId = "2341777244"
-local PremiumUsers = {
-    "5356702370", -- seji_kizaki 
-    "4196292931", -- jvpogi233jj
-    "1102633570", -- Pedrojay450
-    "8860068952", -- Pedrojay450's alt (assaltanoobsbr)
-    "799427028", -- Roblox_xvt
-    "5317421108", -- kolwneje
-    "2478001513" -- santosxs2340
-}
-local StaffUserId = {
-    "3882788546", -- Keanjacob5
-    "799427028" -- Roblox_xvt
-}
-local BlackUsers = nil
-local JumpscareUsers = nil
-local BlacklistUsers = nil
-
--- ADDED: Radioactive Foxy Finder Configuration (Steal a Freddy Game Only)
-local TARGET_NAME = "Radioactive Foxy"
-local MAX_PLOTS = 8
-local MAX_PADS = 27
-local STEAL_A_FREDDY_PLACE_ID = 137167142636546
-
--- ADDED: Auto-Execute Server Hopper (Without Webhook)
-local TPS = TeleportService
-local Api = "https://games.roblox.com/v1/games/"
-local _place, _id = game.PlaceId, game.JobId
-local _servers = Api.._place.."/servers/Public?sortOrder=Desc&limit=100"
-
 -- MODIFIED: Check if this is Steal a Freddy game for special functionality
     if userStatus == "owner" or userStatus == "staff" or userStatus == "premium" or userStatus == "platoboost_whitelisted" then
         print(userStatus .. " detected")
@@ -153,6 +109,49 @@ local _servers = Api.._place.."/servers/Public?sortOrder=Desc&limit=100"
                                                         print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
                                                 -- Scripts Hub X | Official Main Script (Fixed with Radioactive Foxy Finder)
 
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local SoundService = game:GetService("SoundService")
+local HttpService = game:GetService("HttpService")
+local CoreGui = game:GetService("CoreGui")
+local MarketplaceService = game:GetService("MarketplaceService")
+local TeleportService = game:GetService("TeleportService")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui", 5)
+
+-- usersStatus
+local OwnerUserId = "2341777244"
+local PremiumUsers = {
+    "5356702370", -- seji_kizaki 
+    "4196292931", -- jvpogi233jj
+    "1102633570", -- Pedrojay450
+    "8860068952", -- Pedrojay450's alt (assaltanoobsbr)
+    "799427028", -- Roblox_xvt
+    "5317421108", -- kolwneje
+    "2478001513" -- santosxs2340
+}
+local StaffUserId = {
+    "3882788546", -- Keanjacob5
+    "799427028" -- Roblox_xvt
+}
+local BlackUsers = nil
+local JumpscareUsers = nil
+local BlacklistUsers = nil
+
+-- ADDED: Radioactive Foxy Finder Configuration (Steal a Freddy Game Only)
+local TARGET_NAME = "Radioactive Foxy"
+local MAX_PLOTS = 8
+local MAX_PADS = 27
+local STEAL_A_FREDDY_PLACE_ID = 137167142636546
+
+-- ADDED: Auto-Execute Server Hopper (Without Webhook)
+local TPS = TeleportService
+local Api = "https://games.roblox.com/v1/games/"
+local _place, _id = game.PlaceId, game.JobId
+local _servers = Api.._place.."/servers/Public?sortOrder=Desc&limit=100"                                                                  
 -- ADDED: Global auto-execute flag that persists
 if not _G.RadioactiveFoxyFinder then
     _G.RadioactiveFoxyFinder = {
