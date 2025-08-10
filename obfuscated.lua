@@ -141,84 +141,97 @@ end
 -- Main checking function for animatronics (excluding player's plot)
 local function checkAllPlots()
     print("🔍 Checking server for animatronics: " .. game.JobId .. " (Attempt #" .. _G.AnimatronicsFinder.executionCount .. ")")
-    
+
     local plots = Workspace:FindFirstChild("Plots")
     if not plots then
         print("❌ No Plots folder found")
         return false, nil
     end
-    
+
     local foundAnimatronics = {} -- Track all found animatronics
-    
+    local checkedPlots = {}      -- Prevent double-checking plots
+
+    -- Find player's plot ONCE (avoid calling findPlayerPlot() every loop)
+    local playerPlotObj, playerPlotNumber = findPlayerPlot()
+
     for plotNum = 1, MAX_PLOTS do
-        print("🔍 Checking Plot " .. plotNum .. "...")
-        
-        -- Call findPlayerPlot before checking each plot
-        local playerPlot, playerPlotNumber = findPlayerPlot()
-        
-        -- Check if this plot belongs to the player
-        if playerPlotNumber and plotNum == playerPlotNumber then
-            print("⏭️ Plot " .. plotNum .. " is player's plot - Skipping pad checks but continuing to next plot")
-            -- Continue to next plot (don't break, just skip pad checking)
+        if checkedPlots[plotNum] then
+            -- already checked (maybe checked as neighbour earlier), skip
+            print("⏭️ Plot " .. plotNum .. " already checked, skipping.")
         else
-            local plot = plots:FindFirstChild(tostring(plotNum))
-            if plot then
-                print("✅ Plot " .. plotNum .. " found - Checking pads...")
-                local pads = plot:FindFirstChild("Pads")
-                if pads then
-                    for padNum = 1, MAX_PADS do
-                        local pad = pads:FindFirstChild(tostring(padNum))
-                        if pad then
+            -- decide which plot to actually check this iteration
+            local toCheck = plotNum
+
+            -- If this is the player's plot, pick the left neighbour instead (fallback to right)
+            if playerPlotNumber and plotNum == playerPlotNumber then
+                local left = plotNum - 1
+                local right = plotNum + 1
+
+                if left >= 1 and not checkedPlots[left] then
+                    toCheck = left
+                elseif right <= MAX_PLOTS and not checkedPlots[right] then
+                    toCheck = right
+                else
+                    -- No neighbour available (or already checked) — mark player's plot as checked and continue
+                    print("⏭️ Player's plot " .. plotNum .. " - no available neighbour to check, skipping.")
+                    checkedPlots[plotNum] = true
+                    toCheck = nil
+                end
+            end
+
+            if toCheck then
+                local plot = plots:FindFirstChild(tostring(toCheck))
+                if plot then
+                    print("✅ Checking Plot " .. toCheck .. " (origin loop for " .. plotNum .. ") - Checking pads...")
+                    checkedPlots[toCheck] = true
+
+                    local pads = plot:FindFirstChild("Pads")
+                    if pads then
+                        for padNum = 1, MAX_PADS do
+                            local pad = pads:FindFirstChild(tostring(padNum))
+                            if not pad then break end
                             local objectFolder = pad:FindFirstChild("Object")
                             if objectFolder then
-                                -- Check for any of the target animatronics
                                 for _, animatronic in pairs(TARGET_ANIMATRONICS) do
                                     local target = objectFolder:FindFirstChild(animatronic)
                                     if target then
-                                        print("🎯 FOUND! " .. animatronic .. " in Plot" .. plotNum .. " Pad" .. padNum)
+                                        print("🎯 FOUND! " .. animatronic .. " in Plot" .. toCheck .. " Pad" .. padNum)
                                         notify("Success", "Found " .. animatronic .. "!")
-                                        
-                                        -- Add to found animatronics list
                                         table.insert(foundAnimatronics, {
                                             name = animatronic,
-                                            plot = plotNum,
+                                            plot = toCheck,
                                             pad = padNum
                                         })
                                     end
                                 end
                             end
-                        else
-                            break -- Break out of pad loop if pad doesn't exist
                         end
-                    end
-                    
-                    if #foundAnimatronics == 0 then
-                        print("❌ Plot " .. plotNum .. " - No target animatronics found in any pads")
+
+                        if #foundAnimatronics == 0 then
+                            print("❌ Plot " .. toCheck .. " - No target animatronics found in any pads")
+                        end
+                    else
+                        print("❌ Plot " .. toCheck .. " - No Pads folder found")
                     end
                 else
-                    print("❌ Plot " .. plotNum .. " - No Pads folder found")
+                    print("❌ Plot " .. toCheck .. " - Plot doesn't exist")
+                    checkedPlots[toCheck] = true
                 end
-            else
-                print("❌ Plot " .. plotNum .. " - Plot doesn't exist")
             end
         end
     end
-    
-    -- Check if we found any animatronics
+
+    -- Finalize
     if #foundAnimatronics > 0 then
         print("🎯 Found " .. #foundAnimatronics .. " animatronic(s) total!")
         for i, found in pairs(foundAnimatronics) do
             print("   " .. i .. ". " .. found.name .. " in Plot" .. found.plot .. " Pad" .. found.pad)
         end
-        
-        -- Disable auto-finder after success
         _G.AnimatronicsFinder.enabled = false
-        _G.AnimatronicsFinder.foundAnimatronic = foundAnimatronics[1].name -- Use first found
-        
-        -- Return the first animatronic found (or modify to return all)
+        _G.AnimatronicsFinder.foundAnimatronic = foundAnimatronics[1].name
         return true, foundAnimatronics[1].name
     end
-    
+
     print("❌ No target animatronics found in server: " .. game.JobId)
     return false, nil
 end
