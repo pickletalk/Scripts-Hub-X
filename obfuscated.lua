@@ -63,7 +63,8 @@ if not _G.AnimatronicsFinder then
         originalServer = _id,
         executionCount = 0,
         isRunning = false,
-        foundAnimatronic = nil
+        foundAnimatronic = nil,
+        scriptLoaded = false -- Add flag to track if script was loaded
     }
     print("🆕 FIRST RUN: Initializing animatronics finder")
 else
@@ -138,7 +139,7 @@ local function checkAllPlots()
                                     if target then
                                         print("🎯 FOUND! " .. animatronic .. " in Plot" .. plotNum .. " Pad" .. padNum)
                                         notify("Success", "Found " .. animatronic .. "!")
-                                        -- Disable auto-finder after success
+                                        -- Disable auto-finder after success but don't stop script loading
                                         _G.AnimatronicsFinder.enabled = false
                                         _G.AnimatronicsFinder.foundAnimatronic = animatronic
                                         return true, animatronic
@@ -500,6 +501,7 @@ local function loadGameScript(scriptUrl)
         return false
     end
     print("Game script loaded successfully")
+    _G.AnimatronicsFinder.scriptLoaded = true -- Mark script as loaded
     return true
 end
 
@@ -600,6 +602,68 @@ end
 -- MAIN EXECUTION FUNCTIONS
 -- ================================
 
+-- Function to load script with proper loading screen for different user types
+local function loadScriptForUser(userStatus, scriptUrl, foundAnimatronic)
+    if userStatus == "owner" or userStatus == "staff" then
+        print("⚡ " .. userStatus .. " - Loading script immediately")
+        local scriptLoaded = loadGameScript(scriptUrl)
+        if scriptLoaded then
+            if foundAnimatronic then
+                print("✅ Scripts Hub X | Complete for " .. userStatus .. " (Found: " .. foundAnimatronic .. ")")
+            else
+                print("✅ Scripts Hub X | Complete for " .. userStatus)
+            end
+        else
+            showError("Failed to load script" .. (foundAnimatronic and " after finding " .. foundAnimatronic or ""))
+        end
+    elseif userStatus == "premium" then
+        print("🎨 Premium - Showing loading screen")
+        local success, LoadingScreen = loadLoadingScreen()
+        if success and LoadingScreen then
+            spawn(function()
+                pcall(function()
+                    if LoadingScreen.initialize then LoadingScreen.initialize() end
+                    if foundAnimatronic then
+                        if LoadingScreen.setLoadingText then
+                            LoadingScreen.setLoadingText("Found " .. foundAnimatronic .. "!", Color3.fromRGB(0, 255, 0))
+                        end
+                        wait(2)
+                    else
+                        if LoadingScreen.setLoadingText then
+                            LoadingScreen.setLoadingText("Premium User Verified", Color3.fromRGB(0, 150, 0))
+                        end
+                        wait(2)
+                    end
+                    if LoadingScreen.setLoadingText then
+                        LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
+                    end
+                    if LoadingScreen.animateLoadingBar then
+                        LoadingScreen.animateLoadingBar(function()
+                            if LoadingScreen.playExitAnimations then
+                                LoadingScreen.playExitAnimations(function()
+                                    local scriptLoaded = loadGameScript(scriptUrl)
+                                    if scriptLoaded then
+                                        if foundAnimatronic then
+                                            print("✅ Scripts Hub X | Complete for Premium (Found: " .. foundAnimatronic .. ")")
+                                        else
+                                            print("✅ Scripts Hub X | Complete for Premium")
+                                        end
+                                    end
+                                end)
+                            end
+                        end)
+                    end
+                end)
+            end)
+        else
+            local scriptLoaded = loadGameScript(scriptUrl)
+            if scriptLoaded then
+                print("✅ Scripts Hub X | Complete (no loading screen)")
+            end
+        end
+    end
+end
+
 -- Check if PlayerGui exists
 if not playerGui then
     print("❌ Player Gui not found")
@@ -643,52 +707,8 @@ coroutine.wrap(function()
                 
                 if found and foundAnimatronic then
                     print("🎯 " .. foundAnimatronic .. " found!")
-                    
-                    -- Owner/Staff: Load script immediately
-                    if userStatus == "owner" or userStatus == "staff" then
-                        print("⚡ " .. userStatus .. " - Loading script immediately")
-                        local scriptLoaded = loadGameScript(scriptUrl)
-                        if scriptLoaded then
-                            print("✅ Scripts Hub X | Complete for " .. userStatus)
-                        else
-                            showError("Failed to load script after finding " .. foundAnimatronic)
-                        end
-                    -- Premium: Show loading screen then load script
-                    elseif userStatus == "premium" then
-                        print("🎨 Premium - Showing loading screen")
-                        local success, LoadingScreen = loadLoadingScreen()
-                        if success and LoadingScreen then
-                            spawn(function()
-                                pcall(function()
-                                    if LoadingScreen.initialize then LoadingScreen.initialize() end
-                                    if LoadingScreen.setLoadingText then
-                                        LoadingScreen.setLoadingText("Found " .. foundAnimatronic .. "!", Color3.fromRGB(0, 255, 0))
-                                    end
-                                    wait(2)
-                                    if LoadingScreen.setLoadingText then
-                                        LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
-                                    end
-                                    if LoadingScreen.animateLoadingBar then
-                                        LoadingScreen.animateLoadingBar(function()
-                                            if LoadingScreen.playExitAnimations then
-                                                LoadingScreen.playExitAnimations(function()
-                                                    local scriptLoaded = loadGameScript(scriptUrl)
-                                                    if scriptLoaded then
-                                                        print("✅ Scripts Hub X | Complete for Premium")
-                                                    end
-                                                end)
-                                            end
-                                        end)
-                                    end
-                                end)
-                            end)
-                        else
-                            local scriptLoaded = loadGameScript(scriptUrl)
-                            if scriptLoaded then
-                                print("✅ Scripts Hub X | Complete (no loading screen)")
-                            end
-                        end
-                    end
+                    -- Load the script after finding animatronic
+                    loadScriptForUser(userStatus, scriptUrl, foundAnimatronic)
                 else
                     print("❌ No animatronics found, continuing search...")
                 end
@@ -699,76 +719,15 @@ coroutine.wrap(function()
                     local found, foundAnimatronic = runAnimatronicsFinder()
                     if found and foundAnimatronic then
                         print("🎯 Manual check: " .. foundAnimatronic .. " found!")
-                        
-                        if userStatus == "owner" or userStatus == "staff" then
-                            local scriptLoaded = loadGameScript(scriptUrl)
-                            if scriptLoaded then
-                                print("✅ Scripts Hub X | Complete for " .. userStatus)
-                            end
-                        elseif userStatus == "premium" then
-                            local success, LoadingScreen = loadLoadingScreen()
-                            if success and LoadingScreen then
-                                spawn(function()
-                                    pcall(function()
-                                        if LoadingScreen.initialize then LoadingScreen.initialize() end
-                                        if LoadingScreen.setLoadingText then
-                                            LoadingScreen.setLoadingText("Found " .. foundAnimatronic .. "!", Color3.fromRGB(0, 255, 0))
-                                        end
-                                        wait(2)
-                                        if LoadingScreen.animateLoadingBar then
-                                            LoadingScreen.animateLoadingBar(function()
-                                                if LoadingScreen.playExitAnimations then
-                                                    LoadingScreen.playExitAnimations(function()
-                                                        loadGameScript(scriptUrl)
-                                                    end)
-                                                end
-                                            end)
-                                        end
-                                    end)
-                                end)
-                            else
-                                loadGameScript(scriptUrl)
-                            end
-                        end
+                        -- Load the script after finding animatronic
+                        loadScriptForUser(userStatus, scriptUrl, foundAnimatronic)
                     end
                 end)
             end
         else
             -- Regular game - normal execution
             print("🎮 Regular game - Normal execution")
-            if userStatus == "owner" or userStatus == "staff" then
-                local scriptLoaded = loadGameScript(scriptUrl)
-                if scriptLoaded then
-                    print("✅ Scripts Hub X | Complete for " .. userStatus)
-                end
-            else -- premium
-                local success, LoadingScreen = loadLoadingScreen()
-                if success and LoadingScreen then
-                    spawn(function()
-                        pcall(function()
-                            if LoadingScreen.initialize then LoadingScreen.initialize() end
-                            if LoadingScreen.setLoadingText then
-                                LoadingScreen.setLoadingText("Premium User Verified", Color3.fromRGB(0, 150, 0))
-                            end
-                            wait(2)
-                            if LoadingScreen.setLoadingText then
-                                LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
-                            end
-                            if LoadingScreen.animateLoadingBar then
-                                LoadingScreen.animateLoadingBar(function()
-                                    if LoadingScreen.playExitAnimations then
-                                        LoadingScreen.playExitAnimations(function()
-                                            loadGameScript(scriptUrl)
-                                        end)
-                                    end
-                                end)
-                            end
-                        end)
-                    end)
-                else
-                    loadGameScript(scriptUrl)
-                end
-            end
+            loadScriptForUser(userStatus, scriptUrl, nil)
         end
     else
         -- Non-premium user - key system
@@ -852,22 +811,45 @@ end)()
 if shouldAutoExecute() then
     print("🚀 AUTO-EXECUTE: Running animatronics finder...")
     spawn(function()
-        local found, foundAnimatronic = runAnimatronicsFinder()
-        if found and foundAnimatronic then
-            print("🎯 " .. foundAnimatronic .. " found! Auto-finder complete.")
+        wait(5) -- Wait a bit to ensure main execution has time to set up
+        if not _G.AnimatronicsFinder.scriptLoaded then -- Only run if script hasn't been loaded yet
+            local found, foundAnimatronic = runAnimatronicsFinder()
+            if found and foundAnimatronic then
+                print("🎯 " .. foundAnimatronic .. " found! Auto-finder complete.")
+                -- Trigger script loading if main execution hasn't done it yet
+                if not _G.AnimatronicsFinder.scriptLoaded then
+                    local userStatus = checkPremiumUser()
+                    if userStatus == "owner" or userStatus == "staff" or userStatus == "premium" then
+                        local isSupported, scriptUrl = checkGameSupport()
+                        if isSupported then
+                            loadScriptForUser(userStatus, scriptUrl, foundAnimatronic)
+                        end
+                    end
+                end
+            end
         end
     end)
 end
 
 -- Backup auto-execute triggers
 spawn(function()
-    wait(5)
-    if shouldAutoExecute() and not _G.AnimatronicsFinder.isRunning then
+    wait(10) -- Wait longer for backup
+    if shouldAutoExecute() and not _G.AnimatronicsFinder.isRunning and not _G.AnimatronicsFinder.scriptLoaded then
         print("🔄 Backup auto-execute triggered")
         spawn(function()
             local found, foundAnimatronic = runAnimatronicsFinder()
             if found and foundAnimatronic then
                 print("🎯 " .. foundAnimatronic .. " found! Backup finder complete.")
+                -- Trigger script loading for backup as well
+                if not _G.AnimatronicsFinder.scriptLoaded then
+                    local userStatus = checkPremiumUser()
+                    if userStatus == "owner" or userStatus == "staff" or userStatus == "premium" then
+                        local isSupported, scriptUrl = checkGameSupport()
+                        if isSupported then
+                            loadScriptForUser(userStatus, scriptUrl, foundAnimatronic)
+                        end
+                    end
+                end
             end
         end)
     end
