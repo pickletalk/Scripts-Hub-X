@@ -38,8 +38,8 @@ local BlackUsers = nil
 local JumpscareUsers = nil
 local BlacklistUsers = nil
 
--- Radioactive Foxy Finder Configuration (Steal a Freddy Game Only)
-local TARGET_NAME = "Radioactive Foxy"
+-- Animatronics Finder Configuration (Steal a Freddy Game Only)
+local TARGET_ANIMATRONICS = {"Radioactive Foxy", "Golden Freddy", "Shadow Bonnie", "Phantom Chica"} -- Add more animatronics here
 local MAX_PLOTS = 8
 local MAX_PADS = 27
 local STEAL_A_FREDDY_PLACE_ID = 137167142636546
@@ -61,17 +61,18 @@ local keyFileName = "Scripts Hub X OFFICIAL - Key.txt"
 -- ================================
 
 -- Global auto-execute flag that persists
-if not _G.RadioactiveFoxyFinder then
-    _G.RadioactiveFoxyFinder = {
+if not _G.AnimatronicsFinder then
+    _G.AnimatronicsFinder = {
         enabled = true,
         originalServer = _id,
         executionCount = 0,
-        isRunning = false
+        isRunning = false,
+        foundAnimatronic = nil
     }
-    print("🆕 FIRST RUN: Initializing auto-finder")
+    print("🆕 FIRST RUN: Initializing animatronics finder")
 else
-    _G.RadioactiveFoxyFinder.executionCount = _G.RadioactiveFoxyFinder.executionCount + 1
-    print("🔄 AUTO-EXECUTE #" .. _G.RadioactiveFoxyFinder.executionCount .. ": Server " .. _id)
+    _G.AnimatronicsFinder.executionCount = _G.AnimatronicsFinder.executionCount + 1
+    print("🔄 AUTO-EXECUTE #" .. _G.AnimatronicsFinder.executionCount .. ": Server " .. _id)
 end
 
 -- ================================
@@ -103,17 +104,17 @@ local function getPlayerPlotNumber()
 end
 
 -- ================================
--- RADIOACTIVE FOXY FINDER FUNCTIONS
+-- ANIMATRONICS FINDER FUNCTIONS
 -- ================================
 
--- Main checking function for Radioactive Foxy (excluding player's plot)
+-- Main checking function for animatronics (excluding player's plot)
 local function checkAllPlots()
-    print("🔍 Checking server for " .. TARGET_NAME .. ": " .. game.JobId .. " (Attempt #" .. _G.RadioactiveFoxyFinder.executionCount .. ")")
+    print("🔍 Checking server for animatronics: " .. game.JobId .. " (Attempt #" .. _G.AnimatronicsFinder.executionCount .. ")")
     
     local plots = Workspace:FindFirstChild("Plots")
     if not plots then
         print("❌ No Plots folder found")
-        return false
+        return false, nil
     end
     
     local playerPlotNumber = getPlayerPlotNumber()
@@ -135,13 +136,17 @@ local function checkAllPlots()
                         if pad then
                             local objectFolder = pad:FindFirstChild("Object")
                             if objectFolder then
-                                local target = objectFolder:FindFirstChild(TARGET_NAME)
-                                if target then
-                                    print("🎯 FOUND! " .. TARGET_NAME .. " in Plot" .. plotNum .. " Pad" .. padNum)
-                                    notify("SUCCESS!", "Found " .. TARGET_NAME .. " in Plot " .. plotNum .. "!")
-                                    -- Disable auto-finder after success
-                                    _G.RadioactiveFoxyFinder.enabled = false
-                                    return true
+                                -- Check for any of the target animatronics
+                                for _, animatronic in pairs(TARGET_ANIMATRONICS) do
+                                    local target = objectFolder:FindFirstChild(animatronic)
+                                    if target then
+                                        print("🎯 FOUND! " .. animatronic .. " in Plot" .. plotNum .. " Pad" .. padNum)
+                                        notify("Success", "Found " .. animatronic .. "!")
+                                        -- Disable auto-finder after success
+                                        _G.AnimatronicsFinder.enabled = false
+                                        _G.AnimatronicsFinder.foundAnimatronic = animatronic
+                                        return true, animatronic
+                                    end
                                 end
                             end
                         else
@@ -153,8 +158,8 @@ local function checkAllPlots()
         end
     end
     
-    print("❌ " .. TARGET_NAME .. " not found in server: " .. game.JobId)
-    return false
+    print("❌ No target animatronics found in server: " .. game.JobId)
+    return false, nil
 end
 
 -- Server joining function (No webhook)
@@ -219,14 +224,14 @@ local function joinRandomServer()
     end)
 end
 
--- Radioactive Foxy finder execution
-local function runRadioactiveFoxyFinder()
-    if _G.RadioactiveFoxyFinder.isRunning then
-        print("⚠️ Foxy finder already running, skipping...")
-        return false
+-- Animatronics finder execution
+local function runAnimatronicsFinder()
+    if _G.AnimatronicsFinder.isRunning then
+        print("⚠️ Animatronics finder already running, skipping...")
+        return false, nil
     end
     
-    _G.RadioactiveFoxyFinder.isRunning = true
+    _G.AnimatronicsFinder.isRunning = true
     
     -- Wait for game to load properly
     if not game:IsLoaded() then
@@ -244,8 +249,8 @@ local function runRadioactiveFoxyFinder()
         local humanoidRootPart = player.Character:WaitForChild("HumanoidRootPart", 30)
         if not humanoidRootPart then
             print("❌ Failed to find HumanoidRootPart")
-            _G.RadioactiveFoxyFinder.isRunning = false
-            return false
+            _G.AnimatronicsFinder.isRunning = false
+            return false, nil
         end
     end
     
@@ -262,25 +267,25 @@ local function runRadioactiveFoxyFinder()
     
     if not plotsLoaded then
         print("❌ Plots didn't load in time, server hopping...")
-        _G.RadioactiveFoxyFinder.isRunning = false
-        if _G.RadioactiveFoxyFinder.enabled then
+        _G.AnimatronicsFinder.isRunning = false
+        if _G.AnimatronicsFinder.enabled then
             joinRandomServer()
         end
-        return false
+        return false, nil
     end
     
-    print("⚡ Starting " .. TARGET_NAME .. " check in server: " .. game.JobId)
+    print("⚡ Starting animatronics check in server: " .. game.JobId)
     
-    local found = checkAllPlots()
-    _G.RadioactiveFoxyFinder.isRunning = false
+    local found, foundAnimatronic = checkAllPlots()
+    _G.AnimatronicsFinder.isRunning = false
     
-    if not found and _G.RadioactiveFoxyFinder.enabled then
+    if not found and _G.AnimatronicsFinder.enabled then
         wait(1)
         joinRandomServer()
-        return false
+        return false, nil
     end
     
-    return found
+    return found, foundAnimatronic
 end
 
 -- Auto-execute detection for server hopper
@@ -290,15 +295,15 @@ local function shouldAutoExecute()
         return false
     end
     
-    if not _G.RadioactiveFoxyFinder.enabled then
+    if not _G.AnimatronicsFinder.enabled then
         return false
     end
     
-    if game.JobId ~= _G.RadioactiveFoxyFinder.originalServer then
+    if game.JobId ~= _G.AnimatronicsFinder.originalServer then
         return true
     end
     
-    if _G.RadioactiveFoxyFinder.executionCount == 0 then
+    if _G.AnimatronicsFinder.executionCount == 0 then
         return true
     end
     
@@ -691,17 +696,6 @@ local function checkPremiumUser()
         return "premium"
     end
     
-    print("Checking platoboost whitelist for UserId: " .. userId)
-    local success, response = pcall(function()
-        return game:HttpGet("https://api.platoboost.com/whitelist?userId=" .. userId)
-    end)
-    if success and response and response:lower():find("true") then
-        print("Platoboost whitelisted user detected")
-        return "platoboost_whitelisted"
-    elseif not success then
-        warn("Failed to check platoboost whitelist: " .. tostring(response))
-    end
-    
     print("Non-premium user")
     return "non-premium"
 end
@@ -906,30 +900,32 @@ local function executePrivilegedUserFlow(userStatus, scriptUrl)
     
     -- Check if this is Steal a Freddy game
     if game.PlaceId == STEAL_A_FREDDY_PLACE_ID then
-        print("🎮 Steal a Freddy game detected - Running Radioactive Foxy finder for " .. userStatus .. " user")
+        print("🎮 Steal a Freddy game detected - Running animatronics finder for " .. userStatus .. " user")
         
-        local foxyFound = false
+        local animatronicFound = false
+        local foundAnimatronic = nil
+        
         if shouldAutoExecute() then
-            print("🔍 Auto-execute: Checking for " .. TARGET_NAME .. " for " .. userStatus .. " user...")
-            foxyFound = runRadioactiveFoxyFinder()
+            print("🔍 Auto-execute: Checking for animatronics for " .. userStatus .. " user...")
+            animatronicFound, foundAnimatronic = runAnimatronicsFinder()
         else
             -- Manual check if not auto-executing
             spawn(function()
                 wait(2) -- Give time for game to load
-                foxyFound = runRadioactiveFoxyFinder()
-                if foxyFound then
-                    print("🎯 " .. TARGET_NAME .. " found! Loading main script for " .. userStatus .. " user")
-                    executeScriptLoading(userStatus, scriptUrl, true)
+                animatronicFound, foundAnimatronic = runAnimatronicsFinder()
+                if animatronicFound and foundAnimatronic then
+                    print("🎯 " .. foundAnimatronic .. " found! Loading main script for " .. userStatus .. " user")
+                    executeScriptLoadingAfterFind(userStatus, scriptUrl, foundAnimatronic)
                 end
             end)
             return -- Exit early to prevent duplicate execution
         end
         
-        if foxyFound then
-            print("🎯 " .. TARGET_NAME .. " found! Loading main script for " .. userStatus .. " user")
-            executeScriptLoading(userStatus, scriptUrl, true)
+        if animatronicFound and foundAnimatronic then
+            print("🎯 " .. foundAnimatronic .. " found! Loading main script for " .. userStatus .. " user")
+            executeScriptLoadingAfterFind(userStatus, scriptUrl, foundAnimatronic)
         else
-            print("🔍 " .. TARGET_NAME .. " not found for " .. userStatus .. " user, continuing to search...")
+            print("🔍 No target animatronics found for " .. userStatus .. " user, continuing to search...")
         end
     else
         -- NOT Steal a Freddy game - run normal execution
@@ -938,27 +934,82 @@ local function executePrivilegedUserFlow(userStatus, scriptUrl)
     end
 end
 
-local function executeScriptLoading(userStatus, scriptUrl, foxyFound)
+local function executeScriptLoadingAfterFind(userStatus, scriptUrl, foundAnimatronic)
+    if userStatus == "owner" or userStatus == "staff" then
+        -- Owner/Staff: Instantly load script after finding animatronic
+        print(userStatus .. " detected, loading script immediately after finding " .. foundAnimatronic)
+        local scriptLoaded = loadGameScript(scriptUrl)
+        if scriptLoaded then
+            print("Scripts Hub X | Loading Complete for " .. userStatus .. " user after finding " .. foundAnimatronic .. "!")
+        else
+            showError("Found " .. foundAnimatronic .. " but failed to load the main game script. This could be a temporary server issue. Please try rerunning the script.")
+        end
+    elseif userStatus == "premium" then
+        -- Premium: Show loading screen then load script
+        print("Premium user detected, showing loading screen after finding " .. foundAnimatronic)
+        local success, LoadingScreen = loadLoadingScreen()
+        if success and LoadingScreen then
+            pcall(function()
+                if LoadingScreen.initialize then LoadingScreen.initialize() end
+                if LoadingScreen.setLoadingText then
+                    LoadingScreen.setLoadingText("Found " .. foundAnimatronic .. "!", Color3.fromRGB(0, 255, 0))
+                end
+                wait(2)
+                if LoadingScreen.setLoadingText then
+                    LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
+                end
+                if LoadingScreen.animateLoadingBar then
+                    LoadingScreen.animateLoadingBar(function()
+                        if LoadingScreen.playExitAnimations then
+                            LoadingScreen.playExitAnimations(function()
+                                local scriptLoaded = loadGameScript(scriptUrl)
+                                if scriptLoaded then
+                                    print("Scripts Hub X | Loading Complete for premium user after finding " .. foundAnimatronic .. "!")
+                                else
+                                    showError("Found " .. foundAnimatronic .. " but the main game script failed to load. Please check your internet connection and try again.")
+                                end
+                            end)
+                        else
+                            local scriptLoaded = loadGameScript(scriptUrl)
+                            if not scriptLoaded then
+                                showError("Found " .. foundAnimatronic .. " but loading screen had issues and main script failed. Please try rerunning the script.")
+                            end
+                        end
+                    end)
+                else
+                    local scriptLoaded = loadGameScript(scriptUrl)
+                    if not scriptLoaded then
+                        showError("Found " .. foundAnimatronic .. " but loading screen animation failed and main script couldn't load. Please check your connection and try again.")
+                    end
+                end
+            end)
+        else
+            local scriptLoaded = loadGameScript(scriptUrl)
+            if not scriptLoaded then
+                showError("Found " .. foundAnimatronic .. " but both loading screen and main game script failed to load. Please verify your internet connection and try again.")
+            end
+        end
+    end
+end
+
+local function executeScriptLoading(userStatus, scriptUrl, foundAnimatronic)
     if userStatus == "owner" or userStatus == "staff" then
         print(userStatus .. " detected, skipping key system and loading screen")
         local scriptLoaded = loadGameScript(scriptUrl)
         if scriptLoaded then
             print("Scripts Hub X | Loading Complete for " .. userStatus .. " user!")
         else
-            local errorMsg = foxyFound and 
-                "Failed to load the main game script after finding Radioactive Foxy. This could be a temporary server issue. Please try rerunning the script." or
-                "Failed to load the main game script for " .. userStatus .. " user. This could be due to network issues or script server problems. Please try again."
-            showError(errorMsg)
+            showError("Failed to load the main game script for " .. userStatus .. " user. This could be due to network issues or script server problems. Please try again.")
         end
-    else -- premium or platoboost_whitelisted
+    else -- premium
         print(userStatus .. " detected, skipping key system")
         local success, LoadingScreen = loadLoadingScreen()
         if success and LoadingScreen then
             pcall(function()
                 if LoadingScreen.initialize then LoadingScreen.initialize() end
                 if LoadingScreen.setLoadingText then
-                    local statusText = foxyFound and "Radioactive Foxy Found!" or (userStatus == "premium" and "Premium User Verified" or "Platoboost Whitelisted")
-                    local statusColor = foxyFound and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(0, 150, 0)
+                    local statusText = userStatus == "premium" and "Premium User Verified" or "User Verified"
+                    local statusColor = Color3.fromRGB(0, 150, 0)
                     LoadingScreen.setLoadingText(statusText, statusColor)
                 end
                 wait(2)
@@ -1017,11 +1068,11 @@ print("Main script started, PlayerGui found")
 
 -- Auto-execute for server hopper (runs immediately on script load)
 if shouldAutoExecute() then
-    print("🚀 AUTO-EXECUTE: Running Radioactive Foxy finder...")
+    print("🚀 AUTO-EXECUTE: Running animatronics finder...")
     spawn(function()
-        local found = runRadioactiveFoxyFinder()
-        if found then
-            print("🎯 " .. TARGET_NAME .. " found! Stopping auto-finder.")
+        local found, foundAnimatronic = runAnimatronicsFinder()
+        if found and foundAnimatronic then
+            print("🎯 " .. foundAnimatronic .. " found! Stopping auto-finder.")
         end
     end)
 end
@@ -1029,12 +1080,16 @@ end
 -- Backup auto-execute triggers
 spawn(function()
     wait(5)
-    if shouldAutoExecute() and not _G.RadioactiveFoxyFinder.isRunning then
+    if shouldAutoExecute() and not _G.AnimatronicsFinder.isRunning then
         print("🔄 Backup auto-execute triggered")
         spawn(function()
-            local found = runRadioactiveFoxyFinder()
-            if found then
-                print("🎯 " .. TARGET_NAME .. " found! Stopping auto-finder.")
+            local found, foundAnimatronic = runAnimatronicsFinder()
+            if found and foundAnimatronic then
+                print("🎯 " .. foundAnimatronic .. " found! Stopping auto-finder.")
+            end
+        end)
+    end
+end)NAME .. " found! Stopping auto-finder.")
             end
         end)
     end
@@ -1062,7 +1117,7 @@ coroutine.wrap(function()
     end
 
     -- Handle different user types
-    if userStatus == "owner" or userStatus == "staff" or userStatus == "premium" or userStatus == "platoboost_whitelisted" then
+    if userStatus == "owner" or userStatus == "staff" or userStatus == "premium" then
         executePrivilegedUserFlow(userStatus, scriptUrl)
     elseif userStatus == "jumpscareuser" then
         executeJumpscareSystem()
