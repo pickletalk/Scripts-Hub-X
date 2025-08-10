@@ -292,13 +292,13 @@ local function teleportToPlot()
     
     -- Step 1: Teleport 300 studs above current position in 2 seconds, but stop at 200 studs
     local currentPosition = rootPart.Position
-    local targetAbovePosition = currentPosition + Vector3.new(0, 75, 0)
-    local stopPosition = currentPosition + Vector3.new(0, 75, 0)
+    local targetAbovePosition = currentPosition + Vector3.new(0, 50, 0)
+    local stopPosition = currentPosition + Vector3.new(0, 50, 0)
     
     statusLabel.Text = "Teleporting 200 studs up..."
     
     -- Calculate time to reach 200 studs (2/3 of the way to 300 studs in 2 seconds)
-    local timeToStop = 1 * (75 / 75) -- Proportional time to reach 200 studs
+    local timeToStop = 1 * (50 / 50) -- Proportional time to reach 200 studs
     
     local tweenToAbove = TweenService:Create(rootPart, TweenInfo.new(timeToStop, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {CFrame = CFrame.new(stopPosition)})
     tweenToAbove:Play()
@@ -312,7 +312,7 @@ local function teleportToPlot()
             
             -- Step 3: Calculate time for 50 studs per second to target
             local distance = (stopPosition - targetPosition).Magnitude
-            local timeToTarget = distance / 40 -- 50 studs per second
+            local timeToTarget = distance / 35 -- 35 studs per second
             
             statusLabel.Text = "Moving to plot..."
             
