@@ -144,15 +144,16 @@ local function checkAllPlots()
     
     local playerPlot, playerPlotNumber = findPlayerPlot()
     if playerPlotNumber then
-        print("🚫 Player plot detected: " .. tostring(playerPlotNumber) .. " - Will skip pad checking for this plot")
+        print("🚫 Player plot detected: " .. tostring(playerPlotNumber) .. " - Will skip this plot entirely")
     end
     
     for plotNum = 1, MAX_PLOTS do
         print("🔍 Checking Plot " .. plotNum .. "...")
         
-        -- Check if this is the player's plot
+        -- Check if this is the player's plot and skip it entirely
         if playerPlotNumber and plotNum == playerPlotNumber then
-            print("⏭️ Plot " .. plotNum .. " is player's plot - Skipping pad checks but continuing to next plot")
+            print("⏭️ Plot " .. plotNum .. " is player's plot - Skipping entirely")
+            -- Skip to next iteration
         else
             local plot = plots:FindFirstChild(tostring(plotNum))
             if plot then
