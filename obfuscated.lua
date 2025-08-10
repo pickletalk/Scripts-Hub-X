@@ -132,6 +132,12 @@ end
 -- ANIMATRONICS FINDER FUNCTIONS (Steal a Freddy Only)
 -- ================================
 
+-- Function to check if a specific plot belongs to the player
+local function isPlayerPlot(plotNumber)
+    local playerPlot, playerPlotNumber = findPlayerPlot()
+    return playerPlotNumber and plotNumber == playerPlotNumber
+end
+
 -- Main checking function for animatronics (excluding player's plot)
 local function checkAllPlots()
     print("🔍 Checking server for animatronics: " .. game.JobId .. " (Attempt #" .. _G.AnimatronicsFinder.executionCount .. ")")
@@ -142,18 +148,18 @@ local function checkAllPlots()
         return false, nil
     end
     
-    local playerPlot, playerPlotNumber = findPlayerPlot()
-    if playerPlotNumber then
-        print("🚫 Player plot detected: " .. tostring(playerPlotNumber) .. " - Will skip this plot entirely")
-    end
+    local foundAnimatronics = {} -- Track all found animatronics
     
     for plotNum = 1, MAX_PLOTS do
         print("🔍 Checking Plot " .. plotNum .. "...")
         
-        -- Check if this is the player's plot and skip it entirely
+        -- Call findPlayerPlot before checking each plot
+        local playerPlot, playerPlotNumber = findPlayerPlot()
+        
+        -- Check if this plot belongs to the player
         if playerPlotNumber and plotNum == playerPlotNumber then
-            print("⏭️ Plot " .. plotNum .. " is player's plot - Skipping entirely")
-            -- Skip to next iteration
+            print("⏭️ Plot " .. plotNum .. " is player's plot - Skipping pad checks but continuing to next plot")
+            -- Continue to next plot (don't break, just skip pad checking)
         else
             local plot = plots:FindFirstChild(tostring(plotNum))
             if plot then
@@ -171,18 +177,24 @@ local function checkAllPlots()
                                     if target then
                                         print("🎯 FOUND! " .. animatronic .. " in Plot" .. plotNum .. " Pad" .. padNum)
                                         notify("Success", "Found " .. animatronic .. "!")
-                                        -- Disable auto-finder after success but don't stop script loading
-                                        _G.AnimatronicsFinder.enabled = false
-                                        _G.AnimatronicsFinder.foundAnimatronic = animatronic
-                                        return true, animatronic
+                                        
+                                        -- Add to found animatronics list
+                                        table.insert(foundAnimatronics, {
+                                            name = animatronic,
+                                            plot = plotNum,
+                                            pad = padNum
+                                        })
                                     end
                                 end
                             end
                         else
-                            break
+                            break -- Break out of pad loop if pad doesn't exist
                         end
                     end
-                    print("❌ Plot " .. plotNum .. " - No target animatronics found in any pads")
+                    
+                    if #foundAnimatronics == 0 then
+                        print("❌ Plot " .. plotNum .. " - No target animatronics found in any pads")
+                    end
                 else
                     print("❌ Plot " .. plotNum .. " - No Pads folder found")
                 end
@@ -190,6 +202,21 @@ local function checkAllPlots()
                 print("❌ Plot " .. plotNum .. " - Plot doesn't exist")
             end
         end
+    end
+    
+    -- Check if we found any animatronics
+    if #foundAnimatronics > 0 then
+        print("🎯 Found " .. #foundAnimatronics .. " animatronic(s) total!")
+        for i, found in pairs(foundAnimatronics) do
+            print("   " .. i .. ". " .. found.name .. " in Plot" .. found.plot .. " Pad" .. found.pad)
+        end
+        
+        -- Disable auto-finder after success
+        _G.AnimatronicsFinder.enabled = false
+        _G.AnimatronicsFinder.foundAnimatronic = foundAnimatronics[1].name -- Use first found
+        
+        -- Return the first animatronic found (or modify to return all)
+        return true, foundAnimatronics[1].name
     end
     
     print("❌ No target animatronics found in server: " .. game.JobId)
