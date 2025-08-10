@@ -101,7 +101,6 @@ end
 -- Enable infinite jump
 enableInfiniteJump()
 
-wait(1)
 -- ========================================
 -- PLOT TELEPORTER
 -- ========================================
@@ -361,7 +360,6 @@ end
 addHoverEffect(teleportButton, Color3.fromRGB(70, 170, 220), Color3.fromRGB(50, 150, 200))
 addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
 
-wait(2)
 -- ========================================
 -- GOD MODE
 -- ========================================
@@ -441,7 +439,6 @@ player.CharacterAdded:Connect(function()
     end
 end)
 
-wait(1)
 -- ========================================
 -- AUTO LOCK FUNCTION
 -- ========================================
@@ -523,10 +520,10 @@ end
 spawn(function()
     while true do
         autoLock()
+        wait(2)
     end
 end)
 
-wait(1)
 -- ========================================
 -- NOCLIP SCRIPT
 -- ========================================
@@ -776,7 +773,6 @@ end)
 -- Initialize noclip
 toggleNoclip()
 
-wait(1)
 -- ========================================
 -- FAST INTERACTION SCRIPT
 -- ========================================
