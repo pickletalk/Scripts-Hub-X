@@ -525,6 +525,61 @@ spawn(function()
 end)
 
 -- ========================================
+-- PAD TOUCH INTEREST LOOP
+-- ========================================
+local function touchPads()
+    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+        return
+    end
+    
+    local playerPlot = findPlayerPlot()
+    if not playerPlot then
+        return
+    end
+    
+    local padsFolder = playerPlot:FindFirstChild("Pads")
+    if not padsFolder then
+        print("Pads folder not found in player plot")
+        return
+    end
+    
+    local rootPart = player.Character.HumanoidRootPart
+    local touchedPads = 0
+    
+    -- Loop through pads 1-30
+    for i = 1, 30 do
+        local padName = tostring(i)
+        local pad = padsFolder:FindFirstChild(padName)
+        
+        if pad then
+            local collectPart = pad:FindFirstChild("Collect")
+            if collectPart then
+                local touchInterest = collectPart:FindFirstChild("TouchInterest")
+                if touchInterest then
+                    -- Fire touch interest
+                    firetouchinterest(collectPart, rootPart, 0)
+                    wait(0.05) -- Small delay between touches
+                    firetouchinterest(collectPart, rootPart, 1)
+                    touchedPads = touchedPads + 1
+                end
+            end
+        end
+    end
+    
+    if touchedPads > 0 then
+        print("Touched " .. touchedPads .. " pads in plot")
+    end
+end
+
+-- Main loop for pad touching every 5 seconds
+spawn(function()
+    while true do
+        wait(5)
+        touchPads()
+    end
+end)
+
+-- ========================================
 -- NOCLIP SCRIPT
 -- ========================================
 local RunService = game:GetService("RunService")
