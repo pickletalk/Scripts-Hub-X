@@ -955,25 +955,48 @@ spawn(function()
 end)
 
 -- ========================================
--- SPEED MONITOR SCRIPT
+-- SPEED MONITOR SCRIPT WITH ANTI-KICK
 -- ========================================
--- Monitor player speed and change from 28 to 40
 spawn(function()
+    local lastSpeedChange = 0
+    local speedChangeDelay = 1 -- Delay between speed changes to avoid detection
+    local maxChangesPerMinute = 10
+    local changesThisMinute = 0
+    local minuteTimer = 0
+    
     while true do
-        wait(0.1) -- Check every 0.1 seconds for responsive speed monitoring
+        wait(0.3) -- Less frequent checks to avoid detection
+        minuteTimer = minuteTimer + 0.5
+        
+        -- Reset change counter every minute
+        if minuteTimer >= 60 then
+            changesThisMinute = 0
+            minuteTimer = 0
+        end
         
         -- Check if player has a character and humanoid
         if player.Character and player.Character:FindFirstChild("Humanoid") then
             local humanoid = player.Character.Humanoid
+            local currentTime = tick()
             
-            -- Check if speed is 28
-            if humanoid.WalkSpeed == 28 then
-                -- Change speed to 40 using the remote event
-                local args = {
-                    45
-                }
-                game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("SpeedChange"):FireServer(unpack(args))
-                print("Speed changed from 28 to 45")
+            -- Only change if speed is exactly 28 (not 20) and within rate limits
+            if humanoid.WalkSpeed == 28 and 
+               currentTime - lastSpeedChange >= speedChangeDelay and 
+               changesThisMinute < maxChangesPerMinute then
+                
+                -- Use pcall to catch any errors and avoid kicks
+                local success = pcall(function()
+                    local args = {50}
+                    game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("SpeedChange"):FireServer(unpack(args))
+                end)
+                
+                if success then
+                    lastSpeedChange = currentTime
+                    changesThisMinute = changesThisMinute + 1
+                    print("Speed safely changed from 28 to 50")
+                else
+                    wait(2) -- Wait longer if remote call failed
+                end
             end
         end
     end
