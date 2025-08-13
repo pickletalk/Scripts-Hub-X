@@ -304,15 +304,13 @@ local function teleportToPlot()
     tweenToAbove:Play()
     
     tweenToAbove.Completed:Connect(function()
-        statusLabel.Text = "Waiting 2 seconds to prevent kick..."
         
-        -- Step 2: Wait 4 seconds (no freeze, no functions, just wait)
+        -- Step 2: Wait no more wait seconds (no freeze, no functions, just wait)
         spawn(function()
-            wait(2)
             
             -- Step 3: Calculate time for 50 studs per second to target
             local distance = (stopPosition - targetPosition).Magnitude
-            local timeToTarget = distance / 35 -- 35 studs per second
+            local timeToTarget = distance / 45 -- 35 studs per second
             
             statusLabel.Text = "Moving to plot..."
             
