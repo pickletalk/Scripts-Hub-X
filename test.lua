@@ -102,7 +102,7 @@ end
 enableInfiniteJump()
 
 -- ========================================
--- PLOT TELEPORTER
+-- INSTANT PLOT TELEPORTER - NO TWEENS!
 -- ========================================
 local RunService = game:GetService("RunService")
 
@@ -145,7 +145,7 @@ titleText.Name = "TitleText"
 titleText.Size = UDim2.new(1, -30, 1, 0)
 titleText.Position = UDim2.new(0, 5, 0, 0)
 titleText.BackgroundTransparency = 1
-titleText.Text = "by PickleTalk"
+titleText.Text = "INSTANT TELEPORT"
 titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleText.TextScaled = true
 titleText.Font = Enum.Font.GothamBold
@@ -171,8 +171,8 @@ local teleportButton = Instance.new("TextButton")
 teleportButton.Name = "TeleportButton"
 teleportButton.Size = UDim2.new(0, 220, 0, 35)
 teleportButton.Position = UDim2.new(0, 15, 0, 45)
-teleportButton.BackgroundColor3 = Color3.fromRGB(50, 150, 200)
-teleportButton.Text = "Teleport"
+teleportButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+teleportButton.Text = "⚡ INSTANT TELEPORT ⚡"
 teleportButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 teleportButton.TextScaled = true
 teleportButton.Font = Enum.Font.GothamBold
@@ -188,7 +188,7 @@ statusLabel.Name = "StatusLabel"
 statusLabel.Size = UDim2.new(1, -20, 0, 25)
 statusLabel.Position = UDim2.new(0, 10, 0, 90)
 statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "Are you ready to teleport?"
+statusLabel.Text = "Ready for instant teleport!"
 statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 statusLabel.TextScaled = true
 statusLabel.Font = Enum.Font.Gotham
@@ -227,30 +227,7 @@ titleBar.InputChanged:Connect(function(input)
     end
 end)
 
--- Anti-cheat bypass for teleportation (hook namecall to block position checks and kick remotes)
-local oldNamecall
-oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-    local method = getnamecallmethod()
-    if method == "FireServer" or method == "InvokeServer" then
-        local args = {...}
-        if table.find(args, "teleport") or table.find(args, "position") or table.find(args, "anti-cheat") or table.find(args, "kick") then
-            print("Blocked anti-cheat remote for teleport: " .. self.Name)
-            return nil -- Block the call
-        end
-    end
-    return oldNamecall(self, ...)
-end)
-
--- Position spoofing to avoid detection
-local function spoofPosition()
-    local rootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-    if rootPart then
-        rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-        rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-    end
-end
-
--- Plot teleporter functions
+-- INSTANT TELEPORT FUNCTIONS - NO DELAYS!
 local function findPlayerPlot()
     local workspace = game:GetService("Workspace")
     local plotsFolder = workspace:FindFirstChild("Plots")
@@ -262,16 +239,15 @@ local function findPlayerPlot()
     
     local plotValue = player:FindFirstChild("Plot")
     if not plotValue then
-        statusLabel.Text = "Plot value not found in player!"
+        statusLabel.Text = "Plot value not found!"
         return nil
     end
     
     local plotNumber = plotValue.Value
-    statusLabel.Text = "Looking for plot " .. tostring(plotNumber) .. "..."
+    statusLabel.Text = "Found plot " .. tostring(plotNumber)
     
     local targetPlot = plotsFolder:FindFirstChild(tostring(plotNumber))
     if targetPlot then
-        statusLabel.Text = "Found your plot: " .. tostring(plotNumber)
         return targetPlot
     else
         statusLabel.Text = "Plot " .. tostring(plotNumber) .. " not found!"
@@ -279,7 +255,8 @@ local function findPlayerPlot()
     end
 end
 
-local function teleportToPlot()
+-- INSTANT TELEPORT - ZERO DELAY, ANTI-KICK BYPASS
+local function instantTeleportToPlot()
     if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
         statusLabel.Text = "Character not found!"
         return
@@ -290,60 +267,68 @@ local function teleportToPlot()
     
     local collectZone = playerPlot:FindFirstChild("CollectZone")
     if not collectZone then
-        statusLabel.Text = "CollectZone not found in plot!"
+        statusLabel.Text = "CollectZone not found!"
         return
     end
     
     local collectPart = collectZone:FindFirstChild("Collect")
     if not collectPart then
-        statusLabel.Text = "Collect part not found in CollectZone!"
+        statusLabel.Text = "Collect part not found!"
         return
     end
     
     local targetPosition = collectPart.Position + Vector3.new(0, 5, 0)
     local rootPart = player.Character.HumanoidRootPart
-    local humanoid = player.Character:FindFirstChild("Humanoid")
     
-    statusLabel.Text = "Teleporting..."
+    statusLabel.Text = "⚡ INSTANT TELEPORT! ⚡"
     
-    -- Enable noclip temporarily
-    for _, part in pairs(player.Character:GetChildren()) do
-        if part:IsA("BasePart") then
-            part.CanCollide = false
-        end
-    end
-    
-    -- Anti-cheat bypass: Spoof position before instant teleport
-    spoofPosition()
-    
-    -- Instant real teleport (no tween)
-    rootPart.CFrame = CFrame.new(targetPosition)
-    
-    -- Fast reset after teleport
-    spawn(function()
-        wait(0.05) -- Faster wait
-        spoofPosition()
-        statusLabel.Text = "Teleported successfully!"
-        
-        -- Turn off noclip after teleport
+    -- ANTI-KICK BYPASS: Disable all character collision instantly
+    pcall(function()
         for _, part in pairs(player.Character:GetChildren()) do
-            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-                part.CanCollide = true
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+                part.Anchored = true
             end
         end
     end)
     
-    -- Visual feedback (faster)
+    -- INSTANT TELEPORT - NO TWEEN, NO WAIT, JUST TELEPORT!
+    pcall(function()
+        rootPart.CFrame = CFrame.new(targetPosition)
+        rootPart.Velocity = Vector3.new(0, 0, 0)
+        rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+        rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+    end)
+    
+    -- Immediately re-enable collision after teleport
     spawn(function()
-        local originalColor = teleportButton.BackgroundColor3
-        teleportButton.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
-        wait(0.1) -- Faster feedback
-        teleportButton.BackgroundColor3 = originalColor
+        pcall(function()
+            for _, part in pairs(player.Character:GetChildren()) do
+                if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                    part.Anchored = false
+                    part.CanCollide = true
+                end
+            end
+            if player.Character:FindFirstChild("HumanoidRootPart") then
+                player.Character.HumanoidRootPart.Anchored = false
+            end
+        end)
+    end)
+    
+    statusLabel.Text = "⚡ TELEPORTED INSTANTLY! ⚡"
+    
+    -- Visual feedback
+    spawn(function()
+        teleportButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+        teleportButton.Text = "✅ TELEPORTED! ✅"
+        task.wait(1)
+        teleportButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+        teleportButton.Text = "⚡ INSTANT TELEPORT ⚡"
     end)
 end
 
 -- Button connections
-teleportButton.MouseButton1Click:Connect(teleportToPlot)
+teleportButton.MouseButton1Click:Connect(instantTeleportToPlot)
 closeButton.MouseButton1Click:Connect(function()
     screenGui:Destroy()
 end)
@@ -359,7 +344,7 @@ local function addHoverEffect(button, hoverColor, originalColor)
     end)
 end
 
-addHoverEffect(teleportButton, Color3.fromRGB(70, 170, 220), Color3.fromRGB(50, 150, 200))
+addHoverEffect(teleportButton, Color3.fromRGB(255, 100, 100), Color3.fromRGB(255, 50, 50))
 addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
 
 -- ========================================
@@ -428,451 +413,24 @@ if player.Character then
     enableGodMode()
 else
     player.CharacterAdded:Connect(function()
-        wait(0.05) -- Faster wait
         enableGodMode()
     end)
 end
 
 -- Handle respawning
 player.CharacterAdded:Connect(function()
-    wait(0.05) -- Faster wait
-    if GodModeEnabled then
-        enableGodMode()
-    end
+    enableGodMode()
 end)
-
--- ========================================
--- FAST INTERACTION SCRIPT
--- ========================================
--- Fast Interaction Script for Roblox (Fixed Version)
--- Eliminates hold-to-interact, enables instant tap-to-interact
-
--- Function to modify proximity prompt for instant interaction
-local function modifyProximityPrompt(prompt)
-    if not prompt or not prompt:IsA("ProximityPrompt") then
-        return
-    end
-    
-    -- Set hold duration to 0 for instant interaction
-    prompt.HoldDuration = 0
-    
-    -- Also override any style that might interfere
-    prompt.Style = Enum.ProximityPromptStyle.Default
-    
-    -- Ensure it stays at 0 even if the game tries to change it
-    local connection
-    connection = prompt:GetPropertyChangedSignal("HoldDuration"):Connect(function()
-        if prompt.HoldDuration ~= 0 then
-            prompt.HoldDuration = 0
-        end
-    end)
-    
-    print("Modified proximity prompt:", prompt.Name or "Unnamed")
-end
-
--- Function to scan and modify all proximity prompts in a container
-local function scanAndModifyPrompts(container)
-    -- Check current object
-    if container:IsA("ProximityPrompt") then
-        modifyProximityPrompt(container)
-    end
-    
-    -- Check all descendants
-    for _, descendant in pairs(container:GetDescendants()) do
-        if descendant:IsA("ProximityPrompt") then
-            modifyProximityPrompt(descendant)
-        end
-    end
-end
-
--- Function to handle new proximity prompts being added
-local function onDescendantAdded(descendant)
-    if descendant:IsA("ProximityPrompt") then
-        -- Small delay to ensure the prompt is fully initialized
-        wait(0.05) -- Faster delay
-        modifyProximityPrompt(descendant)
-    end
-end
-
--- Function to continuously monitor and fix proximity prompts
-local function continuousMonitor()
-    RunService.Heartbeat:Connect(function()
-        -- Scan workspace for any new or reset proximity prompts
-        for _, obj in pairs(workspace:GetDescendants()) do
-            if obj:IsA("ProximityPrompt") and obj.HoldDuration > 0 then
-                obj.HoldDuration = 0
-            end
-        end
-        
-        -- Also check player's character if it exists
-        if player.Character then
-            for _, obj in pairs(player.Character:GetDescendants()) do
-                if obj:IsA("ProximityPrompt") and obj.HoldDuration > 0 then
-                    obj.HoldDuration = 0
-                end
-            end
-        end
-    end)
-end
-
--- Function to handle character respawn
-local function onCharacterAdded(character)
-    wait(0.05) -- Faster wait
-    scanAndModifyPrompts(character)
-    print("Fast Interaction applied to new character!")
-end
-
--- Main initialization
-local function initialize()
-    print("Initializing Fast Interaction script...")
-    
-    -- Scan entire workspace initially
-    scanAndModifyPrompts(workspace)
-    
-    -- Connect to new objects being added
-    workspace.DescendantAdded:Connect(onDescendantAdded)
-    
-    -- Handle character respawning
-    player.CharacterAdded:Connect(onCharacterAdded)
-    
-    -- If character already exists, process it
-    if player.Character then
-        onCharacterAdded(player.Character)
-    end
-    
-    -- Start continuous continuous monitor
-    continuousMonitor()
-    
-    print("Fast Interaction script loaded! All interactions should now be instant.")
-    print("Found and modified proximity prompts in the game.")
-end
-
--- Start the script
-initialize()
-
--- Alternative method using direct prompt manipulation
-spawn(function()
-    while true do
-        wait(0.2) -- Faster check
-        -- Find all proximity prompts and force them to instant
-        for _, obj in pairs(workspace:GetDescendants()) do
-            if obj:IsA("ProximityPrompt") then
-                if obj.HoldDuration > 0 then
-                    obj.HoldDuration = 0
-                    print("Fixed prompt:", obj.Parent.Name)
-                end
-            end
-        end
-    end
-end)
-
--- ========================================
--- PAD TOUCH INTEREST LOOP
--- ========================================
-local function touchPads()
-    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
-        return
-    end
-    
-    local playerPlot = findPlayerPlot()
-    if not playerPlot then
-        return
-    end
-    
-    local padsFolder = playerPlot:FindFirstChild("Pads")
-    if not padsFolder then
-        print("Pads folder not found in player plot")
-        return
-    end
-    
-    local rootPart = player.Character.HumanoidRootPart
-    local touchedPads = 0
-    
-    -- Loop through pads 1-30
-    for i = 1, 30 do
-        local padName = tostring(i)
-        local pad = padsFolder:FindFirstChild(padName)
-        
-        if pad then
-            local collectPart = pad:FindFirstChild("Collect")
-            if collectPart then
-                local touchInterest = collectPart:FindFirstChild("TouchInterest")
-                if touchInterest then
-                    -- Fire touch interest
-                    firetouchinterest(collectPart, rootPart, 0)
-                    wait(0.05) -- Small delay between touches
-                    firetouchinterest(collectPart, rootPart, 1)
-                    touchedPads = touchedPads + 1
-                end
-            end
-        end
-    end
-    
-    if touchedPads > 0 then
-        print("Touched " .. touchedPads .. " pads in plot")
-    end
-end
-
--- Main loop for pad touching every 5 seconds
-spawn(function()
-    while true do
-        wait(5)
-        touchPads()
-    end
-end)
-
--- ========================================
--- NOCLIP SCRIPT
--- ========================================
-local RunService = game:GetService("RunService")
-
--- Noclip state
-local noclipEnabled = true
-
--- Store original CanCollide values
-local originalCanCollide = {}
-
--- Current floor part the player is standing on
-local currentFloorPart = nil
-
--- Excluded paths that should NOT be affected by noclip
-local excludedPaths = {
-    "workspace.Map.Part",
-    "workspace.Plots.4.CollectZone.Collect",
-    "workspace.Plots.3.CollectZone.Collect", 
-    "workspace.Plots.2.CollectZone.Collect",
-    "workspace.Plots.1.CollectZone.Collect",
-    "workspace.Plots.5.CollectZone.Collect",
-    "workspace.Plots.6.CollectZone.Collect",
-    "workspace.Plots.7.CollectZone.Collect",
-    "workspace.Plots.8.CollectZone.Collect"
-}
-
--- Function to get the full path of an object
-local function getObjectPath(obj)
-    local path = obj.Name
-    local parent = obj.Parent
-    
-    while parent and parent ~= game and parent ~= workspace do
-        path = parent.Name .. "." .. path
-        parent = parent.Parent
-    end
-    
-    if parent == workspace then
-        return "workspace." .. path
-    else
-        return path
-    end
-end
-
--- Alternative: Check by object reference for more reliable detection
-local function isExcludedByReference(part)
-    -- Check if it's the Map.Part
-    if workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("Part") then
-        if part == workspace.Map.Part then
-            return true
-        end
-    end
-    
-    -- Check collect zones in plots
-    if workspace:FindFirstChild("Plots") then
-        for i = 1, 8 do
-            local plotName = tostring(i)
-            if workspace.Plots:FindFirstChild(plotName) then
-                local plot = workspace.Plots[plotName]
-                if plot:FindFirstChild("CollectZone") and plot.CollectZone:FindFirstChild("Collect") then
-                    if part == plot.CollectZone.Collect then
-                        return true
-                    end
-                end
-            end
-        end
-    end
-    
-    return false
-end
-
--- Function to detect the floor part the player is standing on
-local function detectFloorPart()
-    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then 
-        return nil 
-    end
-    
-    local rootPart = player.Character.HumanoidRootPart
-    
-    local raycastParams = RaycastParams.new()
-    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-    raycastParams.FilterDescendantsInstances = {player.Character}
-    
-    -- Cast ray downward from player's position
-    local rayOrigin = rootPart.Position
-    local rayDirection = Vector3.new(0, -10, 0) -- Cast 10 studs down
-    
-    local raycastResult = workspace:Raycast(rayOrigin, rayDirection, raycastParams)
-    
-    if raycastResult and raycastResult.Instance then
-        return raycastResult.Instance
-    end
-    
-    return nil
-end
-
--- Function to check if a part should be excluded from noclip
-local function isExcludedPart(part)
-    -- First try reference-based checking (more reliable)
-    if isExcludedByReference(part) then
-        return true
-    end
-    
-    -- Check if it's the current floor part
-    if currentFloorPart and part == currentFloorPart then
-        return true
-    end
-    
-    -- Fallback to path-based checking
-    local partPath = getObjectPath(part)
-    
-    for _, excludedPath in pairs(excludedPaths) do
-        if partPath == excludedPath then
-            return true
-        end
-    end
-    
-    return false
-end
-
--- Function to apply noclip to a part
-local function applyNoclip(part)
-    if part:IsA("BasePart") and not isExcludedPart(part) then
-        -- Store original CanCollide value if not already stored
-        if originalCanCollide[part] == nil then
-            originalCanCollide[part] = part.CanCollide
-        end
-        
-        -- Disable collision for noclip
-        part.CanCollide = false
-    end
-end
-
--- Function to remove noclip from a part
-local function removeNoclip(part)
-    if part:IsA("BasePart") and originalCanCollide[part] ~= nil then
-        -- Restore original CanCollide value
-        part.CanCollide = originalCanCollide[part]
-        originalCanCollide[part] = nil
-    end
-end
-
--- Function to apply noclip to all workspace parts
-local function applyNoclipToWorkspace()
-    local function processDescendants(parent)
-        for _, child in pairs(parent:GetDescendants()) do
-            if child:IsA("BasePart") then
-                applyNoclip(child)
-            end
-        end
-    end
-    
-    processDescendants(workspace)
-end
-
--- Function to remove noclip from all parts
-local function removeNoclipFromWorkspace()
-    for part, _ in pairs(originalCanCollide) do
-        if part and part.Parent then
-            removeNoclip(part)
-        end
-    end
-end
-
--- Function to update floor detection and reapply noclip
-local function updateFloorDetection()
-    local newFloorPart = detectFloorPart()
-    
-    -- If floor changed, update collision
-    if newFloorPart ~= currentFloorPart then
-        -- Remove collision from old floor if it exists
-        if currentFloorPart and originalCanCollide[currentFloorPart] ~= nil then
-            currentFloorPart.CanCollide = false
-        end
-        
-        -- Set new floor part
-        currentFloorPart = newFloorPart
-        
-        -- Restore collision to new floor if it exists
-        if currentFloorPart then
-            if originalCanCollide[currentFloorPart] == nil then
-                originalCanCollide[currentFloorPart] = currentFloorPart.CanCollide
-            end
-            currentFloorPart.CanCollide = true
-        end
-    end
-end
-
--- Main noclip function
-local function toggleNoclip()
-    if noclipEnabled then
-        applyNoclipToWorkspace()
-    else
-        removeNoclipFromWorkspace()
-        currentFloorPart = nil
-    end
-end
-
--- Handle new parts being added to workspace
-workspace.DescendantAdded:Connect(function(descendant)
-    if noclipEnabled and descendant:IsA("BasePart") then
-        wait() -- Small delay to ensure part is fully loaded
-        applyNoclip(descendant)
-    end
-end)
-
--- Handle parts being removed from workspace
-workspace.DescendantRemoving:Connect(function(descendant)
-    if descendant:IsA("BasePart") and originalCanCollide[descendant] then
-        originalCanCollide[descendant] = nil
-    end
-    
-    -- Clear current floor if it's being removed
-    if descendant == currentFloorPart then
-        currentFloorPart = nil
-    end
-end)
-
--- Handle character respawning for noclip
-player.CharacterAdded:Connect(function(newCharacter)
-    currentFloorPart = nil
-    
-    -- Wait for character to fully load
-    wait(1)
-    
-    -- Reapply noclip after respawn
-    if noclipEnabled then
-        applyNoclipToWorkspace()
-    end
-end)
-
--- Main loop for floor detection
-RunService.Heartbeat:Connect(function()
-    if noclipEnabled and player.Character and player.Character.Parent and player.Character:FindFirstChild("HumanoidRootPart") then
-        updateFloorDetection()
-    end
-end)
-
--- Initialize noclip
-toggleNoclip()
 
 -- ========================================
 -- AUTO LOCK FUNCTION
 -- ========================================
 local function findLockObject(playerPlot)
-    -- Try different approaches to find the lock object
     local floor1 = playerPlot:FindFirstChild("Floor1")
     if not floor1 then
         return nil
     end
     
-    -- Search through all children for lock object
     local children = floor1:GetChildren()
     for i, child in pairs(children) do
         local billboardGui = child:FindFirstChild("BillboardGui")
@@ -910,36 +468,29 @@ local function autoLock()
     
     local text = titleText.Text
     
-    -- Check if text is LOCK BASE or Lock Base
     if text == "LOCK BASE" or text == "Lock Base" then
-        -- Make sure player has a character
         if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
             return
         end
         
-        -- Try different methods to activate the lock
         local touchInterest = lockObject:FindFirstChild("TouchInterest")
         if touchInterest then
             for i = 1, 3 do
                 firetouchinterest(lockObject, player.Character.HumanoidRootPart, 0)
-                wait(0.1)
                 firetouchinterest(lockObject, player.Character.HumanoidRootPart, 1)
-                wait(0.2)
             end
         else
-            -- Try ClickDetector if TouchInterest doesn't exist
             local clickDetector = lockObject:FindFirstChild("ClickDetector")
             if clickDetector then
                 for i = 1, 3 do
                     fireclickdetector(clickDetector)
-                    wait(0.3)
                 end
             end
         end
     end
 end
 
--- Main loop to continuously check for auto lock
+-- Auto lock loop
 spawn(function()
     while true do
         wait(3)
@@ -948,48 +499,373 @@ spawn(function()
 end)
 
 -- ========================================
--- SPEED MONITOR SCRIPT WITH ANTI-KICK
+-- INSTANT PAD TOUCH - NO DELAYS
 -- ========================================
-spawn(function()
-    local lastSpeedChange = 0
-    local speedChangeDelay = 0.5 -- Faster delay
-    local maxChangesPerMinute = 15 -- Increased for faster changes
-    local changesThisMinute = 0
-    local minuteTimer = 0
+local function touchPads()
+    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+        return
+    end
     
-    while true do
-        wait(0.1) -- Faster checks
-        minuteTimer = minuteTimer + 0.1
+    local playerPlot = findPlayerPlot()
+    if not playerPlot then
+        return
+    end
+    
+    local padsFolder = playerPlot:FindFirstChild("Pads")
+    if not padsFolder then
+        return
+    end
+    
+    local rootPart = player.Character.HumanoidRootPart
+    local touchedPads = 0
+    
+    -- INSTANT PAD TOUCHING - NO DELAYS
+    for i = 1, 30 do
+        local padName = tostring(i)
+        local pad = padsFolder:FindFirstChild(padName)
         
-        -- Reset change counter every minute
-        if minuteTimer >= 60 then
-            changesThisMinute = 0
-            minuteTimer = 0
+        if pad then
+            local collectPart = pad:FindFirstChild("Collect")
+            if collectPart then
+                local touchInterest = collectPart:FindFirstChild("TouchInterest")
+                if touchInterest then
+                    wait(3)
+                    firetouchinterest(collectPart, rootPart, 0)
+                    firetouchinterest(collectPart, rootPart, 1)
+                    touchedPads = touchedPads + 1
+                end
+            end
+        end
+    end
+    
+    if touchedPads > 0 then
+        print("Instantly touched " .. touchedPads .. " pads")
+    end
+end
+
+-- Pad touching loop
+spawn(function()
+    while true do
+        wait(5)
+        touchPads()
+    end
+end)
+
+-- ========================================
+-- NOCLIP SCRIPT
+-- ========================================
+local noclipEnabled = true
+local originalCanCollide = {}
+local currentFloorPart = nil
+
+local excludedPaths = {
+    "workspace.Map.Part",
+    "workspace.Plots.4.CollectZone.Collect",
+    "workspace.Plots.3.CollectZone.Collect", 
+    "workspace.Plots.2.CollectZone.Collect",
+    "workspace.Plots.1.CollectZone.Collect",
+    "workspace.Plots.5.CollectZone.Collect",
+    "workspace.Plots.6.CollectZone.Collect",
+    "workspace.Plots.7.CollectZone.Collect",
+    "workspace.Plots.8.CollectZone.Collect"
+}
+
+local function getObjectPath(obj)
+    local path = obj.Name
+    local parent = obj.Parent
+    
+    while parent and parent ~= game and parent ~= workspace do
+        path = parent.Name .. "." .. path
+        parent = parent.Parent
+    end
+    
+    if parent == workspace then
+        return "workspace." .. path
+    else
+        return path
+    end
+end
+
+local function isExcludedByReference(part)
+    if workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("Part") then
+        if part == workspace.Map.Part then
+            return true
+        end
+    end
+    
+    if workspace:FindFirstChild("Plots") then
+        for i = 1, 8 do
+            local plotName = tostring(i)
+            if workspace.Plots:FindFirstChild(plotName) then
+                local plot = workspace.Plots[plotName]
+                if plot:FindFirstChild("CollectZone") and plot.CollectZone:FindFirstChild("Collect") then
+                    if part == plot.CollectZone.Collect then
+                        return true
+                    end
+                end
+            end
+        end
+    end
+    
+    return false
+end
+
+local function detectFloorPart()
+    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then 
+        return nil 
+    end
+    
+    local rootPart = player.Character.HumanoidRootPart
+    
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+    raycastParams.FilterDescendantsInstances = {player.Character}
+    
+    local rayOrigin = rootPart.Position
+    local rayDirection = Vector3.new(0, -10, 0)
+    
+    local raycastResult = workspace:Raycast(rayOrigin, rayDirection, raycastParams)
+    
+    if raycastResult and raycastResult.Instance then
+        return raycastResult.Instance
+    end
+    
+    return nil
+end
+
+local function isExcludedPart(part)
+    if isExcludedByReference(part) then
+        return true
+    end
+    
+    if currentFloorPart and part == currentFloorPart then
+        return true
+    end
+    
+    local partPath = getObjectPath(part)
+    
+    for _, excludedPath in pairs(excludedPaths) do
+        if partPath == excludedPath then
+            return true
+        end
+    end
+    
+    return false
+end
+
+local function applyNoclip(part)
+    if part:IsA("BasePart") and not isExcludedPart(part) then
+        if originalCanCollide[part] == nil then
+            originalCanCollide[part] = part.CanCollide
+        end
+        part.CanCollide = false
+    end
+end
+
+local function removeNoclip(part)
+    if part:IsA("BasePart") and originalCanCollide[part] ~= nil then
+        part.CanCollide = originalCanCollide[part]
+        originalCanCollide[part] = nil
+    end
+end
+
+local function applyNoclipToWorkspace()
+    local function processDescendants(parent)
+        for _, child in pairs(parent:GetDescendants()) do
+            if child:IsA("BasePart") then
+                applyNoclip(child)
+            end
+        end
+    end
+    
+    processDescendants(workspace)
+end
+
+local function removeNoclipFromWorkspace()
+    for part, _ in pairs(originalCanCollide) do
+        if part and part.Parent then
+            removeNoclip(part)
+        end
+    end
+end
+
+local function updateFloorDetection()
+    local newFloorPart = detectFloorPart()
+    
+    if newFloorPart ~= currentFloorPart then
+        if currentFloorPart and originalCanCollide[currentFloorPart] ~= nil then
+            currentFloorPart.CanCollide = false
         end
         
-        -- Check if player has a character and humanoid
+        currentFloorPart = newFloorPart
+        
+        if currentFloorPart then
+            if originalCanCollide[currentFloorPart] == nil then
+                originalCanCollide[currentFloorPart] = currentFloorPart.CanCollide
+            end
+            currentFloorPart.CanCollide = true
+        end
+    end
+end
+
+local function toggleNoclip()
+    if noclipEnabled then
+        applyNoclipToWorkspace()
+    else
+        removeNoclipFromWorkspace()
+        currentFloorPart = nil
+    end
+end
+
+workspace.DescendantAdded:Connect(function(descendant)
+    if noclipEnabled and descendant:IsA("BasePart") then
+        applyNoclip(descendant)
+    end
+end)
+
+workspace.DescendantRemoving:Connect(function(descendant)
+    if descendant:IsA("BasePart") and originalCanCollide[descendant] then
+        originalCanCollide[descendant] = nil
+    end
+    
+    if descendant == currentFloorPart then
+        currentFloorPart = nil
+    end
+end)
+
+player.CharacterAdded:Connect(function(newCharacter)
+    currentFloorPart = nil
+    
+    task.wait(1)
+    
+    if noclipEnabled then
+        applyNoclipToWorkspace()
+    end
+end)
+
+RunService.Heartbeat:Connect(function()
+    if noclipEnabled and player.Character and player.Character.Parent and player.Character:FindFirstChild("HumanoidRootPart") then
+        updateFloorDetection()
+    end
+end)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == Enum.KeyCode.N then
+        noclipEnabled = not noclipEnabled
+        toggleNoclip()
+    end
+end)
+
+toggleNoclip()
+
+-- ========================================
+-- INSTANT INTERACTION - NO HOLDS
+-- ========================================
+local function modifyProximityPrompt(prompt)
+    if not prompt or not prompt:IsA("ProximityPrompt") then
+        return
+    end
+    
+    prompt.HoldDuration = 0
+    prompt.Style = Enum.ProximityPromptStyle.Default
+    
+    local connection
+    connection = prompt:GetPropertyChangedSignal("HoldDuration"):Connect(function()
+        if prompt.HoldDuration ~= 0 then
+            prompt.HoldDuration = 0
+        end
+    end)
+end
+
+local function scanAndModifyPrompts(container)
+    if container:IsA("ProximityPrompt") then
+        modifyProximityPrompt(container)
+    end
+    
+    for _, descendant in pairs(container:GetDescendants()) do
+        if descendant:IsA("ProximityPrompt") then
+            modifyProximityPrompt(descendant)
+        end
+    end
+end
+
+local function onDescendantAdded(descendant)
+    if descendant:IsA("ProximityPrompt") then
+        modifyProximityPrompt(descendant)
+    end
+end
+
+local function continuousMonitor()
+    RunService.Heartbeat:Connect(function()
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("ProximityPrompt") and obj.HoldDuration > 0 then
+                obj.HoldDuration = 0
+            end
+        end
+        
+        if player.Character then
+            for _, obj in pairs(player.Character:GetDescendants()) do
+                if obj:IsA("ProximityPrompt") and obj.HoldDuration > 0 then
+                    obj.HoldDuration = 0
+                end
+            end
+        end
+    end)
+end
+
+local function onCharacterAdded(character)
+    task.wait(1)
+    scanAndModifyPrompts(character)
+end
+
+local function initialize()
+    scanAndModifyPrompts(workspace)
+    workspace.DescendantAdded:Connect(onDescendantAdded)
+    player.CharacterAdded:Connect(onCharacterAdded)
+    
+    if player.Character then
+        onCharacterAdded(player.Character)
+    end
+    
+    continuousMonitor()
+end
+
+initialize()
+
+spawn(function()
+    while true do
+        wait(0.5)
+        
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("ProximityPrompt") then
+                if obj.HoldDuration > 0 then
+                    obj.HoldDuration = 0
+                end
+            end
+        end
+    end
+end)
+
+-- ========================================
+-- INSTANT SPEED BYPASS - ANTI-KICK
+-- ========================================
+spawn(function()
+    while true do
+        task.wait(0.1) -- Super fast checks
+        
         if player.Character and player.Character:FindFirstChild("Humanoid") then
             local humanoid = player.Character.Humanoid
-            local currentTime = tick()
             
-            -- Only change if speed is exactly 28 (not 20) and within rate limits
-            if humanoid.WalkSpeed == 28 and 
-               currentTime - lastSpeedChange >= speedChangeDelay and 
-               changesThisMinute < maxChangesPerMinute then
-                
-                -- Use pcall to catch any errors and avoid kicks
-                local success = pcall(function()
-                    local args = {60} -- Changed to 60 speed
+            -- INSTANT SPEED CHANGE - NO DELAYS
+            if humanoid.WalkSpeed == 28 then
+                pcall(function()
+                    -- ANTI-KICK: Multiple methods to bypass detection
+                    local args = {50}
                     game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("SpeedChange"):FireServer(unpack(args))
+                    
+                    -- Backup method - direct speed setting
+                    humanoid.WalkSpeed = 50
                 end)
-                
-                if success then
-                    lastSpeedChange = currentTime
-                    changesThisMinute = changesThisMinute + 1
-                    print("Speed safely changed from 28 to 60")
-                else
-                    wait(0.5) -- Faster retry
-                end
             end
         end
     end
