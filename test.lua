@@ -1,1106 +1,996 @@
--- Scripts Hub X | Official Main Script (Fixed with Animatronics Finder)
-
--- ================================
--- ALL VARIABLES (TOP OF SCRIPT)
--- ================================
-
--- Services
-local TweenService = game:GetService("TweenService")
+-- ========================================
+-- INFINITE JUMP SCRIPT
+-- ========================================
 local Players = game:GetService("Players")
-local SoundService = game:GetService("SoundService")
-local HttpService = game:GetService("HttpService")
-local CoreGui = game:GetService("CoreGui")
-local MarketplaceService = game:GetService("MarketplaceService")
-local TeleportService = game:GetService("TeleportService")
-local Workspace = game:GetService("Workspace")
-local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 
--- Player Variables
 local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui", 5)
+local isInfiniteJumpEnabled = false
+local jumpConnections = {}
 
--- User Status Variables
-local OwnerUserId = "2341777244"
-local PremiumUsers = {
-    "5356702370", -- seji_kizaki 
-    "4196292931", -- jvpogi233jj
-    "1102633570", -- Pedrojay450
-    "8860068952", -- Pedrojay450's alt (assaltanoobsbr)
-    "799427028", -- Roblox_xvt
-    "5317421108", -- kolwneje
-    "2478001513" -- santosxs2340
-}
-local StaffUserId = {
-    "3882788546", -- Keanjacob5
-    "799427028" -- Roblox_xvt
-}
-local BlackUsers = {
-    -- Add blacklisted user IDs here if needed
-}
-local JumpscareUsers = {
-    -- Add jumpscare user IDs here if needed
-}
-local BlacklistUsers = {
-    -- Add additional blacklisted user IDs here if needed
-}
+local function createJumpNotification()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Parent = player:WaitForChild("PlayerGui")
+    screenGui.Name = "InfiniteJumpNotification"
 
--- Animatronics Finder Configuration (Steal a Freddy Game Only)
-local TARGET_ANIMATRONICS = {"Radioactive Foxy", "Freddles"} -- Add more animatronics here
-local MAX_PLOTS = 8
-local MAX_PADS = 27
-local STEAL_A_FREDDY_PLACE_ID = 137167142636546
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 200, 0, 0)
+    frame.Position = UDim2.new(0.5, -100, 0.9, -40)
+    frame.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    frame.BorderSizePixel = 0
+    frame.Parent = screenGui
 
--- Auto-Execute Server Hopper Variables
-local TPS = TeleportService
-local Api = "https://games.roblox.com/v1/games/"
-local _place, _id = game.PlaceId, game.JobId
-local _servers = Api.._place.."/servers/Public?sortOrder=Desc&limit=100"
+    local uiCorner = Instance.new("UICorner")
+    uiCorner.CornerRadius = UDim.new(0, 10)
+    uiCorner.Parent = frame
 
--- Webhook URL
-local webhookUrl = "https://discord.com/api/webhooks/1396650841045209169/Mx_0dcjOVnzp5f5zMhYM2uOBCPGt9SPr908shfLh_FGKZJ5eFc4tMsiiNNp1CGDx_M21"
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = "Infinite Jump Enabled"
+    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    textLabel.Font = Enum.Font.SourceSansBold
+    textLabel.TextSize = 16
+    textLabel.Parent = frame
 
--- File System Variables
-local keyFileName = "Scripts Hub X OFFICIAL - Key.txt"
+    local tweenIn = TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 200, 0, 40)})
+    tweenIn:Play()
 
--- Global auto-execute flag that persists (only for Steal a Freddy)
-if game.PlaceId == STEAL_A_FREDDY_PLACE_ID then
-    if not _G.AnimatronicsFinder then
-        _G.AnimatronicsFinder = {
-            enabled = true,
-            originalServer = _id,
-            executionCount = 0,
-            isRunning = false,
-            foundAnimatronic = nil,
-            scriptLoaded = false
-        }
-        print("🆕 FIRST RUN: Initializing animatronics finder for Steal a Freddy")
-    else
-        _G.AnimatronicsFinder.executionCount = _G.AnimatronicsFinder.executionCount + 1
-        print("🔄 AUTO-EXECUTE #" .. _G.AnimatronicsFinder.executionCount .. ": Server " .. _id)
-    end
-end
-
--- ================================
--- UTILITY FUNCTIONS
--- ================================
-
--- Server listing function
-local function ListServers(cursor)
-    local Raw = game:HttpGet(_servers .. ((cursor and "&cursor="..cursor) or ""))
-    return HttpService:JSONDecode(Raw)
-end
-
--- Notification function
-local function notify(title, text)
     spawn(function()
-        pcall(function()
-            game:GetService("StarterGui"):SetCore("SendNotification", {Title = title, Text = text, Duration = 3})
+        wait(2)
+        local tweenOut = TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0, 200, 0, 0)})
+        tweenOut:Play()
+        tweenOut.Completed:Connect(function()
+            wait(0.5)
+            screenGui:Destroy()
         end)
     end)
 end
 
--- Function to find player's plot
+local function connectInfiniteJump()
+    local connection = UserInputService.JumpRequest:Connect(function()
+        if player.Character and player.Character:FindFirstChild("Humanoid") then
+            local humanoid = player.Character:FindFirstChild("Humanoid")
+            local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
+            
+            if rootPart and humanoid and humanoid.Health > 0 then
+                humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, false)
+                humanoid:SetStateEnabled(Enum.HumanoidStateType.Flying, false)
+                
+                humanoid:ChangeState(Enum.HumanoidStateType.Landed)
+                
+                spawn(function()
+                    wait()
+                    humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                    
+                    wait(0.1)
+                    humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, true)
+                    humanoid:SetStateEnabled(Enum.HumanoidStateType.Flying, true)
+                end)
+            end
+        end
+    end)
+    
+    table.insert(jumpConnections, connection)
+    return connection
+end
+
+local function enableInfiniteJump()
+    if isInfiniteJumpEnabled then return end
+    
+    isInfiniteJumpEnabled = true
+    
+    -- Connect for current character
+    if player.Character then
+        connectInfiniteJump()
+    end
+    
+    -- Handle character respawning
+    local characterConnection = player.CharacterAdded:Connect(function(newCharacter)
+        if isInfiniteJumpEnabled then
+            wait(0.1)
+            connectInfiniteJump()
+        end
+    end)
+    
+    table.insert(jumpConnections, characterConnection)
+    createJumpNotification()
+end
+
+-- Enable infinite jump
+enableInfiniteJump()
+
+-- ========================================
+-- PLOT TELEPORTER
+-- ========================================
+local RunService = game:GetService("RunService")
+
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Create ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "PlotTeleporterUI"
+screenGui.Parent = playerGui
+screenGui.ResetOnSpawn = false
+
+-- Main Frame
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 250, 0, 120)
+mainFrame.Position = UDim2.new(0, 100, 0, 100)
+mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = screenGui
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 8)
+mainCorner.Parent = mainFrame
+
+-- Title Bar
+local titleBar = Instance.new("Frame")
+titleBar.Name = "TitleBar"
+titleBar.Size = UDim2.new(1, 0, 0, 30)
+titleBar.Position = UDim2.new(0, 0, 0, 0)
+titleBar.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+titleBar.BorderSizePixel = 0
+titleBar.Parent = mainFrame
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 8)
+titleCorner.Parent = titleBar
+
+local titleText = Instance.new("TextLabel")
+titleText.Name = "TitleText"
+titleText.Size = UDim2.new(1, -30, 1, 0)
+titleText.Position = UDim2.new(0, 5, 0, 0)
+titleText.BackgroundTransparency = 1
+titleText.Text = "by PickleTalk"
+titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleText.TextScaled = true
+titleText.Font = Enum.Font.GothamBold
+titleText.Parent = titleBar
+
+local closeButton = Instance.new("TextButton")
+closeButton.Name = "CloseButton"
+closeButton.Size = UDim2.new(0, 25, 0, 25)
+closeButton.Position = UDim2.new(1, -27, 0, 2)
+closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+closeButton.Text = "X"
+closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.TextScaled = true
+closeButton.Font = Enum.Font.GothamBold
+closeButton.BorderSizePixel = 0
+closeButton.Parent = titleBar
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 4)
+closeCorner.Parent = closeButton
+
+local teleportButton = Instance.new("TextButton")
+teleportButton.Name = "TeleportButton"
+teleportButton.Size = UDim2.new(0, 220, 0, 35)
+teleportButton.Position = UDim2.new(0, 15, 0, 45)
+teleportButton.BackgroundColor3 = Color3.fromRGB(50, 150, 200)
+teleportButton.Text = "Teleport"
+teleportButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+teleportButton.TextScaled = true
+teleportButton.Font = Enum.Font.GothamBold
+teleportButton.BorderSizePixel = 0
+teleportButton.Parent = mainFrame
+
+local teleportCorner = Instance.new("UICorner")
+teleportCorner.CornerRadius = UDim.new(0, 6)
+teleportCorner.Parent = teleportButton
+
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Name = "StatusLabel"
+statusLabel.Size = UDim2.new(1, -20, 0, 25)
+statusLabel.Position = UDim2.new(0, 10, 0, 90)
+statusLabel.BackgroundTransparency = 1
+statusLabel.Text = "Are you ready to teleport?"
+statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+statusLabel.TextScaled = true
+statusLabel.Font = Enum.Font.Gotham
+statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+statusLabel.Parent = mainFrame
+
+-- Dragging functionality
+local dragging = false
+local dragStart = nil
+local startPos = nil
+
+local function updateDrag(input)
+    local delta = input.Position - dragStart
+    mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+titleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+titleBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        if dragging then
+            updateDrag(input)
+        end
+    end
+end)
+
+-- Anti-cheat bypass for teleportation (hook namecall to block position checks and kick remotes)
+local oldNamecall
+oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+    local method = getnamecallmethod()
+    if method == "FireServer" or method == "InvokeServer" then
+        local args = {...}
+        if table.find(args, "teleport") or table.find(args, "position") or table.find(args, "anti-cheat") or table.find(args, "kick") then
+            print("Blocked anti-cheat remote for teleport: " .. self.Name)
+            return nil -- Block the call
+        end
+    end
+    return oldNamecall(self, ...)
+end)
+
+-- Position spoofing to avoid detection
+local function spoofPosition()
+    local rootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    if rootPart then
+        rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+        rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+    end
+end
+
+-- Plot teleporter functions
 local function findPlayerPlot()
     local workspace = game:GetService("Workspace")
     local plotsFolder = workspace:FindFirstChild("Plots")
     
     if not plotsFolder then
-        print("Plots folder not found!")
+        statusLabel.Text = "Plots folder not found!"
         return nil
     end
     
     local plotValue = player:FindFirstChild("Plot")
     if not plotValue then
-        print("Plot value not found in player!")
+        statusLabel.Text = "Plot value not found in player!"
         return nil
     end
     
     local plotNumber = plotValue.Value
-    print("Looking for plot " .. tostring(plotNumber) .. "...")
+    statusLabel.Text = "Looking for plot " .. tostring(plotNumber) .. "..."
     
     local targetPlot = plotsFolder:FindFirstChild(tostring(plotNumber))
     if targetPlot then
-        print("Found your plot: " .. tostring(plotNumber))
-        return targetPlot, plotNumber
+        statusLabel.Text = "Found your plot: " .. tostring(plotNumber)
+        return targetPlot
     else
-        print("Plot " .. tostring(plotNumber) .. " not found!")
-        return nil, plotNumber
+        statusLabel.Text = "Plot " .. tostring(plotNumber) .. " not found!"
+        return nil
     end
 end
 
--- ================================
--- ANIMATRONICS FINDER FUNCTIONS (Steal a Freddy Only)
--- ================================
-
--- Function to check if a specific plot belongs to the player
-local function isPlayerPlot(plotNumber)
-    local playerPlot, playerPlotNumber = findPlayerPlot()
-    return playerPlotNumber and plotNumber == playerPlotNumber
-end
-
--- Replace the existing checkAllPlots() with this version
-local function checkAllPlots()
-    print("🔍 Checking server for animatronics: " .. tostring(game.JobId) .. " (Attempt #" .. tostring(_G.AnimatronicsFinder.executionCount) .. ")")
-
-    local plots = Workspace:FindFirstChild("Plots")
-    if not plots then
-        print("❌ No Plots folder found")
-        return false, nil
-    end
-
-    -- Get player's plot number ONCE and normalize it to a number (avoid type mismatches)
-    local playerPlotNumber = nil
-    do
-        local plotValue = player:FindFirstChild("Plot")
-        -- wait shortly if Plot isn't set yet (race condition)
-        if not plotValue then
-            for i = 1, 10 do
-                wait(0.1)
-                plotValue = player:FindFirstChild("Plot")
-                if plotValue then break end
-            end
-        end
-
-        if plotValue then
-            playerPlotNumber = tonumber(plotValue.Value) or tonumber(tostring(plotValue.Value))
-            print("ℹ️ Detected playerPlotNumber = " .. tostring(playerPlotNumber) .. " (type: " .. type(playerPlotNumber) .. ")")
-        else
-            print("⚠️ Player Plot value not found on player; continuing without skipping.")
-        end
-    end
-
-    local foundAnimatronics = {}
-
-    for plotNum = 1, MAX_PLOTS do
-        print("🔍 Checking Plot " .. plotNum .. ".")
-
-        -- Strict skip of player's plot (only if we successfully detected the number)
-        if playerPlotNumber and plotNum == playerPlotNumber then
-            print("⏭️ Skipping player's plot: " .. plotNum)
-        else
-            local plot = plots:FindFirstChild(tostring(plotNum))
-            if plot then
-                print("✅ Plot " .. plotNum .. " found - Checking pads.")
-                local pads = plot:FindFirstChild("Pads")
-                if pads then
-                    for padNum = 1, MAX_PADS do
-                        local pad = pads:FindFirstChild(tostring(padNum))
-                        if not pad then break end
-                        local objectFolder = pad:FindFirstChild("Object")
-                        if objectFolder then
-                            for _, animatronic in ipairs(TARGET_ANIMATRONICS) do
-                                if objectFolder:FindFirstChild(animatronic) then
-                                    print("🎯 FOUND! " .. animatronic .. " in Plot" .. plotNum .. " Pad" .. padNum)
-                                    notify("Success", "Found " .. animatronic .. "!")
-                                    table.insert(foundAnimatronics, { name = animatronic, plot = plotNum, pad = padNum })
-                                end
-                            end
-                        end
-                    end
-
-                    if #foundAnimatronics == 0 then
-                        print("❌ Plot " .. plotNum .. " - No target animatronics found in any pads")
-                    end
-                else
-                    print("❌ Plot " .. plotNum .. " - No Pads folder found")
-                end
-            else
-                print("❌ Plot " .. plotNum .. " - Plot doesn't exist")
-            end
-        end
-    end
-
-    if #foundAnimatronics > 0 then
-        print("🎯 Found " .. #foundAnimatronics .. " animatronic(s) total!")
-        for i, found in ipairs(foundAnimatronics) do
-            print("   " .. i .. ". " .. found.name .. " in Plot" .. found.plot .. " Pad" .. found.pad)
-        end
-        _G.AnimatronicsFinder.enabled = false
-        _G.AnimatronicsFinder.foundAnimatronic = foundAnimatronics[1].name
-        return true, foundAnimatronics[1].name
-    end
-
-    print("❌ No target animatronics found in server: " .. tostring(game.JobId))
-    return false, nil
-end
-
--- Server joining function
-local function joinRandomServer()
-    print("🔄 Searching for new server...")
-    notify("Server Hop", "Finding different server...")
-    
-    spawn(function()
-        pcall(function()
-            local attempts = 0
-            local maxAttempts = 3
-            
-            local function tryJoin()
-                attempts = attempts + 1
-                print("🔄 Join attempt #" .. attempts)
-                
-                local Next
-                local serversChecked = 0
-                
-                repeat
-                    local success, Servers = pcall(ListServers, Next)
-                    if not success then
-                        print("❌ Failed to get server list")
-                        wait(2)
-                        if attempts < maxAttempts then
-                            tryJoin()
-                        end
-                        return
-                    end
-                    
-                    for i, v in pairs(Servers.data) do
-                        serversChecked = serversChecked + 1
-                        if v.playing < v.maxPlayers and v.id ~= _id then
-                            print("🎯 Trying server: " .. v.id .. " (" .. v.playing .. "/" .. v.maxPlayers .. " players)")
-                            
-                            local s, r = pcall(function()
-                                TPS:TeleportToPlaceInstance(_place, v.id, player)
-                            end)
-                            
-                            if s then
-                                print("✅ Teleporting to server: " .. v.id)
-                                return
-                            else
-                                print("❌ Failed to join " .. v.id .. ": " .. tostring(r))
-                            end
-                        end
-                        
-                        if serversChecked > 50 then break end
-                    end
-                    Next = Servers.nextPageCursor
-                until not Next or serversChecked > 50
-                
-                print("⚠️ No suitable servers found, retrying...")
-                wait(3)
-                if attempts < maxAttempts then
-                    tryJoin()
-                end
-            end
-            
-            tryJoin()
-        end)
-    end)
-end
-
--- Animatronics finder execution
-local function runAnimatronicsFinder()
-    if _G.AnimatronicsFinder.isRunning then
-        print("⚠️ Animatronics finder already running, skipping...")
-        return false, nil
-    end
-    
-    _G.AnimatronicsFinder.isRunning = true
-    
-    -- Wait for game to load properly
-    if not game:IsLoaded() then
-        print("⏳ Waiting for game to load...")
-        game.Loaded:Wait()
-    end
-    
-    -- Wait for character
-    if not player.Character then
-        print("⏳ Waiting for character...")
-        player.CharacterAdded:Wait()
-    end
-    
-    -- Wait for plots to load
-    print("⏳ Waiting for plots to load...")
-    local plotsLoaded = false
-    for i = 1, 20 do
-        wait(1)
-        if Workspace:FindFirstChild("Plots") then
-            plotsLoaded = true
-            break
-        end
-    end
-    
-    if not plotsLoaded then
-        print("❌ Plots didn't load in time, server hopping...")
-        _G.AnimatronicsFinder.isRunning = false
-        if _G.AnimatronicsFinder.enabled then
-            joinRandomServer()
-        end
-        return false, nil
-    end
-    
-    print("⚡ Starting animatronics check in server: " .. game.JobId)
-    
-    local found, foundAnimatronic = checkAllPlots()
-    _G.AnimatronicsFinder.isRunning = false
-    
-    if not found and _G.AnimatronicsFinder.enabled then
-        wait(1)
-        joinRandomServer()
-        return false, nil
-    end
-    
-    return found, foundAnimatronic
-end
-
--- Auto-execute detection for server hopper
-local function shouldAutoExecute()
-    -- Only run auto-execute for Steal a Freddy game
-    if game.PlaceId ~= STEAL_A_FREDDY_PLACE_ID then
-        return false
-    end
-    
-    if not _G.AnimatronicsFinder.enabled then
-        return false
-    end
-    
-    if game.JobId ~= _G.AnimatronicsFinder.originalServer then
-        return true
-    end
-    
-    if _G.AnimatronicsFinder.executionCount == 0 then
-        return true
-    end
-    
-    return false
-end
-
-local function sendWebhookNotification(userStatus, scriptUrl)
-    print("Sending webhook notification")
-    local webhookUrl = "https://discord.com/api/webhooks/1396650841045209169/Mx_0dcjOVnzp5f5zMhYM2uOBCPGt9SPr908shfLh_FGKZJ5eFc4tMsiiNNp1CGDx_M21"
-    if webhookUrl == "" then
-        warn("Webhook URL is empty")
+local function teleportToPlot()
+    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+        statusLabel.Text = "Character not found!"
         return
     end
     
-    local gameName = "Unknown"
-    local success, productInfo = pcall(function()
-        return MarketplaceService:GetProductInfo(game.PlaceId)
-    end)
-    if success and productInfo and productInfo.Name then
-        gameName = productInfo.Name
+    local playerPlot = findPlayerPlot()
+    if not playerPlot then return end
+    
+    local collectZone = playerPlot:FindFirstChild("CollectZone")
+    if not collectZone then
+        statusLabel.Text = "CollectZone not found in plot!"
+        return
     end
     
-    local userId = tostring(player.UserId)
-    local detectedExecutor = detectExecutor()
-    local placeId = tostring(game.PlaceId)
-    local jobId = game.JobId or "Can't detect JobId"
+    local collectPart = collectZone:FindFirstChild("Collect")
+    if not collectPart then
+        statusLabel.Text = "Collect part not found in CollectZone!"
+        return
+    end
     
-    local send_data = {
-        ["username"] = "Script Execution Log",
-        ["avatar_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg",
-        ["content"] = "Scripts Hub X | Official - Logging",
-        ["embeds"] = {
-            {
-                ["title"] = "Script Execution Details",
-                ["description"] = "**Game**: " .. gameName .. "\n**Game ID**: " .. game.PlaceId .. "\n**Profile**: https://www.roblox.com/users/" .. player.UserId .. "/profile",
-                ["color"] = 2123412,
-                ["fields"] = {
-                    {["name"] = "Display Name", ["value"] = player.DisplayName, ["inline"] = true},
-                    {["name"] = "Username", ["value"] = player.Name, ["inline"] = true},
-                    {["name"] = "User ID", ["value"] = tostring(player.UserId), ["inline"] = true},
-                    {["name"] = "Executor", ["value"] = detectedExecutor, ["inline"] = true},
-                    {["name"] = "User Type", ["value"] = userStatus, ["inline"] = true},
-                    {["name"] = "Job Id", ["value"] = game.JobId, ["inline"] = true},
-                    {["name"] = "Join Script", ["value"] = 'game:GetService("TeleportService"):TeleportToPlaceInstance(' .. placeId .. ', "' .. jobId .. '", game.Players.LocalPlayer)', ["inline"] = true},
-                    {["name"] = "Join Link", ["value"] = '[Join](https://chillihub1.github.io/chillihub-joiner/?placeId=' .. placeId .. '&gameInstanceId=' .. jobId .. ')', ["inline"] = true}
-                },
-                ["footer"] = {["text"] = "Scripts Hub X | Official", ["icon_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg"},
-                ["thumbnail"] = {["url"] = "https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=true"}
-            }
-        }
-    }
+    local targetPosition = collectPart.Position + Vector3.new(0, 5, 0)
+    local rootPart = player.Character.HumanoidRootPart
+    local humanoid = player.Character:FindFirstChild("Humanoid")
     
-    local headers = {["Content-Type"] = "application/json"}
-    local success, err = pcall(function()
-        if request and type(request) == "function" then
-            request({
-                Url = webhookUrl,
-                Method = "POST",
-                Headers = headers,
-                Body = HttpService:JSONEncode(send_data)
-            })
-        elseif http_request and type(http_request) == "function" then
-            http_request({
-                Url = webhookUrl,
-                Method = "POST",
-                Headers = headers,
-                Body = HttpService:JSONEncode(send_data)
-            })
+    statusLabel.Text = "Teleporting..."
+    
+    -- Enable noclip temporarily
+    for _, part in pairs(player.Character:GetChildren()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = false
+        end
+    end
+    
+    -- Anti-cheat bypass: Spoof position before instant teleport
+    spoofPosition()
+    
+    -- Instant real teleport (no tween)
+    rootPart.CFrame = CFrame.new(targetPosition)
+    
+    -- Fast reset after teleport
+    spawn(function()
+        wait(0.05) -- Faster wait
+        spoofPosition()
+        statusLabel.Text = "Teleported successfully!"
+        
+        -- Turn off noclip after teleport
+        for _, part in pairs(player.Character:GetChildren()) do
+            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                part.CanCollide = true
+            end
         end
     end)
     
-    if not success then
-        warn("Failed to send webhook notification: " .. tostring(err))
-    else
-        print("Webhook notification sent successfully")
-    end
+    -- Visual feedback (faster)
+    spawn(function()
+        local originalColor = teleportButton.BackgroundColor3
+        teleportButton.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+        wait(0.1) -- Faster feedback
+        teleportButton.BackgroundColor3 = originalColor
+    end)
 end
 
--- ================================
--- UI AND LOADING FUNCTIONS
--- ================================
-
--- Error function to display custom error message
-local function showError(text)
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "ErrorNotification"
-    screenGui.IgnoreGuiInset = true
-    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    screenGui.Parent = playerGui
-
-    local mainFrame = Instance.new("Frame")
-    mainFrame.Size = UDim2.new(1, 0, 1, 0)
-    mainFrame.BackgroundColor3 = Color3.fromRGB(10, 20, 30)
-    mainFrame.BackgroundTransparency = 1
-    mainFrame.Parent = screenGui
-
-    local contentFrame = Instance.new("Frame")
-    contentFrame.Size = UDim2.new(0, 400, 0, 320)
-    contentFrame.Position = UDim2.new(0.5, -200, 0.5, -160)
-    contentFrame.BackgroundColor3 = Color3.fromRGB(20, 40, 60)
-    contentFrame.BackgroundTransparency = 1
-    contentFrame.BorderSizePixel = 0
-    contentFrame.Parent = mainFrame
-
-    local contentFrameCorner = Instance.new("UICorner")
-    contentFrameCorner.CornerRadius = UDim.new(0, 16)
-    contentFrameCorner.Parent = contentFrame
-
-    local contentStroke = Instance.new("UIStroke")
-    contentStroke.Color = Color3.fromRGB(80, 160, 255)
-    contentStroke.Thickness = 1.5
-    contentStroke.Transparency = 1
-    contentStroke.Parent = contentFrame
-
-    local titleLabel = Instance.new("TextLabel")
-    titleLabel.Size = UDim2.new(1, -40, 0, 50)
-    titleLabel.Position = UDim2.new(0, 20, 0, 20)
-    titleLabel.BackgroundTransparency = 1
-    titleLabel.Text = "Error"
-    titleLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-    titleLabel.TextScaled = true
-    titleLabel.TextSize = 24
-    titleLabel.Font = Enum.Font.GothamBold
-    titleLabel.TextTransparency = 1
-    titleLabel.Parent = contentFrame
-
-    local errorLabel = Instance.new("TextLabel")
-    errorLabel.Size = UDim2.new(1, -40, 0, 60)
-    errorLabel.Position = UDim2.new(0, 20, 0, 80)
-    errorLabel.BackgroundTransparency = 1
-    errorLabel.Text = text
-    errorLabel.TextColor3 = Color3.fromRGB(150, 180, 200)
-    errorLabel.TextScaled = true
-    errorLabel.TextSize = 12
-    errorLabel.Font = Enum.Font.Gotham
-    errorLabel.TextTransparency = 1
-    errorLabel.TextWrapped = true
-    errorLabel.Parent = contentFrame
-
-    local discordLabel = Instance.new("TextLabel")
-    discordLabel.Size = UDim2.new(1, -40, 0, 60)
-    discordLabel.Position = UDim2.new(0, 20, 0, 150)
-    discordLabel.BackgroundTransparency = 1
-    discordLabel.Text = "Suggest this game on our Discord: https://discord.gg/bpsNUH5sVb"
-    discordLabel.TextColor3 = Color3.fromRGB(100, 160, 255)
-    discordLabel.TextScaled = true
-    discordLabel.TextSize = 12
-    discordLabel.Font = Enum.Font.Gotham
-    discordLabel.TextTransparency = 1
-    discordLabel.TextWrapped = true
-    discordLabel.Parent = contentFrame
-
-    local copyButton = Instance.new("TextButton")
-    copyButton.Size = UDim2.new(0, 80, 0, 28)
-    copyButton.Position = UDim2.new(0.5, -40, 0, 220)
-    copyButton.BackgroundColor3 = Color3.fromRGB(80, 160, 255)
-    copyButton.BackgroundTransparency = 1
-    copyButton.Text = "Copy Link"
-    copyButton.TextColor3 = Color3.fromRGB(230, 240, 255)
-    copyButton.TextScaled = true
-    copyButton.TextSize = 12
-    copyButton.Font = Enum.Font.GothamBold
-    copyButton.TextTransparency = 1
-    copyButton.Parent = contentFrame
-
-    local copyButtonCorner = Instance.new("UICorner")
-    copyButtonCorner.CornerRadius = UDim.new(0, 6)
-    copyButtonCorner.Parent = copyButton
-
-    copyButton.MouseButton1Click:Connect(function()
-        pcall(function()
-            if setclipboard then
-                setclipboard("https://discord.gg/bpsNUH5sVb")
-                copyButton.Text = "Copied!"
-                copyButton.BackgroundColor3 = Color3.fromRGB(60, 140, 235)
-                wait(1)
-                copyButton.Text = "Copy Link"
-                copyButton.BackgroundColor3 = Color3.fromRGB(80, 160, 255)
-            end
-        end)
-    end)
-
-    local function playEntranceAnimations()
-        local mainFrameTween = TweenService:Create(mainFrame, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.7})
-        local contentFrameTween = TweenService:Create(contentFrame, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {BackgroundTransparency = 0.5})
-        local contentStrokeTween = TweenService:Create(contentStroke, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {Transparency = 0.4})
-        local titleTween = TweenService:Create(titleLabel, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {TextTransparency = 0})
-        local errorTween = TweenService:Create(errorLabel, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {TextTransparency = 0})
-        local discordTween = TweenService:Create(discordLabel, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {TextTransparency = 0})
-        local copyButtonTween = TweenService:Create(copyButton, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {TextTransparency = 0, BackgroundTransparency = 0.2})
-
-        mainFrameTween:Play()
-        contentFrameTween:Play()
-        contentStrokeTween:Play()
-        titleTween:Play()
-        wait(0.1)
-        errorTween:Play()
-        wait(0.1)
-        discordTween:Play()
-        wait(0.1)
-        copyButtonTween:Play()
-    end
-
-    playEntranceAnimations()
-    wait(5)
+-- Button connections
+teleportButton.MouseButton1Click:Connect(teleportToPlot)
+closeButton.MouseButton1Click:Connect(function()
     screenGui:Destroy()
+end)
+
+-- Hover effects
+local function addHoverEffect(button, hoverColor, originalColor)
+    button.MouseEnter:Connect(function()
+        button.BackgroundColor3 = hoverColor
+    end)
+    
+    button.MouseLeave:Connect(function()
+        button.BackgroundColor3 = originalColor
+    end)
 end
 
-local function loadLoadingScreen()
-    print("Attempting to load loading screen from GitHub")
-    local success, result = pcall(function()
-        local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/main/loadingscreen.lua")
-        return loadstring(script)()
-    end)
-    if not success then
-        warn("Failed to load loading screen: " .. tostring(result))
-        return false, nil
+addHoverEffect(teleportButton, Color3.fromRGB(70, 170, 220), Color3.fromRGB(50, 150, 200))
+addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
+
+-- ========================================
+-- GOD MODE
+-- ========================================
+local GodModeEnabled = false
+local OriginalMaxHealth = 100
+local HealthConnection = nil
+
+local function getHumanoid()
+    local character = player.Character
+    if character then
+        return character:FindFirstChild("Humanoid")
     end
-    if not result or type(result) ~= "table" then
-        warn("Loading screen script returned invalid data")
-        return false, nil
-    end
-    print("Loading screen loaded successfully")
-    return true, result
+    return nil
 end
 
-local function loadKeySystem()
-    print("Attempting to load key system from GitHub")
-    local success, result = pcall(function()
-        local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/main/keysystem.lua")
-        return loadstring(script)()
-    end)
-    if not success then
-        warn("Failed to load key system: " .. tostring(result))
-        return false, nil
-    end
-    if not result or type(result) ~= "table" then
-        warn("Key system script returned invalid data")
-        return false, nil
-    end
-    print("Key system loaded successfully")
-    return true, result
-end
-
-local function checkGameSupport()
-    print("Checking game support for PlaceID: " .. game.PlaceId)
-    local success, Games = pcall(function()
-        local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameList.lua")
-        return loadstring(script)()
-    end)
-    if not success then
-        warn("Failed to load game list: " .. tostring(Games))
-        return false, nil
+local function enableGodMode()
+    local humanoid = getHumanoid()
+    if not humanoid then 
+        print("No humanoid found!")
+        return 
     end
     
-    if type(Games) ~= "table" then
-        warn("Game list returned invalid data")
-        return false, nil
+    if not GodModeEnabled then
+        OriginalMaxHealth = humanoid.MaxHealth
+        print("Stored original health:", OriginalMaxHealth)
     end
     
-    for PlaceID, Execute in pairs(Games) do
-        if PlaceID == game.PlaceId then
-            print("Game supported, script URL: " .. Execute)
-            return true, Execute
+    GodModeEnabled = true
+    
+    humanoid.MaxHealth = math.huge
+    humanoid.Health = math.huge
+    
+    if HealthConnection then
+        HealthConnection:Disconnect()
+    end
+    
+    HealthConnection = humanoid.HealthChanged:Connect(function(health)
+        if GodModeEnabled and health < math.huge then
+            humanoid.Health = math.huge
+        end
+    end)
+    
+    print("God Mode enabled")
+end
+
+local function disableGodMode()
+    GodModeEnabled = false
+    
+    local humanoid = getHumanoid()
+    if humanoid then
+        humanoid.MaxHealth = OriginalMaxHealth
+        humanoid.Health = OriginalMaxHealth
+        print("God Mode disabled, health restored to:", OriginalMaxHealth)
+    end
+    
+    if HealthConnection then
+        HealthConnection:Disconnect()
+        HealthConnection = nil
+    end
+end
+
+-- Initialize God Mode
+if player.Character then
+    enableGodMode()
+else
+    player.CharacterAdded:Connect(function()
+        wait(0.05) -- Faster wait
+        enableGodMode()
+    end)
+end
+
+-- Handle respawning
+player.CharacterAdded:Connect(function()
+    wait(0.05) -- Faster wait
+    if GodModeEnabled then
+        enableGodMode()
+    end
+end)
+
+-- ========================================
+-- FAST INTERACTION SCRIPT
+-- ========================================
+-- Fast Interaction Script for Roblox (Fixed Version)
+-- Eliminates hold-to-interact, enables instant tap-to-interact
+
+-- Function to modify proximity prompt for instant interaction
+local function modifyProximityPrompt(prompt)
+    if not prompt or not prompt:IsA("ProximityPrompt") then
+        return
+    end
+    
+    -- Set hold duration to 0 for instant interaction
+    prompt.HoldDuration = 0
+    
+    -- Also override any style that might interfere
+    prompt.Style = Enum.ProximityPromptStyle.Default
+    
+    -- Ensure it stays at 0 even if the game tries to change it
+    local connection
+    connection = prompt:GetPropertyChangedSignal("HoldDuration"):Connect(function()
+        if prompt.HoldDuration ~= 0 then
+            prompt.HoldDuration = 0
+        end
+    end)
+    
+    print("Modified proximity prompt:", prompt.Name or "Unnamed")
+end
+
+-- Function to scan and modify all proximity prompts in a container
+local function scanAndModifyPrompts(container)
+    -- Check current object
+    if container:IsA("ProximityPrompt") then
+        modifyProximityPrompt(container)
+    end
+    
+    -- Check all descendants
+    for _, descendant in pairs(container:GetDescendants()) do
+        if descendant:IsA("ProximityPrompt") then
+            modifyProximityPrompt(descendant)
         end
     end
-    print("Game not supported")
-    return false, nil
 end
 
-local function loadGameScript(scriptUrl)
-    print("Attempting to load game script from URL: " .. scriptUrl)
-    local success, result = pcall(function()
-        local script = game:HttpGet(scriptUrl)
-        return loadstring(script)()
-    end)
-    if not success then
-        warn("Failed to load game script: " .. tostring(result))
-        return false
-    end
-    print("Game script loaded successfully")
-    if game.PlaceId == STEAL_A_FREDDY_PLACE_ID and _G.AnimatronicsFinder then
-        _G.AnimatronicsFinder.scriptLoaded = true
-    end
-    return true
-end
-
--- ================================
--- USER STATUS AND AUTHENTICATION
--- ================================
-
-local function checkPremiumUser()
-    local userId = tostring(player.UserId)
-    print("Checking user status for UserId: " .. userId)
-    
-    if BlacklistUsers and table.find(BlacklistUsers, userId) then
-        print("Blacklisted user detected")
-        return "blacklisted"
-    elseif BlackUsers and table.find(BlackUsers, userId) then
-        print("Black user detected")
-        return "blacklisted"
-    elseif OwnerUserId and userId == tostring(OwnerUserId) then
-        print("Owner detected")
-        return "owner"
-    elseif StaffUserId and table.find(StaffUserId, userId) then
-        print("Staff detected")
-        return "staff"
-    elseif JumpscareUsers and table.find(JumpscareUsers, userId) then
-        print("Jumpscare user detected")
-        return "jumpscareuser"
-    elseif PremiumUsers and table.find(PremiumUsers, userId) then
-        print("Premium user verified")
-        return "premium"
-    end
-    
-    print("Non-premium user")
-    return "non-premium"
-end
-
-local function createKeyFile(validKey)
-    if writefile and type(writefile) == "function" then
-        local success, err = pcall(function()
-            writefile(keyFileName, validKey)
-        end)
-        if success then
-            print("Key file created with valid key")
-        else
-            warn("Failed to create key file: " .. tostring(err))
-        end
-    else
-        warn("writefile function not available")
+-- Function to handle new proximity prompts being added
+local function onDescendantAdded(descendant)
+    if descendant:IsA("ProximityPrompt") then
+        -- Small delay to ensure the prompt is fully initialized
+        wait(0.05) -- Faster delay
+        modifyProximityPrompt(descendant)
     end
 end
 
-local function checkValidKey(KeySystem)
-    if not isfile or not readfile or not delfile then
-        warn("File system functions not available in this executor")
-        return false
-    end
-    
-    local success, exists = pcall(function()
-        return isfile(keyFileName)
-    end)
-    
-    if success and exists then
-        local success2, storedKey = pcall(function()
-            return readfile(keyFileName)
-        end)
-        
-        if success2 and storedKey then
-            print("Found existing key file, checking validity...")
-            
-            local isValid = false
-            local success3, err = pcall(function()
-                if KeySystem.ValidateKey and type(KeySystem.ValidateKey) == "function" then
-                    isValid = KeySystem.ValidateKey(storedKey)
-                elseif KeySystem.IsKeyVerified and type(KeySystem.IsKeyVerified) == "function" then
-                    isValid = KeySystem.IsKeyVerified()
-                end
-            end)
-            
-            if success3 and isValid then
-                print("Stored key is valid")
-                return true
-            else
-                print("Stored key is invalid, deleting file")
-                pcall(function()
-                    delfile(keyFileName)
-                end)
-                return false
+-- Function to continuously monitor and fix proximity prompts
+local function continuousMonitor()
+    RunService.Heartbeat:Connect(function()
+        -- Scan workspace for any new or reset proximity prompts
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("ProximityPrompt") and obj.HoldDuration > 0 then
+                obj.HoldDuration = 0
             end
-        else
-            warn("Failed to read key file: " .. tostring(storedKey))
-            return false
         end
+        
+        -- Also check player's character if it exists
+        if player.Character then
+            for _, obj in pairs(player.Character:GetDescendants()) do
+                if obj:IsA("ProximityPrompt") and obj.HoldDuration > 0 then
+                    obj.HoldDuration = 0
+                end
+            end
+        end
+    end)
+end
+
+-- Function to handle character respawn
+local function onCharacterAdded(character)
+    wait(0.05) -- Faster wait
+    scanAndModifyPrompts(character)
+    print("Fast Interaction applied to new character!")
+end
+
+-- Main initialization
+local function initialize()
+    print("Initializing Fast Interaction script...")
+    
+    -- Scan entire workspace initially
+    scanAndModifyPrompts(workspace)
+    
+    -- Connect to new objects being added
+    workspace.DescendantAdded:Connect(onDescendantAdded)
+    
+    -- Handle character respawning
+    player.CharacterAdded:Connect(onCharacterAdded)
+    
+    -- If character already exists, process it
+    if player.Character then
+        onCharacterAdded(player.Character)
+    end
+    
+    -- Start continuous continuous monitor
+    continuousMonitor()
+    
+    print("Fast Interaction script loaded! All interactions should now be instant.")
+    print("Found and modified proximity prompts in the game.")
+end
+
+-- Start the script
+initialize()
+
+-- Alternative method using direct prompt manipulation
+spawn(function()
+    while true do
+        wait(0.2) -- Faster check
+        -- Find all proximity prompts and force them to instant
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("ProximityPrompt") then
+                if obj.HoldDuration > 0 then
+                    obj.HoldDuration = 0
+                    print("Fixed prompt:", obj.Parent.Name)
+                end
+            end
+        end
+    end
+end)
+
+-- ========================================
+-- PAD TOUCH INTEREST LOOP
+-- ========================================
+local function touchPads()
+    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+        return
+    end
+    
+    local playerPlot = findPlayerPlot()
+    if not playerPlot then
+        return
+    end
+    
+    local padsFolder = playerPlot:FindFirstChild("Pads")
+    if not padsFolder then
+        print("Pads folder not found in player plot")
+        return
+    end
+    
+    local rootPart = player.Character.HumanoidRootPart
+    local touchedPads = 0
+    
+    -- Loop through pads 1-30
+    for i = 1, 30 do
+        local padName = tostring(i)
+        local pad = padsFolder:FindFirstChild(padName)
+        
+        if pad then
+            local collectPart = pad:FindFirstChild("Collect")
+            if collectPart then
+                local touchInterest = collectPart:FindFirstChild("TouchInterest")
+                if touchInterest then
+                    -- Fire touch interest
+                    firetouchinterest(collectPart, rootPart, 0)
+                    wait(0.05) -- Small delay between touches
+                    firetouchinterest(collectPart, rootPart, 1)
+                    touchedPads = touchedPads + 1
+                end
+            end
+        end
+    end
+    
+    if touchedPads > 0 then
+        print("Touched " .. touchedPads .. " pads in plot")
+    end
+end
+
+-- Main loop for pad touching every 5 seconds
+spawn(function()
+    while true do
+        wait(5)
+        touchPads()
+    end
+end)
+
+-- ========================================
+-- NOCLIP SCRIPT
+-- ========================================
+local RunService = game:GetService("RunService")
+
+-- Noclip state
+local noclipEnabled = true
+
+-- Store original CanCollide values
+local originalCanCollide = {}
+
+-- Current floor part the player is standing on
+local currentFloorPart = nil
+
+-- Excluded paths that should NOT be affected by noclip
+local excludedPaths = {
+    "workspace.Map.Part",
+    "workspace.Plots.4.CollectZone.Collect",
+    "workspace.Plots.3.CollectZone.Collect", 
+    "workspace.Plots.2.CollectZone.Collect",
+    "workspace.Plots.1.CollectZone.Collect",
+    "workspace.Plots.5.CollectZone.Collect",
+    "workspace.Plots.6.CollectZone.Collect",
+    "workspace.Plots.7.CollectZone.Collect",
+    "workspace.Plots.8.CollectZone.Collect"
+}
+
+-- Function to get the full path of an object
+local function getObjectPath(obj)
+    local path = obj.Name
+    local parent = obj.Parent
+    
+    while parent and parent ~= game and parent ~= workspace do
+        path = parent.Name .. "." .. path
+        parent = parent.Parent
+    end
+    
+    if parent == workspace then
+        return "workspace." .. path
     else
-        print("No key file found")
-        return false
+        return path
+    end
+end
+
+-- Alternative: Check by object reference for more reliable detection
+local function isExcludedByReference(part)
+    -- Check if it's the Map.Part
+    if workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("Part") then
+        if part == workspace.Map.Part then
+            return true
+        end
+    end
+    
+    -- Check collect zones in plots
+    if workspace:FindFirstChild("Plots") then
+        for i = 1, 8 do
+            local plotName = tostring(i)
+            if workspace.Plots:FindFirstChild(plotName) then
+                local plot = workspace.Plots[plotName]
+                if plot:FindFirstChild("CollectZone") and plot.CollectZone:FindFirstChild("Collect") then
+                    if part == plot.CollectZone.Collect then
+                        return true
+                    end
+                end
+            end
+        end
     end
     
     return false
 end
 
--- ================================
--- MAIN EXECUTION FUNCTIONS
--- ================================
-
--- Check if PlayerGui exists
-if not playerGui then
-    print("❌ Player Gui not found")
-    return
+-- Function to detect the floor part the player is standing on
+local function detectFloorPart()
+    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then 
+        return nil 
+    end
+    
+    local rootPart = player.Character.HumanoidRootPart
+    
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+    raycastParams.FilterDescendantsInstances = {player.Character}
+    
+    -- Cast ray downward from player's position
+    local rayOrigin = rootPart.Position
+    local rayDirection = Vector3.new(0, -10, 0) -- Cast 10 studs down
+    
+    local raycastResult = workspace:Raycast(rayOrigin, rayDirection, raycastParams)
+    
+    if raycastResult and raycastResult.Instance then
+        return raycastResult.Instance
+    end
+    
+    return nil
 end
 
-print("✅ Main script started, PlayerGui found")
-
--- Main execution
-coroutine.wrap(function()
-    print("🚀 Starting main execution at " .. os.date("%H:%M:%S"))
-    
-    -- Check user status
-    local userStatus = checkPremiumUser()
-    
-    if userStatus == "blacklisted" then
-        print("❌ Kicking blacklisted user")
-        player:Kick("You are blacklisted from using this script!")
-        return
+-- Function to check if a part should be excluded from noclip
+local function isExcludedPart(part)
+    -- First try reference-based checking (more reliable)
+    if isExcludedByReference(part) then
+        return true
     end
     
-    if userStatus == "jumpscareuser" then
-        print("🎃 Jumpscare user detected - Activating jumpscare")
-        -- Add jumpscare logic here if needed
-        player:Kick("👻 BOO! You've been jumpscared!")
-        return
+    -- Check if it's the current floor part
+    if currentFloorPart and part == currentFloorPart then
+        return true
     end
-
-    -- Check game support
-    local isSupported, scriptUrl = checkGameSupport()
-        sendWebhookNotification(userStatus, nil)
-    if not isSupported then
-        showError("Game is not supported. Suggest this game on our Discord server.")
-        return
-    end
-
-    -- Check if this is Steal a Freddy game and user is premium/owner/staff
-    if game.PlaceId == STEAL_A_FREDDY_PLACE_ID and (userStatus == "owner" or userStatus == "staff" or userStatus == "premium") then
-        print("🎮 Steal a Freddy game detected with privileged user - Running animatronics finder")
-        
-        -- Auto-execute check
-        if shouldAutoExecute() then
-            print("🔄 Auto-execute: Checking for animatronics...")
-            local found, foundAnimatronic = runAnimatronicsFinder()
-            
-            if found and foundAnimatronic then
-                print("🎯 " .. foundAnimatronic .. " found!")
-                
-                -- Load script based on user type
-                if userStatus == "owner" or userStatus == "staff" then
-                    print("⚡ " .. userStatus .. " - Loading script immediately")
-                    local scriptLoaded = loadGameScript(scriptUrl)
-                    if scriptLoaded then
-                        print("✅ Scripts Hub X | Complete for " .. userStatus .. " (Found: " .. foundAnimatronic .. ")")
-                    else
-                        showError("Failed to load script after finding " .. foundAnimatronic)
-                    end
-                elseif userStatus == "premium" then
-                    print("🎨 Premium - Showing loading screen")
-                    local success, LoadingScreen = loadLoadingScreen()
-                    if success and LoadingScreen then
-                        spawn(function()
-                            pcall(function()
-                                if LoadingScreen.initialize then LoadingScreen.initialize() end
-                                if LoadingScreen.setLoadingText then
-                                    LoadingScreen.setLoadingText("Found " .. foundAnimatronic .. "!", Color3.fromRGB(0, 255, 0))
-                                end
-                                wait(2)
-                                if LoadingScreen.setLoadingText then
-                                    LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
-                                end
-                                if LoadingScreen.animateLoadingBar then
-                                    LoadingScreen.animateLoadingBar(function()
-                                        if LoadingScreen.playExitAnimations then
-                                            LoadingScreen.playExitAnimations(function()
-                                                local scriptLoaded = loadGameScript(scriptUrl)
-                                                if scriptLoaded then
-                                                    print("✅ Scripts Hub X | Complete for Premium (Found: " .. foundAnimatronic .. ")")
-                                                end
-                                            end)
-                                        end
-                                    end)
-                                end
-                            end)
-                        end)
-                    else
-                        local scriptLoaded = loadGameScript(scriptUrl)
-                        if scriptLoaded then
-                            print("✅ Scripts Hub X | Complete (no loading screen)")
-                        end
-                    end
-                end
-            else
-                print("❌ No animatronics found, continuing search...")
-            end
-        else
-            -- Manual check for non-auto execute
-            spawn(function()
-                wait(2)
-                local found, foundAnimatronic = runAnimatronicsFinder()
-                if found and foundAnimatronic then
-                    print("🎯 Manual check: " .. foundAnimatronic .. " found!")
-                    
-                    if userStatus == "owner" or userStatus == "staff" then
-                        local scriptLoaded = loadGameScript(scriptUrl)
-                        if scriptLoaded then
-                            print("✅ Scripts Hub X | Complete for " .. userStatus)
-                        end
-                    elseif userStatus == "premium" then
-                        local success, LoadingScreen = loadLoadingScreen()
-                        if success and LoadingScreen then
-                            spawn(function()
-                                pcall(function()
-                                    if LoadingScreen.initialize then LoadingScreen.initialize() end
-                                    if LoadingScreen.setLoadingText then
-                                        LoadingScreen.setLoadingText("Found " .. foundAnimatronic .. "!", Color3.fromRGB(0, 255, 0))
-                                    end
-                                    wait(2)
-                                    if LoadingScreen.animateLoadingBar then
-                                        LoadingScreen.animateLoadingBar(function()
-                                            if LoadingScreen.playExitAnimations then
-                                                LoadingScreen.playExitAnimations(function()
-                                                    loadGameScript(scriptUrl)
-                                                end)
-                                            end
-                                        end)
-                                    end
-                                end)
-                            end)
-                        else
-                            loadGameScript(scriptUrl)
-                        end
-                    end
-                end
-            end)
+    
+    -- Fallback to path-based checking
+    local partPath = getObjectPath(part)
+    
+    for _, excludedPath in pairs(excludedPaths) do
+        if partPath == excludedPath then
+            return true
         end
-    else
-        -- Regular flow for other games or non-premium users in Steal a Freddy
-        print("🎮 Regular execution flow")
+    end
+    
+    return false
+end
+
+-- Function to apply noclip to a part
+local function applyNoclip(part)
+    if part:IsA("BasePart") and not isExcludedPart(part) then
+        -- Store original CanCollide value if not already stored
+        if originalCanCollide[part] == nil then
+            originalCanCollide[part] = part.CanCollide
+        end
         
-        if userStatus == "owner" or userStatus == "staff" or userStatus == "premium" then
-            if userStatus == "owner" or userStatus == "staff" then
-                local scriptLoaded = loadGameScript(scriptUrl)
-                if scriptLoaded then
-                    print("✅ Scripts Hub X | Complete for " .. userStatus)
-                end
-            else -- premium
-                local success, LoadingScreen = loadLoadingScreen()
-                if success and LoadingScreen then
-                    spawn(function()
-                        pcall(function()
-                            if LoadingScreen.initialize then LoadingScreen.initialize() end
-                            if LoadingScreen.setLoadingText then
-                                LoadingScreen.setLoadingText("Premium User Verified", Color3.fromRGB(0, 150, 0))
-                            end
-                            wait(2)
-                            if LoadingScreen.setLoadingText then
-                                LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
-                            end
-                            if LoadingScreen.animateLoadingBar then
-                                LoadingScreen.animateLoadingBar(function()
-                                    if LoadingScreen.playExitAnimations then
-                                        LoadingScreen.playExitAnimations(function()
-                                            loadGameScript(scriptUrl)
-                                        end)
-                                    end
-                                end)
-                            end
-                        end)
-                    end)
-                else
-                    loadGameScript(scriptUrl)
-                end
+        -- Disable collision for noclip
+        part.CanCollide = false
+    end
+end
+
+-- Function to remove noclip from a part
+local function removeNoclip(part)
+    if part:IsA("BasePart") and originalCanCollide[part] ~= nil then
+        -- Restore original CanCollide value
+        part.CanCollide = originalCanCollide[part]
+        originalCanCollide[part] = nil
+    end
+end
+
+-- Function to apply noclip to all workspace parts
+local function applyNoclipToWorkspace()
+    local function processDescendants(parent)
+        for _, child in pairs(parent:GetDescendants()) do
+            if child:IsA("BasePart") then
+                applyNoclip(child)
+            end
+        end
+    end
+    
+    processDescendants(workspace)
+end
+
+-- Function to remove noclip from all parts
+local function removeNoclipFromWorkspace()
+    for part, _ in pairs(originalCanCollide) do
+        if part and part.Parent then
+            removeNoclip(part)
+        end
+    end
+end
+
+-- Function to update floor detection and reapply noclip
+local function updateFloorDetection()
+    local newFloorPart = detectFloorPart()
+    
+    -- If floor changed, update collision
+    if newFloorPart ~= currentFloorPart then
+        -- Remove collision from old floor if it exists
+        if currentFloorPart and originalCanCollide[currentFloorPart] ~= nil then
+            currentFloorPart.CanCollide = false
+        end
+        
+        -- Set new floor part
+        currentFloorPart = newFloorPart
+        
+        -- Restore collision to new floor if it exists
+        if currentFloorPart then
+            if originalCanCollide[currentFloorPart] == nil then
+                originalCanCollide[currentFloorPart] = currentFloorPart.CanCollide
+            end
+            currentFloorPart.CanCollide = true
+        end
+    end
+end
+
+-- Main noclip function
+local function toggleNoclip()
+    if noclipEnabled then
+        applyNoclipToWorkspace()
+    else
+        removeNoclipFromWorkspace()
+        currentFloorPart = nil
+    end
+end
+
+-- Handle new parts being added to workspace
+workspace.DescendantAdded:Connect(function(descendant)
+    if noclipEnabled and descendant:IsA("BasePart") then
+        wait() -- Small delay to ensure part is fully loaded
+        applyNoclip(descendant)
+    end
+end)
+
+-- Handle parts being removed from workspace
+workspace.DescendantRemoving:Connect(function(descendant)
+    if descendant:IsA("BasePart") and originalCanCollide[descendant] then
+        originalCanCollide[descendant] = nil
+    end
+    
+    -- Clear current floor if it's being removed
+    if descendant == currentFloorPart then
+        currentFloorPart = nil
+    end
+end)
+
+-- Handle character respawning for noclip
+player.CharacterAdded:Connect(function(newCharacter)
+    currentFloorPart = nil
+    
+    -- Wait for character to fully load
+    wait(1)
+    
+    -- Reapply noclip after respawn
+    if noclipEnabled then
+        applyNoclipToWorkspace()
+    end
+end)
+
+-- Main loop for floor detection
+RunService.Heartbeat:Connect(function()
+    if noclipEnabled and player.Character and player.Character.Parent and player.Character:FindFirstChild("HumanoidRootPart") then
+        updateFloorDetection()
+    end
+end)
+
+-- Initialize noclip
+toggleNoclip()
+
+-- ========================================
+-- AUTO LOCK FUNCTION
+-- ========================================
+local function findLockObject(playerPlot)
+    -- Try different approaches to find the lock object
+    local floor1 = playerPlot:FindFirstChild("Floor1")
+    if not floor1 then
+        return nil
+    end
+    
+    -- Search through all children for lock object
+    local children = floor1:GetChildren()
+    for i, child in pairs(children) do
+        local billboardGui = child:FindFirstChild("BillboardGui")
+        if billboardGui then
+            local titleText = billboardGui:FindFirstChild("Title")
+            if titleText and (titleText.Text == "Lock Base" or titleText.Text == "LOCK BASE") then
+                return child
+            end
+        end
+    end
+    
+    return nil
+end
+
+local function autoLock()
+    local playerPlot = findPlayerPlot()
+    if not playerPlot then
+        return
+    end
+    
+    local lockObject = findLockObject(playerPlot)
+    if not lockObject then
+        return
+    end
+    
+    local billboardGui = lockObject:FindFirstChild("BillboardGui")
+    if not billboardGui then
+        return
+    end
+    
+    local titleText = billboardGui:FindFirstChild("Title")
+    if not titleText then
+        return
+    end
+    
+    local text = titleText.Text
+    
+    -- Check if text is LOCK BASE or Lock Base
+    if text == "LOCK BASE" or text == "Lock Base" then
+        -- Make sure player has a character
+        if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+            return
+        end
+        
+        -- Try different methods to activate the lock
+        local touchInterest = lockObject:FindFirstChild("TouchInterest")
+        if touchInterest then
+            for i = 1, 3 do
+                firetouchinterest(lockObject, player.Character.HumanoidRootPart, 0)
+                wait(0.1)
+                firetouchinterest(lockObject, player.Character.HumanoidRootPart, 1)
+                wait(0.2)
             end
         else
-            -- Non-premium user - key system
-            print("🔑 Non-premium user - Loading key system")
-            local successKS, KeySystem = loadKeySystem()
-            if not successKS or not KeySystem then
-                showError("Key system failed to load")
-                return
-            end
-            
-            if checkValidKey(KeySystem) then
-                print("✅ Valid key found - Loading script")
-                local scriptLoaded = loadGameScript(scriptUrl)
-                if scriptLoaded then
-                    print("✅ Scripts Hub X | Complete for cached key user")
-                else
-                    showError("Valid key but script failed to load")
+            -- Try ClickDetector if TouchInterest doesn't exist
+            local clickDetector = lockObject:FindFirstChild("ClickDetector")
+            if clickDetector then
+                for i = 1, 3 do
+                    fireclickdetector(clickDetector)
+                    wait(0.3)
                 end
-            else
-                print("🔑 No valid key - Showing key system")
+            end
+        end
+    end
+end
+
+-- Main loop to continuously check for auto lock
+spawn(function()
+    while true do
+        wait(3)
+        autoLock()
+    end
+end)
+
+-- ========================================
+-- SPEED MONITOR SCRIPT WITH ANTI-KICK
+-- ========================================
+spawn(function()
+    local lastSpeedChange = 0
+    local speedChangeDelay = 0.5 -- Faster delay
+    local maxChangesPerMinute = 15 -- Increased for faster changes
+    local changesThisMinute = 0
+    local minuteTimer = 0
+    
+    while true do
+        wait(0.1) -- Faster checks
+        minuteTimer = minuteTimer + 0.1
+        
+        -- Reset change counter every minute
+        if minuteTimer >= 60 then
+            changesThisMinute = 0
+            minuteTimer = 0
+        end
+        
+        -- Check if player has a character and humanoid
+        if player.Character and player.Character:FindFirstChild("Humanoid") then
+            local humanoid = player.Character.Humanoid
+            local currentTime = tick()
+            
+            -- Only change if speed is exactly 28 (not 20) and within rate limits
+            if humanoid.WalkSpeed == 28 and 
+               currentTime - lastSpeedChange >= speedChangeDelay and 
+               changesThisMinute < maxChangesPerMinute then
                 
-                local keyVerified = false
-                local validKey = ""
-                
-                pcall(function()
-                    if KeySystem.ShowKeySystem and type(KeySystem.ShowKeySystem) == "function" then
-                        KeySystem.ShowKeySystem()
-                    else
-                        showError("Key system interface failed to display")
-                        return
-                    end
-                    
-                    print("⏳ Waiting for key verification...")
-                    
-                    -- Wait for key verification with timeout
-                    local timeout = 300 -- 5 minutes
-                    local startTime = tick()
-                    while not keyVerified and (tick() - startTime) < timeout do
-                        if KeySystem.IsKeyVerified and type(KeySystem.IsKeyVerified) == "function" then
-                            keyVerified = KeySystem.IsKeyVerified()
-                        end
-                        if keyVerified then
-                            if KeySystem.GetEnteredKey and type(KeySystem.GetEnteredKey) == "function" then
-                                validKey = KeySystem.GetEnteredKey()
-                            end
-                            break
-                        end
-                        wait(0.1)
-                    end
-                    
-                    if KeySystem.HideKeySystem and type(KeySystem.HideKeySystem) == "function" then
-                        KeySystem.HideKeySystem()
-                    end
+                -- Use pcall to catch any errors and avoid kicks
+                local success = pcall(function()
+                    local args = {60} -- Changed to 60 speed
+                    game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("SpeedChange"):FireServer(unpack(args))
                 end)
                 
-                if not keyVerified then
-                    showError("Key verification failed or timed out")
-                    return
-                end
-                
-                if validKey ~= "" then
-                    createKeyFile(validKey)
-                end
-                
-                print("✅ Key verified - Loading script")
-                local scriptLoaded = loadGameScript(scriptUrl)
-                if scriptLoaded then
-                    print("✅ Scripts Hub X | Complete for verified key user")
+                if success then
+                    lastSpeedChange = currentTime
+                    changesThisMinute = changesThisMinute + 1
+                    print("Speed safely changed from 28 to 60")
                 else
-                    showError("Key verified but script failed to load")
+                    wait(0.5) -- Faster retry
                 end
             end
         end
     end
-end)()
-
--- ================================
--- AUTO-EXECUTE TRIGGERS (Steal a Freddy Only)
--- ================================
-
--- Auto-execute for server hopper (runs immediately on script load) - Only for Steal a Freddy
-if game.PlaceId == STEAL_A_FREDDY_PLACE_ID and shouldAutoExecute() then
-    print("🚀 AUTO-EXECUTE: Running animatronics finder...")
-    spawn(function()
-        wait(5) -- Wait a bit to ensure main execution has time to set up
-        if _G.AnimatronicsFinder and not _G.AnimatronicsFinder.scriptLoaded then -- Only run if script hasn't been loaded yet
-            local userStatus = checkPremiumUser()
-            if userStatus == "owner" or userStatus == "staff" or userStatus == "premium" then
-                local found, foundAnimatronic = runAnimatronicsFinder()
-                if found and foundAnimatronic then
-                    print("🎯 " .. foundAnimatronic .. " found! Auto-finder complete.")
-                    -- Trigger script loading if main execution hasn't done it yet
-                    if not _G.AnimatronicsFinder.scriptLoaded then
-                        local isSupported, scriptUrl = checkGameSupport()
-                        if isSupported then
-                            if userStatus == "owner" or userStatus == "staff" then
-                                local scriptLoaded = loadGameScript(scriptUrl)
-                                if scriptLoaded then
-                                    print("✅ Scripts Hub X | Auto-execute complete for " .. userStatus)
-                                end
-                            elseif userStatus == "premium" then
-                                local success, LoadingScreen = loadLoadingScreen()
-                                if success and LoadingScreen then
-                                    spawn(function()
-                                        pcall(function()
-                                            if LoadingScreen.initialize then LoadingScreen.initialize() end
-                                            if LoadingScreen.setLoadingText then
-                                                LoadingScreen.setLoadingText("Found " .. foundAnimatronic .. "!", Color3.fromRGB(0, 255, 0))
-                                            end
-                                            wait(2)
-                                            if LoadingScreen.animateLoadingBar then
-                                                LoadingScreen.animateLoadingBar(function()
-                                                    if LoadingScreen.playExitAnimations then
-                                                        LoadingScreen.playExitAnimations(function()
-                                                            loadGameScript(scriptUrl)
-                                                        end)
-                                                    end
-                                                end)
-                                            end
-                                        end)
-                                    end)
-                                else
-                                    loadGameScript(scriptUrl)
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end)
-end
-
--- Backup auto-execute triggers - Only for Steal a Freddy
-if game.PlaceId == STEAL_A_FREDDY_PLACE_ID then
-    spawn(function()
-        wait(10) -- Wait longer for backup
-        if shouldAutoExecute() and _G.AnimatronicsFinder and not _G.AnimatronicsFinder.isRunning and not _G.AnimatronicsFinder.scriptLoaded then
-            print("🔄 Backup auto-execute triggered")
-            spawn(function()
-                local userStatus = checkPremiumUser()
-                if userStatus == "owner" or userStatus == "staff" or userStatus == "premium" then
-                    local found, foundAnimatronic = runAnimatronicsFinder()
-                    if found and foundAnimatronic then
-                        print("🎯 " .. foundAnimatronic .. " found! Backup finder complete.")
-                        -- Trigger script loading for backup as well
-                        if not _G.AnimatronicsFinder.scriptLoaded then
-                            local isSupported, scriptUrl = checkGameSupport()
-                            if isSupported then
-                                if userStatus == "owner" or userStatus == "staff" then
-                                    local scriptLoaded = loadGameScript(scriptUrl)
-                                    if scriptLoaded then
-                                        print("✅ Scripts Hub X | Backup complete for " .. userStatus)
-                                    end
-                                elseif userStatus == "premium" then
-                                    local success, LoadingScreen = loadLoadingScreen()
-                                    if success and LoadingScreen then
-                                        spawn(function()
-                                            pcall(function()
-                                                if LoadingScreen.initialize then LoadingScreen.initialize() end
-                                                if LoadingScreen.setLoadingText then
-                                                    LoadingScreen.setLoadingText("Found " .. foundAnimatronic .. "!", Color3.fromRGB(0, 255, 0))
-                                                end
-                                                wait(2)
-                                                if LoadingScreen.animateLoadingBar then
-                                                    LoadingScreen.animateLoadingBar(function()
-                                                        if LoadingScreen.playExitAnimations then
-                                                            LoadingScreen.playExitAnimations(function()
-                                                                loadGameScript(scriptUrl)
-                                                            end)
-                                                        end
-                                                    end)
-                                                end
-                                            end)
-                                        end)
-                                    else
-                                        loadGameScript(scriptUrl)
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-            end)
-        end
-    end)
-end
+end)
