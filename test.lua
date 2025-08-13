@@ -50,11 +50,10 @@ local MAX_PLOTS = 8
 local MAX_PADS = 27
 local STEAL_A_FREDDY_PLACE_ID = 137167142636546
 
--- Highlighting Configuration (NEW FEATURE)
+-- Highlighting Configuration
 local HIGHLIGHT_COLORS = {
     ["Radioactive Foxy"] = Color3.fromRGB(0, 255, 0), -- Green for Radioactive Foxy
-    ["Freddles"] = Color3.fromRGB(139, 69, 19), -- Brown for Freddles
-    ["Default"] = Color3.fromRGB(255, 255, 0) -- Yellow as default
+    ["Freddles"] = Color3.fromRGB(139, 69, 19) -- Brown for Freddles
 }
 
 -- Auto-Execute Server Hopper Variables
@@ -79,7 +78,7 @@ if game.PlaceId == STEAL_A_FREDDY_PLACE_ID then
             isRunning = false,
             foundAnimatronic = nil,
             scriptLoaded = false,
-            highlightedObjects = {} -- NEW: Store highlighted objects for cleanup
+            highlightedObjects = {} -- Store highlighted objects for cleanup
         }
         print("🆕 FIRST RUN: Initializing animatronics finder for Steal a Freddy")
     else
@@ -137,7 +136,7 @@ local function findPlayerPlot()
 end
 
 -- ================================
--- NEW HIGHLIGHTING FUNCTIONS
+-- HIGHLIGHTING AND TRACERS FUNCTIONS
 -- ================================
 
 -- Function to create highlight effect on animatronic
@@ -164,35 +163,79 @@ local function highlightAnimatronic(animatronicModel, animatronicName)
     -- Parent to CoreGui so it's visible to the player
     highlight.Parent = CoreGui
     
-    -- Add pulsing animation
-    spawn(function()
-        local pulseInfo = TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
-        local pulseTween = TweenService:Create(highlight, pulseInfo, {
-            FillTransparency = 0.8,
-            OutlineTransparency = 0.3
-        })
-        pulseTween:Play()
-    end)
-    
     print("✨ Highlighted " .. animatronicName .. " with outline")
     return highlight
 end
 
--- Function to clean up all highlights
+-- Function to create transparent tracer line to animatronic
+local function createTracer(animatronicModel, animatronicName)
+    if not animatronicModel or not animatronicModel.PrimaryPart then
+        return nil
+    end
+    
+    -- Create tracer beam
+    local beam = Instance.new("Beam")
+    beam.Name = "AnimatronicTracer_" .. animatronicName
+    
+    -- Set tracer color and properties
+    local color = HIGHLIGHT_COLORS[animatronicName] or HIGHLIGHT_COLORS["Default"]
+    beam.Color = ColorSequence.new(color)
+    beam.Transparency = NumberSequence.new(0.5) -- Transparent as requested
+    beam.Width0 = 0.5
+    beam.Width1 = 0.5
+    beam.FaceCamera = true
+    
+    -- Create attachment points
+    local startAttachment = Instance.new("Attachment")
+    startAttachment.Name = "TracerStart"
+    startAttachment.Parent = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    
+    local endAttachment = Instance.new("Attachment")
+    endAttachment.Name = "TracerEnd"
+    endAttachment.Parent = animatronicModel.PrimaryPart
+    
+    -- Connect beam to attachments
+    beam.Attachment0 = startAttachment
+    beam.Attachment1 = endAttachment
+    beam.Parent = Workspace
+    
+    print("📍 Created tracer for " .. animatronicName)
+    return {beam = beam, startAttachment = startAttachment, endAttachment = endAttachment}
+end
+
+-- Function to clean up all highlights and tracers
 local function cleanupHighlights()
     if _G.AnimatronicsFinder and _G.AnimatronicsFinder.highlightedObjects then
-        for _, highlight in pairs(_G.AnimatronicsFinder.highlightedObjects) do
-            if highlight and highlight.Parent then
-                highlight:Destroy()
+        for _, obj in pairs(_G.AnimatronicsFinder.highlightedObjects) do
+            if obj then
+                if obj.beam then
+                    obj.beam:Destroy()
+                end
+                if obj.startAttachment then
+                    obj.startAttachment:Destroy()
+                end
+                if obj.endAttachment then
+                    obj.endAttachment:Destroy()
+                end
+                if obj.Parent then
+                    obj:Destroy()
+                end
             end
         end
         _G.AnimatronicsFinder.highlightedObjects = {}
-        print("🧹 Cleaned up all animatronic highlights")
+        print("🧹 Cleaned up all highlights and tracers")
     end
     
     -- Also clean up any leftover highlights in CoreGui
     for _, child in pairs(CoreGui:GetChildren()) do
         if child:IsA("Highlight") and string.find(child.Name, "AnimatronicHighlight_") then
+            child:Destroy()
+        end
+    end
+    
+    -- Clean up leftover tracers in Workspace
+    for _, child in pairs(Workspace:GetChildren()) do
+        if child:IsA("Beam") and string.find(child.Name, "AnimatronicTracer_") then
             child:Destroy()
         end
     end
@@ -208,7 +251,7 @@ local function isPlayerPlot(plotNumber)
     return playerPlotNumber and plotNumber == playerPlotNumber
 end
 
--- Replace the existing checkAllPlots() with this version (ENHANCED WITH HIGHLIGHTING)
+-- Replace the existing checkAllPlots() with this version
 local function checkAllPlots()
     print("🔍 Checking server for animatronics: " .. tostring(game.JobId) .. " (Attempt #" .. tostring(_G.AnimatronicsFinder.executionCount) .. ")")
 
@@ -264,10 +307,16 @@ local function checkAllPlots()
                                     print("🎯 FOUND! " .. animatronic .. " in Plot" .. plotNum .. " Pad" .. padNum)
                                     notify("Success", "Found " .. animatronic .. "!")
                                     
-                                    -- NEW FEATURE: Create highlight for the found animatronic
+                                    -- Automatically create highlight for the found animatronic
                                     local highlight = highlightAnimatronic(animatronicModel, animatronic)
                                     if highlight and _G.AnimatronicsFinder then
                                         table.insert(_G.AnimatronicsFinder.highlightedObjects, highlight)
+                                    end
+                                    
+                                    -- Automatically create tracer to the found animatronic
+                                    local tracer = createTracer(animatronicModel, animatronic)
+                                    if tracer and _G.AnimatronicsFinder then
+                                        table.insert(_G.AnimatronicsFinder.highlightedObjects, tracer)
                                     end
                                     
                                     table.insert(foundAnimatronics, { name = animatronic, plot = plotNum, pad = padNum })
@@ -307,7 +356,7 @@ local function joinRandomServer()
     print("🔄 Searching for new server...")
     notify("Server Hop", "Finding different server...")
     
-    -- Clean up highlights before leaving server
+    -- Clean up highlights and tracers before leaving
     cleanupHighlights()
     
     spawn(function()
@@ -444,6 +493,7 @@ local function shouldAutoExecute()
     return false
 end
 
+-- Function to detect executor
 local function detectExecutor()
     if syn and syn.request then
         return "Synapse X"
@@ -482,6 +532,7 @@ local function detectExecutor()
     return "Unknown"
 end
 
+-- Fixed webhook notification function
 local function sendWebhookNotification(userStatus, scriptUrl)
     print("Sending webhook notification")
     local webhookUrl = "https://discord.com/api/webhooks/1396650841045209169/Mx_0dcjOVnzp5f5zMhYM2uOBCPGt9SPr908shfLh_FGKZJ5eFc4tMsiiNNp1CGDx_M21"
@@ -893,7 +944,7 @@ coroutine.wrap(function()
 
     -- Check game support
     local isSupported, scriptUrl = checkGameSupport()
-        sendWebhookNotification(userStatus, nil)
+    sendWebhookNotification(userStatus, scriptUrl)
     if not isSupported then
         showError("Game is not supported. Suggest this game on our Discord server.")
         return
@@ -1223,10 +1274,3 @@ if game.PlaceId == STEAL_A_FREDDY_PLACE_ID then
         end
     end)
 end
-
--- ================================
--- NEW MANUAL HIGHLIGHT CONTROL COMMANDS (BONUS FEATURE)
--- ================================
-
--- Expose functions for manual use
-_G.ClearHighlights = cleanupHighlights
