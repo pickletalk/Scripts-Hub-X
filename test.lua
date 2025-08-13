@@ -12,7 +12,7 @@ local jumpConnections = {}
 local function createJumpNotification()
     local screenGui = Instance.new("ScreenGui")
     screenGui.Parent = player:WaitForChild("PlayerGui")
-    screenGui.Name = "InfiniteJumpNotification"
+    screenGscreenGuiui.Name = "InfiniteJumpNotification"
 
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(0, 200, 0, 0)
@@ -227,7 +227,34 @@ titleBar.InputChanged:Connect(function(input)
     end
 end)
 
--- INSTANT TELEPORT FUNCTIONS - NO DELAYS!
+-- OP Anti-Cheat Bypass: Hook namecall to block all kick/teleport/anti-cheat remotes
+local oldNamecall
+oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+    local method = getnamecallmethod()
+    if method == "FireServer" or method == "InvokeServer" then
+        local args = {...}
+        if table.find(args, "teleport") or table.find(args, "position") or table.find(args, "anti-cheat") or table.find(args, "kick") or table.find(args, "ban") or table.find(args, "desync") then
+            print("Blocked anti-cheat remote for teleport/speed: " .. self.Name)
+            return nil -- Block the call
+        end
+    end
+    return oldNamecall(self, ...)
+end)
+
+-- OP Position Spoofing: Reset velocity and fake position every frame to bypass detection
+local function spoofPosition()
+    local rootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    if rootPart then
+        rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+        rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+        rootPart.Velocity = Vector3.new(0, 0, 0)
+        rootPart.RotVelocity = Vector3.new(0, 0, 0)
+    end
+end
+
+RunService.Heartbeat:Connect(spoofPosition) -- Run every frame for OP bypass
+
+-- Plot teleporter functions
 local function findPlayerPlot()
     local workspace = game:GetService("Workspace")
     local plotsFolder = workspace:FindFirstChild("Plots")
@@ -239,15 +266,16 @@ local function findPlayerPlot()
     
     local plotValue = player:FindFirstChild("Plot")
     if not plotValue then
-        statusLabel.Text = "Plot value not found!"
+        statusLabel.Text = "Plot value not found in player!"
         return nil
     end
     
     local plotNumber = plotValue.Value
-    statusLabel.Text = "Found plot " .. tostring(plotNumber)
+    statusLabel.Text = "Looking for plot " .. tostring(plotNumber) .. "..."
     
     local targetPlot = plotsFolder:FindFirstChild(tostring(plotNumber))
     if targetPlot then
+        statusLabel.Text = "Found your plot: " .. tostring(plotNumber)
         return targetPlot
     else
         statusLabel.Text = "Plot " .. tostring(plotNumber) .. " not found!"
@@ -255,8 +283,7 @@ local function findPlayerPlot()
     end
 end
 
--- INSTANT TELEPORT - ZERO DELAY, ANTI-KICK BYPASS
-local function instantTeleportToPlot()
+local function teleportToPlot()
     if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
         statusLabel.Text = "Character not found!"
         return
@@ -267,70 +294,69 @@ local function instantTeleportToPlot()
     
     local collectZone = playerPlot:FindFirstChild("CollectZone")
     if not collectZone then
-        statusLabel.Text = "CollectZone not found!"
+        statusLabel.Text = "CollectZone not found in plot!"
         return
     end
     
     local collectPart = collectZone:FindFirstChild("Collect")
     if not collectPart then
-        statusLabel.Text = "Collect part not found!"
+        statusLabel.Text = "Collect part not found in CollectZone!"
         return
     end
     
     local targetPosition = collectPart.Position + Vector3.new(0, 5, 0)
     local rootPart = player.Character.HumanoidRootPart
+    local humanoid = player.Character:FindFirstChild("Humanoid")
     
-    statusLabel.Text = "⚡ INSTANT TELEPORT! ⚡"
+    statusLabel.Text = "Super fast teleporting..."
     
-    -- ANTI-KICK BYPASS: Disable all character collision instantly
-    pcall(function()
-        for _, part in pairs(player.Character:GetChildren()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = false
-                part.Anchored = true
-            end
+    -- Enable noclip temporarily
+    for _, part in pairs(player.Character:GetChildren()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = false
         end
-    end)
+    end
     
-    -- INSTANT TELEPORT - NO TWEEN, NO WAIT, JUST TELEPORT!
-    pcall(function()
-        rootPart.CFrame = CFrame.new(targetPosition)
-        rootPart.Velocity = Vector3.new(0, 0, 0)
-        rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-        rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-    end)
+    -- Super fast fragment teleport: Move in tiny fragments (5 studs per step, every 0.01 sec)
+    local currentPosition = rootPart.Position
+    local direction = (targetPosition - currentPosition).Unit
+    local distance = (targetPosition - currentPosition).Magnitude
+    local stepSize = 5 -- Tiny fragments for OP bypass
+    local numSteps = math.ceil(distance / stepSize)
     
-    -- Immediately re-enable collision after teleport
+    for i = 1, numSteps do
+        local stepPosition = currentPosition + direction * (stepSize * i)
+        rootPart.CFrame = CFrame.new(stepPosition)
+        spoofPosition() -- OP bypass every step
+        wait(0.01) -- Super fast steps
+    end
+    
+    -- Final position correction
+    rootPart.CFrame = CFrame.new(targetPosition)
+    spoofPosition()
+    
+    -- Disable noclip
+    for _, part in pairs(player.Character:GetChildren()) do
+        if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+            part.CanCollide = true
+        end
+    end
+    
+    statusLabel.Text = "Teleported successfully!"
+    
+    -- Visual feedback (faster)
     spawn(function()
-        pcall(function()
-            for _, part in pairs(player.Character:GetChildren()) do
-                if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-                    part.Anchored = false
-                    part.CanCollide = true
-                end
-            end
-            if player.Character:FindFirstChild("HumanoidRootPart") then
-                player.Character.HumanoidRootPart.Anchored = false
-            end
-        end)
-    end)
-    
-    statusLabel.Text = "⚡ TELEPORTED INSTANTLY! ⚡"
-    
-    -- Visual feedback
-    spawn(function()
-        teleportButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-        teleportButton.Text = "✅ TELEPORTED! ✅"
-        task.wait(1)
-        teleportButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-        teleportButton.Text = "⚡ INSTANT TELEPORT ⚡"
+        local originalColor = teleportButton.BackgroundColor3
+        teleportButton.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+        wait(0.05) -- Super fast feedback
+        teleportButton.BackgroundColor3 = originalColor
     end)
 end
 
 -- Button connections
-teleportButton.MouseButton1Click:Connect(instantTeleportToPlot)
+teleportButton.MouseButton1Click:Connect(teleportToPlot)
 closeButton.MouseButton1Click:Connect(function()
-    screenGui:Destroy()
+    :Destroy()
 end)
 
 -- Hover effects
@@ -344,7 +370,7 @@ local function addHoverEffect(button, hoverColor, originalColor)
     end)
 end
 
-addHoverEffect(teleportButton, Color3.fromRGB(255, 100, 100), Color3.fromRGB(255, 50, 50))
+addHoverEffect(teleportButton, Color3.fromRGB(70, 170, 220), Color3.fromRGB(50, 150, 200))
 addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
 
 -- ========================================
@@ -413,13 +439,17 @@ if player.Character then
     enableGodMode()
 else
     player.CharacterAdded:Connect(function()
+        wait(0.01) -- Super fast wait
         enableGodMode()
     end)
 end
 
 -- Handle respawning
 player.CharacterAdded:Connect(function()
-    enableGodMode()
+    wait(0.01) -- Super fast wait
+    if GodModeEnabled then
+        enableGodMode()
+    end
 end)
 
 -- ========================================
@@ -759,29 +789,41 @@ end)
 toggleNoclip()
 
 -- ========================================
--- INSTANT INTERACTION - NO HOLDS
+-- FAST INTERACTION SCRIPT
 -- ========================================
+-- Fast Interaction Script for Roblox (Fixed Version)
+-- Eliminates hold-to-interact, enables instant tap-to-interact
+
+-- Function to modify proximity prompt for instant interaction
 local function modifyProximityPrompt(prompt)
     if not prompt or not prompt:IsA("ProximityPrompt") then
         return
     end
     
     prompt.HoldDuration = 0
+    
+    -- Also override any style that might interfere
     prompt.Style = Enum.ProximityPromptStyle.Default
     
+    -- Ensure it stays at 0 even if the game tries to change it
     local connection
     connection = prompt:GetPropertyChangedSignal("HoldDuration"):Connect(function()
         if prompt.HoldDuration ~= 0 then
             prompt.HoldDuration = 0
         end
     end)
+    
+    print("Modified proximity prompt:", prompt.Name or "Unnamed")
 end
 
+-- Function to scan and modify all proximity prompts in a container
 local function scanAndModifyPrompts(container)
+    -- Check current object
     if container:IsA("ProximityPrompt") then
         modifyProximityPrompt(container)
     end
     
+    -- Check all descendants
     for _, descendant in pairs(container:GetDescendants()) do
         if descendant:IsA("ProximityPrompt") then
             modifyProximityPrompt(descendant)
@@ -789,14 +831,19 @@ local function scanAndModifyPrompts(container)
     end
 end
 
+-- Function to handle new proximity prompts being added
 local function onDescendantAdded(descendant)
     if descendant:IsA("ProximityPrompt") then
+        -- Small delay to ensure the prompt is fully initialized
+        wait(0.01) -- Super fast delay
         modifyProximityPrompt(descendant)
     end
 end
 
+-- Function to continuously monitor and fix proximity prompts
 local function continuousMonitor()
     RunService.Heartbeat:Connect(function()
+        -- Scan workspace for any new or reset proximity prompts
         for _, obj in pairs(workspace:GetDescendants()) do
             if obj:IsA("ProximityPrompt") and obj.HoldDuration > 0 then
                 obj.HoldDuration = 0
@@ -813,33 +860,51 @@ local function continuousMonitor()
     end)
 end
 
+-- Function to handle character respawn
 local function onCharacterAdded(character)
-    task.wait(1)
+    wait(0.01) -- Super fast wait
     scanAndModifyPrompts(character)
+    print("Fast Interaction applied to new character!")
 end
 
+-- Main initialization
 local function initialize()
+    print("Initializing Fast Interaction script...")
+    
+    -- Scan entire workspace initially
     scanAndModifyPrompts(workspace)
+    
+    -- Connect to new objects being added
     workspace.DescendantAdded:Connect(onDescendantAdded)
+    
+    -- Handle character respawning
     player.CharacterAdded:Connect(onCharacterAdded)
     
+    -- If character already exists, process it
     if player.Character then
         onCharacterAdded(player.Character)
     end
     
+    -- Start continuous monitor
     continuousMonitor()
+    
+    print("Fast Interaction script loaded! All interactions should now be instant.")
+    print("Found and modified proximity prompts in the game.")
 end
 
+-- Start the script
 initialize()
 
+-- Alternative method using direct prompt manipulation
 spawn(function()
     while true do
-        wait(0.5)
-        
+        wait(0.1) -- Super fast check
+        -- Find all proximity prompts and force them to instant
         for _, obj in pairs(workspace:GetDescendants()) do
             if obj:IsA("ProximityPrompt") then
                 if obj.HoldDuration > 0 then
                     obj.HoldDuration = 0
+                    print("Fixed prompt:", obj.Parent.Name)
                 end
             end
         end
@@ -850,22 +915,45 @@ end)
 -- INSTANT SPEED BYPASS - ANTI-KICK
 -- ========================================
 spawn(function()
+    local lastSpeedChange = 0
+    local speedChangeDelay = 0.1 -- Super fast delay
+    local maxChangesPerMinute = 30 -- Increased for super fast changes
+    local changesThisMinute = 0
+    local minuteTimer = 0
+    
     while true do
-        task.wait(0.1) -- Super fast checks
+        wait(0.05) -- Super fast checks
+        minuteTimer = minuteTimer + 0.05
         
+        -- Reset change counter every minute
+        if minuteTimer >= 60 then
+            changesThisMinute = 0
+            minuteTimer = 0
+        end
+        
+        -- Check if player has a character and humanoid
         if player.Character and player.Character:FindFirstChild("Humanoid") then
             local humanoid = player.Character.Humanoid
+            local currentTime = tick()
             
-            -- INSTANT SPEED CHANGE - NO DELAYS
-            if humanoid.WalkSpeed == 28 then
-                pcall(function()
-                    -- ANTI-KICK: Multiple methods to bypass detection
-                    local args = {50}
+            -- Only change if speed is exactly 28 (not 20) and within rate limits
+            if humanoid.WalkSpeed == 28 and 
+               currentTime - lastSpeedChange >= speedChangeDelay and 
+               changesThisMinute < maxChangesPerMinute then
+                
+                -- Use pcall to catch any errors and avoid kicks
+                local success = pcall(function()
+                    local args = {60} -- Changed to 60 speed
                     game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("SpeedChange"):FireServer(unpack(args))
-                    
-                    -- Backup method - direct speed setting
-                    humanoid.WalkSpeed = 50
                 end)
+                
+                if success then
+                    lastSpeedChange = currentTime
+                    changesThisMinute = changesThisMinute + 1
+                    print("Speed safely changed from 28 to 60")
+                else
+                    wait(0.05) -- Super fast retry
+                end
             end
         end
     end
