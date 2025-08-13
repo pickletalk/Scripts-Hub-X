@@ -304,7 +304,6 @@ local function teleportToPlot()
     tweenToAbove:Play()
     
     tweenToAbove.Completed:Connect(function()
-            wait(2)
         
         -- Step 2: Wait no more wait seconds (no freeze, no functions, just wait)
         spawn(function()
