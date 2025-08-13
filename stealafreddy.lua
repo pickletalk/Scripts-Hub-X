@@ -953,3 +953,28 @@ spawn(function()
         end
     end
 end)
+
+-- ========================================
+-- SPEED MONITOR SCRIPT
+-- ========================================
+-- Monitor player speed and change from 28 to 40
+spawn(function()
+    while true do
+        wait(0.1) -- Check every 0.1 seconds for responsive speed monitoring
+        
+        -- Check if player has a character and humanoid
+        if player.Character and player.Character:FindFirstChild("Humanoid") then
+            local humanoid = player.Character.Humanoid
+            
+            -- Check if speed is 28
+            if humanoid.WalkSpeed == 28 then
+                -- Change speed to 40 using the remote event
+                local args = {
+                    45
+                }
+                game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("SpeedChange"):FireServer(unpack(args))
+                print("Speed changed from 28 to 45")
+            end
+        end
+    end
+end)
