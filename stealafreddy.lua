@@ -172,7 +172,7 @@ teleportButton.Name = "TeleportButton"
 teleportButton.Size = UDim2.new(0, 220, 0, 35)
 teleportButton.Position = UDim2.new(0, 15, 0, 45)
 teleportButton.BackgroundColor3 = Color3.fromRGB(50, 150, 200)
-teleportButton.Text = "Teleport"
+teleportButton.Text = "⚡ TELEPORT ⚡"
 teleportButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 teleportButton.TextScaled = true
 teleportButton.Font = Enum.Font.GothamBold
@@ -508,7 +508,7 @@ local function autoLock()
             if clickDetector then
                 for i = 1, 3 do
                     fireclickdetector(clickDetector)
-                    wait(0.3)
+                    wait(0.2)
                 end
             end
         end
@@ -518,7 +518,7 @@ end
 -- Main loop to continuously check for auto lock
 spawn(function()
     while true do
-        wait(3)
+        wait(1)
         autoLock()
     end
 end)
@@ -570,10 +570,10 @@ local function touchPads()
     end
 end
 
--- Main loop for pad touching every 5 seconds
+-- Main loop for pad touching every 3 seconds
 spawn(function()
     while true do
-        wait(5)
+        wait(3)
         touchPads()
     end
 end)
@@ -985,7 +985,7 @@ spawn(function()
                 
                 -- Use pcall to catch any errors and avoid kicks
                 local success = pcall(function()
-                    local args = {50}
+                    local args = {60}
                     game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("SpeedChange"):FireServer(unpack(args))
                 end)
                 
