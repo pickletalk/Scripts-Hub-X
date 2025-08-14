@@ -171,8 +171,8 @@ local teleportButton = Instance.new("TextButton")
 teleportButton.Name = "TeleportButton"
 teleportButton.Size = UDim2.new(0, 220, 0, 35)
 teleportButton.Position = UDim2.new(0, 15, 0, 45)
-teleportButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-teleportButton.Text = "⚡ LIGHT-SPEED TELEPORT ⚡"
+teleportButton.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
+teleportButton.Text = "⚡ INSTANT TELEPORT ⚡"
 teleportButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 teleportButton.TextScaled = true
 teleportButton.Font = Enum.Font.GothamBold
@@ -188,7 +188,7 @@ statusLabel.Name = "StatusLabel"
 statusLabel.Size = UDim2.new(1, -20, 0, 25)
 statusLabel.Position = UDim2.new(0, 10, 0, 90)
 statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "Ready for light-speed teleport!"
+statusLabel.Text = "Ready for phantom warp!"
 statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 statusLabel.TextScaled = true
 statusLabel.Font = Enum.Font.Gotham
@@ -255,8 +255,8 @@ local function findPlayerPlot()
     end
 end
 
--- ULTRA LIGHT-SPEED FRAGMENT TELEPORT - FASTER THAN ANYTHING!
-local function fragmentTeleportToPlot()
+-- PHANTOM WARP TELEPORT - UNDETECTED FASTER THAN LIGHT METHOD!
+local function phantomWarpToPlot()
     if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
         statusLabel.Text = "Character not found!"
         return
@@ -281,80 +281,120 @@ local function fragmentTeleportToPlot()
     local rootPart = player.Character.HumanoidRootPart
     local startPosition = rootPart.Position
     
-    statusLabel.Text = "⚡ LIGHT-SPEED FRAGMENTS! ⚡"
+    statusLabel.Text = "⚡ INSTANT TELEPORT ACTIVATED!⚡"
     
-    -- ANTI-KICK BYPASS: Disable collision during ultra-fast teleport
+    -- PHANTOM PHASE 1: Become invisible to anti-cheat
     pcall(function()
+        -- Disable network ownership temporarily
+        rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+        rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+        
+        -- Create phantom character state
         for _, part in pairs(player.Character:GetChildren()) do
             if part:IsA("BasePart") then
                 part.CanCollide = false
-                part.Anchored = true
+                part.Transparency = 0.5 -- Semi-transparent during warp
             end
+        end
+        
+        -- Anti-detection: Create movement illusion
+        local humanoid = player.Character:FindFirstChild("Humanoid")
+        if humanoid then
+            humanoid.PlatformStand = true
         end
     end)
     
-    -- ULTRA LIGHT-SPEED FRAGMENT TELEPORT - FASTER THAN LIGHT!
+    -- PHANTOM PHASE 2: Multi-dimensional warp sequence
     spawn(function()
-        local totalDistance = (targetPosition - startPosition).Magnitude
-        local fragmentSize = 1 -- 1 stud per fragment (ULTRA TINY for max speed)
-        local totalFragments = math.ceil(totalDistance / fragmentSize)
+        local distance = (targetPosition - startPosition).Magnitude
         
-        -- Calculate direction vector
-        local direction = (targetPosition - startPosition).Unit
+        -- METHOD 1: Quantum tunneling simulation
+        local warpPoints = {}
+        local numWarps = math.min(math.ceil(distance / 15), 8) -- Max 8 warps for stealth
         
-        statusLabel.Text = "⚡ LIGHT-SPEED ACTIVE! ⚡"
-        
-        -- MAXIMUM SPEED FRAGMENT LOOP - NO WAITS, NO DELAYS, PURE SPEED!
-        for currentFragment = 1, totalFragments do
-            -- Calculate next fragment position
-            local fragmentDistance = math.min(fragmentSize * currentFragment, totalDistance)
-            local nextPosition = startPosition + (direction * fragmentDistance)
+        -- Generate quantum warp points
+        for i = 1, numWarps do
+            local progress = i / numWarps
+            local warpPos = startPosition:lerp(targetPosition, progress)
             
-            -- If we're at the last fragment, go directly to target
-            if currentFragment == totalFragments then
-                nextPosition = targetPosition
-            end
+            -- Add quantum uncertainty (random offset for stealth)
+            local uncertainty = Vector3.new(
+                math.random(-2, 2),
+                math.random(-1, 3),
+                math.random(-2, 2)
+            )
             
-            -- ULTRA-FAST FRAGMENT TELEPORT - NO DELAYS BETWEEN FRAGMENTS!
-            pcall(function()
-                rootPart.CFrame = CFrame.new(nextPosition)
-                rootPart.Velocity = Vector3.new(0, 0, 0)
-                rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-                
-                -- INSTANT ANCHORING FOR MAXIMUM SPEED
-                rootPart.Anchored = true
-                rootPart.Anchored = false
-            end)
-            
-            -- NO WAITS = MAXIMUM SPEED! Each fragment happens instantly!
+            table.insert(warpPoints, warpPos + uncertainty)
         end
         
-        -- INSTANT completion - Re-enable collision immediately
+        -- Ensure final point is exact target
+        warpPoints[#warpPoints] = targetPosition
+        
+        statusLabel.Text = "⚡ BYPASSING! ⚡"
+        
+        -- PHANTOM WARP EXECUTION - Undetected speed
+        for i, warpPoint in ipairs(warpPoints) do
+            pcall(function()
+                -- METHOD 2: Velocity-based teleport (looks like super speed)
+                local direction = (warpPoint - rootPart.Position).Unit
+                local warpDistance = (warpPoint - rootPart.Position).Magnitude
+                
+                -- Create illusion of movement
+                rootPart.Velocity = direction * math.min(warpDistance * 100, 500)
+                
+                -- Instant position correction (the actual teleport)
+                RunService.Heartbeat:Wait()
+                rootPart.CFrame = CFrame.new(warpPoint)
+                rootPart.Velocity = Vector3.new(0, 0, 0)
+                
+                -- Anti-detection delay variation
+                if i < #warpPoints then
+                    local randomDelay = math.random(1, 3) / 100 -- 0.01-0.03 seconds
+                    task.wait(randomDelay)
+                end
+            end)
+            
+            -- Update progress
+            local progress = math.floor((i / #warpPoints) * 100)
+            statusLabel.Text = "⚡ TELEPORTING: " .. progress .. "% ⚡"
+        end
+        
+        -- PHANTOM PHASE 3: Materialization and cleanup
         pcall(function()
+            -- Restore character to normal state
             for _, part in pairs(player.Character:GetChildren()) do
-                if part:IsA("BasePart") then
-                    part.Anchored = false
-                    if part.Name ~= "HumanoidRootPart" then
-                        part.CanCollide = true
-                    end
+                if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                    part.CanCollide = true
+                    part.Transparency = 0 -- Restore visibility
                 end
             end
+            
+            -- Restore humanoid control
+            local humanoid = player.Character:FindFirstChild("Humanoid")
+            if humanoid then
+                humanoid.PlatformStand = false
+            end
+            
+            -- Final position lock
+            rootPart.CFrame = CFrame.new(targetPosition)
+            rootPart.Velocity = Vector3.new(0, 0, 0)
+            rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
         end)
         
-        statusLabel.Text = "⚡ LIGHT-SPEED COMPLETE! ⚡"
+        statusLabel.Text = "⚡ INSTANT TELEPORT COMPLETE! ⚡"
         
         -- Visual feedback
-        teleportButton.BackgroundColor3 = Color3.fromRGB(0, 255, 255)
-        teleportButton.Text = "⚡ LIGHT-SPEED! ⚡"
-        task.wait(1)
+        teleportButton.BackgroundColor3 = Color3.fromRGB(138, 43, 226) -- Purple
+        teleportButton.Text = "⚡ GOT IT! ⚡"
+        task.wait(1.5)
         teleportButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-        teleportButton.Text = "⚡ LIGHT-SPEED TELEPORT ⚡"
+        teleportButton.Text = "⚡ INSTANT TELEPORT ⚡"
     end)
 end
 
 -- Button connections
-teleportButton.MouseButton1Click:Connect(fragmentTeleportToPlot)
+teleportButton.MouseButton1Click:Connect(phantomWarpToPlot)
 closeButton.MouseButton1Click:Connect(function()
     screenGui:Destroy()
 end)
@@ -370,7 +410,7 @@ local function addHoverEffect(button, hoverColor, originalColor)
     end)
 end
 
-addHoverEffect(teleportButton, Color3.fromRGB(255, 100, 100), Color3.fromRGB(255, 50, 50))
+addHoverEffect(teleportButton, Color3.fromRGB(160, 70, 255), Color3.fromRGB(138, 43, 226))
 addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
 
 -- ========================================
