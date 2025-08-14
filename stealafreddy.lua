@@ -290,11 +290,11 @@ local function teleportToPlot()
     
     -- Step 1: Teleport 300 studs above current position in 2 seconds, but stop at 200 studs
     local currentPosition = rootPart.Position
-    local targetAbovePosition = currentPosition + Vector3.new(0, 50, 0)
-    local stopPosition = currentPosition + Vector3.new(0, 50, 0)
+    local targetAbovePosition = currentPosition + Vector3.new(0, 45, 0)
+    local stopPosition = currentPosition + Vector3.new(0, 45, 0)
     
     -- Calculate time to reach 200 studs (2/3 of the way to 300 studs in 2 seconds)
-    local timeToStop = 1 * (50 / 50) -- Proportional time to reach 200 studs
+    local timeToStop = 0.5 * (45 / 45) -- Proportional time to reach 200 studs
     
     local tweenToAbove = TweenService:Create(rootPart, TweenInfo.new(timeToStop, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {CFrame = CFrame.new(stopPosition)})
     tweenToAbove:Play()
@@ -948,49 +948,41 @@ spawn(function()
 end)
 
 -- ========================================
--- SPEED MONITOR SCRIPT WITH ANTI-KICK
+-- SPEED MONITOR SCRIPT (One-time Fire)
 -- ========================================
-spawn(function()
-    local lastSpeedChange = 0
-    local speedChangeDelay = 1 -- Delay between speed changes to avoid detection
-    local maxChangesPerMinute = 10
-    local changesThisMinute = 0
-    local minuteTimer = 0
-    
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local player = Players.LocalPlayer
+
+task.spawn(function()
+    local firedThisEpisode = false -- Prevents re-firing while still at 28
+
     while true do
-        wait(0.3) -- Less frequent checks to avoid detection
-        minuteTimer = minuteTimer + 0.5
-        
-        -- Reset change counter every minute
-        if minuteTimer >= 60 then
-            changesThisMinute = 0
-            minuteTimer = 0
-        end
-        
-        -- Check if player has a character and humanoid
-        if player.Character and player.Character:FindFirstChild("Humanoid") then
-            local humanoid = player.Character.Humanoid
-            local currentTime = tick()
-            
-            -- Only change if speed is exactly 28 (not 20) and within rate limits
-            if humanoid.WalkSpeed == 28 and 
-               currentTime - lastSpeedChange >= speedChangeDelay and 
-               changesThisMinute < maxChangesPerMinute then
-                
-                -- Use pcall to catch any errors and avoid kicks
-                local success = pcall(function()
+        task.wait(1) -- Check every second
+
+        local character = player.Character
+        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+        local ws = humanoid and humanoid.WalkSpeed
+
+        if ws == 28 then
+            if not firedThisEpisode then
+                local success, err = pcall(function()
                     local args = {60}
-                    game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("SpeedChange"):FireServer(unpack(args))
+                    ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("SpeedChange"):FireServer(unpack(args))
                 end)
-                
+
                 if success then
-                    lastSpeedChange = currentTime
-                    changesThisMinute = changesThisMinute + 1
-                    print("Speed safely changed from 28 to 50")
+                    print("Speed changed from 28 to 60 (once this cycle)")
+                    firedThisEpisode = true
                 else
-                    wait(2) -- Wait longer if remote call failed
+                    warn("Speed change failed:", err)
                 end
             end
+        else
+            -- Not 28: reset so it can fire again if speed returns to 28
+            firedThisEpisode = false
         end
     end
 end)
