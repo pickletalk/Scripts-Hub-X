@@ -248,8 +248,8 @@ local function findPlayerPlot()
     
     local targetPlot = plotsFolder:FindFirstChild(tostring(plotNumber))
     if targetPlot then
-        statusLabel.Text = "Found your plot: " .. tostring(plotNumber)
-        return targetPlot
+        print("found plot")
+        return nil
     else
         statusLabel.Text = "Plot " .. tostring(plotNumber) .. " not found!"
         return nil
@@ -292,13 +292,11 @@ local function teleportToPlot()
     
     -- Step 1: Teleport 300 studs above current position in 2 seconds, but stop at 200 studs
     local currentPosition = rootPart.Position
-    local targetAbovePosition = currentPosition + Vector3.new(0, 50, 0)
-    local stopPosition = currentPosition + Vector3.new(0, 50, 0)
-    
-    statusLabel.Text = "Teleporting 200 studs up..."
+    local targetAbovePosition = currentPosition + Vector3.new(0, 45, 0)
+    local stopPosition = currentPosition + Vector3.new(0, 45, 0)
     
     -- Calculate time to reach 200 studs (2/3 of the way to 300 studs in 2 seconds)
-    local timeToStop = 1 * (50 / 50) -- Proportional time to reach 200 studs
+    local timeToStop = 0.5 * (50 / 50) -- Proportional time to reach 200 studs
     
     local tweenToAbove = TweenService:Create(rootPart, TweenInfo.new(timeToStop, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {CFrame = CFrame.new(stopPosition)})
     tweenToAbove:Play()
@@ -311,9 +309,7 @@ local function teleportToPlot()
             
             -- Step 3: Calculate time for 50 studs per second to target
             local distance = (stopPosition - targetPosition).Magnitude
-            local timeToTarget = distance / 40 -- 35 studs per second
-            
-            statusLabel.Text = "Moving to plot..."
+            local timeToTarget = distance / 43 -- 35 studs per second
             
             local tweenToTarget = TweenService:Create(rootPart, TweenInfo.new(timeToTarget, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {CFrame = CFrame.new(targetPosition)})
             tweenToTarget:Play()
@@ -325,7 +321,6 @@ local function teleportToPlot()
                         part.CanCollide = true
                     end
                 end
-                statusLabel.Text = "Teleported successfully!"
             end)
         end)
     end)
@@ -333,7 +328,8 @@ local function teleportToPlot()
     -- Visual feedback
     spawn(function()
         local originalColor = teleportButton.BackgroundColor3
-        teleportButton.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+        statusLabel.Text = "⚡ SLOW BUT BETTER! ⚡"
+        teleportButton.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
         wait(0.3)
         teleportButton.BackgroundColor3 = originalColor
     end)
@@ -356,7 +352,7 @@ local function addHoverEffect(button, hoverColor, originalColor)
     end)
 end
 
-addHoverEffect(teleportButton, Color3.fromRGB(70, 170, 220), Color3.fromRGB(50, 150, 200))
+addHoverEffect(teleportButton, Color3.fromRGB(138, 43, 226), Color3.fromRGB(138, 43, 226))
 addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
 
 -- ========================================
