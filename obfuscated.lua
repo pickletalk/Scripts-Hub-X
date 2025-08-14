@@ -1,4 +1,4 @@
--- Scripts Hub X | Official Main Script (Fixed with Animatronics Finder and Highlighting)
+-- Scripts Hub X | Official Main Script (Optimized with Character Respawn & Smooth Performance)
 
 -- ================================
 -- ALL VARIABLES (TOP OF SCRIPT)
@@ -50,10 +50,10 @@ local MAX_PLOTS = 8
 local MAX_PADS = 27
 local STEAL_A_FREDDY_PLACE_ID = 137167142636546
 
--- Highlighting Configuration
+-- Optimized Highlighting Configuration
 local HIGHLIGHT_COLORS = {
     ["Radioactive Foxy"] = Color3.fromRGB(0, 255, 0), -- Green for Radioactive Foxy
-    ["Freddles"] = Color3.fromRGB(139, 69, 19) -- Brown for Freddles
+    ["Freddles"] = Color3.fromRGB(139, 69, 19), -- Brown for Freddles
 }
 
 -- Auto-Execute Server Hopper Variables
@@ -67,6 +67,11 @@ local webhookUrl = "https://discord.com/api/webhooks/1396650841045209169/Mx_0dcj
 
 -- File System Variables
 local keyFileName = "Scripts Hub X OFFICIAL - Key.txt"
+
+-- Performance optimization variables
+local highlightUpdateConnection = nil
+local tracerUpdateConnection = nil
+local characterRespawnConnection = nil
 
 -- Global auto-execute flag that persists (only for Steal a Freddy)
 if game.PlaceId == STEAL_A_FREDDY_PLACE_ID then
@@ -136,62 +141,62 @@ local function findPlayerPlot()
 end
 
 -- ================================
--- HIGHLIGHTING AND TRACERS FUNCTIONS
+-- OPTIMIZED HIGHLIGHTING AND TRACERS FUNCTIONS
 -- ================================
 
--- Function to create highlight effect on animatronic
+-- Function to create optimized highlight effect (outline only)
 local function highlightAnimatronic(animatronicModel, animatronicName)
     if not animatronicModel or not animatronicModel:IsA("Model") then
         return nil
     end
     
-    -- Create highlight object
+    -- Create highlight object with optimized settings
     local highlight = Instance.new("Highlight")
     highlight.Name = "AnimatronicHighlight_" .. animatronicName
     highlight.Adornee = animatronicModel
     
     -- Set highlight color based on animatronic type
     local color = HIGHLIGHT_COLORS[animatronicName] or HIGHLIGHT_COLORS["Default"]
-    highlight.FillColor = color
     highlight.OutlineColor = color
     
-    -- Highlight settings
-    highlight.FillTransparency = 0.5
-    highlight.OutlineTransparency = 0
+    -- Optimized highlight settings (outline only, no fill)
+    highlight.FillTransparency = 1 -- Completely transparent fill for performance
+    highlight.OutlineTransparency = 0 -- Solid outline
     highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
     
     -- Parent to CoreGui so it's visible to the player
     highlight.Parent = CoreGui
     
-    print("✨ Highlighted " .. animatronicName .. " with outline")
+    print("✨ Optimized highlight created for " .. animatronicName .. " (outline only)")
     return highlight
 end
 
--- Function to create transparent tracer line to animatronic
+-- Function to create super thin tracer line to animatronic
 local function createTracer(animatronicModel, animatronicName)
     if not animatronicModel or not animatronicModel.PrimaryPart then
         return nil
     end
     
-    -- Create tracer beam
+    -- Create optimized tracer beam (super thin)
     local beam = Instance.new("Beam")
     beam.Name = "AnimatronicTracer_" .. animatronicName
     
-    -- Set tracer color and properties
+    -- Set tracer color and properties (super thin and optimized)
     local color = HIGHLIGHT_COLORS[animatronicName] or HIGHLIGHT_COLORS["Default"]
     beam.Color = ColorSequence.new(color)
-    beam.Transparency = NumberSequence.new(0.5) -- Transparent as requested
-    beam.Width0 = 0.5
-    beam.Width1 = 0.5
+    beam.Transparency = NumberSequence.new(0.3) -- Less transparent for visibility but still light
+    beam.Width0 = 0.1 -- Super thin start
+    beam.Width1 = 0.1 -- Super thin end
     beam.FaceCamera = true
+    beam.Segments = 1 -- Minimize segments for performance
     
     -- Create attachment points
     local startAttachment = Instance.new("Attachment")
-    startAttachment.Name = "TracerStart"
+    startAttachment.Name = "TracerStart_" .. animatronicName
     startAttachment.Parent = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
     
     local endAttachment = Instance.new("Attachment")
-    endAttachment.Name = "TracerEnd"
+    endAttachment.Name = "TracerEnd_" .. animatronicName
     endAttachment.Parent = animatronicModel.PrimaryPart
     
     -- Connect beam to attachments
@@ -199,46 +204,147 @@ local function createTracer(animatronicModel, animatronicName)
     beam.Attachment1 = endAttachment
     beam.Parent = Workspace
     
-    print("📍 Created tracer for " .. animatronicName)
-    return {beam = beam, startAttachment = startAttachment, endAttachment = endAttachment}
+    print("📍 Super thin tracer created for " .. animatronicName)
+    return {
+        beam = beam, 
+        startAttachment = startAttachment, 
+        endAttachment = endAttachment,
+        animatronicModel = animatronicModel,
+        animatronicName = animatronicName
+    }
 end
 
--- Function to clean up all highlights and tracers
+-- Optimized cleanup function with better error handling
 local function cleanupHighlights()
+    -- Disconnect any running connections first
+    if highlightUpdateConnection then
+        highlightUpdateConnection:Disconnect()
+        highlightUpdateConnection = nil
+    end
+    
+    if tracerUpdateConnection then
+        tracerUpdateConnection:Disconnect()
+        tracerUpdateConnection = nil
+    end
+    
+    if characterRespawnConnection then
+        characterRespawnConnection:Disconnect()
+        characterRespawnConnection = nil
+    end
+    
+    -- Clean up stored highlighted objects
     if _G.AnimatronicsFinder and _G.AnimatronicsFinder.highlightedObjects then
-        for _, obj in pairs(_G.AnimatronicsFinder.highlightedObjects) do
+        for i = #_G.AnimatronicsFinder.highlightedObjects, 1, -1 do
+            local obj = _G.AnimatronicsFinder.highlightedObjects[i]
             if obj then
-                if obj.beam then
-                    obj.beam:Destroy()
-                end
-                if obj.startAttachment then
-                    obj.startAttachment:Destroy()
-                end
-                if obj.endAttachment then
-                    obj.endAttachment:Destroy()
-                end
-                if obj.Parent then
-                    obj:Destroy()
-                end
+                pcall(function()
+                    if obj.beam and obj.beam.Parent then
+                        obj.beam:Destroy()
+                    end
+                    if obj.startAttachment and obj.startAttachment.Parent then
+                        obj.startAttachment:Destroy()
+                    end
+                    if obj.endAttachment and obj.endAttachment.Parent then
+                        obj.endAttachment:Destroy()
+                    end
+                    if obj.Parent then
+                        obj:Destroy()
+                    end
+                end)
             end
+            _G.AnimatronicsFinder.highlightedObjects[i] = nil
         end
-        _G.AnimatronicsFinder.highlightedObjects = {}
         print("🧹 Cleaned up all highlights and tracers")
     end
     
-    -- Also clean up any leftover highlights in CoreGui
-    for _, child in pairs(CoreGui:GetChildren()) do
-        if child:IsA("Highlight") and string.find(child.Name, "AnimatronicHighlight_") then
-            child:Destroy()
+    -- Clean up any leftover highlights in CoreGui
+    pcall(function()
+        for _, child in pairs(CoreGui:GetChildren()) do
+            if child:IsA("Highlight") and string.find(child.Name, "AnimatronicHighlight_") then
+                child:Destroy()
+            end
         end
+    end)
+    
+    -- Clean up leftover tracers and attachments in Workspace
+    pcall(function()
+        for _, child in pairs(Workspace:GetChildren()) do
+            if child:IsA("Beam") and string.find(child.Name, "AnimatronicTracer_") then
+                child:Destroy()
+            end
+        end
+    end)
+    
+    -- Clean up leftover attachments in character
+    pcall(function()
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            for _, child in pairs(player.Character.HumanoidRootPart:GetChildren()) do
+                if child:IsA("Attachment") and string.find(child.Name, "TracerStart_") then
+                    child:Destroy()
+                end
+            end
+        end
+    end)
+end
+
+-- Function to handle character respawn and reconnect tracers
+local function handleCharacterRespawn()
+    print("🔄 Character respawned, reconnecting tracers...")
+    
+    -- Wait for character to fully load
+    if not player.Character then
+        player.CharacterAdded:Wait()
     end
     
-    -- Clean up leftover tracers in Workspace
-    for _, child in pairs(Workspace:GetChildren()) do
-        if child:IsA("Beam") and string.find(child.Name, "AnimatronicTracer_") then
-            child:Destroy()
+    local humanoidRootPart = player.Character:WaitForChild("HumanoidRootPart", 10)
+    if not humanoidRootPart then
+        print("❌ Failed to find HumanoidRootPart after respawn")
+        return
+    end
+    
+    -- Reconnect all tracers to new character
+    if _G.AnimatronicsFinder and _G.AnimatronicsFinder.highlightedObjects then
+        for _, obj in pairs(_G.AnimatronicsFinder.highlightedObjects) do
+            if obj and obj.beam and obj.animatronicModel and obj.animatronicName then
+                pcall(function()
+                    -- Remove old start attachment if it exists
+                    if obj.startAttachment and obj.startAttachment.Parent then
+                        obj.startAttachment:Destroy()
+                    end
+                    
+                    -- Create new start attachment on respawned character
+                    local newStartAttachment = Instance.new("Attachment")
+                    newStartAttachment.Name = "TracerStart_" .. obj.animatronicName
+                    newStartAttachment.Parent = humanoidRootPart
+                    
+                    -- Reconnect beam
+                    obj.beam.Attachment0 = newStartAttachment
+                    obj.startAttachment = newStartAttachment
+                    
+                    print("🔗 Reconnected tracer for " .. obj.animatronicName .. " to respawned character")
+                end)
+            end
         end
     end
+end
+
+-- Set up character respawn handling
+local function setupCharacterRespawnHandling()
+    -- Clean up existing connection
+    if characterRespawnConnection then
+        characterRespawnConnection:Disconnect()
+    end
+    
+    -- Connect to character respawn events
+    characterRespawnConnection = player.CharacterAdded:Connect(function(character)
+        -- Wait a bit for character to fully load
+        spawn(function()
+            wait(1)
+            handleCharacterRespawn()
+        end)
+    end)
+    
+    print("👤 Character respawn handling enabled")
 end
 
 -- ================================
@@ -251,7 +357,7 @@ local function isPlayerPlot(plotNumber)
     return playerPlotNumber and plotNumber == playerPlotNumber
 end
 
--- Replace the existing checkAllPlots() with this version
+-- Optimized checkAllPlots function
 local function checkAllPlots()
     print("🔍 Checking server for animatronics: " .. tostring(game.JobId) .. " (Attempt #" .. tostring(_G.AnimatronicsFinder.executionCount) .. ")")
 
@@ -307,13 +413,13 @@ local function checkAllPlots()
                                     print("🎯 FOUND! " .. animatronic .. " in Plot" .. plotNum .. " Pad" .. padNum)
                                     notify("Success", "Found " .. animatronic .. "!")
                                     
-                                    -- Automatically create highlight for the found animatronic
+                                    -- Create optimized highlight for the found animatronic
                                     local highlight = highlightAnimatronic(animatronicModel, animatronic)
                                     if highlight and _G.AnimatronicsFinder then
                                         table.insert(_G.AnimatronicsFinder.highlightedObjects, highlight)
                                     end
                                     
-                                    -- Automatically create tracer to the found animatronic
+                                    -- Create super thin tracer to the found animatronic
                                     local tracer = createTracer(animatronicModel, animatronic)
                                     if tracer and _G.AnimatronicsFinder then
                                         table.insert(_G.AnimatronicsFinder.highlightedObjects, tracer)
@@ -342,6 +448,10 @@ local function checkAllPlots()
         for i, found in ipairs(foundAnimatronics) do
             print("   " .. i .. ". " .. found.name .. " in Plot" .. found.plot .. " Pad" .. found.pad)
         end
+        
+        -- Set up character respawn handling when animatronics are found
+        setupCharacterRespawnHandling()
+        
         _G.AnimatronicsFinder.enabled = false
         _G.AnimatronicsFinder.foundAnimatronic = foundAnimatronics[1].name
         return true, foundAnimatronics[1].name
@@ -351,7 +461,7 @@ local function checkAllPlots()
     return false, nil
 end
 
--- Server joining function
+-- Optimized server joining function
 local function joinRandomServer()
     print("🔄 Searching for new server...")
     notify("Server Hop", "Finding different server...")
@@ -416,7 +526,7 @@ local function joinRandomServer()
     end)
 end
 
--- Animatronics finder execution
+-- Optimized animatronics finder execution
 local function runAnimatronicsFinder()
     if _G.AnimatronicsFinder.isRunning then
         print("⚠️ Animatronics finder already running, skipping...")
@@ -457,7 +567,7 @@ local function runAnimatronicsFinder()
         return false, nil
     end
     
-    print("⚡ Starting animatronics check in server: " .. game.JobId)
+    print("⚡ Starting optimized animatronics check in server: " .. game.JobId)
     
     local found, foundAnimatronic = checkAllPlots()
     _G.AnimatronicsFinder.isRunning = false
@@ -922,6 +1032,15 @@ end
 
 print("✅ Main script started, PlayerGui found")
 
+-- Manual cleanup function for players to use
+local function manualCleanup()
+    cleanupHighlights()
+    print("🧹 Manual cleanup completed - Use this if highlights get stuck")
+end
+
+-- Expose cleanup function globally for manual use
+_G.CleanupHighlights = manualCleanup
+
 -- Main execution
 coroutine.wrap(function()
     print("🚀 Starting main execution at " .. os.date("%H:%M:%S"))
@@ -952,7 +1071,7 @@ coroutine.wrap(function()
 
     -- Check if this is Steal a Freddy game and user is premium/owner/staff
     if game.PlaceId == STEAL_A_FREDDY_PLACE_ID and (userStatus == "owner" or userStatus == "staff" or userStatus == "premium") then
-        print("🎮 Steal a Freddy game detected with privileged user - Running animatronics finder")
+        print("🎮 Steal a Freddy game detected with privileged user - Running optimized animatronics finder")
         
         -- Auto-execute check
         if shouldAutoExecute() then
@@ -1169,7 +1288,7 @@ end)()
 
 -- Auto-execute for server hopper (runs immediately on script load) - Only for Steal a Freddy
 if game.PlaceId == STEAL_A_FREDDY_PLACE_ID and shouldAutoExecute() then
-    print("🚀 AUTO-EXECUTE: Running animatronics finder...")
+    print("🚀 AUTO-EXECUTE: Running optimized animatronics finder...")
     spawn(function()
         wait(5) -- Wait a bit to ensure main execution has time to set up
         if _G.AnimatronicsFinder and not _G.AnimatronicsFinder.scriptLoaded then -- Only run if script hasn't been loaded yet
