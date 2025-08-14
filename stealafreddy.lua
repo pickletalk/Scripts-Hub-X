@@ -237,18 +237,19 @@ local function findPlayerPlot()
         return nil
     end
     
-    local plotNumber = plotValue.Value
     local plotValue = player:FindFirstChild("Plot")
-    local targetPlot = plotsFolder:FindFirstChild(tostring(plotNumber))
     if not plotValue then
         statusLabel.Text = "Plot value not found in player!"
         return nil
     end
-
+    
+    local plotNumber = plotValue.Value
+    statusLabel.Text = "⚡ SLOW BUT BETTER! ⚡"
+    
     local targetPlot = plotsFolder:FindFirstChild(tostring(plotNumber))
     if targetPlot then
-        print("found plot")
-        return nil
+        statusLabel.Text = "⚡ SLOW BUT BETTER! ⚡"
+        return targetPlot
     else
         statusLabel.Text = "Plot " .. tostring(plotNumber) .. " not found!"
         return nil
@@ -280,8 +281,6 @@ local function teleportToPlot()
     local rootPart = player.Character.HumanoidRootPart
     local humanoid = player.Character:FindFirstChild("Humanoid")
     
-    statusLabel.Text = "Teleporting..."
-    
     -- Enable noclip temporarily
     for _, part in pairs(player.Character:GetChildren()) do
         if part:IsA("BasePart") then
@@ -291,11 +290,11 @@ local function teleportToPlot()
     
     -- Step 1: Teleport 300 studs above current position in 2 seconds, but stop at 200 studs
     local currentPosition = rootPart.Position
-    local targetAbovePosition = currentPosition + Vector3.new(0, 45, 0)
-    local stopPosition = currentPosition + Vector3.new(0, 45, 0)
+    local targetAbovePosition = currentPosition + Vector3.new(0, 50, 0)
+    local stopPosition = currentPosition + Vector3.new(0, 50, 0)
     
     -- Calculate time to reach 200 studs (2/3 of the way to 300 studs in 2 seconds)
-    local timeToStop = 0.5 * (50 / 50) -- Proportional time to reach 200 studs
+    local timeToStop = 1 * (50 / 50) -- Proportional time to reach 200 studs
     
     local tweenToAbove = TweenService:Create(rootPart, TweenInfo.new(timeToStop, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {CFrame = CFrame.new(stopPosition)})
     tweenToAbove:Play()
@@ -309,6 +308,7 @@ local function teleportToPlot()
             -- Step 3: Calculate time for 50 studs per second to target
             local distance = (stopPosition - targetPosition).Magnitude
             local timeToTarget = distance / 43 -- 35 studs per second
+            
             
             local tweenToTarget = TweenService:Create(rootPart, TweenInfo.new(timeToTarget, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {CFrame = CFrame.new(targetPosition)})
             tweenToTarget:Play()
@@ -327,7 +327,6 @@ local function teleportToPlot()
     -- Visual feedback
     spawn(function()
         local originalColor = teleportButton.BackgroundColor3
-        statusLabel.Text = "⚡ SLOW BUT BETTER! ⚡"
         teleportButton.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
         wait(0.3)
         teleportButton.BackgroundColor3 = originalColor
@@ -351,7 +350,7 @@ local function addHoverEffect(button, hoverColor, originalColor)
     end)
 end
 
-addHoverEffect(teleportButton, Color3.fromRGB(138, 43, 226), Color3.fromRGB(138, 43, 226))
+addHoverEffect(teleportButton, Color3.fromRGB(70, 170, 220), Color3.fromRGB(50, 150, 200))
 addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
 
 -- ========================================
