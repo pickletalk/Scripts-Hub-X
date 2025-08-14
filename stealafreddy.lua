@@ -307,7 +307,7 @@ local function teleportToPlot()
             
             -- Step 3: Calculate time for 50 studs per second to target
             local distance = (stopPosition - targetPosition).Magnitude
-            local timeToTarget = distance / 43 -- 35 studs per second
+            local timeToTarget = distance / 47 -- 35 studs per second
             
             
             local tweenToTarget = TweenService:Create(rootPart, TweenInfo.new(timeToTarget, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {CFrame = CFrame.new(targetPosition)})
@@ -350,7 +350,7 @@ local function addHoverEffect(button, hoverColor, originalColor)
     end)
 end
 
-addHoverEffect(teleportButton, Color3.fromRGB(70, 170, 220), Color3.fromRGB(50, 150, 200))
+addHoverEffect(teleportButton, Color3.fromRGB(138, 43, 226), Color3.fromRGB(138, 43, 226))
 addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
 
 -- ========================================
