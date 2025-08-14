@@ -242,10 +242,7 @@ local function findPlayerPlot()
         statusLabel.Text = "Plot value not found in player!"
         return nil
     end
-    
-    local plotNumber = plotValue.Value
-    statusLabel.Text = "Looking for plot " .. tostring(plotNumber) .. "..."
-    
+
     local targetPlot = plotsFolder:FindFirstChild(tostring(plotNumber))
     if targetPlot then
         print("found plot")
