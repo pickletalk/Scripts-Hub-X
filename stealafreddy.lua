@@ -970,7 +970,7 @@ task.spawn(function()
             if not firedThisEpisode then
                 local success, err = pcall(function()
                     local args = {60}
-                    ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("SpeedChange"):FireServer(unpack(args))
+                    game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("SpeedChange"):FireServer(unpack(args))
                 end)
 
                 if success then
