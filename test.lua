@@ -172,7 +172,7 @@ teleportButton.Name = "TeleportButton"
 teleportButton.Size = UDim2.new(0, 220, 0, 35)
 teleportButton.Position = UDim2.new(0, 15, 0, 45)
 teleportButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-teleportButton.Text = "🚀 INSTANT TELEPORT 🚀"
+teleportButton.Text = "⚡ LIGHT-SPEED TELEPORT ⚡"
 teleportButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 teleportButton.TextScaled = true
 teleportButton.Font = Enum.Font.GothamBold
@@ -188,7 +188,7 @@ statusLabel.Name = "StatusLabel"
 statusLabel.Size = UDim2.new(1, -20, 0, 25)
 statusLabel.Position = UDim2.new(0, 10, 0, 90)
 statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "Ready for INSTANT teleport!"
+statusLabel.Text = "Ready for light-speed teleport!"
 statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 statusLabel.TextScaled = true
 statusLabel.Font = Enum.Font.Gotham
@@ -255,7 +255,7 @@ local function findPlayerPlot()
     end
 end
 
--- FRAGMENT TELEPORT - SUPER FAST MICRO-JUMPS TO BYPASS DETECTION
+-- ULTRA LIGHT-SPEED FRAGMENT TELEPORT - FASTER THAN ANYTHING!
 local function fragmentTeleportToPlot()
     if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
         statusLabel.Text = "Character not found!"
@@ -281,73 +281,75 @@ local function fragmentTeleportToPlot()
     local rootPart = player.Character.HumanoidRootPart
     local startPosition = rootPart.Position
     
-    statusLabel.Text = "🚀 FRAGMENT TELEPORTING! 🚀"
+    statusLabel.Text = "⚡ LIGHT-SPEED FRAGMENTS! ⚡"
     
-    -- ANTI-KICK BYPASS: Disable collision during fragment teleport
+    -- ANTI-KICK BYPASS: Disable collision during ultra-fast teleport
     pcall(function()
         for _, part in pairs(player.Character:GetChildren()) do
             if part:IsA("BasePart") then
                 part.CanCollide = false
+                part.Anchored = true
             end
         end
     end)
     
-    -- FRAGMENT TELEPORT - SUPER FAST MICRO-JUMPS
+    -- ULTRA LIGHT-SPEED FRAGMENT TELEPORT - FASTER THAN LIGHT!
     spawn(function()
         local totalDistance = (targetPosition - startPosition).Magnitude
-        local fragmentSize = 3 -- 3 studs per fragment (tiny jumps)
+        local fragmentSize = 1 -- 1 stud per fragment (ULTRA TINY for max speed)
         local totalFragments = math.ceil(totalDistance / fragmentSize)
-        local currentFragment = 0
         
         -- Calculate direction vector
         local direction = (targetPosition - startPosition).Unit
         
-        -- SUPER FAST FRAGMENT LOOP - NO DELAYS BETWEEN FRAGMENTS
-        while currentFragment < totalFragments do
-            currentFragment = currentFragment + 1
-            
+        statusLabel.Text = "⚡ LIGHT-SPEED ACTIVE! ⚡"
+        
+        -- MAXIMUM SPEED FRAGMENT LOOP - NO WAITS, NO DELAYS, PURE SPEED!
+        for currentFragment = 1, totalFragments do
             -- Calculate next fragment position
             local fragmentDistance = math.min(fragmentSize * currentFragment, totalDistance)
             local nextPosition = startPosition + (direction * fragmentDistance)
             
-            -- If we're close to target, just go to target
+            -- If we're at the last fragment, go directly to target
             if currentFragment == totalFragments then
                 nextPosition = targetPosition
             end
             
-            -- INSTANT FRAGMENT TELEPORT
+            -- ULTRA-FAST FRAGMENT TELEPORT - NO DELAYS BETWEEN FRAGMENTS!
             pcall(function()
                 rootPart.CFrame = CFrame.new(nextPosition)
                 rootPart.Velocity = Vector3.new(0, 0, 0)
                 rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                 rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                
+                -- INSTANT ANCHORING FOR MAXIMUM SPEED
+                rootPart.Anchored = true
+                rootPart.Anchored = false
             end)
             
-            -- Update status to show progress
-            local progress = math.floor((currentFragment / totalFragments) * 100)
-            statusLabel.Text = "🚀 TELEPORTING: " .. progress .. "% 🚀"
-            
-            -- ULTRA FAST - Only tiny delay to avoid crash but maintain speed
-            RunService.Heartbeat:Wait()
+            -- NO WAITS = MAXIMUM SPEED! Each fragment happens instantly!
         end
         
-        -- Re-enable collision after fragment teleport complete
+        -- INSTANT completion - Re-enable collision immediately
         pcall(function()
             for _, part in pairs(player.Character:GetChildren()) do
-                if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-                    part.CanCollide = true
+                if part:IsA("BasePart") then
+                    part.Anchored = false
+                    if part.Name ~= "HumanoidRootPart" then
+                        part.CanCollide = true
+                    end
                 end
             end
         end)
         
-        statusLabel.Text = "🚀 FRAGMENT TELEPORT COMPLETE! 🚀"
+        statusLabel.Text = "⚡ LIGHT-SPEED COMPLETE! ⚡"
         
         -- Visual feedback
-        teleportButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-        teleportButton.Text = "✅ TELEPORTED! ✅"
+        teleportButton.BackgroundColor3 = Color3.fromRGB(0, 255, 255)
+        teleportButton.Text = "⚡ LIGHT-SPEED! ⚡"
         task.wait(1)
         teleportButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-        teleportButton.Text = "🚀 FRAGMENT TELEPORT 🚀"
+        teleportButton.Text = "⚡ LIGHT-SPEED TELEPORT ⚡"
     end)
 end
 
@@ -517,7 +519,7 @@ end
 -- Auto lock loop
 spawn(function()
     while true do
-        wait(3)
+        wait(1.5)
         autoLock()
     end
 end)
@@ -884,7 +886,7 @@ spawn(function()
             if humanoid.WalkSpeed == 28 then
                 pcall(function()
                     -- ANTI-KICK: Multiple methods to bypass detection
-                    local args = {50}
+                    local args = {60}
                     game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("SpeedChange"):FireServer(unpack(args))
                     
                     -- Backup method - direct speed setting
