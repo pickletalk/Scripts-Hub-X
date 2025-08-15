@@ -151,7 +151,7 @@ titleText.Name = "TitleText"
 titleText.Size = UDim2.new(1, -30, 1, 0)
 titleText.Position = UDim2.new(0, 5, 0, 0)
 titleText.BackgroundTransparency = 1
-titleText.Text = "by PickleTalk"
+titleText.Text = "🥷 SHADOW HEIST 🥷"
 titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleText.TextScaled = true
 titleText.Font = Enum.Font.GothamBold
@@ -194,7 +194,7 @@ statusLabel.Name = "StatusLabel"
 statusLabel.Size = UDim2.new(1, -20, 0, 25)
 statusLabel.Position = UDim2.new(0, 10, 0, 90)
 statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "⚡ SLOW BUT BETTER! ⚡"
+statusLabel.Text = "by PickleTalk"
 statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 statusLabel.TextScaled = true
 statusLabel.Font = Enum.Font.Gotham
@@ -250,11 +250,11 @@ local function findPlayerPlot()
     end
     
     local plotNumber = plotValue.Value
-    statusLabel.Text = "⚡ SLOW BUT BETTER! ⚡"
+    statusLabel.Text = "by PickleTalk"
     
     local targetPlot = plotsFolder:FindFirstChild(tostring(plotNumber))
     if targetPlot then
-        statusLabel.Text = "⚡ SLOW BUT BETTER! ⚡"
+        statusLabel.Text = "by PickleTalk"
         return targetPlot
     else
         statusLabel.Text = "Plot " .. tostring(plotNumber) .. " not found!"
@@ -266,16 +266,31 @@ local function teleportToPlot()
     -- Change button to "stealing" mode
     teleportButton.Text = "🥷 STEALING CUH!... 🥷"
 
-    -- Animate RGB color during process
+    -- Target colors for fade (dark red, blue, purple)
+    local colors = {
+        Color3.fromRGB(100, 0, 0),   -- dark red
+        Color3.fromRGB(0, 0, 100),   -- dark blue
+        Color3.fromRGB(50, 0, 100)   -- dark purple
+    }
+
+    -- RGB fade loop (sync to 2.5s total time)
     local running = true
     spawn(function()
+        local currentColor = colors[math.random(1, #colors)]
+        local nextColor = colors[math.random(1, #colors)]
+        local fadeTime = 2.5
+        local t = 0
         while running do
-            teleportButton.BackgroundColor3 = Color3.fromRGB(
-                math.random(0, 100),   -- dark range for R
-                math.random(0, 100),   -- dark range for G
-                math.random(100, 255)  -- brighter blues/greens for ocean feel
-            )
-            task.wait(0.1)
+            t = t + (task.wait() or 0)
+            local alpha = math.min(t / fadeTime, 1)
+            teleportButton.BackgroundColor3 = currentColor:Lerp(nextColor, alpha)
+            if alpha >= 1 then
+                currentColor = nextColor
+                repeat
+                    nextColor = colors[math.random(1, #colors)]
+                until nextColor ~= currentColor
+                t = 0
+            end
         end
     end)
 
@@ -288,7 +303,7 @@ local function teleportToPlot()
         running = false
         teleportButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
         teleportButton.Text = "🥷 FAILED CUH! 🥷"
-        task.wait(0.7)
+        task.wait(1)
         teleportButton.Text = "🥷 STEAL 🥷"
         return
     end
@@ -301,13 +316,22 @@ local function teleportToPlot()
         firetouchinterest(collectTrigger, player.Character.HumanoidRootPart, 1)
     end
 
-    -- Stop RGB effect & show success
+    -- Stop RGB effect
     running = false
-    teleportButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+
+    -- Show premium gold success flash
     teleportButton.Text = "🥷 SUCCESS CUH! 🥷"
-    task.wait(0.7)
+    local gold = Color3.fromRGB(212, 175, 55)
+    local black = Color3.fromRGB(0, 0, 0)
+    for i = 1, 3 do
+        teleportButton.BackgroundColor3 = gold
+        task.wait(0.15)
+        teleportButton.BackgroundColor3 = black
+        task.wait(0.15)
+    end
 
     -- Restore original
+    teleportButton.BackgroundColor3 = black
     teleportButton.Text = "🥷 STEAL 🥷"
 end
 
