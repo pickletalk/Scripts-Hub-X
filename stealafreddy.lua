@@ -262,121 +262,107 @@ local function findPlayerPlot()
     end
 end
 
--- Helper to show debug popup
-local function showDebug(message, color)
-    local debugLabel = Instance.new("TextLabel")
-    debugLabel.Size = UDim2.new(0, 250, 0, 40)
-    debugLabel.Position = UDim2.new(0.5, -125, 0.8, 0)
-    debugLabel.BackgroundTransparency = 0.3
-    debugLabel.BackgroundColor3 = color or Color3.fromRGB(30, 30, 30)
-    debugLabel.Text = message
-    debugLabel.TextScaled = true
-    debugLabel.Font = Enum.Font.GothamBold
-    debugLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    debugLabel.Parent = player:WaitForChild("PlayerGui")
-
-    game:GetService("Debris"):AddItem(debugLabel, 2) -- auto remove after 2 sec
-end
-
 local function teleportToPlot()
-    -- Hook ragdoll remotes
-    local ragdollRemote1 = game:GetService("ReplicatedStorage"):FindFirstChild("Ragdoll")
-    local ragdollRemote2 = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes") and game:GetService("ReplicatedStorage").Remotes:FindFirstChild("Ragdoll")
-    if ragdollRemote1 then
-        ragdollRemote1.FireServer = function() end
-    end
-    if ragdollRemote2 then
-        ragdollRemote2.FireServer = function() end
-    end
-    showDebug("💰 Ragdoll Blocked 💰", Color3.fromRGB(60, 100, 60))
+    -- shared state used by both happy-path and error handler
+    local running = false
+    local root
+    local oldAnchored = false
 
-    -- Change button to stealing mode
-    teleportButton.Text = "💰 STEALING CUH!... 💰"
-
-    -- Freeze player
-    if player.Character and player.Character:FindFirstChild("Humanoid") then
-        player.Character.Humanoid.WalkSpeed = 0
-        player.Character.Humanoid.JumpPower = 0
-    end
-    showDebug("⏳ Freezing player for 5s...", Color3.fromRGB(80, 80, 120))
-
-    -- Ocean-wave RGB effect
-    local running = true
-    spawn(function()
-        local t = 0
-        while running do
-            t += 0.03
-            local r = math.floor((math.sin(t) * 0.5 + 0.5) * 60)
-            local g = math.floor((math.sin(t + 2) * 0.5 + 0.5) * 60)
-            local b = math.floor((math.sin(t + 4) * 0.5 + 0.5) * 120 + 60)
-            teleportButton.BackgroundColor3 = Color3.fromRGB(r, g, b)
-            task.wait(0.03)
+    -- helper: put button into specific ERROR state with the failing part named
+    local function setError(partName)
+        running = false
+        if root then
+            root.Anchored = oldAnchored
         end
+        teleportButton.BackgroundColor3 = Color3.fromRGB(150, 30, 30) -- dark red
+        teleportButton.Text = ("💰 ERROR ON %s 💰"):format(partName)
+        task.wait(1.5)
+        teleportButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        teleportButton.Text = "💰 STEAL 💰"
+    end
+
+    local ok, err = pcall(function()
+        -- UI: stealing mode
+        teleportButton.Text = "💰 STEALING CUH!... 💰"
+
+        -- Freeze by anchoring (no speed edits)
+        root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+        if not root then return setError("HumanoidRootPart") end
+        oldAnchored = root.Anchored
+        root.Anchored = true
+
+        -- Ocean-wave dark RGB animation (smooth, no lines)
+        running = true
+        task.spawn(function()
+            local t = 0
+            while running do
+                t += 0.03
+                local r = math.floor((math.sin(t)     * 0.5 + 0.5) * 60)
+                local g = math.floor((math.sin(t + 2) * 0.5 + 0.5) * 60)
+                local b = math.floor((math.sin(t + 4) * 0.5 + 0.5) * 120 + 60)
+                teleportButton.BackgroundColor3 = Color3.fromRGB(r, g, b)
+                task.wait(0.03)
+            end
+        end)
+
+        -- Wait 5s to avoid detection
+        task.wait(5)
+
+        -- Find player plot
+        local plot = findPlayerPlot()
+        if not plot then return setError("PlayerPlot") end
+
+        -- CollectZone
+        local cz = plot:FindFirstChild("CollectZone")
+        if not cz then return setError("CollectZone") end
+
+        -- CollectTrigger (fallback to 'Collect' if devs named it differently)
+        local trigger = cz:FindFirstChild("CollectTrigger") or cz:FindFirstChild("Collect")
+        if not trigger then return setError("CollectTrigger/Collect") end
+
+        -- TouchInterest
+        local ti = trigger:FindFirstChild("TouchInterest")
+        if not ti then return setError("TouchInterest") end
+
+        -- Fire touch twice, slightly staggered
+        firetouchinterest(trigger, root, 0)
+        task.wait(0.06)
+        firetouchinterest(trigger, root, 1)
+        task.wait(0.05)
+        firetouchinterest(trigger, root, 0)
+        task.wait(0.06)
+        firetouchinterest(trigger, root, 1)
+
+        -- Stop animation + unfreeze
+        running = false
+        root.Anchored = oldAnchored
+
+        -- Success flash (premium gold)
+        teleportButton.Text = "💰 SUCCESS CUH! 💰"
+        local gold = Color3.fromRGB(212, 175, 55)
+        local black = Color3.fromRGB(0, 0, 0)
+        for i = 1, 3 do
+            teleportButton.BackgroundColor3 = gold
+            task.wait(0.15)
+            teleportButton.BackgroundColor3 = black
+            task.wait(0.15)
+        end
+
+        teleportButton.BackgroundColor3 = black
+        teleportButton.Text = "💰 STEAL 💰"
     end)
 
-    task.wait(5)
-
-    -- Find plot
-    local playerPlot = findPlayerPlot()
-    if not playerPlot then
+    -- Safety net: if pcall itself fails (unexpected error)
+    if not ok then
         running = false
-        teleportButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        teleportButton.Text = "💰 FAILED CUH! 💰"
-        showDebug("❌ Plot not found!", Color3.fromRGB(120, 40, 40))
-        task.wait(1)
+        if root then root.Anchored = oldAnchored end
+        teleportButton.BackgroundColor3 = Color3.fromRGB(150, 30, 30)
+        teleportButton.Text = "💰 ERROR ON INTERNAL 💰"
+        task.wait(1.5)
+        teleportButton.BackgroundColor3 = Color3.fromRGB(0,0,0)
         teleportButton.Text = "💰 STEAL 💰"
-        if player.Character and player.Character:FindFirstChild("Humanoid") then
-            player.Character.Humanoid.WalkSpeed = 16
-            player.Character.Humanoid.JumpPower = 50
-        end
-        return
+        -- optional: print(err) -- keep silent UI if you don't want console logs
     end
-    showDebug("✅ Found plot: " .. playerPlot.Name, Color3.fromRGB(60, 100, 60))
-
-    -- Get CollectTrigger
-    local collectTrigger = playerPlot:FindFirstChild("CollectZone") and playerPlot.CollectZone:FindFirstChild("CollectTrigger")
-    if not collectTrigger then
-        running = false
-        teleportButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        teleportButton.Text = "💰 FAILED CUH! 💰"
-        showDebug("❌ CollectTrigger not found!", Color3.fromRGB(120, 40, 40))
-        return
-    end
-    showDebug("📦 Found CollectTrigger", Color3.fromRGB(100, 100, 60))
-
-    -- Fire touch interest
-    local touchInterest = collectTrigger:FindFirstChild("TouchInterest")
-    if touchInterest and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-        firetouchinterest(collectTrigger, player.Character.HumanoidRootPart, 0)
-        task.wait(0.05)
-        firetouchinterest(collectTrigger, player.Character.HumanoidRootPart, 1)
-        showDebug("💥 Touch Interest Fired!", Color3.fromRGB(80, 150, 80))
-    else
-        showDebug("❌ TouchInterest or RootPart missing!", Color3.fromRGB(120, 40, 40))
-    end
-
-    -- Stop ocean wave
-    running = false
-
-    -- Unfreeze player
-    if player.Character and player.Character:FindFirstChild("Humanoid") then
-        player.Character.Humanoid.WalkSpeed = 16
-        player.Character.Humanoid.JumpPower = 50
-    end
-
-    -- Success flash gold
-    teleportButton.Text = "💰 SUCCESS CUH! 💰"
-    local gold = Color3.fromRGB(212, 175, 55)
-    local black = Color3.fromRGB(0, 0, 0)
-    for i = 1, 3 do
-        teleportButton.BackgroundColor3 = gold
-        task.wait(0.15)
-        teleportButton.BackgroundColor3 = black
-        task.wait(0.15)
-    end
-
-    teleportButton.BackgroundColor3 = black
-    teleportButton.Text = "💰 STEAL 💰"
 end
 
 -- Button connections
