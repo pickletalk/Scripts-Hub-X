@@ -264,6 +264,7 @@ local function teleportToPlot()
     local running = false
     local root
     local oldAnchored = false
+    local startCF
 
     local function setError(partName)
         running = false
@@ -278,16 +279,14 @@ local function teleportToPlot()
     end
 
     local ok, err = pcall(function()
-        -- UI: stealing mode
         teleportButton.Text = "💰 STEALING CUH!... 💰"
 
-        -- Freeze
         root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
         if not root then return setError("HumanoidRootPart") end
         oldAnchored = root.Anchored
-        root.Anchored = true
+        startCF = root.CFrame
 
-        -- Ocean-wave dark RGB animation
+        -- Ocean-wave RGB animation
         running = true
         task.spawn(function()
             local t = 0
@@ -301,7 +300,31 @@ local function teleportToPlot()
             end
         end)
 
-        -- Find player plot instantly
+        -- Detect nearby players for 3 seconds
+        local startTime = tick()
+        while tick() - startTime < 3 do
+            local closePlayerFound = false
+            for _, plr in ipairs(game.Players:GetPlayers()) do
+                if plr ~= player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                    local dist = (plr.Character.HumanoidRootPart.Position - root.Position).Magnitude
+                    if dist <= 15 then
+                        closePlayerFound = true
+                        break
+                    end
+                end
+            end
+
+            if closePlayerFound then
+                -- Teleport away 20 studs in a random direction
+                local angle = math.rad(math.random(0, 359))
+                local offset = Vector3.new(math.cos(angle) * 20, 0, math.sin(angle) * 20)
+                root.CFrame = root.CFrame + offset
+            end
+
+            task.wait(0.1) -- check 10 times per second
+        end
+
+        -- Find player plot
         local plot = findPlayerPlot()
         if not plot then return setError("PlayerPlot") end
 
@@ -311,28 +334,33 @@ local function teleportToPlot()
         local trigger = cz:FindFirstChild("CollectTrigger") or cz:FindFirstChild("Collect")
         if not trigger then return setError("CollectTrigger/Collect") end
 
-        -- Calculate position inside trigger
-        local triggerCF = trigger.CFrame
-        local triggerSize = trigger.Size
-        local insidePos = triggerCF.Position + Vector3.new(0, -triggerSize.Y / 2 + 0.5, 0)
+        -- Position slightly above trigger for fall
+        local triggerPosAbove = trigger.Position + Vector3.new(0, 0.2, 0)
 
-        -- Triple snap super-fast with micro-randomization
-        local startCF = root.CFrame
+        -- Triple snap fall
         for i = 1, 3 do
-            root.CFrame = CFrame.new(insidePos)
-            task.wait(0.05 + math.random() * 0.015) -- 50-65ms
-            root.CFrame = startCF
-            task.wait(0.03 + math.random() * 0.01) -- 30-40ms pause
+            root.CFrame = CFrame.new(triggerPosAbove)
+            root.Anchored = false
+            task.wait(0.3) -- fall
+            root.Anchored = true
+            task.wait(0.05)
         end
 
-        -- Stop animation
-        running = false
+        -- Check WalkSpeed for success
+        local hum = player.Character and player.Character:FindFirstChild("Humanoid")
+        if hum and hum.WalkSpeed == 28 then
+            teleportButton.Text = "💰 SUCCESS CUH! 💰"
+        else
+            teleportButton.Text = "💰 RETURNING CUH! 💰"
+        end
 
-        -- Unfreeze
+        -- Return to starting position
+        root.CFrame = startCF
         root.Anchored = oldAnchored
 
-        -- Success flash gold
-        teleportButton.Text = "💰 SUCCESS CUH! 💰"
+        running = false
+
+        -- Flash
         local gold = Color3.fromRGB(212, 175, 55)
         local black = Color3.fromRGB(0, 0, 0)
         for i = 1, 3 do
@@ -384,7 +412,7 @@ local OriginalMaxHealth = 100
 local HealthConnection = nil
 
 local function getHumanoid()
-    local currentCharacter = player.Character
+    local currentCharacter = ayer.Character
     if currentCharacter then
         return currentCharacter:FindFirstChild("Humanoid")
     end
