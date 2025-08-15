@@ -263,8 +263,12 @@ local function findPlayerPlot()
 end
 
 local function teleportToPlot()
-    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
-        statusLabel.Text = "Character not found!"
+    if not player.Character then return end
+
+    -- Detect foot part based on rig type
+    local leftFoot = player.Character:FindFirstChild("LeftFoot") or player.Character:FindFirstChild("Left Leg")
+    if not leftFoot then
+        statusLabel.Text = "No foot part found!"
         return
     end
 
@@ -283,30 +287,25 @@ local function teleportToPlot()
         return
     end
 
-    -- Save current position
-    local rootPart = player.Character.HumanoidRootPart
-    local originalCFrame = rootPart.CFrame
+    -- Save original CFrame of the foot
+    local originalCFrame = leftFoot.CFrame
 
-    -- Step 1: Move close to the collect part
-    rootPart.CFrame = collectPart.CFrame + Vector3.new(0, 2, 0)
-    task.wait(0.08) -- small pause for anti-detection
+    -- Move foot directly to touch the plot part
+    leftFoot.CFrame = CFrame.new(collectPart.Position)
 
-    -- Step 2: Trigger touch interest twice
-    local touchInterest = collectPart:FindFirstChild("TouchInterest")
-    if touchInterest then
+    -- Trigger TouchInterest twice
+    local ti = collectPart:FindFirstChild("TouchInterest")
+    if ti then
         for i = 1, 2 do
-            firetouchinterest(collectPart, rootPart, 0)
+            firetouchinterest(collectPart, leftFoot, 0)
             task.wait(0.05)
-            firetouchinterest(collectPart, rootPart, 1)
+            firetouchinterest(collectPart, leftFoot, 1)
             task.wait(0.05)
         end
     end
 
-    -- Step 3: Pause before returning
-    task.wait(0.08)
-
-    -- Step 4: Return to original position
-    rootPart.CFrame = originalCFrame
+    -- Restore foot position instantly
+    leftFoot.CFrame = originalCFrame
 end
 
 -- Button connections
