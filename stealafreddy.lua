@@ -138,7 +138,7 @@ local titleBar = Instance.new("Frame")
 titleBar.Name = "TitleBar"
 titleBar.Size = UDim2.new(1, 0, 0, 30)
 titleBar.Position = UDim2.new(0, 0, 0, 0)
-titleBar.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+titleBar.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
 titleBar.BorderSizePixel = 0
 titleBar.Parent = mainFrame
 
@@ -177,8 +177,8 @@ local teleportButton = Instance.new("TextButton")
 teleportButton.Name = "TeleportButton"
 teleportButton.Size = UDim2.new(0, 220, 0, 35)
 teleportButton.Position = UDim2.new(0, 15, 0, 45)
-teleportButton.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
-teleportButton.Text = "⚡ TELEPORT ⚡"
+teleportButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+teleportButton.Text = "🥷 STEAL 🥷"
 teleportButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 teleportButton.TextScaled = true
 teleportButton.Font = Enum.Font.GothamBold
@@ -263,49 +263,52 @@ local function findPlayerPlot()
 end
 
 local function teleportToPlot()
-    if not player.Character then return end
+    -- Change button to "stealing" mode
+    teleportButton.Text = "🥷 STEALING CUH!... 🥷"
 
-    -- Detect foot part based on rig type
-    local leftFoot = player.Character:FindFirstChild("LeftFoot") or player.Character:FindFirstChild("Left Leg")
-    if not leftFoot then
-        statusLabel.Text = "No foot part found!"
-        return
-    end
-
-    local playerPlot = findPlayerPlot()
-    if not playerPlot then return end
-
-    local collectZone = playerPlot:FindFirstChild("CollectZone")
-    if not collectZone then
-        statusLabel.Text = "CollectZone not found!"
-        return
-    end
-
-    local collectPart = collectZone:FindFirstChild("Collect")
-    if not collectPart then
-        statusLabel.Text = "Collect part not found!"
-        return
-    end
-
-    -- Save original CFrame of the foot
-    local originalCFrame = leftFoot.CFrame
-
-    -- Move foot directly to touch the plot part
-    leftFoot.CFrame = CFrame.new(collectPart.Position)
-
-    -- Trigger TouchInterest twice
-    local ti = collectPart:FindFirstChild("TouchInterest")
-    if ti then
-        for i = 1, 2 do
-            firetouchinterest(collectPart, leftFoot, 0)
-            task.wait(0.05)
-            firetouchinterest(collectPart, leftFoot, 1)
-            task.wait(0.05)
+    -- Animate RGB color during process
+    local running = true
+    spawn(function()
+        while running do
+            teleportButton.BackgroundColor3 = Color3.fromRGB(
+                math.random(0, 100),   -- dark range for R
+                math.random(0, 100),   -- dark range for G
+                math.random(100, 255)  -- brighter blues/greens for ocean feel
+            )
+            task.wait(0.1)
         end
+    end)
+
+    -- Wait 2.5 seconds before firing
+    task.wait(2.5)
+
+    -- Find the player's plot
+    local playerPlot = findPlayerPlot()
+    if not playerPlot then
+        running = false
+        teleportButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        teleportButton.Text = "🥷 FAILED CUH! 🥷"
+        task.wait(0.7)
+        teleportButton.Text = "🥷 STEAL 🥷"
+        return
     end
 
-    -- Restore foot position instantly
-    leftFoot.CFrame = originalCFrame
+    -- Get CollectTrigger TouchInterest path
+    local collectTrigger = playerPlot:FindFirstChild("CollectZone") and playerPlot.CollectZone:FindFirstChild("CollectTrigger")
+    if collectTrigger and collectTrigger:FindFirstChild("TouchInterest") then
+        firetouchinterest(collectTrigger, player.Character.HumanoidRootPart, 0)
+        task.wait(0.05)
+        firetouchinterest(collectTrigger, player.Character.HumanoidRootPart, 1)
+    end
+
+    -- Stop RGB effect & show success
+    running = false
+    teleportButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    teleportButton.Text = "🥷 SUCCESS CUH! 🥷"
+    task.wait(0.7)
+
+    -- Restore original
+    teleportButton.Text = "🥷 STEAL 🥷"
 end
 
 -- Button connections
@@ -325,7 +328,6 @@ local function addHoverEffect(button, hoverColor, originalColor)
     end)
 end
 
-addHoverEffect(teleportButton, Color3.fromRGB(138, 43, 226), Color3.fromRGB(138, 43, 226))
 addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
 
 -- ========================================
