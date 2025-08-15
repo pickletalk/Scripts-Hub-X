@@ -409,23 +409,51 @@ addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50,
 -- ========================================
 -- GOD MODE
 -- ========================================
-local function applyGodMode()
-    if humanoid then
-        humanoid.MaxHealth = math.huge
-        humanoid.Health = math.huge
+local function blockBreakJoints(char)
+    for _, obj in pairs(char:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            obj.BreakJoints = function() end
+        end
     end
 end
 
--- Reapply God Mode on spawn
-player.CharacterAdded:Connect(function(char)
-    character = char
-    humanoid = char:WaitForChild("Humanoid")
-    rootPart = char:WaitForChild("HumanoidRootPart")
-    applyGodMode()
-end)
+local function enableGodMode(char)
+    local hum = char:WaitForChild("Humanoid", 5)
+    if not hum then return end
+
+    -- Prevent BreakJoints from killing you
+    blockBreakJoints(char)
+    char.DescendantAdded:Connect(function(desc)
+        if desc:IsA("BasePart") then
+            desc.BreakJoints = function() end
+        end
+    end)
+
+    -- Constantly keep health maxed
+    task.spawn(function()
+        while hum.Parent and hum.Health > 0 do
+            hum.MaxHealth = math.huge
+            hum.Health = math.huge
+            task.wait(0.1)
+        end
+    end)
+
+    -- Intercept health changes
+    hum.HealthChanged:Connect(function()
+        if hum.Health < math.huge then
+            hum.MaxHealth = math.huge
+            hum.Health = math.huge
+        end
+    end)
+end
 
 -- Apply now
-applyGodMode()
+if player.Character then
+    enableGodMode(player.Character)
+end
+
+-- Reapply on respawn
+player.CharacterAdded:Connect(enableGodMode)
 
 -- ========================================
 -- AUTO LOCK FUNCTION
