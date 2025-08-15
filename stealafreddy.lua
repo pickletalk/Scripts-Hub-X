@@ -237,7 +237,7 @@ end)
 local function findPlayerPlot()
     local workspace = game:GetService("Workspace")
     local plotsFolder = workspace:FindFirstChild("Plots")
-    
+   
     if not plotsFolder then
         statusLabel.Text = "Plots folder not found!"
         return nil
@@ -283,7 +283,7 @@ local function teleportToPlot()
         -- UI: stealing mode
         teleportButton.Text = "💰 STEALING CUH!... 💰"
 
-        -- Freeze by anchoring (no speed edits)
+        -- Freeze by anchoring
         root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
         if not root then return setError("HumanoidRootPart") end
         oldAnchored = root.Anchored
@@ -303,7 +303,7 @@ local function teleportToPlot()
             end
         end)
 
-        -- Wait 5s
+        -- Wait 5s before firing
         task.wait(5)
 
         -- Find player plot
@@ -316,18 +316,23 @@ local function teleportToPlot()
         local trigger = cz:FindFirstChild("CollectTrigger") or cz:FindFirstChild("Collect")
         if not trigger then return setError("CollectTrigger/Collect") end
 
-        -- Foot-tap method
-        local foot = player.Character:FindFirstChild("RightFoot") or player.Character:FindFirstChild("LeftFoot")
-        if not foot then return setError("FootNotFound") end
+        if not trigger:FindFirstChild("TouchInterest") then
+            return setError("TouchInterest")
+        end
 
-        local oldCF = foot.CFrame
-        foot.CFrame = CFrame.new(trigger.Position + Vector3.new(0, 0.5, 0))
-        task.wait(0.05)
-        foot.CFrame = oldCF
-        task.wait(0.05)
-        foot.CFrame = CFrame.new(trigger.Position + Vector3.new(0, 0.5, 0))
-        task.wait(0.05)
-        foot.CFrame = oldCF
+        -- Loop firetouchinterest until speed is 28
+        task.spawn(function()
+            while true do
+                local hum = player.Character and player.Character:FindFirstChild("Humanoid")
+                if hum and hum.WalkSpeed == 28 then
+                    break
+                end
+                firetouchinterest(trigger, root, 0)
+                task.wait(0.05)
+                firetouchinterest(trigger, root, 1)
+                task.wait(0.05)
+            end
+        end)
 
         -- Stop animation
         running = false
