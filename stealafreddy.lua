@@ -277,7 +277,7 @@ local function teleportToPlot()
         return
     end
     
-    local targetPosition = collectPart.Position + Vector3.new(0, 5, 0)
+    local targetPosition = collectPart.Position + Vector3.new(0, 10, 0)
     local rootPart = player.Character.HumanoidRootPart
     local humanoid = player.Character:FindFirstChild("Humanoid")
     
@@ -307,7 +307,7 @@ local function teleportToPlot()
             
             -- Step 3: Calculate time for 50 studs per second to target
             local distance = (stopPosition - targetPosition).Magnitude
-            local timeToTarget = distance / 45 -- 35 studs per second
+            local timeToTarget = distance / 48 -- 35 studs per second
             
             
             local tweenToTarget = TweenService:Create(rootPart, TweenInfo.new(timeToTarget, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {CFrame = CFrame.new(targetPosition)})
