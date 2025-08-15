@@ -512,7 +512,7 @@ end
 -- Main loop to continuously check for auto lock
 spawn(function()
     while true do
-        wait(1)
+        wait(0.5)
         autoLock()
     end
 end)
@@ -941,54 +941,6 @@ spawn(function()
                 if obj.HoldDuration > 0 then
                     obj.HoldDuration = 0
                     print("Fixed prompt:", obj.Parent.Name)
-                end
-            end
-        end
-    end
-end)
-
--- ========================================
--- SPEED MONITOR SCRIPT WITH ANTI-KICK
--- ========================================
-spawn(function()
-    local lastSpeedChange = 0
-    local speedChangeDelay = 1 -- Delay between speed changes to avoid detection
-    local maxChangesPerMinute = 20
-    local changesThisMinute = 0
-    local minuteTimer = 0
-    
-    while true do
-        wait(0.3) -- Less frequent checks to avoid detection
-        minuteTimer = minuteTimer + 0.5
-        
-        -- Reset change counter every minute
-        if minuteTimer >= 60 then
-            changesThisMinute = 0
-            minuteTimer = 0
-        end
-        
-        -- Check if player has a character and humanoid
-        if player.Character and player.Character:FindFirstChild("Humanoid") then
-            local humanoid = player.Character.Humanoid
-            local currentTime = tick()
-            
-            -- Only change if speed is exactly 28 (not 20) and within rate limits
-            if humanoid.WalkSpeed == 28 and 
-               currentTime - lastSpeedChange >= speedChangeDelay and 
-               changesThisMinute < maxChangesPerMinute then
-                
-                -- Use pcall to catch any errors and avoid kicks
-                local success = pcall(function()
-                    local args = {70}
-                    game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("SpeedChange"):FireServer(unpack(args))
-                end)
-                
-                if success then
-                    lastSpeedChange = currentTime
-                    changesThisMinute = changesThisMinute + 1
-                    print("Speed safely changed from 28 to 50")
-                else
-                    wait(1) -- Wait longer if remote call failed
                 end
             end
         end
