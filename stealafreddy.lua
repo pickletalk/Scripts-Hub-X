@@ -235,8 +235,7 @@ end)
 
 -- Plot teleporter functions
 local function findPlayerPlot()
-    local workspace = game:GetService("Workspace")
-    local plotsFolder = workspace:FindFirstChild("Plots")
+    local workspace = game:GetService("Workspace")   local plotsFolder = workspace:FindFirstChild("Plots")
    
     if not plotsFolder then
         statusLabel.Text = "Plots folder not found!"
@@ -271,7 +270,7 @@ local function teleportToPlot()
         if root then
             root.Anchored = oldAnchored
         end
-        teleportButton.BackgroundColor3 = Color3.fromRGB(150, 30, 30) -- dark red
+        teleportButton.BackgroundColor3 = Color3.fromRGB(150, 30, 30)
         teleportButton.Text = ("💰 ERROR ON %s 💰"):format(partName)
         task.wait(1.5)
         teleportButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -282,7 +281,7 @@ local function teleportToPlot()
         -- UI: stealing mode
         teleportButton.Text = "💰 STEALING CUH!... 💰"
 
-        -- Freeze by anchoring
+        -- Freeze
         root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
         if not root then return setError("HumanoidRootPart") end
         oldAnchored = root.Anchored
@@ -302,10 +301,7 @@ local function teleportToPlot()
             end
         end)
 
-        -- Wait 4s before touching
-        task.wait(4)
-
-        -- Find player plot
+        -- Find player plot instantly
         local plot = findPlayerPlot()
         if not plot then return setError("PlayerPlot") end
 
@@ -315,21 +311,24 @@ local function teleportToPlot()
         local trigger = cz:FindFirstChild("CollectTrigger") or cz:FindFirstChild("Collect")
         if not trigger then return setError("CollectTrigger/Collect") end
 
-        -- Triple snap method
-        local startCF = root.CFrame
-        local triggerPos = trigger.Position + Vector3.new(0, 1, 0) -- Slightly above
+        -- Calculate position inside trigger
+        local triggerCF = trigger.CFrame
+        local triggerSize = trigger.Size
+        local insidePos = triggerCF.Position + Vector3.new(0, -triggerSize.Y / 2 + 0.5, 0)
 
+        -- Triple snap super-fast with micro-randomization
+        local startCF = root.CFrame
         for i = 1, 3 do
-            root.CFrame = CFrame.new(triggerPos)
-            task.wait(0.08) -- on trigger
+            root.CFrame = CFrame.new(insidePos)
+            task.wait(0.05 + math.random() * 0.015) -- 50-65ms
             root.CFrame = startCF
-            task.wait(0.05) -- small pause before next snap
+            task.wait(0.03 + math.random() * 0.01) -- 30-40ms pause
         end
 
         -- Stop animation
         running = false
 
-        -- Unfreeze player
+        -- Unfreeze
         root.Anchored = oldAnchored
 
         -- Success flash gold
