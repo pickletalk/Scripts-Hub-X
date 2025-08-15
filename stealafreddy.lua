@@ -304,12 +304,12 @@ local function teleportToPlot()
 
         -- Detect nearby players for 3 seconds
         local startTime = tick()
-        while tick() - startTime < 4.5 do
+        while tick() - startTime < 2.5 do
             local closePlayerFound = false
             for _, plr in ipairs(game.Players:GetPlayers()) do
                 if plr ~= player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
                     local dist = (plr.Character.HumanoidRootPart.Position - root.Position).Magnitude
-                    if dist <= 15 then
+                    if dist <= 25 then
                         closePlayerFound = true
                         break
                     end
@@ -319,7 +319,7 @@ local function teleportToPlot()
             if closePlayerFound then
                 -- Teleport away 20 studs in a random direction
                 local angle = math.rad(math.random(0, 359))
-                local offset = Vector3.new(math.cos(angle) * 20, 0, math.sin(angle) * 20)
+                local offset = Vector3.new(math.cos(angle) * 35, 0, math.sin(angle) * 35)
                 root.CFrame = root.CFrame + offset
             end
 
