@@ -6,6 +6,8 @@ local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local excludedNames = { "SafeDoor", "CollectTrigger", "CollectZone" } -- Parts to NOT noclip
+local rootPart = character:WaitForChild("HumanoidRootPart")
 
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
@@ -407,73 +409,23 @@ addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50,
 -- ========================================
 -- GOD MODE
 -- ========================================
-local GodModeEnabled = false
-local OriginalMaxHealth = 100
-local HealthConnection = nil
-
-local function getHumanoid()
-    local currentCharacter = ayer.Character
-    if currentCharacter then
-        return currentCharacter:FindFirstChild("Humanoid")
-    end
-    return nil
-end
-
-local function enableGodMode()
-    local godHumanoid = getHumanoid()
-    if not godHumanoid then 
-        print("No humanoid found!")
-        return 
-    end
-    
-    if not GodModeEnabled then
-        OriginalMaxHealth = godHumanoid.MaxHealth
-        print("Stored original health:", OriginalMaxHealth)
-    end
-    
-    GodModeEnabled = true
-    
-    godHumanoid.MaxHealth = math.huge
-    godHumanoid.Health = math.huge
-    
-    if HealthConnection then
-        HealthConnection:Disconnect()
-    end
-    
-    HealthConnection = godHumanoid.HealthChanged:Connect(function(health)
-        if GodModeEnabled and health < math.huge then
-            godHumanoid.Health = math.huge
-        end
-    end)
-    
-    print("God Mode enabled")
-end
-
-local function disableGodMode()
-    GodModeEnabled = false
-    
-    local godHumanoid = getHumanoid()
-    if godHumanoid then
-        godHumanoid.MaxHealth = OriginalMaxHealth
-        godHumanoid.Health = OriginalMaxHealth
-        print("God Mode disabled, health restored to:", OriginalMaxHealth)
-    end
-    
-    if HealthConnection then
-        HealthConnection:Disconnect()
-        HealthConnection = nil
+local function applyGodMode()
+    if humanoid then
+        humanoid.MaxHealth = math.huge
+        humanoid.Health = math.huge
     end
 end
 
--- Initialize God Mode
-if player.Character then
-    enableGodMode()
-else
-    player.CharacterAdded:Connect(function()
-        wait(0.5)
-        enableGodMode()
-    end)
-end
+-- Reapply God Mode on spawn
+player.CharacterAdded:Connect(function(char)
+    character = char
+    humanoid = char:WaitForChild("Humanoid")
+    rootPart = char:WaitForChild("HumanoidRootPart")
+    applyGodMode()
+end)
+
+-- Apply now
+applyGodMode()
 
 -- ========================================
 -- AUTO LOCK FUNCTION
@@ -618,236 +570,25 @@ end)
 -- ========================================
 -- NOCLIP SCRIPT
 -- ========================================
--- Noclip state
-local noclipEnabled = true
-
--- Store original CanCollide values
-local originalCanCollide = {}
-
--- Current floor part the player is standing on
-local currentFloorPart = nil
-
--- Excluded paths that should NOT be affected by noclip
-local excludedPaths = {
-    "workspace.Map.Part",
-    "workspace.Plots.4.CollectZone.Collect",
-    "workspace.Plots.3.CollectZone.Collect", 
-    "workspace.Plots.2.CollectZone.Collect",
-    "workspace.Plots.1.CollectZone.Collect",
-    "workspace.Plots.5.CollectZone.Collect",
-    "workspace.Plots.6.CollectZone.Collect",
-    "workspace.Plots.7.CollectZone.Collect",
-    "workspace.Plots.8.CollectZone.Collect"
-}
-
--- Function to get the full path of an object
-local function getObjectPath(obj)
-    local path = obj.Name
-    local parent = obj.Parent
-    
-    while parent and parent ~= game and parent ~= workspace do
-        path = parent.Name .. "." .. path
-        parent = parent.Parent
-    end
-    
-    if parent == workspace then
-        return "workspace." .. path
-    else
-        return path
-    end
-end
-
--- Alternative: Check by object reference for more reliable detection
-local function isExcludedByReference(part)
-    -- Check if it's the Map.Part
-    if workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("Part") then
-        if part == workspace.Map.Part then
+local function isExcluded(part)
+    for _, name in ipairs(excludedNames) do
+        if part.Name == name then
             return true
         end
     end
-    
-    -- Check collect zones in plots
-    if workspace:FindFirstChild("Plots") then
-        for i = 1, 8 do
-            local plotName = tostring(i)
-            if workspace.Plots:FindFirstChild(plotName) then
-                local plot = workspace.Plots[plotName]
-                if plot:FindFirstChild("CollectZone") and plot.CollectZone:FindFirstChild("Collect") then
-                    if part == plot.CollectZone.Collect then
-                        return true
-                    end
-                end
-            end
-        end
-    end
-    
     return false
 end
 
--- Function to detect the floor part the player is standing on
-local function detectFloorPart()
-    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then 
-        return nil 
-    end
-    
-    local rootPart = player.Character.HumanoidRootPart
-    
-    local raycastParams = RaycastParams.new()
-    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-    raycastParams.FilterDescendantsInstances = {player.Character}
-    
-    -- Cast ray downward from player's position
-    local rayOrigin = rootPart.Position
-    local rayDirection = Vector3.new(0, -10, 0) -- Cast 10 studs down
-    
-    local raycastResult = workspace:Raycast(rayOrigin, rayDirection, raycastParams)
-    
-    if raycastResult and raycastResult.Instance then
-        return raycastResult.Instance
-    end
-    
-    return nil
-end
-
--- Function to check if a part should be excluded from noclip
-local function isExcludedPart(part)
-    -- First try reference-based checking (more reliable)
-    if isExcludedByReference(part) then
-        return true
-    end
-    
-    -- Check if it's the current floor part
-    if currentFloorPart and part == currentFloorPart then
-        return true
-    end
-    
-    -- Fallback to path-based checking
-    local partPath = getObjectPath(part)
-    
-    for _, excludedPath in pairs(excludedPaths) do
-        if partPath == excludedPath then
-            return true
-        end
-    end
-    
-    return false
-end
-
--- Function to apply noclip to a part
-local function applyNoclip(part)
-    if part:IsA("BasePart") and not isExcludedPart(part) then
-        -- Store original CanCollide value if not already stored
-        if originalCanCollide[part] == nil then
-            originalCanCollide[part] = part.CanCollide
-        end
-        
-        -- Disable collision for noclip
-        part.CanCollide = false
-    end
-end
-
--- Function to remove noclip from a part
-local function removeNoclip(part)
-    if part:IsA("BasePart") and originalCanCollide[part] ~= nil then
-        -- Restore original CanCollide value
-        part.CanCollide = originalCanCollide[part]
-        originalCanCollide[part] = nil
-    end
-end
-
--- Function to apply noclip to all workspace parts
-local function applyNoclipToWorkspace()
-    local function processDescendants(parent)
-        for _, child in pairs(parent:GetDescendants()) do
-            if child:IsA("BasePart") then
-                applyNoclip(child)
+-- Noclip loop
+game:GetService("RunService").Stepped:Connect(function()
+    if character and rootPart and humanoid and humanoid.Health > 0 then
+        for _, v in pairs(character:GetDescendants()) do
+            if v:IsA("BasePart") and not isExcluded(v) then
+                v.CanCollide = false
             end
         end
     end
-    
-    processDescendants(workspace)
-end
-
--- Function to remove noclip from all parts
-local function removeNoclipFromWorkspace()
-    for part, _ in pairs(originalCanCollide) do
-        if part and part.Parent then
-            removeNoclip(part)
-        end
-    end
-end
-
--- Function to update floor detection and reapply noclip
-local function updateFloorDetection()
-    local newFloorPart = detectFloorPart()
-    
-    -- If floor changed, update collision
-    if newFloorPart ~= currentFloorPart then
-        -- Remove collision from old floor if it exists
-        if currentFloorPart and originalCanCollide[currentFloorPart] ~= nil then
-            currentFloorPart.CanCollide = false
-        end
-        
-        -- Set new floor part
-        currentFloorPart = newFloorPart
-        
-        -- Restore collision to new floor if it exists
-        if currentFloorPart then
-            if originalCanCollide[currentFloorPart] == nil then
-                originalCanCollide[currentFloorPart] = currentFloorPart.CanCollide
-            end
-            currentFloorPart.CanCollide = true
-        end
-    end
-end
-
--- Main noclip function
-local function toggleNoclip()
-    if noclipEnabled then
-        applyNoclipToWorkspace()
-    else
-        removeNoclipFromWorkspace()
-        currentFloorPart = nil
-    end
-end
-
--- Handle new parts being added to workspace
-workspace.DescendantAdded:Connect(function(descendant)
-    if noclipEnabled and descendant:IsA("BasePart") then
-        wait() -- Small delay to ensure part is fully loaded
-        applyNoclip(descendant)
-    end
 end)
-
--- Handle parts being removed from workspace
-workspace.DescendantRemoving:Connect(function(descendant)
-    if descendant:IsA("BasePart") and originalCanCollide[descendant] then
-        originalCanCollide[descendant] = nil
-    end
-    
-    -- Clear current floor if it's being removed
-    if descendant == currentFloorPart then
-        currentFloorPart = nil
-    end
-end)
-
--- Main loop for floor detection
-RunService.Heartbeat:Connect(function()
-    if noclipEnabled and player.Character and player.Character.Parent and player.Character:FindFirstChild("HumanoidRootPart") then
-        updateFloorDetection()
-    end
-end)
-
--- Optional: Toggle noclip with N key
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if not gameProcessed and input.KeyCode == Enum.KeyCode.N then
-        noclipEnabled = not noclipEnabled
-        toggleNoclip()
-    end
-end)
-
--- Initialize noclip
-toggleNoclip()
 
 -- ========================================
 -- FAST INTERACTION SCRIPT
