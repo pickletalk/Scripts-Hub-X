@@ -998,128 +998,355 @@ end)
 -- ========================================
 -- ANTI RAGDOLL FUNCTIONS
 -- ========================================
--- Remote paths
-local ragdollRemote1 = ReplicatedStorage:WaitForChild("Ragdoll")
-local ragdollRemote2 = ReplicatedStorage.Remotes:WaitForChild("Ragdoll")
+-- Anti-ragdoll state
+local antiRagdollEnabled = true
+local ragdollConnections = {}
 
-print("[Anti-Ragdoll] Script loaded successfully!")
-print("[Anti-Ragdoll] Hooking ragdoll remotes...")
+print("[Enhanced Anti-Ragdoll] Loading enhanced protection system...")
 
--- Hook the first ragdoll remote
-local originalFire1 = ragdollRemote1.FireServer
-ragdollRemote1.FireServer = function(self, ...)
-    print("[Anti-Ragdoll] Blocked ragdoll attempt via ReplicatedStorage.Ragdoll")
-    -- Don't call the original function, effectively blocking the ragdoll
-    return
-end
-
--- Hook the second ragdoll remote
-local originalFire2 = ragdollRemote2.FireServer
-ragdollRemote2.FireServer = function(self, ...)
-    print("[Anti-Ragdoll] Blocked ragdoll attempt via ReplicatedStorage.Remotes.Ragdoll")
-    -- Don't call the original function, effectively blocking the ragdoll
-    return
-end
-
--- Also hook OnClientEvent if they exist (for incoming ragdoll signals)
-if ragdollRemote1.OnClientEvent then
-    ragdollRemote1.OnClientEvent:Connect(function(...)
-        print("[Anti-Ragdoll] Blocked incoming ragdoll signal from ReplicatedStorage.Ragdoll")
-        -- Block by not executing ragdoll code
-    end)
-end
-
-if ragdollRemote2.OnClientEvent then
-    ragdollRemote2.OnClientEvent:Connect(function(...)
-        print("[Anti-Ragdoll] Blocked incoming ragdoll signal from ReplicatedStorage.Remotes.Ragdoll")
-        -- Block by not executing ragdoll code
-    end)
-end
-
--- Additional protection: Monitor humanoid state changes
-humanoid.StateChanged:Connect(function(oldState, newState)
-    if newState == Enum.HumanoidStateType.Physics or newState == Enum.HumanoidStateType.Ragdoll then
-        print("[Anti-Ragdoll] Detected ragdoll state change, reverting...")
-        humanoid:ChangeState(Enum.HumanoidStateType.Running)
+-- Function to safely get current character and humanoid
+local function getCurrentCharacterData()
+    local currentChar = player.Character
+    if currentChar then
+        local currentHumanoid = currentChar:FindFirstChild("Humanoid")
+        local rootPart = currentChar:FindFirstChild("HumanoidRootPart")
+        return currentChar, currentHumanoid, rootPart
     end
+    return nil, nil, nil
+end
+
+-- Multiple methods to hook remotes more effectively
+local function hookRemoteMethod1(remote, remoteName)
+    if not remote then return end
+    
+    local success, error = pcall(function()
+        local originalFunction = remote.FireServer
+        remote.FireServer = function(...)
+            print("[Enhanced Anti-Ragdoll] Method 1 - Blocked " .. remoteName)
+            return
+        end
+    end)
+    
+    if success then
+        print("[Enhanced Anti-Ragdoll] Method 1 hook successful for " .. remoteName)
+    else
+        print("[Enhanced Anti-Ragdoll] Method 1 hook failed for " .. remoteName .. ": " .. tostring(error))
+    end
+end
+
+local function hookRemoteMethod2(remote, remoteName)
+    if not remote then return end
+    
+    local success, error = pcall(function()
+        -- Override the entire remote object's FireServer
+        rawset(remote, "FireServer", function(...)
+            print("[Enhanced Anti-Ragdoll] Method 2 - Blocked " .. remoteName)
+            return
+        end)
+    end)
+    
+    if success then
+        print("[Enhanced Anti-Ragdoll] Method 2 hook successful for " .. remoteName)
+    else
+        print("[Enhanced Anti-Ragdoll] Method 2 hook failed for " .. remoteName .. ": " .. tostring(error))
+    end
+end
+
+local function hookRemoteMethod3(remote, remoteName)
+    if not remote then return end
+    
+    local success, error = pcall(function()
+        -- Create a new function that does nothing
+        local blockedFunction = function(...)
+            print("[Enhanced Anti-Ragdoll] Method 3 - Blocked " .. remoteName)
+            return
+        end
+        
+        -- Replace using different approach
+        getgenv()[remoteName .. "_FireServer"] = remote.FireServer
+        remote.FireServer = blockedFunction
+    end)
+    
+    if success then
+        print("[Enhanced Anti-Ragdoll] Method 3 hook successful for " .. remoteName)
+    else
+        print("[Enhanced Anti-Ragdoll] Method 3 hook failed for " .. remoteName .. ": " .. tostring(error))
+    end
+end
+
+-- Enhanced remote hooking with multiple fallback methods
+local function enhancedHookRemote(remote, remoteName)
+    if not remote then
+        print("[Enhanced Anti-Ragdoll] Remote not found: " .. remoteName)
+        return
+    end
+    
+    print("[Enhanced Anti-Ragdoll] Hooking " .. remoteName .. " with multiple methods...")
+    
+    -- Try all three methods
+    hookRemoteMethod1(remote, remoteName)
+    hookRemoteMethod2(remote, remoteName)
+    hookRemoteMethod3(remote, remoteName)
+    
+    -- Also hook OnClientEvent if it exists
+    if remote.OnClientEvent then
+        local connection = remote.OnClientEvent:Connect(function(...)
+            print("[Enhanced Anti-Ragdoll] Blocked incoming signal from " .. remoteName)
+            return
+        end)
+        table.insert(ragdollConnections, connection)
+    end
+end
+
+-- Wait for remotes and hook them
+local function hookRagdollRemotes()
+    local success1, ragdollRemote1 = pcall(function()
+        return ReplicatedStorage:WaitForChild("Ragdoll", 5)
+    end)
+    
+    local success2, ragdollRemote2 = pcall(function()
+        return ReplicatedStorage:WaitForChild("Remotes", 5):WaitForChild("Ragdoll", 5)
+    end)
+    
+    if success1 and ragdollRemote1 then
+        enhancedHookRemote(ragdollRemote1, "ReplicatedStorage.Ragdoll")
+    else
+        print("[Enhanced Anti-Ragdoll] Could not find ReplicatedStorage.Ragdoll")
+    end
+    
+    if success2 and ragdollRemote2 then
+        enhancedHookRemote(ragdollRemote2, "ReplicatedStorage.Remotes.Ragdoll")
+    else
+        print("[Enhanced Anti-Ragdoll] Could not find ReplicatedStorage.Remotes.Ragdoll")
+    end
+end
+
+-- Enhanced humanoid state protection
+local function protectHumanoidStates()
+    local currentChar, currentHumanoid, rootPart = getCurrentCharacterData()
+    if not currentHumanoid then return end
+    
+    -- Multiple state change connections for redundancy
+    local connection1 = currentHumanoid.StateChanged:Connect(function(oldState, newState)
+        if not antiRagdollEnabled then return end
+        
+        if newState == Enum.HumanoidStateType.Physics or 
+           newState == Enum.HumanoidStateType.Ragdoll or
+           newState == Enum.HumanoidStateType.FallingDown then
+            
+            print("[Enhanced Anti-Ragdoll] State Protection 1 - Reverting ragdoll state")
+            spawn(function()
+                wait(0.01)
+                if currentHumanoid and currentHumanoid.Parent then
+                    currentHumanoid:ChangeState(Enum.HumanoidStateType.Running)
+                    currentHumanoid.PlatformStand = false
+                end
+            end)
+        end
+    end)
+    
+    local connection2 = currentHumanoid:GetPropertyChangedSignal("PlatformStand"):Connect(function()
+        if not antiRagdollEnabled then return end
+        
+        if currentHumanoid.PlatformStand then
+            print("[Enhanced Anti-Ragdoll] PlatformStand Protection - Disabling")
+            currentHumanoid.PlatformStand = false
+        end
+    end)
+    
+    table.insert(ragdollConnections, connection1)
+    table.insert(ragdollConnections, connection2)
+end
+
+-- Monitor for ragdoll-related changes in character
+local function monitorCharacterChanges()
+    local currentChar, currentHumanoid, rootPart = getCurrentCharacterData()
+    if not currentChar then return end
+    
+    local connection = currentChar.DescendantAdded:Connect(function(descendant)
+        if not antiRagdollEnabled then return end
+        
+        -- Check for ragdoll-related objects
+        if descendant:IsA("BallSocketConstraint") or 
+           descendant:IsA("HingeConstraint") or
+           (descendant:IsA("Attachment") and string.find(descendant.Name:lower(), "ragdoll")) then
+            
+            print("[Enhanced Anti-Ragdoll] Ragdoll object detected, removing: " .. descendant.Name)
+            spawn(function()
+                wait(0.01)
+                if descendant and descendant.Parent then
+                    descendant:Destroy()
+                end
+            end)
+        end
+    end)
+    
+    table.insert(ragdollConnections, connection)
+end
+
+-- Continuous anti-ragdoll monitoring
+local function continuousMonitoring()
+    local connection = RunService.Heartbeat:Connect(function()
+        if not antiRagdollEnabled then return end
+        
+        local currentChar, currentHumanoid, rootPart = getCurrentCharacterData()
+        if not currentHumanoid then return end
+        
+        -- Continuously ensure no ragdoll states
+        if currentHumanoid.PlatformStand then
+            currentHumanoid.PlatformStand = false
+        end
+        
+        local currentState = currentHumanoid:GetState()
+        if currentState == Enum.HumanoidStateType.Physics or 
+           currentState == Enum.HumanoidStateType.Ragdoll or
+           currentState == Enum.HumanoidStateType.FallingDown then
+            
+            currentHumanoid:ChangeState(Enum.HumanoidStateType.Running)
+        end
+        
+        -- Check for and remove ragdoll constraints
+        if currentChar then
+            for _, child in pairs(currentChar:GetDescendants()) do
+                if child:IsA("BallSocketConstraint") or child:IsA("HingeConstraint") then
+                    if string.find(child.Name:lower(), "ragdoll") or 
+                       string.find(child.Name:lower(), "constraint") then
+                        child:Destroy()
+                    end
+                end
+            end
+        end
+    end)
+    
+    table.insert(ragdollConnections, connection)
+end
+
+-- Emergency ragdoll recovery
+local function emergencyRecovery()
+    local currentChar, currentHumanoid, rootPart = getCurrentCharacterData()
+    if not currentHumanoid or not rootPart then return end
+    
+    print("[Enhanced Anti-Ragdoll] Emergency recovery activated")
+    
+    -- Force humanoid state
+    currentHumanoid.PlatformStand = false
+    currentHumanoid:ChangeState(Enum.HumanoidStateType.Running)
+    
+    -- Remove all ragdoll-related objects
+    for _, child in pairs(currentChar:GetDescendants()) do
+        if child:IsA("BallSocketConstraint") or 
+           child:IsA("HingeConstraint") or
+           child:IsA("Attachment") then
+            if string.find(child.Name:lower(), "ragdoll") then
+                child:Destroy()
+            end
+        end
+    end
+    
+    -- Reset all body parts to non-ragdoll state
+    for _, part in pairs(currentChar:GetChildren()) do
+        if part:IsA("BasePart") and part ~= rootPart then
+            part.CanCollide = false
+            if part:FindFirstChild("BodyPosition") then
+                part.BodyPosition:Destroy()
+            end
+            if part:FindFirstChild("BodyVelocity") then
+                part.BodyVelocity:Destroy()
+            end
+        end
+    end
+end
+
+-- Initialize protection systems
+local function initializeAntiRagdoll()
+    print("[Enhanced Anti-Ragdoll] Initializing protection systems...")
+    
+    -- Clear any existing connections
+    for _, connection in pairs(ragdollConnections) do
+        if connection and connection.Disconnect then
+            connection:Disconnect()
+        end
+    end
+    ragdollConnections = {}
+    
+    -- Hook ragdoll remotes
+    hookRagdollRemotes()
+    
+    -- Set up character protection
+    protectHumanoidStates()
+    monitorCharacterChanges()
+    continuousMonitoring()
+    
+    -- Emergency recovery key bind (R key)
+    local keyConnection = game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        if input.KeyCode == Enum.KeyCode.R then
+            emergencyRecovery()
+        end
+    end)
+    table.insert(ragdollConnections, keyConnection)
+    
+    print("[Enhanced Anti-Ragdoll] All protection systems active!")
+    print("[Enhanced Anti-Ragdoll] Press R for emergency recovery if needed")
+end
+
+-- Handle character respawn
+player.CharacterAdded:Connect(function(newCharacter)
+    character = newCharacter
+    humanoid = character:WaitForChild("Humanoid")
+    
+    print("[Enhanced Anti-Ragdoll] Character respawned, reapplying protection...")
+    wait(0.5) -- Wait for character to fully load
+    initializeAntiRagdoll()
 end)
 
-print("[Anti-Ragdoll] All protections active!")
-print("[Anti-Ragdoll] You should now be immune to ragdolling.")
+-- Start the enhanced anti-ragdoll system
+initializeAntiRagdoll()
 
 -- ========================================
 -- SPEED MONITORING AND CHANGER FUNCTIONS
 -- ========================================
--- Speed change remote
-local speedChangeRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("SpeedChange")
-
--- Track if we've already changed speed from 28 to prevent multiple calls
-local hasChangedFrom28 = false
-
-print("[Speed Detector] Script loaded successfully!")
-print("[Speed Detector] Monitoring for speed of 28...")
-
--- Function to change speed to 70
-local function changeSpeedTo70()
-    local args = {70}
-    speedChangeRemote:FireServer(unpack(args))
-    print("[Speed Detector] Speed changed from 28 to 70!")
-end
-
--- Speed monitoring function
-local function checkSpeed()
-    -- Get current character and humanoid
-    local currentCharacter = player.Character
-    if not currentCharacter then return end
+spawn(function()
+    local lastSpeedChange = 0
+    local speedChangeDelay = 1 -- Delay between speed changes to avoid detection
+    local maxChangesPerMinute = 20
+    local changesThisMinute = 0
+    local minuteTimer = 0
     
-    local currentHumanoid = currentCharacter:FindFirstChild("Humanoid")
-    if not currentHumanoid then return end
-    
-    local currentSpeed = currentHumanoid.WalkSpeed
-    
-    -- Debug print to see current speed
-    -- print("[Speed Detector] Current speed:", currentSpeed)
-    
-    if currentSpeed == 28 then
-        if not hasChangedFrom28 then
-            hasChangedFrom28 = true
-            changeSpeedTo70()
+    while true do
+        wait(0.3) -- Less frequent checks to avoid detection
+        minuteTimer = minuteTimer + 0.5
+        
+        -- Reset change counter every minute
+        if minuteTimer >= 60 then
+            changesThisMinute = 0
+            minuteTimer = 0
         end
-    else
-        -- Reset the flag when speed is not 28 so we can detect 28 again
-        if hasChangedFrom28 then
-            hasChangedFrom28 = false
-            print("[Speed Detector] Ready to detect speed 28 again...")
+        
+        -- Check if player has a character and humanoid
+        if player.Character and player.Character:FindFirstChild("Humanoid") then
+            local humanoid = player.Character.Humanoid
+            local currentTime = tick()
+            
+            -- Only change if speed is exactly 28 (not 20) and within rate limits
+            if humanoid.WalkSpeed == 28 and 
+               currentTime - lastSpeedChange >= speedChangeDelay and 
+               changesThisMinute < maxChangesPerMinute then
+                
+                -- Use pcall to catch any errors and avoid kicks
+                local success = pcall(function()
+                    local args = {70}
+                    game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("SpeedChange"):FireServer(unpack(args))
+                end)
+                
+                if success then
+                    lastSpeedChange = currentTime
+                    changesThisMinute = changesThisMinute + 1
+                    print("Speed safely changed from 28 to 50")
+                else
+                    wait(2) -- Wait longer if remote call failed
+                end
+            end
         end
-    end
-end
-
--- Start continuous speed checking with no delay
-local speedConnection = RunService.Heartbeat:Connect(checkSpeed)
-
--- Handle character respawn for all systems
-player.CharacterAdded:Connect(function(newCharacter)
-    character = newCharacter
-    humanoid = character:WaitForChild("Humanoid")
-    hasChangedFrom28 = false
-    
-    print("[Speed Detector] Character respawned, continuing speed monitoring...")
-    print("[Anti-Ragdoll] Character respawned, reapplying protection...")
-    
-    -- Reapply humanoid state protection for anti-ragdoll
-    humanoid.StateChanged:Connect(function(oldState, newState)
-        if newState == Enum.HumanoidStateType.Physics or newState == Enum.HumanoidStateType.Ragdoll then
-            print("[Anti-Ragdoll] Detected ragdoll state change, reverting...")
-            humanoid:ChangeState(Enum.HumanoidStateType.Running)
-        end
-    end)
-    
-    -- Reapply god mode
-    wait(0.5)
-    if GodModeEnabled then
-        enableGodMode()
     end
 end)
-
-print("[Speed Detector] Speed monitoring active - no delays, continuous checking!")
-print("[Speed Detector] Will change speed to 70 when exactly 28 is detected.")
