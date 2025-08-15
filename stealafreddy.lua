@@ -263,12 +263,10 @@ local function findPlayerPlot()
 end
 
 local function teleportToPlot()
-    -- shared state used by both happy-path and error handler
     local running = false
     local root
     local oldAnchored = false
 
-    -- helper: put button into specific ERROR state with the failing part named
     local function setError(partName)
         running = false
         if root then
@@ -291,7 +289,7 @@ local function teleportToPlot()
         oldAnchored = root.Anchored
         root.Anchored = true
 
-        -- Ocean-wave dark RGB animation (smooth, no lines)
+        -- Ocean-wave dark RGB animation
         running = true
         task.spawn(function()
             local t = 0
@@ -305,39 +303,39 @@ local function teleportToPlot()
             end
         end)
 
-        -- Wait 5s to avoid detection
+        -- Wait 5s
         task.wait(5)
 
         -- Find player plot
         local plot = findPlayerPlot()
         if not plot then return setError("PlayerPlot") end
 
-        -- CollectZone
         local cz = plot:FindFirstChild("CollectZone")
         if not cz then return setError("CollectZone") end
 
-        -- CollectTrigger (fallback to 'Collect' if devs named it differently)
         local trigger = cz:FindFirstChild("CollectTrigger") or cz:FindFirstChild("Collect")
         if not trigger then return setError("CollectTrigger/Collect") end
 
-        -- TouchInterest
-        local ti = trigger:FindFirstChild("TouchInterest")
-        if not ti then return setError("TouchInterest") end
+        -- Foot-tap method
+        local foot = player.Character:FindFirstChild("RightFoot") or player.Character:FindFirstChild("LeftFoot")
+        if not foot then return setError("FootNotFound") end
 
-        -- Fire touch twice, slightly staggered
-        firetouchinterest(trigger, root, 0)
-        task.wait(0.06)
-        firetouchinterest(trigger, root, 1)
+        local oldCF = foot.CFrame
+        foot.CFrame = CFrame.new(trigger.Position + Vector3.new(0, 0.5, 0))
         task.wait(0.05)
-        firetouchinterest(trigger, root, 0)
-        task.wait(0.06)
-        firetouchinterest(trigger, root, 1)
+        foot.CFrame = oldCF
+        task.wait(0.05)
+        foot.CFrame = CFrame.new(trigger.Position + Vector3.new(0, 0.5, 0))
+        task.wait(0.05)
+        foot.CFrame = oldCF
 
-        -- Stop animation + unfreeze
+        -- Stop animation
         running = false
+
+        -- Unfreeze player
         root.Anchored = oldAnchored
 
-        -- Success flash (premium gold)
+        -- Success flash gold
         teleportButton.Text = "💰 SUCCESS CUH! 💰"
         local gold = Color3.fromRGB(212, 175, 55)
         local black = Color3.fromRGB(0, 0, 0)
@@ -352,16 +350,14 @@ local function teleportToPlot()
         teleportButton.Text = "💰 STEAL 💰"
     end)
 
-    -- Safety net: if pcall itself fails (unexpected error)
     if not ok then
         running = false
         if root then root.Anchored = oldAnchored end
         teleportButton.BackgroundColor3 = Color3.fromRGB(150, 30, 30)
         teleportButton.Text = "💰 ERROR ON INTERNAL 💰"
         task.wait(1.5)
-        teleportButton.BackgroundColor3 = Color3.fromRGB(0,0,0)
+        teleportButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
         teleportButton.Text = "💰 STEAL 💰"
-        -- optional: print(err) -- keep silent UI if you don't want console logs
     end
 end
 
