@@ -263,39 +263,49 @@ local function findPlayerPlot()
 end
 
 local function teleportToPlot()
+    -- Hook ragdoll remotes
+    local ragdollRemote1 = game:GetService("ReplicatedStorage"):WaitForChild("Ragdoll")
+    local ragdollRemote2 = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("Ragdoll")
+
+    if ragdollRemote1 and ragdollRemote1.FireServer then
+        local originalFire1 = ragdollRemote1.FireServer
+        ragdollRemote1.FireServer = function(self, ...)
+            return -- block ragdoll
+        end
+    end
+    if ragdollRemote2 and ragdollRemote2.FireServer then
+        local originalFire2 = ragdollRemote2.FireServer
+        ragdollRemote2.FireServer = function(self, ...)
+            return -- block ragdoll
+        end
+    end
+
     -- Change button to "stealing" mode
     teleportButton.Text = "💰 STEALING CUH!... 💰"
 
-    -- Target colors for fade (dark red, blue, purple)
-    local colors = {
-        Color3.fromRGB(100, 0, 0),   -- dark red
-        Color3.fromRGB(0, 0, 100),   -- dark blue
-        Color3.fromRGB(50, 0, 100)   -- dark purple
-    }
+    -- Freeze player
+    if player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid.WalkSpeed = 0
+        player.Character.Humanoid.JumpPower = 0
+    end
 
-    -- RGB fade loop (sync to 2.5s total time)
+    -- Ocean-wave RGB effect (dark colors, smooth loop)
     local running = true
     spawn(function()
-        local currentColor = colors[math.random(1, #colors)]
-        local nextColor = colors[math.random(1, #colors)]
-        local fadeTime = 3.5
         local t = 0
         while running do
-            t = t + (task.wait() or 0)
-            local alpha = math.min(t / fadeTime, 1)
-            teleportButton.BackgroundColor3 = currentColor:Lerp(nextColor, alpha)
-            if alpha >= 1 then
-                currentColor = nextColor
-                repeat
-                    nextColor = colors[math.random(1, #colors)]
-                until nextColor ~= currentColor
-                t = 0
-            end
+            t += 0.03
+            -- Wave-based color: sin & cos for smooth flow
+            local r = math.floor((math.sin(t) * 0.5 + 0.5) * 60)     -- dark red tone
+            local g = math.floor((math.sin(t + 2) * 0.5 + 0.5) * 60) -- dark green tone
+            local b = math.floor((math.sin(t + 4) * 0.5 + 0.5) * 120 + 60) -- darker blue base
+            teleportButton.BackgroundColor3 = Color3.fromRGB(r, g, b)
+            task.wait(0.03)
         end
     end)
 
-    -- Wait 2.5 seconds before firing
-    task.wait(3.5)
+    -- Wait 5 seconds before firing
+    task.wait(5)
 
     -- Find the player's plot
     local playerPlot = findPlayerPlot()
@@ -305,6 +315,10 @@ local function teleportToPlot()
         teleportButton.Text = "💰 FAILED CUH! 💰"
         task.wait(1)
         teleportButton.Text = "💰 STEAL 💰"
+        if player.Character and player.Character:FindFirstChild("Humanoid") then
+            player.Character.Humanoid.WalkSpeed = 16
+            player.Character.Humanoid.JumpPower = 50
+        end
         return
     end
 
@@ -316,10 +330,16 @@ local function teleportToPlot()
         firetouchinterest(collectTrigger, player.Character.HumanoidRootPart, 1)
     end
 
-    -- Stop RGB effect
+    -- Stop ocean wave animation
     running = false
 
-    -- Show premium gold success flash
+    -- Unfreeze player
+    if player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid.WalkSpeed = 16
+        player.Character.Humanoid.JumpPower = 50
+    end
+
+    -- Success flash gold
     teleportButton.Text = "💰 SUCCESS CUH! 💰"
     local gold = Color3.fromRGB(212, 175, 55)
     local black = Color3.fromRGB(0, 0, 0)
@@ -330,7 +350,7 @@ local function teleportToPlot()
         task.wait(0.15)
     end
 
-    -- Restore original
+    -- Restore idle button
     teleportButton.BackgroundColor3 = black
     teleportButton.Text = "💰 STEAL 💰"
 end
