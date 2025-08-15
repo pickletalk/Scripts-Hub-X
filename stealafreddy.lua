@@ -7,11 +7,11 @@ local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local excludedNames = { "SafeDoor", "CollectTrigger", "CollectZone" } -- Parts to NOT noclip
-local rootPart = character:WaitForChild("HumanoidRootPart")
 
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
+local rootPart = character:WaitForChild("HumanoidRootPart")
 
 -- ========================================
 -- INFINITE JUMP SCRIPT
