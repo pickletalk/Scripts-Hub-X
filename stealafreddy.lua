@@ -947,12 +947,9 @@ spawn(function()
     end
 end)
 
--- =====================================
+-- ========================================
 -- ANTI RAGDOLL FUNCTIONS
--- =====================================
--- Anti-Ragdoll Script for Steal a Freddy
--- Hooks ragdoll remotes to prevent ragdolling
-
+-- ========================================
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -1024,3 +1021,66 @@ end)
 
 print("[Anti-Ragdoll] All protections active!")
 print("[Anti-Ragdoll] You should now be immune to ragdolling.")
+
+
+-- ========================================
+-- SPEED MONITORING CHANGER FUNCTIONS
+-- ========================================
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+
+-- Speed change remote
+local speedChangeRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("SpeedChange")
+
+-- Track if we've already changed speed from 28 to prevent multiple calls
+local hasChangedFrom28 = false
+
+print("[Speed Detector] Script loaded successfully!")
+print("[Speed Detector] Monitoring for speed of 28...")
+
+-- Function to change speed to 70
+local function changeSpeedTo70()
+    local args = {70}
+    speedChangeRemote:FireServer(unpack(args))
+    print("[Speed Detector] Speed changed from 28 to 70!")
+end
+
+-- Speed monitoring function
+local function checkSpeed()
+    if humanoid and humanoid.WalkSpeed then
+        local currentSpeed = humanoid.WalkSpeed
+        
+        if currentSpeed == 28 then
+            if not hasChangedFrom28 then
+                hasChangedFrom28 = true
+                changeSpeedTo70()
+            end
+        else
+            -- Reset the flag when speed is not 28 so we can detect 28 again
+            if hasChangedFrom28 then
+                hasChangedFrom28 = false
+                print("[Speed Detector] Ready to detect speed 28 again...")
+            end
+        end
+    end
+end
+
+-- Start continuous speed checking with no delay
+local speedConnection = RunService.Heartbeat:Connect(checkSpeed)
+
+-- Handle character respawn
+player.CharacterAdded:Connect(function(newCharacter)
+    character = newCharacter
+    humanoid = character:WaitForChild("Humanoid")
+    hasChangedFrom28 = false
+    
+    print("[Speed Detector] Character respawned, continuing speed monitoring...")
+end)
+
+print("[Speed Detector] Speed monitoring active - no delays, continuous checking!")
+print("[Speed Detector] Will change speed to 70 when exactly 28 is detected.")
