@@ -257,8 +257,7 @@ local function findPlayerPlot()
         statusLabel.Text = "by PickleTalk"
         return targetPlot
     else
-        statusLabel.Text = "Plot " .. tostring(plotNumber) .. " not found!"
-        return nil
+        statusLabel.Text = "Plot " .. tostring(plotNumber) .. " not found!"        return nil
     end
 end
 
@@ -303,8 +302,8 @@ local function teleportToPlot()
             end
         end)
 
-        -- Wait 5s before firing
-        task.wait(5)
+        -- Wait 4s before touching
+        task.wait(4)
 
         -- Find player plot
         local plot = findPlayerPlot()
@@ -316,23 +315,16 @@ local function teleportToPlot()
         local trigger = cz:FindFirstChild("CollectTrigger") or cz:FindFirstChild("Collect")
         if not trigger then return setError("CollectTrigger/Collect") end
 
-        if not trigger:FindFirstChild("TouchInterest") then
-            return setError("TouchInterest")
-        end
+        -- Triple snap method
+        local startCF = root.CFrame
+        local triggerPos = trigger.Position + Vector3.new(0, 1, 0) -- Slightly above
 
-        -- Loop firetouchinterest until speed is 28
-        task.spawn(function()
-            while true do
-                local hum = player.Character and player.Character:FindFirstChild("Humanoid")
-                if hum and hum.WalkSpeed == 28 then
-                    break
-                end
-                firetouchinterest(trigger, root, 0)
-                task.wait(0.05)
-                firetouchinterest(trigger, root, 1)
-                task.wait(0.05)
-            end
-        end)
+        for i = 1, 3 do
+            root.CFrame = CFrame.new(triggerPos)
+            task.wait(0.08) -- on trigger
+            root.CFrame = startCF
+            task.wait(0.05) -- small pause before next snap
+        end
 
         -- Stop animation
         running = false
