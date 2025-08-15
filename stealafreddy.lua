@@ -151,7 +151,7 @@ titleText.Name = "TitleText"
 titleText.Size = UDim2.new(1, -30, 1, 0)
 titleText.Position = UDim2.new(0, 5, 0, 0)
 titleText.BackgroundTransparency = 1
-titleText.Text = "🥷 SHADOW HEIST 🥷"
+titleText.Text = "💰 SHADOW HEIST 💰"
 titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleText.TextScaled = true
 titleText.Font = Enum.Font.GothamBold
@@ -178,7 +178,7 @@ teleportButton.Name = "TeleportButton"
 teleportButton.Size = UDim2.new(0, 220, 0, 35)
 teleportButton.Position = UDim2.new(0, 15, 0, 45)
 teleportButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-teleportButton.Text = "🥷 STEAL 🥷"
+teleportButton.Text = "💰 STEAL 💰"
 teleportButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 teleportButton.TextScaled = true
 teleportButton.Font = Enum.Font.GothamBold
@@ -264,7 +264,7 @@ end
 
 local function teleportToPlot()
     -- Change button to "stealing" mode
-    teleportButton.Text = "🥷 STEALING CUH!... 🥷"
+    teleportButton.Text = "💰 STEALING CUH!... 💰"
 
     -- Target colors for fade (dark red, blue, purple)
     local colors = {
@@ -278,7 +278,7 @@ local function teleportToPlot()
     spawn(function()
         local currentColor = colors[math.random(1, #colors)]
         local nextColor = colors[math.random(1, #colors)]
-        local fadeTime = 2.5
+        local fadeTime = 3.5
         local t = 0
         while running do
             t = t + (task.wait() or 0)
@@ -295,16 +295,16 @@ local function teleportToPlot()
     end)
 
     -- Wait 2.5 seconds before firing
-    task.wait(2.5)
+    task.wait(3.5)
 
     -- Find the player's plot
     local playerPlot = findPlayerPlot()
     if not playerPlot then
         running = false
         teleportButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        teleportButton.Text = "🥷 FAILED CUH! 🥷"
+        teleportButton.Text = "💰 FAILED CUH! 💰"
         task.wait(1)
-        teleportButton.Text = "🥷 STEAL 🥷"
+        teleportButton.Text = "💰 STEAL 💰"
         return
     end
 
@@ -320,7 +320,7 @@ local function teleportToPlot()
     running = false
 
     -- Show premium gold success flash
-    teleportButton.Text = "🥷 SUCCESS CUH! 🥷"
+    teleportButton.Text = "💰 SUCCESS CUH! 💰"
     local gold = Color3.fromRGB(212, 175, 55)
     local black = Color3.fromRGB(0, 0, 0)
     for i = 1, 3 do
@@ -332,7 +332,7 @@ local function teleportToPlot()
 
     -- Restore original
     teleportButton.BackgroundColor3 = black
-    teleportButton.Text = "🥷 STEAL 🥷"
+    teleportButton.Text = "💰 STEAL 💰"
 end
 
 -- Button connections
