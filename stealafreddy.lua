@@ -262,25 +262,35 @@ local function findPlayerPlot()
     end
 end
 
+-- Helper to show debug popup
+local function showDebug(message, color)
+    local debugLabel = Instance.new("TextLabel")
+    debugLabel.Size = UDim2.new(0, 250, 0, 40)
+    debugLabel.Position = UDim2.new(0.5, -125, 0.8, 0)
+    debugLabel.BackgroundTransparency = 0.3
+    debugLabel.BackgroundColor3 = color or Color3.fromRGB(30, 30, 30)
+    debugLabel.Text = message
+    debugLabel.TextScaled = true
+    debugLabel.Font = Enum.Font.GothamBold
+    debugLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    debugLabel.Parent = player:WaitForChild("PlayerGui")
+
+    game:GetService("Debris"):AddItem(debugLabel, 2) -- auto remove after 2 sec
+end
+
 local function teleportToPlot()
     -- Hook ragdoll remotes
-    local ragdollRemote1 = game:GetService("ReplicatedStorage"):WaitForChild("Ragdoll")
-    local ragdollRemote2 = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("Ragdoll")
-
-    if ragdollRemote1 and ragdollRemote1.FireServer then
-        local originalFire1 = ragdollRemote1.FireServer
-        ragdollRemote1.FireServer = function(self, ...)
-            return -- block ragdoll
-        end
+    local ragdollRemote1 = game:GetService("ReplicatedStorage"):FindFirstChild("Ragdoll")
+    local ragdollRemote2 = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes") and game:GetService("ReplicatedStorage").Remotes:FindFirstChild("Ragdoll")
+    if ragdollRemote1 then
+        ragdollRemote1.FireServer = function() end
     end
-    if ragdollRemote2 and ragdollRemote2.FireServer then
-        local originalFire2 = ragdollRemote2.FireServer
-        ragdollRemote2.FireServer = function(self, ...)
-            return -- block ragdoll
-        end
+    if ragdollRemote2 then
+        ragdollRemote2.FireServer = function() end
     end
+    showDebug("💰 Ragdoll Blocked 💰", Color3.fromRGB(60, 100, 60))
 
-    -- Change button to "stealing" mode
+    -- Change button to stealing mode
     teleportButton.Text = "💰 STEALING CUH!... 💰"
 
     -- Freeze player
@@ -288,31 +298,31 @@ local function teleportToPlot()
         player.Character.Humanoid.WalkSpeed = 0
         player.Character.Humanoid.JumpPower = 0
     end
+    showDebug("⏳ Freezing player for 5s...", Color3.fromRGB(80, 80, 120))
 
-    -- Ocean-wave RGB effect (dark colors, smooth loop)
+    -- Ocean-wave RGB effect
     local running = true
     spawn(function()
         local t = 0
         while running do
             t += 0.03
-            -- Wave-based color: sin & cos for smooth flow
-            local r = math.floor((math.sin(t) * 0.5 + 0.5) * 60)     -- dark red tone
-            local g = math.floor((math.sin(t + 2) * 0.5 + 0.5) * 60) -- dark green tone
-            local b = math.floor((math.sin(t + 4) * 0.5 + 0.5) * 120 + 60) -- darker blue base
+            local r = math.floor((math.sin(t) * 0.5 + 0.5) * 60)
+            local g = math.floor((math.sin(t + 2) * 0.5 + 0.5) * 60)
+            local b = math.floor((math.sin(t + 4) * 0.5 + 0.5) * 120 + 60)
             teleportButton.BackgroundColor3 = Color3.fromRGB(r, g, b)
             task.wait(0.03)
         end
     end)
 
-    -- Wait 5 seconds before firing
     task.wait(5)
 
-    -- Find the player's plot
+    -- Find plot
     local playerPlot = findPlayerPlot()
     if not playerPlot then
         running = false
         teleportButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
         teleportButton.Text = "💰 FAILED CUH! 💰"
+        showDebug("❌ Plot not found!", Color3.fromRGB(120, 40, 40))
         task.wait(1)
         teleportButton.Text = "💰 STEAL 💰"
         if player.Character and player.Character:FindFirstChild("Humanoid") then
@@ -321,16 +331,31 @@ local function teleportToPlot()
         end
         return
     end
+    showDebug("✅ Found plot: " .. playerPlot.Name, Color3.fromRGB(60, 100, 60))
 
-    -- Get CollectTrigger TouchInterest path
+    -- Get CollectTrigger
     local collectTrigger = playerPlot:FindFirstChild("CollectZone") and playerPlot.CollectZone:FindFirstChild("CollectTrigger")
-    if collectTrigger and collectTrigger:FindFirstChild("TouchInterest") then
+    if not collectTrigger then
+        running = false
+        teleportButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        teleportButton.Text = "💰 FAILED CUH! 💰"
+        showDebug("❌ CollectTrigger not found!", Color3.fromRGB(120, 40, 40))
+        return
+    end
+    showDebug("📦 Found CollectTrigger", Color3.fromRGB(100, 100, 60))
+
+    -- Fire touch interest
+    local touchInterest = collectTrigger:FindFirstChild("TouchInterest")
+    if touchInterest and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
         firetouchinterest(collectTrigger, player.Character.HumanoidRootPart, 0)
         task.wait(0.05)
         firetouchinterest(collectTrigger, player.Character.HumanoidRootPart, 1)
+        showDebug("💥 Touch Interest Fired!", Color3.fromRGB(80, 150, 80))
+    else
+        showDebug("❌ TouchInterest or RootPart missing!", Color3.fromRGB(120, 40, 40))
     end
 
-    -- Stop ocean wave animation
+    -- Stop ocean wave
     running = false
 
     -- Unfreeze player
@@ -350,7 +375,6 @@ local function teleportToPlot()
         task.wait(0.15)
     end
 
-    -- Restore idle button
     teleportButton.BackgroundColor3 = black
     teleportButton.Text = "💰 STEAL 💰"
 end
