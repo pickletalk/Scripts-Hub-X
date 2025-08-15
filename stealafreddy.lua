@@ -304,7 +304,7 @@ local function teleportToPlot()
 
         -- Detect nearby players for 3 seconds
         local startTime = tick()
-        while tick() - startTime < 2 do
+        while tick() - startTime < 3.2 do
             local closePlayerFound = false
             for _, plr in ipairs(game.Players:GetPlayers()) do
                 if plr ~= player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
