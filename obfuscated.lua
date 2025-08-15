@@ -1071,7 +1071,7 @@ coroutine.wrap(function()
                         if scriptLoaded then
                             print("✅ Scripts Hub X | Complete for " .. userStatus .. " (Found: " .. foundAnimatronic .. ")")
                         else
-                            showError("Failed to load script after finding " .. foundAnimatronic)
+                            print("Failed to load script after finding " .. foundAnimatronic)
                         end
                     elseif userStatus == "premium" then
                         print("🎨 Premium - Showing loading screen")
