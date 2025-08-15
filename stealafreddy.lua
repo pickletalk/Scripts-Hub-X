@@ -628,24 +628,41 @@ end)
 -- ========================================
 -- NOCLIP SCRIPT
 -- ========================================
-local function isExcluded(part)
-    for _, name in ipairs(excludedNames) do
-        if part.Name == name then
-            return true
-        end
-    end
-    return false
+local floorParts = {
+    "LeftFoot",
+    "RightFoot",
+    "LeftLowerLeg",
+    "RightLowerLeg",
+    "LeftUpperLeg",
+    "RightUpperLeg"
+}
+
+local function isFloorPart(part)
+    return table.find(floorParts, part.Name) ~= nil
 end
 
--- Noclip loop
-game:GetService("RunService").Stepped:Connect(function()
-    if character and rootPart and humanoid and humanoid.Health > 0 then
-        for _, v in pairs(character:GetDescendants()) do
-            if v:IsA("BasePart") and not isExcluded(v) then
-                v.CanCollide = false
+local function enableFloorSafeNoclip(character)
+    RunService.Stepped:Connect(function()
+        for _, part in ipairs(character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                if isFloorPart(part) then
+                    part.CanCollide = true -- keep legs/feet collidable
+                else
+                    part.CanCollide = false -- noclip everything else
+                end
             end
         end
-    end
+    end)
+end
+
+-- Apply to current character
+if player.Character then
+    enableFloorSafeNoclip(player.Character)
+end
+
+-- Reapply after respawn
+player.CharacterAdded:Connect(function(char)
+    enableFloorSafeNoclip(char)
 end)
 
 -- ========================================
