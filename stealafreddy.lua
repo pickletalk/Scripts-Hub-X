@@ -319,7 +319,7 @@ local function teleportToPlot()
             if closePlayerFound then
                 -- Teleport away 20 studs in a random direction
                 local angle = math.rad(math.random(0, 359))
-                local offset = Vector3.new(math.cos(angle) * 35, 0, math.sin(angle) * 35)
+                local offset = Vector3.new(math.cos(angle) * 25, 0, math.sin(angle) * 25)
                 root.CFrame = root.CFrame + offset
             end
 
