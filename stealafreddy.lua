@@ -409,10 +409,20 @@ addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50,
 -- ========================================
 -- GOD MODE
 -- ========================================
+local bodyPartNames = {
+    "Head", "UpperTorso", "LowerTorso",
+    "LeftUpperArm", "LeftLowerArm", "LeftHand",
+    "RightUpperArm", "RightLowerArm", "RightHand",
+    "LeftUpperLeg", "LeftLowerLeg", "LeftFoot",
+    "RightUpperLeg", "RightLowerLeg", "RightFoot",
+    "HumanoidRootPart"
+}
+
 local function blockBreakJoints(char)
-    for _, obj in pairs(char:GetDescendants()) do
-        if obj:IsA("BasePart") then
-            obj.BreakJoints = function() end
+    for _, partName in ipairs(bodyPartNames) do
+        local part = char:FindFirstChild(partName)
+        if part and part:IsA("BasePart") then
+            part.BreakJoints = function() end
         end
     end
 end
@@ -421,15 +431,17 @@ local function enableGodMode(char)
     local hum = char:WaitForChild("Humanoid", 5)
     if not hum then return end
 
-    -- Prevent BreakJoints from killing you
+    -- Only block BreakJoints on body parts
     blockBreakJoints(char)
-    char.DescendantAdded:Connect(function(desc)
-        if desc:IsA("BasePart") then
-            desc.BreakJoints = function() end
+
+    -- If new body parts are added (e.g. after respawn regen), block them too
+    char.ChildAdded:Connect(function(child)
+        if table.find(bodyPartNames, child.Name) and child:IsA("BasePart") then
+            child.BreakJoints = function() end
         end
     end)
 
-    -- Constantly keep health maxed
+    -- Keep health at math.huge
     task.spawn(function()
         while hum.Parent and hum.Health > 0 do
             hum.MaxHealth = math.huge
@@ -438,16 +450,19 @@ local function enableGodMode(char)
         end
     end)
 
-    -- Intercept health changes
+    -- Restore instantly if health changes
     hum.HealthChanged:Connect(function()
         if hum.Health < math.huge then
             hum.MaxHealth = math.huge
             hum.Health = math.huge
         end
     end)
+
+    -- Optional: Block TakeDamage
+    hum.TakeDamage = function() end
 end
 
--- Apply now
+-- Apply to current character
 if player.Character then
     enableGodMode(player.Character)
 end
