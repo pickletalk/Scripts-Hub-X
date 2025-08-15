@@ -1,11 +1,19 @@
 -- ========================================
--- INFINITE JUMP SCRIPT
+-- MAIN SERVICES AND VARIABLES
 -- ========================================
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+
+-- ========================================
+-- INFINITE JUMP SCRIPT
+-- ========================================
 local isInfiniteJumpEnabled = false
 local jumpConnections = {}
 
@@ -51,22 +59,22 @@ end
 local function connectInfiniteJump()
     local connection = UserInputService.JumpRequest:Connect(function()
         if player.Character and player.Character:FindFirstChild("Humanoid") then
-            local humanoid = player.Character:FindFirstChild("Humanoid")
+            local jumpHumanoid = player.Character:FindFirstChild("Humanoid")
             local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
             
-            if rootPart and humanoid and humanoid.Health > 0 then
-                humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, false)
-                humanoid:SetStateEnabled(Enum.HumanoidStateType.Flying, false)
+            if rootPart and jumpHumanoid and jumpHumanoid.Health > 0 then
+                jumpHumanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, false)
+                jumpHumanoid:SetStateEnabled(Enum.HumanoidStateType.Flying, false)
                 
-                humanoid:ChangeState(Enum.HumanoidStateType.Landed)
+                jumpHumanoid:ChangeState(Enum.HumanoidStateType.Landed)
                 
                 spawn(function()
                     wait()
-                    humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                    jumpHumanoid:ChangeState(Enum.HumanoidStateType.Jumping)
                     
                     wait(0.1)
-                    humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, true)
-                    humanoid:SetStateEnabled(Enum.HumanoidStateType.Flying, true)
+                    jumpHumanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, true)
+                    jumpHumanoid:SetStateEnabled(Enum.HumanoidStateType.Flying, true)
                 end)
             end
         end
@@ -104,8 +112,6 @@ enableInfiniteJump()
 -- ========================================
 -- PLOT TELEPORTER
 -- ========================================
-local RunService = game:GetService("RunService")
-
 local playerGui = player:WaitForChild("PlayerGui")
 
 -- Create ScreenGui
@@ -279,7 +285,7 @@ local function teleportToPlot()
     
     local targetPosition = collectPart.Position + Vector3.new(0, 10, 0)
     local rootPart = player.Character.HumanoidRootPart
-    local humanoid = player.Character:FindFirstChild("Humanoid")
+    local teleportHumanoid = player.Character:FindFirstChild("Humanoid")
     
     -- Enable noclip temporarily
     for _, part in pairs(player.Character:GetChildren()) do
@@ -361,37 +367,37 @@ local OriginalMaxHealth = 100
 local HealthConnection = nil
 
 local function getHumanoid()
-    local character = player.Character
-    if character then
-        return character:FindFirstChild("Humanoid")
+    local currentCharacter = player.Character
+    if currentCharacter then
+        return currentCharacter:FindFirstChild("Humanoid")
     end
     return nil
 end
 
 local function enableGodMode()
-    local humanoid = getHumanoid()
-    if not humanoid then 
+    local godHumanoid = getHumanoid()
+    if not godHumanoid then 
         print("No humanoid found!")
         return 
     end
     
     if not GodModeEnabled then
-        OriginalMaxHealth = humanoid.MaxHealth
+        OriginalMaxHealth = godHumanoid.MaxHealth
         print("Stored original health:", OriginalMaxHealth)
     end
     
     GodModeEnabled = true
     
-    humanoid.MaxHealth = math.huge
-    humanoid.Health = math.huge
+    godHumanoid.MaxHealth = math.huge
+    godHumanoid.Health = math.huge
     
     if HealthConnection then
         HealthConnection:Disconnect()
     end
     
-    HealthConnection = humanoid.HealthChanged:Connect(function(health)
+    HealthConnection = godHumanoid.HealthChanged:Connect(function(health)
         if GodModeEnabled and health < math.huge then
-            humanoid.Health = math.huge
+            godHumanoid.Health = math.huge
         end
     end)
     
@@ -401,10 +407,10 @@ end
 local function disableGodMode()
     GodModeEnabled = false
     
-    local humanoid = getHumanoid()
-    if humanoid then
-        humanoid.MaxHealth = OriginalMaxHealth
-        humanoid.Health = OriginalMaxHealth
+    local godHumanoid = getHumanoid()
+    if godHumanoid then
+        godHumanoid.MaxHealth = OriginalMaxHealth
+        godHumanoid.Health = OriginalMaxHealth
         print("God Mode disabled, health restored to:", OriginalMaxHealth)
     end
     
@@ -424,14 +430,6 @@ else
     end)
 end
 
--- Handle respawning
-player.CharacterAdded:Connect(function()
-    wait(0.5)
-    if GodModeEnabled then
-        enableGodMode()
-    end
-end)
-
 -- ========================================
 -- AUTO LOCK FUNCTION
 -- ========================================
@@ -447,8 +445,8 @@ local function findLockObject(playerPlot)
     for i, child in pairs(children) do
         local billboardGui = child:FindFirstChild("BillboardGui")
         if billboardGui then
-            local titleText = billboardGui:FindFirstChild("Title")
-            if titleText and (titleText.Text == "Lock Base" or titleText.Text == "LOCK BASE") then
+            local titleLockText = billboardGui:FindFirstChild("Title")
+            if titleLockText and (titleLockText.Text == "Lock Base" or titleLockText.Text == "LOCK BASE") then
                 return child
             end
         end
@@ -473,12 +471,12 @@ local function autoLock()
         return
     end
     
-    local titleText = billboardGui:FindFirstChild("Title")
-    if not titleText then
+    local titleLockText = billboardGui:FindFirstChild("Title")
+    if not titleLockText then
         return
     end
     
-    local text = titleText.Text
+    local text = titleLockText.Text
     
     -- Check if text is LOCK BASE or Lock Base
     if text == "LOCK BASE" or text == "Lock Base" then
@@ -575,8 +573,6 @@ end)
 -- ========================================
 -- NOCLIP SCRIPT
 -- ========================================
-local RunService = game:GetService("RunService")
-
 -- Noclip state
 local noclipEnabled = true
 
@@ -790,19 +786,6 @@ workspace.DescendantRemoving:Connect(function(descendant)
     end
 end)
 
--- Handle character respawning for noclip
-player.CharacterAdded:Connect(function(newCharacter)
-    currentFloorPart = nil
-    
-    -- Wait for character to fully load
-    wait(1)
-    
-    -- Reapply noclip after respawn
-    if noclipEnabled then
-        applyNoclipToWorkspace()
-    end
-end)
-
 -- Main loop for floor detection
 RunService.Heartbeat:Connect(function()
     if noclipEnabled and player.Character and player.Character.Parent and player.Character:FindFirstChild("HumanoidRootPart") then
@@ -824,9 +807,6 @@ toggleNoclip()
 -- ========================================
 -- FAST INTERACTION SCRIPT
 -- ========================================
--- Fast Interaction Script for Roblox (Fixed Version)
--- Eliminates hold-to-interact, enables instant tap-to-interact
-
 -- Function to modify proximity prompt for instant interaction
 local function modifyProximityPrompt(prompt)
     if not prompt or not prompt:IsA("ProximityPrompt") then
@@ -840,8 +820,8 @@ local function modifyProximityPrompt(prompt)
     prompt.Style = Enum.ProximityPromptStyle.Default
     
     -- Ensure it stays at 0 even if the game tries to change it
-    local connection
-    connection = prompt:GetPropertyChangedSignal("HoldDuration"):Connect(function()
+    local promptConnection
+    promptConnection = prompt:GetPropertyChangedSignal("HoldDuration"):Connect(function()
         if prompt.HoldDuration ~= 0 then
             prompt.HoldDuration = 0
         end
@@ -895,14 +875,14 @@ local function continuousMonitor()
     end)
 end
 
--- Function to handle character respawn
-local function onCharacterAdded(character)
+-- Function to handle character respawn for fast interaction
+local function onCharacterAddedForInteraction(character)
     wait(1) -- Wait for character to fully load
     scanAndModifyPrompts(character)
     print("Fast Interaction applied to new character!")
 end
 
--- Main initialization
+-- Main initialization for fast interaction
 local function initialize()
     print("Initializing Fast Interaction script...")
     
@@ -913,11 +893,11 @@ local function initialize()
     workspace.DescendantAdded:Connect(onDescendantAdded)
     
     -- Handle character respawning
-    player.CharacterAdded:Connect(onCharacterAdded)
+    player.CharacterAdded:Connect(onCharacterAddedForInteraction)
     
     -- If character already exists, process it
     if player.Character then
-        onCharacterAdded(player.Character)
+        onCharacterAddedForInteraction(player.Character)
     end
     
     -- Start continuous monitoring
@@ -950,13 +930,6 @@ end)
 -- ========================================
 -- ANTI RAGDOLL FUNCTIONS
 -- ========================================
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoid = character:WaitForChild("Humanoid")
-
 -- Remote paths
 local ragdollRemote1 = ReplicatedStorage:WaitForChild("Ragdoll")
 local ragdollRemote2 = ReplicatedStorage.Remotes:WaitForChild("Ragdoll")
@@ -1003,37 +976,12 @@ humanoid.StateChanged:Connect(function(oldState, newState)
     end
 end)
 
--- Character respawn handling
-player.CharacterAdded:Connect(function(newCharacter)
-    character = newCharacter
-    humanoid = character:WaitForChild("Humanoid")
-    
-    print("[Anti-Ragdoll] Character respawned, reapplying protection...")
-    
-    -- Reapply humanoid state protection
-    humanoid.StateChanged:Connect(function(oldState, newState)
-        if newState == Enum.HumanoidStateType.Physics or newState == Enum.HumanoidStateType.Ragdoll then
-            print("[Anti-Ragdoll] Detected ragdoll state change, reverting...")
-            humanoid:ChangeState(Enum.HumanoidStateType.Running)
-        end
-    end)
-end)
-
 print("[Anti-Ragdoll] All protections active!")
 print("[Anti-Ragdoll] You should now be immune to ragdolling.")
 
-
 -- ========================================
--- SPEED MONITORING CHANGER FUNCTIONS
+-- SPEED MONITORING AND CHANGER FUNCTIONS
 -- ========================================
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
-
-local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoid = character:WaitForChild("Humanoid")
-
 -- Speed change remote
 local speedChangeRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("SpeedChange")
 
@@ -1052,20 +1000,28 @@ end
 
 -- Speed monitoring function
 local function checkSpeed()
-    if humanoid and humanoid.WalkSpeed then
-        local currentSpeed = humanoid.WalkSpeed
-        
-        if currentSpeed == 28 then
-            if not hasChangedFrom28 then
-                hasChangedFrom28 = true
-                changeSpeedTo70()
-            end
-        else
-            -- Reset the flag when speed is not 28 so we can detect 28 again
-            if hasChangedFrom28 then
-                hasChangedFrom28 = false
-                print("[Speed Detector] Ready to detect speed 28 again...")
-            end
+    -- Get current character and humanoid
+    local currentCharacter = player.Character
+    if not currentCharacter then return end
+    
+    local currentHumanoid = currentCharacter:FindFirstChild("Humanoid")
+    if not currentHumanoid then return end
+    
+    local currentSpeed = currentHumanoid.WalkSpeed
+    
+    -- Debug print to see current speed
+    -- print("[Speed Detector] Current speed:", currentSpeed)
+    
+    if currentSpeed == 28 then
+        if not hasChangedFrom28 then
+            hasChangedFrom28 = true
+            changeSpeedTo70()
+        end
+    else
+        -- Reset the flag when speed is not 28 so we can detect 28 again
+        if hasChangedFrom28 then
+            hasChangedFrom28 = false
+            print("[Speed Detector] Ready to detect speed 28 again...")
         end
     end
 end
@@ -1073,13 +1029,28 @@ end
 -- Start continuous speed checking with no delay
 local speedConnection = RunService.Heartbeat:Connect(checkSpeed)
 
--- Handle character respawn
+-- Handle character respawn for all systems
 player.CharacterAdded:Connect(function(newCharacter)
     character = newCharacter
     humanoid = character:WaitForChild("Humanoid")
     hasChangedFrom28 = false
     
     print("[Speed Detector] Character respawned, continuing speed monitoring...")
+    print("[Anti-Ragdoll] Character respawned, reapplying protection...")
+    
+    -- Reapply humanoid state protection for anti-ragdoll
+    humanoid.StateChanged:Connect(function(oldState, newState)
+        if newState == Enum.HumanoidStateType.Physics or newState == Enum.HumanoidStateType.Ragdoll then
+            print("[Anti-Ragdoll] Detected ragdoll state change, reverting...")
+            humanoid:ChangeState(Enum.HumanoidStateType.Running)
+        end
+    end)
+    
+    -- Reapply god mode
+    wait(0.5)
+    if GodModeEnabled then
+        enableGodMode()
+    end
 end)
 
 print("[Speed Detector] Speed monitoring active - no delays, continuous checking!")
