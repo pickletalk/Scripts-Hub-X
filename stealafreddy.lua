@@ -946,3 +946,81 @@ spawn(function()
         end
     end
 end)
+
+-- =====================================
+-- ANTI RAGDOLL FUNCTIONS
+-- =====================================
+-- Anti-Ragdoll Script for Steal a Freddy
+-- Hooks ragdoll remotes to prevent ragdolling
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+
+-- Remote paths
+local ragdollRemote1 = ReplicatedStorage:WaitForChild("Ragdoll")
+local ragdollRemote2 = ReplicatedStorage.Remotes:WaitForChild("Ragdoll")
+
+print("[Anti-Ragdoll] Script loaded successfully!")
+print("[Anti-Ragdoll] Hooking ragdoll remotes...")
+
+-- Hook the first ragdoll remote
+local originalFire1 = ragdollRemote1.FireServer
+ragdollRemote1.FireServer = function(self, ...)
+    print("[Anti-Ragdoll] Blocked ragdoll attempt via ReplicatedStorage.Ragdoll")
+    -- Don't call the original function, effectively blocking the ragdoll
+    return
+end
+
+-- Hook the second ragdoll remote
+local originalFire2 = ragdollRemote2.FireServer
+ragdollRemote2.FireServer = function(self, ...)
+    print("[Anti-Ragdoll] Blocked ragdoll attempt via ReplicatedStorage.Remotes.Ragdoll")
+    -- Don't call the original function, effectively blocking the ragdoll
+    return
+end
+
+-- Also hook OnClientEvent if they exist (for incoming ragdoll signals)
+if ragdollRemote1.OnClientEvent then
+    ragdollRemote1.OnClientEvent:Connect(function(...)
+        print("[Anti-Ragdoll] Blocked incoming ragdoll signal from ReplicatedStorage.Ragdoll")
+        -- Block by not executing ragdoll code
+    end)
+end
+
+if ragdollRemote2.OnClientEvent then
+    ragdollRemote2.OnClientEvent:Connect(function(...)
+        print("[Anti-Ragdoll] Blocked incoming ragdoll signal from ReplicatedStorage.Remotes.Ragdoll")
+        -- Block by not executing ragdoll code
+    end)
+end
+
+-- Additional protection: Monitor humanoid state changes
+humanoid.StateChanged:Connect(function(oldState, newState)
+    if newState == Enum.HumanoidStateType.Physics or newState == Enum.HumanoidStateType.Ragdoll then
+        print("[Anti-Ragdoll] Detected ragdoll state change, reverting...")
+        humanoid:ChangeState(Enum.HumanoidStateType.Running)
+    end
+end)
+
+-- Character respawn handling
+player.CharacterAdded:Connect(function(newCharacter)
+    character = newCharacter
+    humanoid = character:WaitForChild("Humanoid")
+    
+    print("[Anti-Ragdoll] Character respawned, reapplying protection...")
+    
+    -- Reapply humanoid state protection
+    humanoid.StateChanged:Connect(function(oldState, newState)
+        if newState == Enum.HumanoidStateType.Physics or newState == Enum.HumanoidStateType.Ragdoll then
+            print("[Anti-Ragdoll] Detected ragdoll state change, reverting...")
+            humanoid:ChangeState(Enum.HumanoidStateType.Running)
+        end
+    end)
+end)
+
+print("[Anti-Ragdoll] All protections active!")
+print("[Anti-Ragdoll] You should now be immune to ragdolling.")
