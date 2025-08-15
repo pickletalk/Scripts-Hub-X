@@ -267,76 +267,46 @@ local function teleportToPlot()
         statusLabel.Text = "Character not found!"
         return
     end
-    
+
     local playerPlot = findPlayerPlot()
     if not playerPlot then return end
-    
+
     local collectZone = playerPlot:FindFirstChild("CollectZone")
     if not collectZone then
-        statusLabel.Text = "CollectZone not found in plot!"
+        statusLabel.Text = "CollectZone not found!"
         return
     end
-    
+
     local collectPart = collectZone:FindFirstChild("Collect")
     if not collectPart then
-        statusLabel.Text = "Collect part not found in CollectZone!"
+        statusLabel.Text = "Collect part not found!"
         return
     end
-    
-    local targetPosition = collectPart.Position + Vector3.new(0, 10, 0)
+
+    -- Save current position
     local rootPart = player.Character.HumanoidRootPart
-    local teleportHumanoid = player.Character:FindFirstChild("Humanoid")
-    
-    -- Enable noclip temporarily
-    for _, part in pairs(player.Character:GetChildren()) do
-        if part:IsA("BasePart") then
-            part.CanCollide = false
+    local originalCFrame = rootPart.CFrame
+
+    -- Step 1: Move close to the collect part
+    rootPart.CFrame = collectPart.CFrame + Vector3.new(0, 2, 0)
+    task.wait(0.08) -- small pause for anti-detection
+
+    -- Step 2: Trigger touch interest twice
+    local touchInterest = collectPart:FindFirstChild("TouchInterest")
+    if touchInterest then
+        for i = 1, 2 do
+            firetouchinterest(collectPart, rootPart, 0)
+            task.wait(0.05)
+            firetouchinterest(collectPart, rootPart, 1)
+            task.wait(0.05)
         end
     end
-    
-    -- Step 1: Teleport 300 studs above current position in 2 seconds, but stop at 200 studs
-    local currentPosition = rootPart.Position
-    local targetAbovePosition = currentPosition + Vector3.new(0, 45, 0)
-    local stopPosition = currentPosition + Vector3.new(0, 45, 0)
-    
-    -- Calculate time to reach 200 studs (2/3 of the way to 300 studs in 2 seconds)
-    local timeToStop = 0.5 * (45 / 45) -- Proportional time to reach 200 studs
-    
-    local tweenToAbove = TweenService:Create(rootPart, TweenInfo.new(timeToStop, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {CFrame = CFrame.new(stopPosition)})
-    tweenToAbove:Play()
-    
-    tweenToAbove.Completed:Connect(function()
-            wait(0.5)
-            
-        -- Step 2: Wait no more wait seconds (no freeze, no functions, just wait)
-        spawn(function()
-            
-            -- Step 3: Calculate time for 50 studs per second to target
-            local distance = (stopPosition - targetPosition).Magnitude
-            local timeToTarget = distance / 48 -- 35 studs per second
-            
-            
-            local tweenToTarget = TweenService:Create(rootPart, TweenInfo.new(timeToTarget, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {CFrame = CFrame.new(targetPosition)})
-            tweenToTarget:Play()
-            
-            tweenToTarget.Completed:Connect(function()
-                -- Turn off noclip when player reaches their plot
-                for _, part in pairs(player.Character:GetChildren()) do
-                    if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-                        part.CanCollide = true
-                    end
-                end
-            end)
-        end)
-    end)
-    
-    -- Visual feedback
-    spawn(function()
-        local originalColor = teleportButton.BackgroundColor3
-        teleportButton.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
-        wait(0.3)
-        teleportButton.BackgroundColor3 = originalColor
-    end)
+
+    -- Step 3: Pause before returning
+    task.wait(0.08)
+
+    -- Step 4: Return to original position
+    rootPart.CFrame = originalCFrame
 end
 
 -- Button connections
