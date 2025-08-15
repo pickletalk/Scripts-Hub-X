@@ -409,66 +409,81 @@ addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50,
 -- ========================================
 -- GOD MODE
 -- ========================================
-local bodyPartNames = {
-    "Head", "UpperTorso", "LowerTorso",
-    "LeftUpperArm", "LeftLowerArm", "LeftHand",
-    "RightUpperArm", "RightLowerArm", "RightHand",
-    "LeftUpperLeg", "LeftLowerLeg", "LeftFoot",
-    "RightUpperLeg", "RightLowerLeg", "RightFoot",
-    "HumanoidRootPart"
-}
+local GodModeEnabled = false
+local OriginalMaxHealth = 100
+local HealthConnection = nil
 
-local function blockBreakJoints(char)
-    for _, partName in ipairs(bodyPartNames) do
-        local part = char:FindFirstChild(partName)
-        if part and part:IsA("BasePart") then
-            part.BreakJoints = function() end
+local function getHumanoid()
+    local character = player.Character
+    if character then
+        return character:FindFirstChild("Humanoid")
+    end
+    return nil
+end
+
+local function enableGodMode()
+    local humanoid = getHumanoid()
+    if not humanoid then 
+        print("No humanoid found!")
+        return 
+    end
+    
+    if not GodModeEnabled then
+        OriginalMaxHealth = humanoid.MaxHealth
+        print("Stored original health:", OriginalMaxHealth)
+    end
+    
+    GodModeEnabled = true
+    
+    humanoid.MaxHealth = math.huge
+    humanoid.Health = math.huge
+    
+    if HealthConnection then
+        HealthConnection:Disconnect()
+    end
+    
+    HealthConnection = humanoid.HealthChanged:Connect(function(health)
+        if GodModeEnabled and health < math.huge then
+            humanoid.Health = math.huge
         end
+    end)
+    
+    print("God Mode enabled")
+end
+
+local function disableGodMode()
+    GodModeEnabled = false
+    
+    local humanoid = getHumanoid()
+    if humanoid then
+        humanoid.MaxHealth = OriginalMaxHealth
+        humanoid.Health = OriginalMaxHealth
+        print("God Mode disabled, health restored to:", OriginalMaxHealth)
+    end
+    
+    if HealthConnection then
+        HealthConnection:Disconnect()
+        HealthConnection = nil
     end
 end
 
-local function enableGodMode(char)
-    local hum = char:WaitForChild("Humanoid", 5)
-    if not hum then return end
-
-    -- Only block BreakJoints on body parts
-    blockBreakJoints(char)
-
-    -- If new body parts are added (e.g. after respawn regen), block them too
-    char.ChildAdded:Connect(function(child)
-        if table.find(bodyPartNames, child.Name) and child:IsA("BasePart") then
-            child.BreakJoints = function() end
-        end
-    end)
-
-    -- Keep health at math.huge
-    task.spawn(function()
-        while hum.Parent and hum.Health > 0 do
-            hum.MaxHealth = math.huge
-            hum.Health = math.huge
-            task.wait(0.1)
-        end
-    end)
-
-    -- Restore instantly if health changes
-    hum.HealthChanged:Connect(function()
-        if hum.Health < math.huge then
-            hum.MaxHealth = math.huge
-            hum.Health = math.huge
-        end
-    end)
-
-    -- Optional: Block TakeDamage
-    hum.TakeDamage = function() end
-end
-
--- Apply to current character
+-- Initialize God Mode
 if player.Character then
-    enableGodMode(player.Character)
+    enableGodMode()
+else
+    player.CharacterAdded:Connect(function()
+        wait(0.5)
+        enableGodMode()
+    end)
 end
 
--- Reapply on respawn
-player.CharacterAdded:Connect(enableGodMode)
+-- Handle respawning
+player.CharacterAdded:Connect(function()
+    wait(0.5)
+    if GodModeEnabled then
+        enableGodMode()
+    end
+end)
 
 -- ========================================
 -- AUTO LOCK FUNCTION
