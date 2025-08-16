@@ -3,7 +3,6 @@
 -- ========================================
 if not game:IsLoaded() then game.Loaded:Wait() end
 local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 
@@ -84,10 +83,10 @@ teleportButton.Font = Enum.Font.GothamBold
 teleportButton.Parent = mainFrame
 Instance.new("UICorner", teleportButton).CornerRadius = UDim.new(0, 6)
 
--- overlay frame for RGB effect (dark/subtle)
+-- overlay RGB subtle
 local rgbOverlay = Instance.new("Frame")
 rgbOverlay.Size = UDim2.new(1, 0, 1, 0)
-rgbOverlay.BackgroundTransparency = 0.85 -- very faint
+rgbOverlay.BackgroundTransparency = 0.85
 rgbOverlay.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 rgbOverlay.ZIndex = teleportButton.ZIndex + 1
 rgbOverlay.Parent = teleportButton
@@ -137,49 +136,54 @@ local function findPlayerSpawn()
 end
 
 -- ========================================
--- TWEEN TO SPAWN (STEAL FUNCTION)
+-- MICRO-STEP TELEPORT
 -- ========================================
 local function teleportToPlot()
-    local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    local char = player.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
     local spawnObj = findPlayerSpawn()
     if not hrp or not spawnObj then return end
 
     teleportButton.Text = "Stealing..."
 
-    local tweenInfo = TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
-    local goal = {CFrame = spawnObj.CFrame + Vector3.new(0, 3, 0)}
-    local tween = TweenService:Create(hrp, tweenInfo, goal)
-    tween:Play()
-    tween.Completed:Wait()
+    local targetPos = spawnObj.Position + Vector3.new(0, 3, 0)
+    local steps = 50 -- number of micro steps
+    local current = hrp.Position
+    local diff = (targetPos - current) / steps
+
+    for i = 1, steps do
+        if not hrp.Parent then break end
+        hrp.CFrame = CFrame.new(hrp.Position + diff)
+        task.wait(0.02) -- very fast tiny step
+    end
 
     teleportButton.Text = "Steal"
 end
 
 -- ========================================
--- SPEED BOOST LOOP (120 every 3 sec)
+-- SPEED LOOP (FORCE 120 EVERY 3s)
 -- ========================================
-local function startSpeedLoop()
+local function enforceSpeed(hum)
     task.spawn(function()
-        while true do
-            local char = player.Character
-            local hum = char and char:FindFirstChildOfClass("Humanoid")
-            if hum then
-                hum.WalkSpeed = 120
-            end
-            task.wait(3) -- refresh every 3s
+        while hum.Parent do
+            hum.WalkSpeed = 120
+            task.wait(3)
+        end
+    end)
+    hum:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
+        if hum.WalkSpeed ~= 120 then
+            hum.WalkSpeed = 120
         end
     end)
 end
 
--- always re-apply on respawn
-player.CharacterAdded:Connect(function()
-    task.wait(1)
-    startSpeedLoop()
-end)
-
-if player.Character then
-    startSpeedLoop()
+local function setupSpeedLoop(char)
+    local hum = char:WaitForChild("Humanoid", 5)
+    if hum then enforceSpeed(hum) end
 end
+
+player.CharacterAdded:Connect(setupSpeedLoop)
+if player.Character then setupSpeedLoop(player.Character) end
 
 -- ========================================
 -- CONNECTIONS
