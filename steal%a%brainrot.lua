@@ -3,8 +3,8 @@
 -- ========================================
 if not game:IsLoaded() then game.Loaded:Wait() end
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
+local RunService = game:GetService("RunService")
 
 -- ========================================
 -- SAFE GUI PARENT
@@ -83,11 +83,11 @@ teleportButton.Font = Enum.Font.GothamBold
 teleportButton.Parent = mainFrame
 Instance.new("UICorner", teleportButton).CornerRadius = UDim.new(0, 6)
 
--- overlay frame for RGB effect
+-- overlay frame for RGB effect (dark/subtle)
 local rgbOverlay = Instance.new("Frame")
 rgbOverlay.Size = UDim2.new(1, 0, 1, 0)
-rgbOverlay.BackgroundTransparency = 0.5
-rgbOverlay.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+rgbOverlay.BackgroundTransparency = 0.85 -- very faint
+rgbOverlay.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 rgbOverlay.ZIndex = teleportButton.ZIndex + 1
 rgbOverlay.Parent = teleportButton
 Instance.new("UICorner", rgbOverlay).CornerRadius = UDim.new(0, 6)
@@ -128,7 +128,7 @@ local function detectSpawnPoint(char)
     if spawnObj then lastSpawnPoint = spawnObj end
 end
 
-Players.LocalPlayer.CharacterAdded:Connect(detectSpawnPoint)
+player.CharacterAdded:Connect(detectSpawnPoint)
 if player.Character then detectSpawnPoint(player.Character) end
 
 local function findPlayerSpawn()
@@ -136,66 +136,63 @@ local function findPlayerSpawn()
 end
 
 -- ========================================
--- TELEPORT (fling-based)
+-- CONTINUOUS VELOCITY LOOP
 -- ========================================
-local stealBusy = false
+local stealLoopActive = false
 
-local function flingTo(part)
-    local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-
+local function startStealLoop()
+    if stealLoopActive then return end
+    stealLoopActive = true
     teleportButton.Text = "Stealing..."
 
-    local offsetCF = part.CFrame * CFrame.new(0, 0, -5) -- 5 studs in front
-    for i = 1, 3 do
-        hrp.CFrame = offsetCF
-        hrp.Velocity = Vector3.new(0, 200, 0) -- fling upwards hard
-        hrp.RotVelocity = Vector3.new(2000, 2000, 2000) -- spin for bypass
-        task.wait(0.7) -- longer fall
-    end
-
-    -- end by putting player on spawnpoint
-    hrp.CFrame = part.CFrame + Vector3.new(0, 3, 0)
-    hrp.Velocity = Vector3.zero
-
-    teleportButton.Text = "Steal"
+    task.spawn(function()
+        while stealLoopActive do
+            local spawnObj = findPlayerSpawn()
+            local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+            if spawnObj and hrp then
+                local dir = (spawnObj.Position - hrp.Position).Unit
+                hrp.Velocity = dir * 120
+            end
+            task.wait(3) -- refresh every 3 sec
+        end
+    end)
 end
 
-local function teleportToPlot()
-    if stealBusy then return end
-    stealBusy = true
-
-    local spawnObj = findPlayerSpawn()
-    if not spawnObj or not spawnObj:IsA("BasePart") then
-        teleportButton.Text = "No Spawn!"
-        task.wait(1)
-        teleportButton.Text = "Steal"
-        stealBusy = false
-        return
-    end
-
-    flingTo(spawnObj)
-    stealBusy = false
+local function stopStealLoop()
+    stealLoopActive = false
+    teleportButton.Text = "Steal"
+    local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    if hrp then hrp.Velocity = Vector3.zero end
 end
 
 -- ========================================
 -- CONNECTIONS
 -- ========================================
-teleportButton.MouseButton1Click:Connect(teleportToPlot)
-closeButton.MouseButton1Click:Connect(function() screenGui:Destroy() end)
+teleportButton.MouseButton1Click:Connect(function()
+    if stealLoopActive then
+        stopStealLoop()
+    else
+        startStealLoop()
+    end
+end)
+
+closeButton.MouseButton1Click:Connect(function()
+    stopStealLoop()
+    screenGui:Destroy()
+end)
 
 -- ========================================
--- RGB EFFECT (overlay)
+-- DARK RGB EFFECT
 -- ========================================
 task.spawn(function()
     local t = 0
     while rgbOverlay and rgbOverlay.Parent do
         t += 0.02
-        local r = (math.sin(t) * 0.5 + 0.5) * 255
-        local g = (math.sin(t + 2) * 0.5 + 0.5) * 255
-        local b = (math.sin(t + 4) * 0.5 + 0.5) * 255
+        local r = (math.sin(t) * 0.5 + 0.5) * 30 + 10
+        local g = (math.sin(t + 2) * 0.5 + 0.5) * 30 + 10
+        local b = (math.sin(t + 4) * 0.5 + 0.5) * 30 + 10
         rgbOverlay.BackgroundColor3 = Color3.fromRGB(r, g, b)
-        task.wait(0.03)
+        task.wait(0.05)
     end
 end)
 
