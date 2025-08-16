@@ -1,13 +1,13 @@
--- ========================================
--- MAIN SERVICES
--- ========================================
+-- Steal A Brainrot UI + Teleporter
+-- by PickleTalk
+
 if not game:IsLoaded() then game.Loaded:Wait() end
+
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 
 -- ========================================
--- SAFE GUI PARENT
+-- UI CREATION
 -- ========================================
 local function safeGuiParent()
     local ok, res = pcall(function()
@@ -19,15 +19,13 @@ local function safeGuiParent()
 end
 
 local parentGui = safeGuiParent()
-local existing = parentGui:FindFirstChild("PlotTeleporterUI")
-if existing then existing:Destroy() end
+local old = parentGui:FindFirstChild("PlotTeleporterUI")
+if old then old:Destroy() end
 
--- ========================================
--- UI CREATION
--- ========================================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "PlotTeleporterUI"
 screenGui.ResetOnSpawn = false
+screenGui.IgnoreGuiInset = true
 screenGui.Parent = parentGui
 
 local mainFrame = Instance.new("Frame")
@@ -35,7 +33,7 @@ mainFrame.Size = UDim2.new(0, 250, 0, 120)
 mainFrame.Position = UDim2.new(1, -260, 0, 10)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 mainFrame.BorderSizePixel = 2
-mainFrame.BorderColor3 = Color3.fromRGB(80, 80, 80)
+mainFrame.BorderColor3 = Color3.fromRGB(100, 100, 100)
 mainFrame.Parent = screenGui
 Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 8)
 
@@ -43,7 +41,7 @@ local titleBar = Instance.new("Frame")
 titleBar.Size = UDim2.new(1, 0, 0, 30)
 titleBar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 titleBar.BorderSizePixel = 2
-titleBar.BorderColor3 = Color3.fromRGB(100, 100, 100)
+titleBar.BorderColor3 = Color3.fromRGB(120, 120, 120)
 titleBar.Parent = mainFrame
 Instance.new("UICorner", titleBar).CornerRadius = UDim.new(0, 8)
 
@@ -62,7 +60,7 @@ closeButton.Size = UDim2.new(0, 25, 0, 25)
 closeButton.Position = UDim2.new(1, -27, 0, 2)
 closeButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 closeButton.BorderSizePixel = 2
-closeButton.BorderColor3 = Color3.fromRGB(100, 100, 100)
+closeButton.BorderColor3 = Color3.fromRGB(120, 120, 120)
 closeButton.Text = "X"
 closeButton.TextColor3 = Color3.fromRGB(200, 200, 200)
 closeButton.TextScaled = true
@@ -75,7 +73,7 @@ teleportButton.Size = UDim2.new(0, 220, 0, 35)
 teleportButton.Position = UDim2.new(0, 15, 0, 45)
 teleportButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 teleportButton.BorderSizePixel = 2
-teleportButton.BorderColor3 = Color3.fromRGB(100, 100, 100)
+teleportButton.BorderColor3 = Color3.fromRGB(120, 120, 120)
 teleportButton.Text = "Steal"
 teleportButton.TextColor3 = Color3.fromRGB(220, 220, 220)
 teleportButton.TextScaled = true
@@ -83,11 +81,10 @@ teleportButton.Font = Enum.Font.GothamBold
 teleportButton.Parent = mainFrame
 Instance.new("UICorner", teleportButton).CornerRadius = UDim.new(0, 6)
 
--- overlay RGB subtle
 local rgbOverlay = Instance.new("Frame")
 rgbOverlay.Size = UDim2.new(1, 0, 1, 0)
-rgbOverlay.BackgroundTransparency = 0.85
-rgbOverlay.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+rgbOverlay.BackgroundTransparency = 0.88
+rgbOverlay.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 rgbOverlay.ZIndex = teleportButton.ZIndex + 1
 rgbOverlay.Parent = teleportButton
 Instance.new("UICorner", rgbOverlay).CornerRadius = UDim.new(0, 6)
@@ -103,11 +100,49 @@ statusLabel.Font = Enum.Font.Gotham
 statusLabel.TextXAlignment = Enum.TextXAlignment.Left
 statusLabel.Parent = mainFrame
 
--- ========================================
--- PLOT DETECTION SYSTEM
--- ========================================
-local playerPlot = nil
+-- Animate faint RGB
+task.spawn(function()
+    local t = 0
+    while rgbOverlay and rgbOverlay.Parent do
+        t += 0.03
+        local r = (math.sin(t) * 0.5 + 0.5) * 25 + 15
+        local g = (math.sin(t + 2) * 0.5 + 0.5) * 25 + 15
+        local b = (math.sin(t + 4) * 0.5 + 0.5) * 25 + 15
+        rgbOverlay.BackgroundColor3 = Color3.fromRGB(r, g, b)
+        task.wait(0.05)
+    end
+end)
 
+-- ========================================
+-- DRAGGING
+-- ========================================
+local dragging, dragStart, startPos
+local function updateDrag(input)
+    local delta = input.Position - dragStart
+    mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+titleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then dragging = false end
+        end)
+    end
+end)
+titleBar.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        updateDrag(input)
+    end
+end)
+
+-- ========================================
+-- TELEPORT LOGIC
+-- ========================================
+local teleporting = false
+
+-- fixed list of plots
 local plotIds = {
     "eace968c-881f-43f9-9c0b-b2fc25f3f8ec",
     "d7f59025-991d-4538-b499-bfe00c5a309b",
@@ -119,106 +154,44 @@ local plotIds = {
     "80ef716c-dc18-4151-b8ef-2b57e4dd86a0"
 }
 
-local function findPlayerPlot()
-    local expectedText = player.DisplayName .. "'s Base"
-    statusLabel.Text = "Searching for: " .. expectedText
-    
-    -- First check if Plots folder exists
-    local plotsFolder = workspace:FindFirstChild("Plots")
-    if not plotsFolder then
-        statusLabel.Text = "Plots folder not found"
-        return nil
-    end
-    
-    -- Debug: List all plots found
-    local foundPlots = {}
-    for _, child in pairs(plotsFolder:GetChildren()) do
-        table.insert(foundPlots, child.Name)
-    end
-    print("Available plots:", table.concat(foundPlots, ", "))
-    
-    for _, plotId in pairs(plotIds) do
-        local plot = plotsFolder:FindFirstChild(plotId)
-        if plot then
-            print("Checking plot:", plotId)
-            
+local function getPlayerPlot()
+    local plots = workspace:WaitForChild("Plots")
+    for _, id in ipairs(plotIds) do
+        local plot = plots:FindFirstChild(id)
+        if plot and plot:FindFirstChild("PlotSign") then
             local plotSign = plot:FindFirstChild("PlotSign")
-            if plotSign then
-                print("Found PlotSign in", plotId)
-                
-                local surfaceGui = plotSign:FindFirstChild("SurfaceGui")
-                if surfaceGui then
-                    print("Found SurfaceGui in", plotId)
-                    
-                    local frame = surfaceGui:FindFirstChild("Frame")
-                    if frame then
-                        print("Found Frame in", plotId)
-                        
-                        local textLabel = frame:FindFirstChild("TextLabel")
-                        if textLabel then
-                            print("Found TextLabel in", plotId, "- Text:", textLabel.Text)
-                            
-                            if textLabel.Text == expectedText then
-                                playerPlot = plot
-                                statusLabel.Text = "Found your plot!"
-                                print("Match found! Using plot:", plotId)
-                                return plot
-                            end
-                        else
-                            print("No TextLabel in", plotId)
-                        end
-                    else
-                        print("No Frame in", plotId)
-                    end
-                else
-                    print("No SurfaceGui in", plotId)
+            local surfaceGui = plotSign:FindFirstChild("SurfaceGui")
+            if surfaceGui and surfaceGui:FindFirstChild("Frame") and surfaceGui.Frame:FindFirstChild("TextLabel") then
+                local txt = surfaceGui.Frame.TextLabel.Text
+                if txt == player.DisplayName .. "'s Base" then
+                    return plot
                 end
-            else
-                print("No PlotSign in", plotId)
             end
-        else
-            print("Plot not found:", plotId)
         end
     end
-    
-    statusLabel.Text = "Your plot not found"
-    print("No matching plot found for:", expectedText)
     return nil
 end
-
-local function getPlayerPlot()
-    if not playerPlot then
-        findPlayerPlot()
-    end
-    return playerPlot
-end
-
--- ========================================
--- TWEEN TELEPORT METHOD
--- ========================================
-local TweenService = game:GetService("TweenService")
-local teleporting = false
 
 local function tweenTeleport()
     if teleporting then return end
     teleporting = true
-    
+
     local char = player.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     local hum = char and char:FindFirstChildOfClass("Humanoid")
-    local plot = getPlayerPlot() -- uses DisplayName .. "'s Base"
-    
-    if not hrp or not hum then 
+    local plot = getPlayerPlot()
+
+    if not hrp or not hum then
         statusLabel.Text = "⚠ Character not ready"
         teleporting = false
-        return 
+        return
     end
     if not plot then
         statusLabel.Text = "⚠ No plot found"
         teleporting = false
         return
     end
-    
+
     local deliveryHitbox = plot:FindFirstChild("DeliveryHitbox")
     if not deliveryHitbox then
         statusLabel.Text = "⚠ DeliveryHitbox missing"
@@ -229,79 +202,28 @@ local function tweenTeleport()
     teleportButton.Text = "Stealing..."
     statusLabel.Text = "Moving to plot..."
 
-    -- target above DeliveryHitbox
     local targetPos = deliveryHitbox.Position + Vector3.new(0, 3, 0)
     local dist = (targetPos - hrp.Position).Magnitude
-    local steps = math.max(20, math.floor(dist / 3)) -- step count depends on distance
+    local steps = math.max(20, math.floor(dist / 3))
     local stepVec = (targetPos - hrp.Position).Unit * 3
 
     for i = 1, steps do
-        if not hrp.Parent or not hum.Parent then 
+        if not hrp.Parent or not hum.Parent then
             statusLabel.Text = "⚠ Character lost"
-            break 
+            break
         end
         hrp.CFrame = hrp.CFrame + stepVec
-        hum:Move(Vector3.new(stepVec.X, 0, stepVec.Z), true) -- fake input
+        hum:Move(Vector3.new(stepVec.X, 0, stepVec.Z), true)
         task.wait(0.05)
     end
-    
+
     teleportButton.Text = "Steal"
+    statusLabel.Text = "✅ Arrived!"
     teleporting = false
 end
 
 -- ========================================
--- EVENT CONNECTIONS
+-- CONNECTIONS
 -- ========================================
-closeButton.MouseButton1Click:Connect(function()
-    screenGui:Destroy()
-end)
-
-teleportButton.MouseButton1Click:Connect(function()
-    tweenTeleport()
-end)
-
--- RGB button effect
-RunService.Heartbeat:Connect(function()
-    local time = tick()
-    rgbOverlay.BackgroundColor3 = Color3.fromHSV((time * 0.5) % 1, 0.3, 0.8)
-end)
-
--- Manual plot search button (for debugging)
-local searchButton = Instance.new("TextButton")
-searchButton.Size = UDim2.new(0, 100, 0, 20)
-searchButton.Position = UDim2.new(1, -110, 0, 5)
-searchButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-searchButton.BorderSizePixel = 1
-searchButton.BorderColor3 = Color3.fromRGB(100, 100, 100)
-searchButton.Text = "Find Plot"
-searchButton.TextColor3 = Color3.fromRGB(200, 200, 200)
-searchButton.TextScaled = true
-searchButton.Font = Enum.Font.Gotham
-searchButton.Parent = mainFrame
-Instance.new("UICorner", searchButton).CornerRadius = UDim.new(0, 4)
-
-searchButton.MouseButton1Click:Connect(function()
-    playerPlot = nil -- Reset to force new search
-    findPlayerPlot()
-end)
-
--- Auto-setup with longer delays
-player.CharacterAdded:Connect(function(character)
-    task.wait(5) -- Wait longer for plots to load
-    findPlayerPlot()
-end)
-
--- Setup for existing character
-if player.Character then
-    task.spawn(function()
-        task.wait(5) -- Wait longer for plots to load
-        findPlayerPlot()
-    end)
-else
-    task.spawn(function()
-        task.wait(3) -- Initial wait
-        findPlayerPlot()
-    end)
-end
-
-print("Plot Teleporter loaded! Use 'Find Plot' button if needed.") 
+teleportButton.MouseButton1Click:Connect(tweenTeleport)
+closeButton.MouseButton1Click:Connect(function() screenGui:Destroy() end)
