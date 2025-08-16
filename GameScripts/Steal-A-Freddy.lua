@@ -45,16 +45,6 @@ teleportButton.TextSize = 18
 teleportButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 teleportButton.Parent = frame
 
--- RGB effect (subtle & dark)
-task.spawn(function()
-    while teleportButton.Parent do
-        for hue = 0, 255, 2 do
-            teleportButton.BorderColor3 = Color3.fromHSV(hue/255, 0.6, 0.4)
-            task.wait(0.05)
-        end
-    end
-end)
-
 -- Status label
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Size = UDim2.new(1, 0, 0, 20)
@@ -78,11 +68,11 @@ credits.Text = "by PickleTalk"
 credits.Parent = frame
 
 -- =========================================================
--- Teleport using SpawnLocation (5 studs forward)
+-- Teleport to Spawnpoint + 5 studs forward
 -- =========================================================
 local teleporting = false
 
-local function tweenTeleport()
+local function teleportToSpawn()
     if teleporting then return end
     teleporting = true
 
@@ -96,20 +86,21 @@ local function tweenTeleport()
         teleporting = false; return
     end
     if not spawn then
-        statusLabel.Text = "⚠ No spawn found"
+        statusLabel.Text = "⚠ Spawn not found"
         teleporting = false; return
     end
 
     teleportButton.Text = "Stealing..."
+    statusLabel.Text = "Moving to spawn…"
 
-    -- Target = 5 studs forward from spawn
+    -- 5 studs forward from spawn
     local targetPos = spawn.CFrame.Position + (spawn.CFrame.LookVector * 5)
 
     -- Step move
     local offset = targetPos - hrp.Position
     local dist = offset.Magnitude
-    local steps = math.max(20, math.floor(dist / 3))
-    local step = offset.Unit * 3
+    local steps = math.max(20, math.floor(dist / 2))
+    local step = offset.Unit * 2
 
     for i = 1, steps do
         if not hrp.Parent or not hum.Parent then 
@@ -122,56 +113,133 @@ local function tweenTeleport()
     end
 
     teleportButton.Text = "Steal"
+    statusLabel.Text = "✅ At spawnpoint!"
     teleporting = false
 end
 
-teleportButton.MouseButton1Click:Connect(tweenTeleport)
+teleportButton.MouseButton1Click:Connect(teleportToSpawn)
 
 -- =========================================================
--- Infinite Jump
+-- Infinite Jump (your version with notification)
 -- =========================================================
-local function enableInfiniteJump()
-    local UIS = UserInputService
-    UIS.JumpRequest:Connect(function()
+local isInfiniteJumpEnabled = false
+local jumpConnections = {}
+
+local function createJumpNotification()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Parent = player:WaitForChild("PlayerGui")
+    screenGui.Name = "InfiniteJumpNotification"
+
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 200, 0, 0)
+    frame.Position = UDim2.new(0.5, -100, 0.9, -40)
+    frame.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    frame.BorderSizePixel = 0
+    frame.Parent = screenGui
+
+    local uiCorner = Instance.new("UICorner")
+    uiCorner.CornerRadius = UDim.new(0, 10)
+    uiCorner.Parent = frame
+
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = "Infinite Jump Enabled"
+    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    textLabel.Font = Enum.Font.SourceSansBold
+    textLabel.TextSize = 16
+    textLabel.Parent = frame
+
+    local tweenIn = TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 200, 0, 40)})
+    tweenIn:Play()
+
+    task.spawn(function()
+        wait(2)
+        local tweenOut = TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0, 200, 0, 0)})
+        tweenOut:Play()
+        tweenOut.Completed:Connect(function()
+            wait(0.5)
+            screenGui:Destroy()
+        end)
+    end)
+end
+
+local function connectInfiniteJump()
+    return UserInputService.JumpRequest:Connect(function()
         if player.Character and player.Character:FindFirstChild("Humanoid") then
-            player.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+            local hum = player.Character:FindFirstChild("Humanoid")
+            local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
+            if rootPart and hum and hum.Health > 0 then
+                hum:ChangeState(Enum.HumanoidStateType.Jumping)
+            end
         end
     end)
 end
+
+local function enableInfiniteJump()
+    if isInfiniteJumpEnabled then return end
+    isInfiniteJumpEnabled = true
+
+    -- Connect now
+    if player.Character then
+        table.insert(jumpConnections, connectInfiniteJump())
+    end
+
+    -- Handle respawn
+    player.CharacterAdded:Connect(function()
+        wait(0.1)
+        if isInfiniteJumpEnabled then
+            table.insert(jumpConnections, connectInfiniteJump())
+        end
+    end)
+
+    createJumpNotification()
+end
+
 enableInfiniteJump()
 
 -- =========================================================
--- Smart Noclip (temporary only while inside walls)
+-- Smart Noclip (raycast forward, auto toggle)
 -- =========================================================
-local noclip = false
+local noclipActive = false
+
+local function setCollisions(char, state)
+    for _, part in ipairs(char:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = state
+        end
+    end
+end
+
 RunService.Heartbeat:Connect(function()
     local char = player.Character
     if not char then return end
     local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not (hrp and hum) then return end
 
-    local touching = hrp:GetTouchingParts()
-    local insideWall = false
-    for _, part in ipairs(touching) do
-        if part:IsA("BasePart") and part.CanCollide then
-            insideWall = true
-            break
-        end
-    end
+    local dir = hum.MoveDirection
+    if dir.Magnitude > 0 then
+        local params = RaycastParams.new()
+        params.FilterType = Enum.RaycastFilterType.Blacklist
+        params.FilterDescendantsInstances = {char}
+        local result = workspace:Raycast(hrp.Position, dir.Unit * 3, params)
 
-    if insideWall and not noclip then
-        noclip = true
-        for _, part in ipairs(char:GetDescendants()) do
-            if part:IsA("BasePart") and part.CanCollide then
-                part.CanCollide = false
+        if result and result.Instance and result.Instance.CanCollide then
+            if not noclipActive then
+                noclipActive = true
+                setCollisions(char, false)
+            end
+        else
+            if noclipActive then
+                noclipActive = false
+                setCollisions(char, true)
             end
         end
-    elseif not insideWall and noclip then
-        noclip = false
-        for _, part in ipairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = true
-            end
+    else
+        if noclipActive then
+            noclipActive = false
+            setCollisions(char, true)
         end
     end
 end)
