@@ -23,7 +23,7 @@ local existing = parentGui:FindFirstChild("PlotTeleporterUI")
 if existing then existing:Destroy() end
 
 -- ========================================
--- UI CREATION (old style, darker)
+-- UI CREATION
 -- ========================================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "PlotTeleporterUI"
@@ -51,7 +51,7 @@ local titleText = Instance.new("TextLabel")
 titleText.Size = UDim2.new(1, -30, 1, 0)
 titleText.Position = UDim2.new(0, 5, 0, 0)
 titleText.BackgroundTransparency = 1
-titleText.Text = "Plot Teleporter"
+titleText.Text = "Steal A Brainrot"
 titleText.TextColor3 = Color3.fromRGB(220, 220, 220)
 titleText.TextScaled = true
 titleText.Font = Enum.Font.GothamBold
@@ -76,12 +76,21 @@ teleportButton.Position = UDim2.new(0, 15, 0, 45)
 teleportButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 teleportButton.BorderSizePixel = 2
 teleportButton.BorderColor3 = Color3.fromRGB(100, 100, 100)
-teleportButton.Text = "Steal Plot"
+teleportButton.Text = "Steal"
 teleportButton.TextColor3 = Color3.fromRGB(220, 220, 220)
 teleportButton.TextScaled = true
 teleportButton.Font = Enum.Font.GothamBold
 teleportButton.Parent = mainFrame
 Instance.new("UICorner", teleportButton).CornerRadius = UDim.new(0, 6)
+
+-- overlay frame for RGB effect
+local rgbOverlay = Instance.new("Frame")
+rgbOverlay.Size = UDim2.new(1, 0, 1, 0)
+rgbOverlay.BackgroundTransparency = 0.5
+rgbOverlay.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+rgbOverlay.ZIndex = teleportButton.ZIndex + 1
+rgbOverlay.Parent = teleportButton
+Instance.new("UICorner", rgbOverlay).CornerRadius = UDim.new(0, 6)
 
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Size = UDim2.new(1, -20, 0, 25)
@@ -119,7 +128,7 @@ local function detectSpawnPoint(char)
     if spawnObj then lastSpawnPoint = spawnObj end
 end
 
-player.CharacterAdded:Connect(detectSpawnPoint)
+Players.LocalPlayer.CharacterAdded:Connect(detectSpawnPoint)
 if player.Character then detectSpawnPoint(player.Character) end
 
 local function findPlayerSpawn()
@@ -127,30 +136,29 @@ local function findPlayerSpawn()
 end
 
 -- ========================================
--- TELEPORTS
+-- TELEPORT (fling-based)
 -- ========================================
 local stealBusy = false
 
-local function tripleFlickAt(part)
+local function flingTo(part)
     local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
 
     teleportButton.Text = "Stealing..."
-    local spawnCF = part.CFrame * CFrame.new(0, 0, -5) -- 5 studs away forward
 
-    for _ = 1, 3 do
-        hrp.CFrame = spawnCF
-        hrp.Anchored = false
-        task.wait(0.3)
-        hrp.Anchored = true
-        task.wait(0.05)
+    local offsetCF = part.CFrame * CFrame.new(0, 0, -5) -- 5 studs in front
+    for i = 1, 3 do
+        hrp.CFrame = offsetCF
+        hrp.Velocity = Vector3.new(0, 200, 0) -- fling upwards hard
+        hrp.RotVelocity = Vector3.new(2000, 2000, 2000) -- spin for bypass
+        task.wait(0.7) -- longer fall
     end
 
-    -- Stay at spawn point (not old position)
-    hrp.CFrame = part.CFrame
-    hrp.Anchored = false
+    -- end by putting player on spawnpoint
+    hrp.CFrame = part.CFrame + Vector3.new(0, 3, 0)
+    hrp.Velocity = Vector3.zero
 
-    teleportButton.Text = "Steal Plot"
+    teleportButton.Text = "Steal"
 end
 
 local function teleportToPlot()
@@ -161,12 +169,12 @@ local function teleportToPlot()
     if not spawnObj or not spawnObj:IsA("BasePart") then
         teleportButton.Text = "No Spawn!"
         task.wait(1)
-        teleportButton.Text = "Steal Plot"
+        teleportButton.Text = "Steal"
         stealBusy = false
         return
     end
 
-    tripleFlickAt(spawnObj)
+    flingTo(spawnObj)
     stealBusy = false
 end
 
@@ -177,25 +185,19 @@ teleportButton.MouseButton1Click:Connect(teleportToPlot)
 closeButton.MouseButton1Click:Connect(function() screenGui:Destroy() end)
 
 -- ========================================
--- RGB EFFECT (transparent overlay)
+-- RGB EFFECT (overlay)
 -- ========================================
-local function rgbEffect(button)
-    task.spawn(function()
-        local t = 0
-        while button and button.Parent do
-            t += 0.02
-            local r = (math.sin(t) * 0.5 + 0.5) * 255
-            local g = (math.sin(t + 2) * 0.5 + 0.5) * 255
-            local b = (math.sin(t + 4) * 0.5 + 0.5) * 255
-            button.BackgroundColor3 = Color3.fromRGB(20, 20, 20) -- base dark
-            button.BackgroundTransparency = 0.2
-            button.BorderColor3 = Color3.fromRGB(r, g, b)
-            task.wait(0.03)
-        end
-    end)
-end
-
-rgbEffect(teleportButton)
+task.spawn(function()
+    local t = 0
+    while rgbOverlay and rgbOverlay.Parent do
+        t += 0.02
+        local r = (math.sin(t) * 0.5 + 0.5) * 255
+        local g = (math.sin(t + 2) * 0.5 + 0.5) * 255
+        local b = (math.sin(t + 4) * 0.5 + 0.5) * 255
+        rgbOverlay.BackgroundColor3 = Color3.fromRGB(r, g, b)
+        task.wait(0.03)
+    end
+end)
 
 -- ========================================
 -- DRAGGING
