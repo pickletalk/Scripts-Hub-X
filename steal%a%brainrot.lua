@@ -4,6 +4,9 @@
 if not game:IsLoaded() then game.Loaded:Wait() end
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
 
 -- ========================================
@@ -104,90 +107,264 @@ statusLabel.TextXAlignment = Enum.TextXAlignment.Left
 statusLabel.Parent = mainFrame
 
 -- ========================================
--- SPAWN DETECTION
+-- SPAWN DETECTION & STORAGE
 -- ========================================
-local lastSpawnPoint
+local spawnPoints = {}
+local playerSpawnPoint
 
-local function nearestSpawnTo(pos)
-    local best, bestDist
-    for _, inst in ipairs(workspace:GetDescendants()) do
-        if inst:IsA("SpawnLocation") or (inst:IsA("BasePart") and inst.Name:lower():find("spawn")) then
-            local d = (inst.Position - pos).Magnitude
-            if not bestDist or d < bestDist then
-                best, bestDist = inst, d
+local function findSpawnPoints()
+    spawnPoints = {}
+    
+    -- Method 1: Find SpawnLocation objects
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("SpawnLocation") then
+            table.insert(spawnPoints, obj)
+        end
+    end
+    
+    -- Method 2: Find parts with "spawn" in name
+    if #spawnPoints == 0 then
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("BasePart") and obj.Name:lower():find("spawn") then
+                table.insert(spawnPoints, obj)
             end
         end
     end
-    return best
-end
-
-local function detectSpawnPoint(char)
-    local hrp = char:WaitForChild("HumanoidRootPart", 5)
-    if not hrp then return end
-    local spawnObj = player.RespawnLocation or nearestSpawnTo(hrp.Position)
-    if spawnObj then lastSpawnPoint = spawnObj end
-end
-
-player.CharacterAdded:Connect(detectSpawnPoint)
-if player.Character then detectSpawnPoint(player.Character) end
-
-local function findPlayerSpawn()
-    return lastSpawnPoint
-end
-
--- ========================================
--- MICRO-STEP TELEPORT
--- ========================================
-local function teleportToPlot()
-    local char = player.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    local spawnObj = findPlayerSpawn()
-    if not hrp or not spawnObj then return end
-
-    teleportButton.Text = "Stealing..."
-
-    local targetPos = spawnObj.Position + Vector3.new(0, 3, 0)
-    local steps = 50 -- number of micro steps
-    local current = hrp.Position
-    local diff = (targetPos - current) / steps
-
-    for i = 1, steps do
-        if not hrp.Parent then break end
-        hrp.CFrame = CFrame.new(hrp.Position + diff)
-        task.wait(0.02) -- very fast tiny step
+    
+    -- Method 3: Look for common spawn-related names
+    if #spawnPoints == 0 then
+        local spawnNames = {"SpawnPoint", "Spawn", "PlayerSpawn", "StartPoint", "Base"}
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("BasePart") then
+                for _, name in pairs(spawnNames) do
+                    if obj.Name:find(name) then
+                        table.insert(spawnPoints, obj)
+                        break
+                    end
+                end
+            end
+        end
     end
+end
 
-    teleportButton.Text = "Steal"
+local function detectPlayerSpawn()
+    local char = player.Character
+    if not char then return end
+    
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    
+    findSpawnPoints()
+    
+    -- Find closest spawn to current position
+    local closestSpawn
+    local shortestDistance = math.huge
+    
+    for _, spawn in pairs(spawnPoints) do
+        if spawn and spawn.Parent then
+            local distance = (hrp.Position - spawn.Position).Magnitude
+            if distance < shortestDistance then
+                shortestDistance = distance
+                closestSpawn = spawn
+            end
+        end
+    end
+    
+    if closestSpawn then
+        playerSpawnPoint = closestSpawn
+        statusLabel.Text = "Spawn found: " .. closestSpawn.Name
+    else
+        statusLabel.Text = "No spawn found"
+    end
 end
 
 -- ========================================
--- SPEED BYPASS LOOP (undetected)
+-- ADVANCED TELEPORT SYSTEM
 -- ========================================
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
+local teleporting = false
 
-local SPEED_MULTIPLIER = 7.5 -- about 120 vs 16 default
+local function advancedTeleport()
+    if teleporting then return end
+    teleporting = true
+    
+    local char = player.Character
+    if not char then 
+        teleporting = false
+        return 
+    end
+    
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    local humanoid = char:FindFirstChild("Humanoid")
+    
+    if not hrp or not humanoid or not playerSpawnPoint then
+        statusLabel.Text = "Teleport failed: Missing components"
+        teleporting = false
+        return
+    end
+    
+    teleportButton.Text = "Stealing..."
+    
+    -- Method 1: Try BodyVelocity teleport
+    pcall(function()
+        local bodyVelocity = Instance.new("BodyVelocity")
+        bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+        bodyVelocity.Parent = hrp
+        
+        local targetPosition = playerSpawnPoint.Position + Vector3.new(math.random(-3, 3), 5, math.random(-3, 3))
+        
+        hrp.CFrame = CFrame.new(targetPosition)
+        
+        task.wait(0.1)
+        bodyVelocity:Destroy()
+    end)
+    
+    -- Method 2: If that fails, try PrimaryPart method
+    if (hrp.Position - playerSpawnPoint.Position).Magnitude > 10 then
+        pcall(function()
+            if char.PrimaryPart then
+                char:SetPrimaryPartCFrame(CFrame.new(playerSpawnPoint.Position + Vector3.new(0, 5, 0)))
+            else
+                char:MoveTo(playerSpawnPoint.Position + Vector3.new(0, 5, 0))
+            end
+        end)
+    end
+    
+    -- Method 3: Direct CFrame manipulation with collision bypass
+    task.wait(0.1)
+    pcall(function()
+        hrp.CanCollide = false
+        hrp.Anchored = true
+        hrp.CFrame = CFrame.new(playerSpawnPoint.Position + Vector3.new(0, 3, 0))
+        task.wait(0.1)
+        hrp.Anchored = false
+        hrp.CanCollide = true
+    end)
+    
+    teleportButton.Text = "Steal"
+    statusLabel.Text = "Teleported to spawn!"
+    teleporting = false
+end
 
-local function startBypassSpeed(char)
-    local hrp = char:WaitForChild("HumanoidRootPart", 5)
-    local hum = char:WaitForChild("Humanoid", 5)
-    if not hrp or not hum then return end
+-- ========================================
+-- BYPASS SPEED SYSTEM
+-- ========================================
+local speedEnabled = false
+local speedConnections = {}
 
-    -- keep WalkSpeed normal to avoid detection
-    hum.WalkSpeed = 16
+local function cleanupSpeedConnections()
+    for _, connection in pairs(speedConnections) do
+        if connection then
+            connection:Disconnect()
+        end
+    end
+    speedConnections = {}
+end
 
-    RunService.Heartbeat:Connect(function(dt)
-        if not hrp or not hum or hum.Health <= 0 then return end
-
-        -- get movement direction from Humanoid
-        local moveDir = hum.MoveDirection
-        if moveDir.Magnitude > 0 then
-            -- apply additional movement offset
-            local offset = moveDir * SPEED_MULTIPLIER * dt
-            hrp.CFrame = hrp.CFrame + offset
+local function setupBypassSpeed(character)
+    cleanupSpeedConnections()
+    
+    local humanoid = character:WaitForChild("Humanoid", 5)
+    local rootPart = character:WaitForChild("HumanoidRootPart", 5)
+    
+    if not humanoid or not rootPart then return end
+    
+    speedEnabled = true
+    
+    -- Method 1: BodyVelocity speed boost
+    local bodyVelocity = Instance.new("BodyVelocity")
+    bodyVelocity.MaxForce = Vector3.new(0, 0, 4000)
+    bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+    bodyVelocity.Parent = rootPart
+    
+    -- Method 2: CFrame manipulation for speed
+    local lastPosition = rootPart.Position
+    local speedMultiplier = 3.5 -- Lower multiplier to avoid detection
+    
+    speedConnections[1] = RunService.Heartbeat:Connect(function(dt)
+        if not speedEnabled or not rootPart.Parent or humanoid.Health <= 0 then return end
+        
+        local moveVector = humanoid.MoveDirection
+        if moveVector.Magnitude > 0 then
+            -- Method A: BodyVelocity approach
+            bodyVelocity.Velocity = Vector3.new(
+                moveVector.X * humanoid.WalkSpeed * speedMultiplier,
+                bodyVelocity.Velocity.Y,
+                moveVector.Z * humanoid.WalkSpeed * speedMultiplier
+            )
+            
+            -- Method B: Small CFrame adjustments
+            local currentPos = rootPart.Position
+            local deltaMove = (currentPos - lastPosition)
+            
+            if deltaMove.Magnitude > 0 and deltaMove.Magnitude < 50 then -- Prevent huge jumps
+                local boost = moveVector * speedMultiplier * dt * 15
+                rootPart.CFrame = rootPart.CFrame + Vector3.new(boost.X, 0, boost.Z)
+            end
+            
+            lastPosition = currentPos
+        else
+            bodyVelocity.Velocity = Vector3.new(0, bodyVelocity.Velocity.Y, 0)
+        end
+    end)
+    
+    -- Method 3: Walkspeed normalization to avoid detection
+    speedConnections[2] = RunService.Heartbeat:Connect(function()
+        if humanoid and humanoid.Parent then
+            if humanoid.WalkSpeed ~= 16 then
+                humanoid.WalkSpeed = 16 -- Keep it normal
+            end
+        end
+    end)
+    
+    -- Cleanup when character is removed
+    speedConnections[3] = character.AncestryChanged:Connect(function()
+        if not character.Parent then
+            cleanupSpeedConnections()
+            if bodyVelocity then bodyVelocity:Destroy() end
         end
     end)
 end
 
-player.CharacterAdded:Connect(startBypassSpeed)
-if player.Character then startBypassSpeed(player.Character) end
+-- ========================================
+-- EVENT CONNECTIONS
+-- ========================================
+closeButton.MouseButton1Click:Connect(function()
+    screenGui:Destroy()
+    cleanupSpeedConnections()
+end)
+
+teleportButton.MouseButton1Click:Connect(function()
+    advancedTeleport()
+end)
+
+-- RGB button effect
+local rgbConnection
+rgbConnection = RunService.Heartbeat:Connect(function()
+    local time = tick()
+    rgbOverlay.BackgroundColor3 = Color3.fromHSV((time * 0.5) % 1, 0.3, 0.8)
+end)
+
+-- Auto-setup on character spawn
+player.CharacterAdded:Connect(function(character)
+    task.wait(1) -- Wait for character to fully load
+    detectPlayerSpawn()
+    setupBypassSpeed(character)
+end)
+
+-- Setup for existing character
+if player.Character then
+    task.spawn(function()
+        task.wait(1)
+        detectPlayerSpawn()
+        setupBypassSpeed(player.Character)
+    end)
+end
+
+-- Initial spawn detection
+task.spawn(function()
+    task.wait(2)
+    detectPlayerSpawn()
+end)
+
+print("Steal A Brainrot loaded successfully!")
