@@ -6,7 +6,6 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
 
 -- ========================================
@@ -107,221 +106,250 @@ statusLabel.TextXAlignment = Enum.TextXAlignment.Left
 statusLabel.Parent = mainFrame
 
 -- ========================================
--- SPAWN DETECTION & STORAGE
+-- COMPREHENSIVE SPAWN DETECTION
 -- ========================================
-local spawnPoints = {}
-local playerSpawnPoint
+local detectedSpawns = {}
+local playerSpawn = nil
 
-local function findSpawnPoints()
-    spawnPoints = {}
+local function scanForSpawns()
+    detectedSpawns = {}
     
-    -- Method 1: Find SpawnLocation objects
+    -- Method 1: Official SpawnLocation
     for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("SpawnLocation") then
-            table.insert(spawnPoints, obj)
+        if obj:IsA("SpawnLocation") and obj.Parent then
+            table.insert(detectedSpawns, {obj = obj, type = "SpawnLocation"})
         end
     end
     
-    -- Method 2: Find parts with "spawn" in name
-    if #spawnPoints == 0 then
-        for _, obj in pairs(workspace:GetDescendants()) do
-            if obj:IsA("BasePart") and obj.Name:lower():find("spawn") then
-                table.insert(spawnPoints, obj)
-            end
-        end
+    -- Method 2: Check if player has RespawnLocation
+    if player.RespawnLocation then
+        table.insert(detectedSpawns, {obj = player.RespawnLocation, type = "RespawnLocation"})
     end
     
-    -- Method 3: Look for common spawn-related names
-    if #spawnPoints == 0 then
-        local spawnNames = {"SpawnPoint", "Spawn", "PlayerSpawn", "StartPoint", "Base"}
-        for _, obj in pairs(workspace:GetDescendants()) do
-            if obj:IsA("BasePart") then
-                for _, name in pairs(spawnNames) do
-                    if obj.Name:find(name) then
-                        table.insert(spawnPoints, obj)
-                        break
-                    end
+    -- Method 3: Find parts with spawn-related names (case insensitive)
+    local spawnKeywords = {"spawn", "start", "base", "plot", "home", "lobby"}
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and obj.Parent then
+            local name = obj.Name:lower()
+            for _, keyword in pairs(spawnKeywords) do
+                if name:find(keyword) then
+                    table.insert(detectedSpawns, {obj = obj, type = "KeywordMatch: " .. keyword})
+                    break
                 end
             end
         end
     end
-end
-
-local function detectPlayerSpawn()
-    local char = player.Character
-    if not char then return end
     
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    
-    findSpawnPoints()
-    
-    -- Find closest spawn to current position
-    local closestSpawn
-    local shortestDistance = math.huge
-    
-    for _, spawn in pairs(spawnPoints) do
-        if spawn and spawn.Parent then
-            local distance = (hrp.Position - spawn.Position).Magnitude
-            if distance < shortestDistance then
-                shortestDistance = distance
-                closestSpawn = spawn
+    -- Method 4: Look in common spawn folders
+    local spawnFolders = {"Spawns", "SpawnPoints", "PlayerSpawns", "Bases", "Plots"}
+    for _, folderName in pairs(spawnFolders) do
+        local folder = workspace:FindFirstChild(folderName)
+        if folder then
+            for _, obj in pairs(folder:GetChildren()) do
+                if obj:IsA("BasePart") then
+                    table.insert(detectedSpawns, {obj = obj, type = "Folder: " .. folderName})
+                end
             end
         end
     end
     
-    if closestSpawn then
-        playerSpawnPoint = closestSpawn
-        statusLabel.Text = "Spawn found: " .. closestSpawn.Name
-    else
-        statusLabel.Text = "No spawn found"
+    -- Method 5: Find parts at common spawn heights (usually elevated)
+    local candidateParts = {}
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and obj.Parent and obj.Size.Y > 0.5 then
+            local pos = obj.Position
+            if pos.Y > 0 and pos.Y < 200 then -- Reasonable spawn height
+                table.insert(candidateParts, obj)
+            end
+        end
     end
+    
+    -- Add parts that might be spawns based on position and size
+    for _, part in pairs(candidateParts) do
+        if part.Size.X > 3 and part.Size.Z > 3 then -- Big enough to spawn on
+            table.insert(detectedSpawns, {obj = part, type = "Platform"})
+        end
+    end
+    
+    statusLabel.Text = "Found " .. #detectedSpawns .. " potential spawns"
+    return #detectedSpawns > 0
+end
+
+local function findBestSpawn()
+    if #detectedSpawns == 0 then
+        scanForSpawns()
+    end
+    
+    if #detectedSpawns == 0 then
+        statusLabel.Text = "No spawns detected"
+        return nil
+    end
+    
+    local char = player.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then
+        return detectedSpawns[1].obj -- Just return first one
+    end
+    
+    local hrp = char.HumanoidRootPart
+    local closest = nil
+    local shortestDist = math.huge
+    
+    -- Find closest spawn
+    for _, spawnData in pairs(detectedSpawns) do
+        if spawnData.obj and spawnData.obj.Parent then
+            local dist = (hrp.Position - spawnData.obj.Position).Magnitude
+            if dist < shortestDist then
+                shortestDist = dist
+                closest = spawnData.obj
+            end
+        end
+    end
+    
+    playerSpawn = closest
+    if closest then
+        statusLabel.Text = "Using: " .. closest.Name
+    end
+    return closest
 end
 
 -- ========================================
--- ADVANCED TELEPORT SYSTEM
+-- STEALTH TELEPORTATION SYSTEM
 -- ========================================
 local teleporting = false
 
-local function advancedTeleport()
+local function stealthTeleport()
     if teleporting then return end
     teleporting = true
     
     local char = player.Character
     if not char then 
         teleporting = false
+        statusLabel.Text = "No character"
         return 
     end
     
     local hrp = char:FindFirstChild("HumanoidRootPart")
-    local humanoid = char:FindFirstChild("Humanoid")
-    
-    if not hrp or not humanoid or not playerSpawnPoint then
-        statusLabel.Text = "Teleport failed: Missing components"
+    if not hrp then
         teleporting = false
+        statusLabel.Text = "No HumanoidRootPart"
+        return
+    end
+    
+    local targetSpawn = findBestSpawn()
+    if not targetSpawn then
+        teleporting = false
+        statusLabel.Text = "No spawn found"
         return
     end
     
     teleportButton.Text = "Stealing..."
     
-    -- Method 1: Try BodyVelocity teleport
-    pcall(function()
-        local bodyVelocity = Instance.new("BodyVelocity")
-        bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-        bodyVelocity.Parent = hrp
+    -- Calculate position 5 studs away from spawn
+    local spawnPos = targetSpawn.Position
+    local randomAngle = math.rad(math.random(0, 360))
+    local offset = Vector3.new(
+        math.cos(randomAngle) * 5,
+        3, -- 3 studs above
+        math.sin(randomAngle) * 5
+    )
+    local targetPos = spawnPos + offset
+    
+    -- Method 1: Invisible part teleport (most stealth)
+    local success = pcall(function()
+        local tempPart = Instance.new("Part")
+        tempPart.Name = "TempTeleporter"
+        tempPart.Size = Vector3.new(1, 1, 1)
+        tempPart.Anchored = true
+        tempPart.CanCollide = false
+        tempPart.Transparency = 1
+        tempPart.Position = targetPos
+        tempPart.Parent = workspace
         
-        local targetPosition = playerSpawnPoint.Position + Vector3.new(math.random(-3, 3), 5, math.random(-3, 3))
+        -- Teleport character to the invisible part
+        char:MoveTo(tempPart.Position)
         
-        hrp.CFrame = CFrame.new(targetPosition)
-        
-        task.wait(0.1)
-        bodyVelocity:Destroy()
+        task.wait(0.2)
+        tempPart:Destroy()
     end)
     
-    -- Method 2: If that fails, try PrimaryPart method
-    if (hrp.Position - playerSpawnPoint.Position).Magnitude > 10 then
+    -- Method 2: Root part direct positioning if method 1 failed
+    if not success then
+        pcall(function()
+            hrp.CFrame = CFrame.new(targetPos)
+        end)
+    end
+    
+    -- Method 3: PrimaryPart method as final fallback
+    task.wait(0.1)
+    if (hrp.Position - targetPos).Magnitude > 10 then
         pcall(function()
             if char.PrimaryPart then
-                char:SetPrimaryPartCFrame(CFrame.new(playerSpawnPoint.Position + Vector3.new(0, 5, 0)))
-            else
-                char:MoveTo(playerSpawnPoint.Position + Vector3.new(0, 5, 0))
+                char:SetPrimaryPartCFrame(CFrame.new(targetPos))
             end
         end)
     end
     
-    -- Method 3: Direct CFrame manipulation with collision bypass
-    task.wait(0.1)
-    pcall(function()
-        hrp.CanCollide = false
-        hrp.Anchored = true
-        hrp.CFrame = CFrame.new(playerSpawnPoint.Position + Vector3.new(0, 3, 0))
-        task.wait(0.1)
-        hrp.Anchored = false
-        hrp.CanCollide = true
-    end)
-    
     teleportButton.Text = "Steal"
-    statusLabel.Text = "Teleported to spawn!"
+    statusLabel.Text = "Teleported 5 studs away!"
     teleporting = false
 end
 
 -- ========================================
--- BYPASS SPEED SYSTEM
+-- ULTRA STEALTH SPEED SYSTEM
 -- ========================================
-local speedEnabled = false
+local speedActive = false
 local speedConnections = {}
 
-local function cleanupSpeedConnections()
-    for _, connection in pairs(speedConnections) do
-        if connection then
-            connection:Disconnect()
-        end
+local function cleanupSpeed()
+    for _, conn in pairs(speedConnections) do
+        if conn then conn:Disconnect() end
     end
     speedConnections = {}
+    speedActive = false
 end
 
-local function setupBypassSpeed(character)
-    cleanupSpeedConnections()
+local function setupStealthSpeed(character)
+    cleanupSpeed()
     
     local humanoid = character:WaitForChild("Humanoid", 5)
     local rootPart = character:WaitForChild("HumanoidRootPart", 5)
     
     if not humanoid or not rootPart then return end
     
-    speedEnabled = true
+    speedActive = true
     
-    -- Method 1: BodyVelocity speed boost
-    local bodyVelocity = Instance.new("BodyVelocity")
-    bodyVelocity.MaxForce = Vector3.new(0, 0, 4000)
-    bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-    bodyVelocity.Parent = rootPart
-    
-    -- Method 2: CFrame manipulation for speed
+    -- Ultra stealth method: Micro CFrame adjustments
+    local baseSpeed = 16
+    local multiplier = 1.8 -- Very conservative multiplier
     local lastPosition = rootPart.Position
-    local speedMultiplier = 3.5 -- Lower multiplier to avoid detection
     
-    speedConnections[1] = RunService.Heartbeat:Connect(function(dt)
-        if not speedEnabled or not rootPart.Parent or humanoid.Health <= 0 then return end
+    speedConnections[1] = RunService.Stepped:Connect(function(_, deltaTime)
+        if not speedActive or not rootPart.Parent or humanoid.Health <= 0 then return end
         
         local moveVector = humanoid.MoveDirection
         if moveVector.Magnitude > 0 then
-            -- Method A: BodyVelocity approach
-            bodyVelocity.Velocity = Vector3.new(
-                moveVector.X * humanoid.WalkSpeed * speedMultiplier,
-                bodyVelocity.Velocity.Y,
-                moveVector.Z * humanoid.WalkSpeed * speedMultiplier
-            )
+            -- Calculate tiny movement boost
+            local boost = moveVector * (baseSpeed * (multiplier - 1) * deltaTime * 0.5)
             
-            -- Method B: Small CFrame adjustments
-            local currentPos = rootPart.Position
-            local deltaMove = (currentPos - lastPosition)
+            -- Apply micro-adjustment to position
+            local currentCF = rootPart.CFrame
+            rootPart.CFrame = currentCF + Vector3.new(boost.X, 0, boost.Z)
             
-            if deltaMove.Magnitude > 0 and deltaMove.Magnitude < 50 then -- Prevent huge jumps
-                local boost = moveVector * speedMultiplier * dt * 15
-                rootPart.CFrame = rootPart.CFrame + Vector3.new(boost.X, 0, boost.Z)
-            end
-            
-            lastPosition = currentPos
-        else
-            bodyVelocity.Velocity = Vector3.new(0, bodyVelocity.Velocity.Y, 0)
+            lastPosition = rootPart.Position
         end
     end)
     
-    -- Method 3: Walkspeed normalization to avoid detection
+    -- Keep WalkSpeed exactly normal to avoid any detection
     speedConnections[2] = RunService.Heartbeat:Connect(function()
-        if humanoid and humanoid.Parent then
-            if humanoid.WalkSpeed ~= 16 then
-                humanoid.WalkSpeed = 16 -- Keep it normal
-            end
+        if humanoid and humanoid.Parent and humanoid.WalkSpeed ~= 16 then
+            humanoid.WalkSpeed = 16
         end
     end)
     
-    -- Cleanup when character is removed
-    speedConnections[3] = character.AncestryChanged:Connect(function()
+    -- Cleanup on character removal
+    character.AncestryChanged:Connect(function()
         if not character.Parent then
-            cleanupSpeedConnections()
-            if bodyVelocity then bodyVelocity:Destroy() end
+            cleanupSpeed()
         end
     end)
 end
@@ -330,41 +358,40 @@ end
 -- EVENT CONNECTIONS
 -- ========================================
 closeButton.MouseButton1Click:Connect(function()
+    cleanupSpeed()
     screenGui:Destroy()
-    cleanupSpeedConnections()
 end)
 
 teleportButton.MouseButton1Click:Connect(function()
-    advancedTeleport()
+    stealthTeleport()
 end)
 
--- RGB button effect
-local rgbConnection
-rgbConnection = RunService.Heartbeat:Connect(function()
+-- RGB effect
+RunService.Heartbeat:Connect(function()
     local time = tick()
-    rgbOverlay.BackgroundColor3 = Color3.fromHSV((time * 0.5) % 1, 0.3, 0.8)
+    rgbOverlay.BackgroundColor3 = Color3.fromHSV((time * 0.3) % 1, 0.4, 0.7)
 end)
 
--- Auto-setup on character spawn
+-- Auto-setup when character spawns
 player.CharacterAdded:Connect(function(character)
-    task.wait(1) -- Wait for character to fully load
-    detectPlayerSpawn()
-    setupBypassSpeed(character)
+    task.wait(2) -- Wait longer for full load
+    scanForSpawns()
+    setupStealthSpeed(character)
 end)
 
--- Setup for existing character
+-- Setup for current character
 if player.Character then
     task.spawn(function()
-        task.wait(1)
-        detectPlayerSpawn()
-        setupBypassSpeed(player.Character)
+        task.wait(3)
+        scanForSpawns()
+        setupStealthSpeed(player.Character)
     end)
 end
 
--- Initial spawn detection
+-- Initial scan
 task.spawn(function()
-    task.wait(2)
-    detectPlayerSpawn()
+    task.wait(1)
+    scanForSpawns()
 end)
 
-print("Steal A Brainrot loaded successfully!")
+print("Enhanced Steal A Brainrot loaded - " .. #detectedSpawns .. " spawns detected")
