@@ -3,8 +3,9 @@
 -- ========================================
 if not game:IsLoaded() then game.Loaded:Wait() end
 local Players = game:GetService("Players")
-local player = Players.LocalPlayer
+local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
 
 -- ========================================
 -- SAFE GUI PARENT
@@ -136,50 +137,55 @@ local function findPlayerSpawn()
 end
 
 -- ========================================
--- CONTINUOUS VELOCITY LOOP
+-- TWEEN TO SPAWN (STEAL FUNCTION)
 -- ========================================
-local stealLoopActive = false
+local function teleportToPlot()
+    local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    local spawnObj = findPlayerSpawn()
+    if not hrp or not spawnObj then return end
 
-local function startStealLoop()
-    if stealLoopActive then return end
-    stealLoopActive = true
     teleportButton.Text = "Stealing..."
 
+    local tweenInfo = TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+    local goal = {CFrame = spawnObj.CFrame + Vector3.new(0, 3, 0)}
+    local tween = TweenService:Create(hrp, tweenInfo, goal)
+    tween:Play()
+    tween.Completed:Wait()
+
+    teleportButton.Text = "Steal"
+end
+
+-- ========================================
+-- SPEED BOOST LOOP (120 every 3 sec)
+-- ========================================
+local function startSpeedLoop()
     task.spawn(function()
-        while stealLoopActive do
-            local spawnObj = findPlayerSpawn()
-            local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-            if spawnObj and hrp then
-                local dir = (spawnObj.Position - hrp.Position).Unit
-                hrp.Velocity = dir * 120
+        while true do
+            local char = player.Character
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+            if hum then
+                hum.WalkSpeed = 120
             end
-            task.wait(3) -- refresh every 3 sec
+            task.wait(3) -- refresh every 3s
         end
     end)
 end
 
-local function stopStealLoop()
-    stealLoopActive = false
-    teleportButton.Text = "Steal"
-    local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-    if hrp then hrp.Velocity = Vector3.zero end
+-- always re-apply on respawn
+player.CharacterAdded:Connect(function()
+    task.wait(1)
+    startSpeedLoop()
+end)
+
+if player.Character then
+    startSpeedLoop()
 end
 
 -- ========================================
 -- CONNECTIONS
 -- ========================================
-teleportButton.MouseButton1Click:Connect(function()
-    if stealLoopActive then
-        stopStealLoop()
-    else
-        startStealLoop()
-    end
-end)
-
-closeButton.MouseButton1Click:Connect(function()
-    stopStealLoop()
-    screenGui:Destroy()
-end)
+teleportButton.MouseButton1Click:Connect(teleportToPlot)
+closeButton.MouseButton1Click:Connect(function() screenGui:Destroy() end)
 
 -- ========================================
 -- DARK RGB EFFECT
