@@ -143,6 +143,35 @@ end
 -- ========================================
 local teleporting = false
 
+local function ragdollCharacter(character, enable)
+    local humanoid = character:FindFirstChild("Humanoid")
+    if not humanoid then return end
+    
+    if enable then
+        -- Enable ragdoll
+        humanoid.PlatformStand = true
+        humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+        
+        -- Disable all motor joints temporarily
+        for _, obj in pairs(character:GetDescendants()) do
+            if obj:IsA("Motor6D") then
+                obj.Enabled = false
+            end
+        end
+    else
+        -- Disable ragdoll
+        humanoid.PlatformStand = false
+        humanoid:ChangeState(Enum.HumanoidStateType.Running)
+        
+        -- Re-enable all motor joints
+        for _, obj in pairs(character:GetDescendants()) do
+            if obj:IsA("Motor6D") then
+                obj.Enabled = true
+            end
+        end
+    end
+end
+
 local function stealthTeleport()
     if teleporting then return end
     teleporting = true
@@ -153,19 +182,18 @@ local function stealthTeleport()
     
     if not hrp or not spawnObj then 
         teleporting = false
+        statusLabel.Text = "No spawn found"
         return 
     end
 
     teleportButton.Text = "Stealing..."
     
-    -- Calculate position 5 studs away from spawn
+    -- Get the actual spawn position (not random)
     local spawnPos = spawnObj.Position
-    local randomAngle = math.rad(math.random(0, 360))
-    local targetPos = spawnPos + Vector3.new(
-        math.cos(randomAngle) * 5,  -- 5 studs away
-        3,  -- 3 studs up
-        math.sin(randomAngle) * 5   -- 5 studs away
-    )
+    local targetPos = spawnPos + Vector3.new(0, 5, 0)  -- 5 studs above spawn point
+    
+    -- Enable ragdoll for stealth
+    ragdollCharacter(char, true)
     
     -- Method 1: Workspace.CurrentCamera manipulation (very stealth)
     local camera = workspace.CurrentCamera
@@ -175,10 +203,10 @@ local function stealthTeleport()
             camera.CameraSubject = nil
             camera.CameraType = Enum.CameraType.Scriptable
             
-            -- Move character while camera is detached
+            -- Move character while camera is detached and ragdolled
             hrp.CFrame = CFrame.new(targetPos)
             
-            task.wait(0.1)
+            task.wait(0.15)
             
             -- Restore camera
             camera.CameraSubject = char.Humanoid
@@ -186,20 +214,22 @@ local function stealthTeleport()
         end)
     end
     
-    -- Method 2: Using Humanoid.Sit property (anti-detection)
+    -- Method 2: Double-check position while ragdolled
     task.wait(0.05)
     pcall(function()
-        local humanoid = char:FindFirstChild("Humanoid")
-        if humanoid then
-            humanoid.Sit = true
-            task.wait(0.02)
+        if (hrp.Position - targetPos).Magnitude > 3 then
             hrp.CFrame = CFrame.new(targetPos)
-            task.wait(0.02)
-            humanoid.Sit = false
         end
     end)
     
+    -- Wait a bit before disabling ragdoll
+    task.wait(0.2)
+    
+    -- Disable ragdoll
+    ragdollCharacter(char, false)
+    
     teleportButton.Text = "Steal"
+    statusLabel.Text = "Teleported to spawn!"
     teleporting = false
 end
 
