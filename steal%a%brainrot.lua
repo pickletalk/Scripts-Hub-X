@@ -121,29 +121,68 @@ local plotIds = {
 
 local function findPlayerPlot()
     local expectedText = player.DisplayName .. "'s Base"
+    statusLabel.Text = "Searching for: " .. expectedText
+    
+    -- First check if Plots folder exists
+    local plotsFolder = workspace:FindFirstChild("Plots")
+    if not plotsFolder then
+        statusLabel.Text = "Plots folder not found"
+        return nil
+    end
+    
+    -- Debug: List all plots found
+    local foundPlots = {}
+    for _, child in pairs(plotsFolder:GetChildren()) do
+        table.insert(foundPlots, child.Name)
+    end
+    print("Available plots:", table.concat(foundPlots, ", "))
     
     for _, plotId in pairs(plotIds) do
-        local plot = workspace.Plots:FindFirstChild(plotId)
+        local plot = plotsFolder:FindFirstChild(plotId)
         if plot then
+            print("Checking plot:", plotId)
+            
             local plotSign = plot:FindFirstChild("PlotSign")
             if plotSign then
+                print("Found PlotSign in", plotId)
+                
                 local surfaceGui = plotSign:FindFirstChild("SurfaceGui")
                 if surfaceGui then
+                    print("Found SurfaceGui in", plotId)
+                    
                     local frame = surfaceGui:FindFirstChild("Frame")
                     if frame then
+                        print("Found Frame in", plotId)
+                        
                         local textLabel = frame:FindFirstChild("TextLabel")
-                        if textLabel and textLabel.Text == expectedText then
-                            playerPlot = plot
-                            statusLabel.Text = "Found plot: " .. plotId:sub(1, 8) .. "..."
-                            return plot
+                        if textLabel then
+                            print("Found TextLabel in", plotId, "- Text:", textLabel.Text)
+                            
+                            if textLabel.Text == expectedText then
+                                playerPlot = plot
+                                statusLabel.Text = "Found your plot!"
+                                print("Match found! Using plot:", plotId)
+                                return plot
+                            end
+                        else
+                            print("No TextLabel in", plotId)
                         end
+                    else
+                        print("No Frame in", plotId)
                     end
+                else
+                    print("No SurfaceGui in", plotId)
                 end
+            else
+                print("No PlotSign in", plotId)
             end
+        else
+            print("Plot not found:", plotId)
         end
     end
     
-    statusLabel.Text = "Plot not found"
+    statusLabel.Text = "Your plot not found"
+    print("No matching plot found for:", expectedText)
     return nil
 end
 
@@ -245,18 +284,42 @@ RunService.Heartbeat:Connect(function()
     rgbOverlay.BackgroundColor3 = Color3.fromHSV((time * 0.5) % 1, 0.3, 0.8)
 end)
 
--- Auto-setup on character spawn
+-- Manual plot search button (for debugging)
+local searchButton = Instance.new("TextButton")
+searchButton.Size = UDim2.new(0, 100, 0, 20)
+searchButton.Position = UDim2.new(1, -110, 0, 5)
+searchButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+searchButton.BorderSizePixel = 1
+searchButton.BorderColor3 = Color3.fromRGB(100, 100, 100)
+searchButton.Text = "Find Plot"
+searchButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+searchButton.TextScaled = true
+searchButton.Font = Enum.Font.Gotham
+searchButton.Parent = mainFrame
+Instance.new("UICorner", searchButton).CornerRadius = UDim.new(0, 4)
+
+searchButton.MouseButton1Click:Connect(function()
+    playerPlot = nil -- Reset to force new search
+    findPlayerPlot()
+end)
+
+-- Auto-setup with longer delays
 player.CharacterAdded:Connect(function(character)
-    task.wait(1)
+    task.wait(5) -- Wait longer for plots to load
     findPlayerPlot()
 end)
 
 -- Setup for existing character
 if player.Character then
     task.spawn(function()
-        task.wait(1)
+        task.wait(5) -- Wait longer for plots to load
+        findPlayerPlot()
+    end)
+else
+    task.spawn(function()
+        task.wait(3) -- Initial wait
         findPlayerPlot()
     end)
 end
 
-print("Plot Teleporter loaded!")
+print("Plot Teleporter loaded! Use 'Find Plot' button if needed.") 
