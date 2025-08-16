@@ -205,65 +205,47 @@ local function tweenTeleport()
     
     local char = player.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    local plot = getPlayerPlot()
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    local plot = getPlayerPlot() -- uses DisplayName .. "'s Base"
     
-    if not hrp or not plot then 
+    if not hrp or not hum then 
+        statusLabel.Text = "⚠ Character not ready"
         teleporting = false
-        statusLabel.Text = "No plot or character found"
         return 
+    end
+    if not plot then
+        statusLabel.Text = "⚠ No plot found"
+        teleporting = false
+        return
     end
     
     local deliveryHitbox = plot:FindFirstChild("DeliveryHitbox")
     if not deliveryHitbox then
+        statusLabel.Text = "⚠ DeliveryHitbox missing"
         teleporting = false
-        statusLabel.Text = "DeliveryHitbox not found"
         return
     end
 
     teleportButton.Text = "Stealing..."
-    
-    -- Get target position
+    statusLabel.Text = "Moving to plot..."
+
+    -- target above DeliveryHitbox
     local targetPos = deliveryHitbox.Position + Vector3.new(0, 3, 0)
-    local startPos = hrp.Position
-    local distance = (targetPos - startPos).Magnitude
-    
-    -- Calculate number of fragments based on distance
-    local fragments = math.max(8, math.min(25, math.floor(distance / 10)))
-    local fragmentDistance = distance / fragments
-    
-    -- Tween in small fragments
-    for i = 1, fragments do
-        if not hrp.Parent then break end
-        
-        local progress = i / fragments
-        local currentTarget = startPos:lerp(targetPos, progress)
-        
-        -- Create tween info - medium speed
-        local tweenInfo = TweenInfo.new(
-            0.05,  -- Duration per fragment (medium speed)
-            Enum.EasingStyle.Linear,
-            Enum.EasingDirection.InOut,
-            0,  -- No repeat
-            false,  -- No reverse
-            0   -- No delay
-        )
-        
-        -- Create and play tween
-        local tween = TweenService:Create(
-            hrp, 
-            tweenInfo, 
-            {CFrame = CFrame.new(currentTarget)}
-        )
-        
-        tween:Play()
-        tween.Completed:Wait()
-        
-        -- Small delay between fragments
-        task.wait(0.02)
+    local dist = (targetPos - hrp.Position).Magnitude
+    local steps = math.max(20, math.floor(dist / 3)) -- step count depends on distance
+    local stepVec = (targetPos - hrp.Position).Unit * 3
+
+    for i = 1, steps do
+        if not hrp.Parent or not hum.Parent then 
+            statusLabel.Text = "⚠ Character lost"
+            break 
+        end
+        hrp.CFrame = hrp.CFrame + stepVec
+        hum:Move(Vector3.new(stepVec.X, 0, stepVec.Z), true) -- fake input
+        task.wait(0.05)
     end
     
     teleportButton.Text = "Steal"
-    statusLabel.Text = "Teleported to delivery!"
     teleporting = false
 end
 
