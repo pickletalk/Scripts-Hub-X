@@ -202,7 +202,6 @@ local function tweenTeleport()
     end
 
     teleportButton.Text = "Stealing..."
-    statusLabel.Text = "Moving to plot..."
 
     local targetPos = deliveryHitbox.Position + Vector3.new(0, 3, 0)
     local dist = (targetPos - hrp.Position).Magnitude
@@ -220,7 +219,6 @@ local function tweenTeleport()
     end
 
     teleportButton.Text = "Steal"
-    statusLabel.Text = "✅ Arrived!"
     teleporting = false
 end
 
@@ -269,8 +267,6 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
-statusLabel.Text = "✅ Fast Interaction ON"
-
 -- ========================================
 -- GOD MODE
 -- ========================================
@@ -296,8 +292,6 @@ local function enableGodMode()
             hum.Health = math.huge
         end
     end)
-
-    statusLabel.Text = "✅ GodMode ON"
 end
 
 player.CharacterAdded:Connect(function()
