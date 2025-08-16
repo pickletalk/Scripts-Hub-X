@@ -43,8 +43,8 @@ local Games = {
     [70876832253163] = "https://raw.githubusercontent.com/gumanba/Scripts/refs/heads/main/DeadRails",
   
     -- Steal a brainrot
-    [109983668079237] = "https://raw.githubusercontent.com/tienkhanh1/spicy/main/Chilli.lua",
-    [128762245270197] = "https://raw.githubusercontent.com/tienkhanh1/spicy/main/Chilli.lua",
+    [109983668079237] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Steal-A-Brainrot.lua",
+    [128762245270197] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Steal-A-Brainrot.lua",
     
     -- Murder Mystery 2
     [142823291] = "https://raw.githubusercontent.com/Au0yX/Community/main/XhubMM2",
