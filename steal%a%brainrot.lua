@@ -104,233 +104,139 @@ statusLabel.TextXAlignment = Enum.TextXAlignment.Left
 statusLabel.Parent = mainFrame
 
 -- ========================================
--- ORIGINAL SPAWN DETECTION (FIXED)
+-- PLOT DETECTION SYSTEM
 -- ========================================
-local lastSpawnPoint
+local playerPlot = nil
 
-local function nearestSpawnTo(pos)
-    local best, bestDist
-    for _, inst in ipairs(workspace:GetDescendants()) do
-        if inst:IsA("SpawnLocation") or (inst:IsA("BasePart") and inst.Name:lower():find("spawn")) then
-            local d = (inst.Position - pos).Magnitude
-            if not bestDist or d < bestDist then
-                best, bestDist = inst, d
+local plotIds = {
+    "eace968c-881f-43f9-9c0b-b2fc25f3f8ec",
+    "d7f59025-991d-4538-b499-bfe00c5a309b",
+    "b5c3542d-a60a-438c-9317-daea42823f20",
+    "af81bdb9-a235-4a49-a95f-76706e1195fd",
+    "a130a38a-aa6d-44d1-a55d-bcc77332824b",
+    "84042e01-722c-45ea-908d-a11b849b883e",
+    "97e28a62-36f2-49c9-aabb-6e5578b2f96c",
+    "80ef716c-dc18-4151-b8ef-2b57e4dd86a0"
+}
+
+local function findPlayerPlot()
+    local expectedText = player.DisplayName .. "'s Base"
+    
+    for _, plotId in pairs(plotIds) do
+        local plot = workspace.Plots:FindFirstChild(plotId)
+        if plot then
+            local plotSign = plot:FindFirstChild("PlotSign")
+            if plotSign then
+                local surfaceGui = plotSign:FindFirstChild("SurfaceGui")
+                if surfaceGui then
+                    local frame = surfaceGui:FindFirstChild("Frame")
+                    if frame then
+                        local textLabel = frame:FindFirstChild("TextLabel")
+                        if textLabel and textLabel.Text == expectedText then
+                            playerPlot = plot
+                            statusLabel.Text = "Found plot: " .. plotId:sub(1, 8) .. "..."
+                            return plot
+                        end
+                    end
+                end
             end
         end
     end
-    return best
+    
+    statusLabel.Text = "Plot not found"
+    return nil
 end
 
-local function detectSpawnPoint(char)
-    local hrp = char:WaitForChild("HumanoidRootPart", 5)
-    if not hrp then return end
-    local spawnObj = player.RespawnLocation or nearestSpawnTo(hrp.Position)
-    if spawnObj then 
-        lastSpawnPoint = spawnObj 
-        statusLabel.Text = "Spawn: " .. spawnObj.Name
+local function getPlayerPlot()
+    if not playerPlot then
+        findPlayerPlot()
     end
-end
-
-player.CharacterAdded:Connect(detectSpawnPoint)
-if player.Character then detectSpawnPoint(player.Character) end
-
-local function findPlayerSpawn()
-    return lastSpawnPoint
+    return playerPlot
 end
 
 -- ========================================
--- NEW STEALTH TELEPORT METHOD
+-- TWEEN TELEPORT METHOD
 -- ========================================
+local TweenService = game:GetService("TweenService")
 local teleporting = false
 
-local function ragdollCharacter(character, enable)
-    local humanoid = character:FindFirstChild("Humanoid")
-    if not humanoid then return end
-    
-    if enable then
-        -- Enable ragdoll
-        humanoid.PlatformStand = true
-        humanoid:ChangeState(Enum.HumanoidStateType.Physics)
-        
-        -- Disable all motor joints temporarily
-        for _, obj in pairs(character:GetDescendants()) do
-            if obj:IsA("Motor6D") then
-                obj.Enabled = false
-            end
-        end
-    else
-        -- Disable ragdoll
-        humanoid.PlatformStand = false
-        humanoid:ChangeState(Enum.HumanoidStateType.Running)
-        
-        -- Re-enable all motor joints
-        for _, obj in pairs(character:GetDescendants()) do
-            if obj:IsA("Motor6D") then
-                obj.Enabled = true
-            end
-        end
-    end
-end
-
-local function stealthTeleport()
+local function tweenTeleport()
     if teleporting then return end
     teleporting = true
     
     local char = player.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    local spawnObj = findPlayerSpawn()
+    local plot = getPlayerPlot()
     
-    if not hrp or not spawnObj then 
+    if not hrp or not plot then 
         teleporting = false
-        statusLabel.Text = "No spawn found"
+        statusLabel.Text = "No plot or character found"
         return 
+    end
+    
+    local deliveryHitbox = plot:FindFirstChild("DeliveryHitbox")
+    if not deliveryHitbox then
+        teleporting = false
+        statusLabel.Text = "DeliveryHitbox not found"
+        return
     end
 
     teleportButton.Text = "Stealing..."
     
-    -- Get the actual spawn position (not random)
-    local spawnPos = spawnObj.Position
-    local targetPos = spawnPos + Vector3.new(0, 5, 0)  -- 5 studs above spawn point
+    -- Get target position
+    local targetPos = deliveryHitbox.Position + Vector3.new(0, 3, 0)
+    local startPos = hrp.Position
+    local distance = (targetPos - startPos).Magnitude
     
-    -- Enable ragdoll for stealth
-    ragdollCharacter(char, true)
+    -- Calculate number of fragments based on distance
+    local fragments = math.max(8, math.min(25, math.floor(distance / 10)))
+    local fragmentDistance = distance / fragments
     
-    -- Method 1: Workspace.CurrentCamera manipulation (very stealth)
-    local camera = workspace.CurrentCamera
-    if camera then
-        pcall(function()
-            local oldCameraCFrame = camera.CFrame
-            camera.CameraSubject = nil
-            camera.CameraType = Enum.CameraType.Scriptable
-            
-            -- Move character while camera is detached and ragdolled
-            hrp.CFrame = CFrame.new(targetPos)
-            
-            task.wait(0.15)
-            
-            -- Restore camera
-            camera.CameraSubject = char.Humanoid
-            camera.CameraType = Enum.CameraType.Custom
-        end)
+    -- Tween in small fragments
+    for i = 1, fragments do
+        if not hrp.Parent then break end
+        
+        local progress = i / fragments
+        local currentTarget = startPos:lerp(targetPos, progress)
+        
+        -- Create tween info - medium speed
+        local tweenInfo = TweenInfo.new(
+            0.05,  -- Duration per fragment (medium speed)
+            Enum.EasingStyle.Linear,
+            Enum.EasingDirection.InOut,
+            0,  -- No repeat
+            false,  -- No reverse
+            0   -- No delay
+        )
+        
+        -- Create and play tween
+        local tween = TweenService:Create(
+            hrp, 
+            tweenInfo, 
+            {CFrame = CFrame.new(currentTarget)}
+        )
+        
+        tween:Play()
+        tween.Completed:Wait()
+        
+        -- Small delay between fragments
+        task.wait(0.02)
     end
-    
-    -- Method 2: Double-check position while ragdolled
-    task.wait(0.05)
-    pcall(function()
-        if (hrp.Position - targetPos).Magnitude > 3 then
-            hrp.CFrame = CFrame.new(targetPos)
-        end
-    end)
-    
-    -- Wait a bit before disabling ragdoll
-    task.wait(0.2)
-    
-    -- Disable ragdoll
-    ragdollCharacter(char, false)
     
     teleportButton.Text = "Steal"
-    statusLabel.Text = "Teleported to spawn!"
+    statusLabel.Text = "Teleported to delivery!"
     teleporting = false
-end
-
--- ========================================
--- NEW UNDETECTABLE SPEED METHOD
--- ========================================
-local speedConnections = {}
-local speedEnabled = false
-
-local function cleanupSpeed()
-    for _, connection in pairs(speedConnections) do
-        if connection then connection:Disconnect() end
-    end
-    speedConnections = {}
-    speedEnabled = false
-end
-
-local function setupInvisibleSpeed(character)
-    cleanupSpeed()
-    
-    local humanoid = character:WaitForChild("Humanoid", 5)
-    local rootPart = character:WaitForChild("HumanoidRootPart", 5)
-    
-    if not humanoid or not rootPart then return end
-    
-    speedEnabled = true
-    
-    -- Method 1: RenderStepped for smoothest undetectable movement
-    local lastUpdate = tick()
-    
-    speedConnections[1] = RunService.RenderStepped:Connect(function()
-        if not speedEnabled or not rootPart.Parent or humanoid.Health <= 0 then return end
-        
-        local now = tick()
-        local deltaTime = now - lastUpdate
-        lastUpdate = now
-        
-        local moveDirection = humanoid.MoveDirection
-        if moveDirection.Magnitude > 0 then
-            -- Ultra-subtle speed boost using AssemblyLinearVelocity
-            local currentVelocity = rootPart.AssemblyLinearVelocity
-            local boostVelocity = Vector3.new(
-                moveDirection.X * 8,  -- Very small boost
-                currentVelocity.Y,    -- Keep Y velocity unchanged
-                moveDirection.Z * 8   -- Very small boost
-            )
-            
-            rootPart.AssemblyLinearVelocity = boostVelocity
-        end
-    end)
-    
-    -- Method 2: Slight CFrame position adjustments (barely noticeable)
-    local positionOffset = Vector3.new(0, 0, 0)
-    
-    speedConnections[2] = RunService.PostSimulation:Connect(function()
-        if not speedEnabled or not rootPart.Parent then return end
-        
-        local moveDir = humanoid.MoveDirection
-        if moveDir.Magnitude > 0 then
-            -- Accumulate tiny position changes
-            positionOffset = positionOffset + (moveDir * 0.002)  -- Extremely small
-            
-            -- Apply offset every few frames
-            if positionOffset.Magnitude > 0.01 then
-                rootPart.CFrame = rootPart.CFrame + positionOffset
-                positionOffset = Vector3.new(0, 0, 0)
-            end
-        end
-    end)
-    
-    -- Method 3: Keep WalkSpeed normal and JumpPower normal
-    speedConnections[3] = RunService.Heartbeat:Connect(function()
-        if not humanoid or not humanoid.Parent then return end
-        
-        -- Always maintain normal values
-        if humanoid.WalkSpeed ~= 16 then
-            humanoid.WalkSpeed = 16
-        end
-        if humanoid.JumpPower ~= 50 then
-            humanoid.JumpPower = 50
-        end
-    end)
-    
-    -- Cleanup on character removal
-    character.AncestryChanged:Connect(function()
-        if not character.Parent then
-            cleanupSpeed()
-        end
-    end)
 end
 
 -- ========================================
 -- EVENT CONNECTIONS
 -- ========================================
 closeButton.MouseButton1Click:Connect(function()
-    cleanupSpeed()
     screenGui:Destroy()
 end)
 
 teleportButton.MouseButton1Click:Connect(function()
-    stealthTeleport()
+    tweenTeleport()
 end)
 
 -- RGB button effect
@@ -342,17 +248,15 @@ end)
 -- Auto-setup on character spawn
 player.CharacterAdded:Connect(function(character)
     task.wait(1)
-    detectSpawnPoint(character)
-    setupInvisibleSpeed(character)
+    findPlayerPlot()
 end)
 
 -- Setup for existing character
 if player.Character then
     task.spawn(function()
         task.wait(1)
-        detectSpawnPoint(player.Character)
-        setupInvisibleSpeed(player.Character)
+        findPlayerPlot()
     end)
 end
 
-print("Stealth Steal A Brainrot loaded!")
+print("Plot Teleporter loaded!")
