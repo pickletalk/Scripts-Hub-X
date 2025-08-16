@@ -84,7 +84,7 @@ local Games = {
     [2768379856] = "https://raw.githubusercontent.com/Yumiara/CPP/refs/heads/main/Main.cpp",
 
     -- Steal A Freddy
-    [137167142636546] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/stealafreddy.lua",
+    [137167142636546] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Steal-A-Freddy.lua",
 
     -- Build A Plane
     [137925884276740] = "https://raw.githubusercontent.com/ScriptsRBXdotCom/scripts/refs/heads/main/buildaplane",
