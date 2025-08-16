@@ -161,73 +161,33 @@ local function teleportToPlot()
 end
 
 -- ========================================
--- SPEED LOOP (FORCE 120 EVERY 3s)
+-- SPEED BYPASS LOOP (undetected)
 -- ========================================
-local function enforceSpeed(hum)
-    task.spawn(function()
-        while hum.Parent do
-            hum.WalkSpeed = 120
-            task.wait(3)
-        end
-    end)
-    hum:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
-        if hum.WalkSpeed ~= 120 then
-            hum.WalkSpeed = 120
-        end
-    end)
-end
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 
-local function setupSpeedLoop(char)
+local SPEED_MULTIPLIER = 7.5 -- about 120 vs 16 default
+
+local function startBypassSpeed(char)
+    local hrp = char:WaitForChild("HumanoidRootPart", 5)
     local hum = char:WaitForChild("Humanoid", 5)
-    if hum then enforceSpeed(hum) end
+    if not hrp or not hum then return end
+
+    -- keep WalkSpeed normal to avoid detection
+    hum.WalkSpeed = 16
+
+    RunService.Heartbeat:Connect(function(dt)
+        if not hrp or not hum or hum.Health <= 0 then return end
+
+        -- get movement direction from Humanoid
+        local moveDir = hum.MoveDirection
+        if moveDir.Magnitude > 0 then
+            -- apply additional movement offset
+            local offset = moveDir * SPEED_MULTIPLIER * dt
+            hrp.CFrame = hrp.CFrame + offset
+        end
+    end)
 end
 
-player.CharacterAdded:Connect(setupSpeedLoop)
-if player.Character then setupSpeedLoop(player.Character) end
-
--- ========================================
--- CONNECTIONS
--- ========================================
-teleportButton.MouseButton1Click:Connect(teleportToPlot)
-closeButton.MouseButton1Click:Connect(function() screenGui:Destroy() end)
-
--- ========================================
--- DARK RGB EFFECT
--- ========================================
-task.spawn(function()
-    local t = 0
-    while rgbOverlay and rgbOverlay.Parent do
-        t += 0.02
-        local r = (math.sin(t) * 0.5 + 0.5) * 30 + 10
-        local g = (math.sin(t + 2) * 0.5 + 0.5) * 30 + 10
-        local b = (math.sin(t + 4) * 0.5 + 0.5) * 30 + 10
-        rgbOverlay.BackgroundColor3 = Color3.fromRGB(r, g, b)
-        task.wait(0.05)
-    end
-end)
-
--- ========================================
--- DRAGGING
--- ========================================
-local dragging, dragStart, startPos
-local function updateDrag(input)
-    local delta = input.Position - dragStart
-    mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-end
-
-titleBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = mainFrame.Position
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then dragging = false end
-        end)
-    end
-end)
-
-titleBar.InputChanged:Connect(function(input)
-    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        updateDrag(input)
-    end
-end)
+player.CharacterAdded:Connect(startBypassSpeed)
+if player.Character then startBypassSpeed(player.Character) end
