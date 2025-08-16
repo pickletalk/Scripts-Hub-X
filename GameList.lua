@@ -99,22 +99,22 @@ local Games = {
     [128829279907343] = "https://raw.githubusercontent.com/lotretscript/Lo-Tret-Script/refs/heads/main/Lo-Tret-Script.lua.txt",
     
     -- Slap Tower
-    [95508886069297] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua", -- 1
-    [79089892790758] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua", -- 2
-    [105612566642310] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua", -- 3
-    [86082995079744] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua", -- 4
-    [94638025587676] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua", -- 5
-    [120759571391756] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua", -- 6
-    [91711653427804] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua", -- 7
+    [95508886069297] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Obbys.lua", -- 1
+    [79089892790758] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Obbys.lua", -- 2
+    [105612566642310] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Obbys.lua", -- 3
+    [86082995079744] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Obbys.lua", -- 4
+    [94638025587676] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Obbys.lua", -- 5
+    [120759571391756] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Obbys.lua", -- 6
+    [91711653427804] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Obbys.lua", -- 7
 
     -- Smack Gear Tower
-    [137346665938077] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua", -- 1
-    [90922469229908] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua", -- 2
-    [79223711715581] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua", -- 3
-    [116270410750670] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua", -- 4
+    [137346665938077] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Obbys.lua", -- 1
+    [90922469229908] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Obbys.lua", -- 2
+    [79223711715581] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Obbys.lua", -- 3
+    [116270410750670] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Obbys.lua", -- 4
 
     -- Tower Of Hell
-    [1962086868] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/obbyscript.lua",
+    [1962086868] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Obbys.lua",
 
     -- Troll Is A Pining Tower 2
     [83312952548612] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/troll%is%pinning%tower%2.lua"
