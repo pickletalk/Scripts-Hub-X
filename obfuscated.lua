@@ -41,7 +41,7 @@ local JumpscareUsers = {
     -- Add jumpscare user IDs here if needed
 }
 local BlacklistUsers = {
-    -- Add additional blacklisted user IDs here if needed
+  "4196292931" -- jvpogi233jj
 }
 
 -- Animatronics Finder Configuration (Steal a Freddy Game Only)
