@@ -32,7 +32,8 @@ local PremiumUsers = {
 }
 local StaffUserId = {
     "3882788546", -- Keanjacob5
-    "799427028" -- Roblox_xvt
+    "799427028", -- Roblox_xvt
+    "9249886989" -- ALT
 }
 local BlackUsers = {
     -- Add blacklisted user IDs here if needed
