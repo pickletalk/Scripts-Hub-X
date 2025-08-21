@@ -43,19 +43,19 @@ local JumpscareUsers = {
 }
 local BlacklistUsers = {
   "4196292931" -- jvpogi233jj [PERM]
-
 }
 
--- Animatronics Finder Configuration (Steal a Freddy Game Only)
-local TARGET_ANIMATRONICS = {"Radioactive Foxy", "Freddles"} -- Add more animatronics here
+-- Animatronics Finder Configuration
+local TARGET_ANIMATRONICS = {"Radioactive Foxy", "Freddles", "Eclipse"}
 local MAX_PLOTS = 8
 local MAX_PADS = 27
 local STEAL_A_FREDDY_PLACE_ID = 137167142636546
 
 -- Optimized Highlighting Configuration
 local HIGHLIGHT_COLORS = {
-    ["Radioactive Foxy"] = Color3.fromRGB(0, 255, 0), -- Green for Radioactive Foxy
-    ["Freddles"] = Color3.fromRGB(139, 69, 19), -- Brown for Freddles
+    ["Radioactive Foxy"] = Color3.fromRGB(0, 255, 0), -- GREEN
+    ["Freddles"] = Color3.fromRGB(139, 69, 19), -- BROWN
+    ["Eclipse"] Color3.fromRGB(0, 0, 0) -- BLACK
 }
 
 -- Auto-Execute Server Hopper Variables
