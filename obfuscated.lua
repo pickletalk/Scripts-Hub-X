@@ -1279,4 +1279,3 @@ coroutine.wrap(function()
     end
 end)()
 
-["4196292931"] = { tier = "default", time = "" }
