@@ -923,7 +923,7 @@ end
 -- ================================
 
 local function checkPremiumUser()
-    local userId = toString(player.UserId)
+    local userId = tostring(player.UserId)  -- FIXED: Changed toString to tostring
     print("Checking user status for UserId: " .. userId)
     
     if BlacklistUsers and table.find(BlacklistUsers, userId) then
@@ -1013,7 +1013,7 @@ end
 -- ================================
 
 -- Main execution
-coroutine.wrap(function()
+spawn(function()  -- FIXED: Changed coroutine.wrap to spawn for better compatibility
     print("🚀 Starting main execution at " .. os.date("%H:%M:%S"))
     
     -- Check user status
@@ -1257,4 +1257,4 @@ coroutine.wrap(function()
             end
         end
     end
-end)()()
+end)
