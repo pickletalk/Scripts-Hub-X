@@ -22,25 +22,18 @@ local playerGui = player:WaitForChild("PlayerGui", 5)
 -- User Status Variables
 local OwnerUserId = "2341777244"
 local PremiumUsers = {
-		"1102633570", -- Pedrojay450 [PERM]
-		"8860068952", -- Pedrojay450's alt (assaltanoobsbr) [PERM]
-		"799427028", -- Roblox_xvt [PERM]
-		"5317421108", -- kolwneje [PERM]
-		"1458719572" -- wxckfeen [PERM]
-	}
+	"1102633570", -- Pedrojay450 [PERM]
+	"8860068952", -- Pedrojay450's alt (assaltanoobsbr) [PERM]
+	"799427028", -- Roblox_xvt [PERM]
+	"5317421108", -- kolwneje [PERM]
+	"1458719572" -- wxckfeen [PERM]
+}
 local StaffUserId = {
     "3882788546", -- Keanjacob5
     "799427028", -- Roblox_xvt
     "9249886989" -- ALT
 }
-local BlackUsers = {
-    -- Add blacklisted user IDs here if needed
-}
-local JumpscareUsers = {
-    -- Add jumpscare user IDs here if needed
-}
-local BlacklistUsers = {
-	}
+local BlacklistUsers = {}
 
 -- Animatronics Finder Configuration
 local TARGET_ANIMATRONICS = {"Radioactive Foxy", "Freddles", "Eclipse"}
@@ -52,7 +45,7 @@ local STEAL_A_FREDDY_PLACE_ID = 137167142636546
 local HIGHLIGHT_COLORS = {
     ["Radioactive Foxy"] = Color3.fromRGB(0, 255, 0), -- GREEN
     ["Freddles"] = Color3.fromRGB(139, 69, 19), -- BROWN
-    ["Eclipse"] Color3.fromRGB(0, 0, 0) -- BLACK
+    ["Eclipse"] = Color3.fromRGB(0, 0, 0) -- BLACK
 }
 
 -- Auto-Execute Server Hopper Variables
@@ -928,14 +921,11 @@ end
 -- ================================
 
 local function checkPremiumUser()
-    local userId = tostring(player.UserId)
+    local userId = toString(player.UserId)
     print("Checking user status for UserId: " .. userId)
     
     if BlacklistUsers and table.find(BlacklistUsers, userId) then
         print("Blacklisted user detected")
-        return "blacklisted"
-    elseif BlackUsers and table.find(BlackUsers, userId) then
-        print("Black user detected")
         return "blacklisted"
     elseif OwnerUserId and userId == tostring(OwnerUserId) then
         print("Owner detected")
@@ -943,9 +933,6 @@ local function checkPremiumUser()
     elseif StaffUserId and table.find(StaffUserId, userId) then
         print("Staff detected")
         return "staff"
-    elseif JumpscareUsers and table.find(JumpscareUsers, userId) then
-        print("Jumpscare user detected")
-        return "jumpscareuser"
     elseif PremiumUsers and table.find(PremiumUsers, userId) then
         print("Premium user verified")
         return "premium"
@@ -1022,6 +1009,7 @@ end
 -- ================================
 -- MAIN EXECUTION FUNCTIONS
 -- ================================
+
 -- Main execution
 coroutine.wrap(function()
     print("🚀 Starting main execution at " .. os.date("%H:%M:%S"))
@@ -1032,13 +1020,6 @@ coroutine.wrap(function()
     if userStatus == "blacklisted" then
         print("❌ Kicking blacklisted user")
         player:Kick("You are blacklisted from using this script!")
-        return
-    end
-    
-    if userStatus == "jumpscareuser" then
-        print("🎃 Jumpscare user detected - Activating jumpscare")
-        -- Add jumpscare logic here if needed
-        player:Kick("👻 BOO! You've been jumpscared!")
         return
     end
 
@@ -1274,5 +1255,4 @@ coroutine.wrap(function()
             end
         end
     end
-end)()
-
+end)()()
