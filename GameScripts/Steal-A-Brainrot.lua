@@ -204,20 +204,40 @@ local function teleportToSpawn()
         return
     end
     
-    teleportButton.Text = "💰 STEALING 💰"
+    teleportButton.Text = "💰 STEALING... 💰"
 
-    local targetPos = plotCFrame.Position + (plotCFrame.LookVector * 5)
-    local offset = targetPos - hrp.Position
-    local dist = offset.Magnitude
-    local steps = math.max(20, math.floor(dist / 2))
-    local step = offset.Unit * 2
-
-    for i = 1, steps do
+    -- Micro-Movements (Silent Teleports) Method
+    local startPos = hrp.Position
+    local targetPos = plotCFrame.Position + Vector3.new(0, 3, 0) -- Slight Y offset for safety
+    local totalDistance = (targetPos - startPos).Magnitude
+    
+    -- Calculate micro-movement parameters
+    local microStepSize = 8 -- Small increment size (8 studs per step)
+    local totalSteps = math.ceil(totalDistance / microStepSize)
+    local direction = (targetPos - startPos).Unit
+    
+    -- Perform micro-movements at high speed
+    for i = 1, totalSteps do
         if not hrp.Parent or not hum.Parent then break end
-        hrp.CFrame = hrp.CFrame + step
-        hum:Move(Vector3.new(step.X, 0, step.Z), true)
-        task.wait(0.05)
+        
+        local progress = i / totalSteps
+        local currentTarget = startPos:lerp(targetPos, progress)
+        
+        -- Move in small increment
+        hrp.CFrame = CFrame.new(currentTarget, currentTarget + direction)
+        
+        -- Simulate movement input to make it look natural
+        if hum then
+            local moveVector = (currentTarget - hrp.Position).Unit
+            hum:Move(Vector3.new(moveVector.X, 0, moveVector.Z), true)
+        end
+        
+        -- Very fast micro-movements (barely detectable)
+        RunService.Heartbeat:Wait()
     end
+    
+    -- Final position adjustment
+    hrp.CFrame = CFrame.new(targetPos, targetPos + direction)
 
     -- Show "DONE CUH" message
     teleportButton.Text = "🎉 DONE CUH 🎉"
