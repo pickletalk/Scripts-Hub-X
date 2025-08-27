@@ -6,15 +6,42 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
--- Track last known spawn
-local lastSpawnCFrame = nil
+-- Track actual spawnpoint
+local actualSpawnCFrame = nil
+
+-- Function to get the actual spawnpoint
+local function getSpawnPoint()
+    local spawnLocation = nil
+    
+    -- Method 1: Check for SpawnLocation in workspace
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("SpawnLocation") and obj.Enabled then
+            spawnLocation = obj
+            break
+        end
+    end
+    
+    -- Method 2: If no SpawnLocation found, use default spawn at (0, 50, 0)
+    if not spawnLocation then
+        return CFrame.new(0, 50, 0)
+    end
+    
+    -- Return the spawnpoint CFrame (spawn on top of the spawn)
+    local spawnCFrame = spawnLocation.CFrame
+    return CFrame.new(spawnCFrame.Position + Vector3.new(0, spawnLocation.Size.Y/2 + 5, 0))
+end
+
+-- Set the actual spawn point when character is added
 player.CharacterAdded:Connect(function(char)
     local hrp = char:WaitForChild("HumanoidRootPart")
-    task.wait(1)
-    if hrp then
-        lastSpawnCFrame = hrp.CFrame
-    end
+    -- Get the actual spawnpoint instead of player's position
+    actualSpawnCFrame = getSpawnPoint()
 end)
+
+-- Initialize spawn point if character already exists
+if player.Character then
+    actualSpawnCFrame = getSpawnPoint()
+end
 
 -- =========================================================
 -- OLD RGB UI
@@ -95,7 +122,7 @@ credits.TextColor3 = Color3.fromRGB(130, 130, 130)
 credits.Text = "by PickleTalk"
 
 -- =========================================================
--- Teleport (spawnpoint + 5 studs forward)
+-- Teleport (actual spawnpoint + 5 studs forward)
 -- =========================================================
 local teleporting = false
 local function teleportToSpawn()
@@ -108,17 +135,20 @@ local function teleportToSpawn()
 
     if not hrp or not hum then
         statusLabel.Text = "⚠ Character not ready"
+        wait(1)
+        statusLabel.Text = "Ready."
         teleporting = false
         return
     end
-    if not lastSpawnCFrame then
-        lastSpawnCFrame = hrp.CFrame
+    
+    -- Get fresh spawnpoint if not set
+    if not actualSpawnCFrame then
+        actualSpawnCFrame = getSpawnPoint()
     end
 
     teleportButton.Text = "Stealing..."
-    statusLabel.Text = "Moving to spawn…"
 
-    local targetPos = lastSpawnCFrame.Position + (lastSpawnCFrame.LookVector * 5)
+    local targetPos = actualSpawnCFrame.Position + (actualSpawnCFrame.LookVector * 5)
     local offset = targetPos - hrp.Position
     local dist = offset.Magnitude
     local steps = math.max(20, math.floor(dist / 2))
@@ -132,7 +162,6 @@ local function teleportToSpawn()
     end
 
     teleportButton.Text = "Steal"
-    statusLabel.Text = "✅ At spawnpoint!"
     teleporting = false
 end
 teleportButton.MouseButton1Click:Connect(teleportToSpawn)
