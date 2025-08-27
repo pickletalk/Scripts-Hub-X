@@ -184,82 +184,116 @@ end)
 local teleporting = false
 
 local function teleportToSpawn()
-    if teleporting then return end
-    teleporting = true
+    local running = false
+    local root
+    local oldAnchored = false
+    local startCF
 
-    local char = player.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-
-    if not hrp or not hum then
-        teleporting = false
-        return
-    end
-
-    -- Find the player's plot teleport position
-    local plotCFrame = getPlotTeleportPosition()
-    
-    if not plotCFrame then
-        teleporting = false
-        return
-    end
-    
-    teleportButton.Text = "💰 STEALING 💰"
-
-    -- Advanced Stealth Teleportation Method
-    local startPos = hrp.Position
-    local targetPos = plotCFrame.Position + Vector3.new(0, 3, 0)
-    local totalDistance = (targetPos - startPos).Magnitude
-    
-    -- Adaptive step sizing based on distance
-    local baseStepSize = math.clamp(totalDistance / 25, 4, 12) -- Dynamic step size
-    local direction = (targetPos - startPos).Unit
-    
-    -- Variable timing to avoid pattern detection
-    local function getVariableWait()
-        return math.random(15, 35) / 1000 -- Random 15-35ms delays
-    end
-    
-    -- Movement with realistic physics simulation
-    local currentPos = startPos
-    while (targetPos - currentPos).Magnitude > 2 do
-        if not hrp.Parent or not hum.Parent then break end
-        
-        local remainingDistance = (targetPos - currentPos).Magnitude
-        local stepSize = math.min(baseStepSize, remainingDistance)
-        
-        -- Add slight random variation to movement (human-like)
-        local randomOffset = Vector3.new(
-            math.random(-100, 100) / 1000,
-            0,
-            math.random(-100, 100) / 1000
-        )
-        
-        local nextPos = currentPos + (direction * stepSize) + randomOffset
-        
-        -- Smooth CFrame transition with proper orientation
-        local lookDirection = (nextPos - currentPos).Unit
-        hrp.CFrame = CFrame.lookAt(nextPos, nextPos + lookDirection)
-        
-        -- Simulate realistic humanoid movement
-        if hum then
-            hum:Move(Vector3.new(lookDirection.X, 0, lookDirection.Z), true)
+    local function setError(partName)
+        running = false
+        if root then
+            root.Anchored = oldAnchored
         end
-        
-        currentPos = nextPos
-        task.wait(getVariableWait()) -- Variable timing
+        teleportButton.BackgroundColor3 = Color3.fromRGB(150, 30, 30)
+        teleportButton.Text = ("💰 ERROR ON %s 💰"):format(partName)
+        task.wait(1.5)
+        teleportButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        teleportButton.Text = "💰 STEAL 💰"
     end
-    
-    -- Final smooth positioning
-    hrp.CFrame = CFrame.lookAt(targetPos, targetPos + direction)
 
-    -- Show "DONE CUH" message
-    teleportButton.Text = "🎉 DONE CUH 🎉"
-    
-    -- Wait 1 second then revert back
-    task.wait(1)
-    teleportButton.Text = "💰 STEAL 💰"
-    teleporting = false
+    local ok, err = pcall(function()
+        teleportButton.Text = "💰 STEALING CUH!... 💰"
+
+        root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+        if not root then return setError("HumanoidRootPart") end
+        oldAnchored = root.Anchored
+        startCF = root.CFrame
+
+        -- Ocean-wave RGB animation
+        running = true
+        task.spawn(function()
+            local t = 0
+            while running do
+                t += 0.03
+                local r = math.floor((math.sin(t)     * 0.5 + 0.5) * 60)
+                local g = math.floor((math.sin(t + 2) * 0.5 + 0.5) * 60)
+                local b = math.floor((math.sin(t + 4) * 0.5 + 0.5) * 120 + 60)
+                teleportButton.BackgroundColor3 = Color3.fromRGB(r, g, b)
+                task.wait(0.03)
+            end
+        end)
+
+        -- Detect nearby players for 3 seconds
+        local startTime = tick()
+        while tick() - startTime < 3.5 do
+            local closePlayerFound = false
+            for _, plr in ipairs(game.Players:GetPlayers()) do
+                if plr ~= player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                    local dist = (plr.Character.HumanoidRootPart.Position - root.Position).Magnitude
+                    if dist <= 30 then
+                        closePlayerFound = true
+                        break
+                    end
+                end
+            end
+
+            if closePlayerFound then
+                -- Teleport away 20 studs in a random direction
+                local angle = math.rad(math.random(0, 359))
+                local offset = Vector3.new(math.cos(angle) * 25, 0, math.sin(angle) * 25)
+                root.CFrame = root.CFrame + offset
+            end
+
+            task.wait(0.1) -- check 10 times per second
+        end
+
+        -- Find the player's plot teleport position
+        local plotCFrame = getPlotTeleportPosition()
+        if not plotCFrame then return setError("PlayerPlot") end
+
+        -- Position slightly above plot for fall
+        local plotPosAbove = plotCFrame.Position + Vector3.new(0, 0.2, 0)
+
+        -- Triple snap fall
+        for i = 1, 3 do
+            root.CFrame = CFrame.new(plotPosAbove)
+            root.Anchored = false
+            task.wait(0.3) -- fall
+            root.Anchored = true
+            task.wait(0.05)
+        end
+
+        teleportButton.Text = "💰 SUCCESS CUH! 💰"
+
+        -- Return to starting position
+        root.CFrame = startCF
+        root.Anchored = oldAnchored
+
+        running = false
+
+        -- Flash
+        local gold = Color3.fromRGB(212, 175, 55)
+        local black = Color3.fromRGB(0, 0, 0)
+        for i = 1, 3 do
+            teleportButton.BackgroundColor3 = gold
+            task.wait(0.15)
+            teleportButton.BackgroundColor3 = black
+            task.wait(0.15)
+        end
+
+        teleportButton.BackgroundColor3 = black
+        teleportButton.Text = "💰 STEAL 💰"
+    end)
+
+    if not ok then
+        running = false
+        if root then root.Anchored = oldAnchored end
+        teleportButton.BackgroundColor3 = Color3.fromRGB(150, 30, 30)
+        teleportButton.Text = "💰 ERROR ON INTERNAL 💰"
+        task.wait(1.5)
+        teleportButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        teleportButton.Text = "💰 STEAL 💰"
+    end
 end
 
 teleportButton.MouseButton1Click:Connect(teleportToSpawn)
@@ -318,47 +352,3 @@ local function enableInfiniteJump()
     createJumpNotification()
 end
 enableInfiniteJump()
-
--- =========================================================
--- Smart Noclip (raycast forward)
--- =========================================================
-local noclipActive = false
-local function setCollisions(char, state)
-    for _, part in ipairs(char:GetDescendants()) do
-        if part:IsA("BasePart") then
-            part.CanCollide = state
-        end
-    end
-end
-
-RunService.Heartbeat:Connect(function()
-    local char = player.Character
-    if not char then return end
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    if not (hrp and hum) then return end
-
-    local dir = hum.MoveDirection
-    if dir.Magnitude > 0 then
-        local params = RaycastParams.new()
-        params.FilterType = Enum.RaycastFilterType.Blacklist
-        params.FilterDescendantsInstances = {char}
-        local result = workspace:Raycast(hrp.Position, dir.Unit * 3, params)
-        if result and result.Instance and result.Instance.CanCollide then
-            if not noclipActive then
-                noclipActive = true
-                setCollisions(char, false)
-            end
-        else
-            if noclipActive then
-                noclipActive = false
-                setCollisions(char, true)
-            end
-        end
-    else
-        if noclipActive then
-            noclipActive = false
-            setCollisions(char, true)
-        end
-    end
-end)
