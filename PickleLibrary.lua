@@ -101,49 +101,49 @@ function Pickle.CreateWindow(options)
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     })
     
-    -- Main container (smaller size, top-right position)
+    -- Main container
     local container = new('Frame', {
         Parent = screenGui,
-        Size = UDim2.new(0, 420, 0, 300), -- Smaller size
-        Position = UDim2.new(1, -430, 0, 10), -- Top-right position
+        Size = UDim2.new(0, 450, 0, 320),
+        Position = UDim2.new(1, -460, 0, 10),
         BackgroundTransparency = 1,
         ZIndex = 1
     })
     
-    -- Main window frame
+    -- Main window frame (BLACK)
     local mainFrame = new('Frame', {
         Parent = container,
         Size = UDim2.new(1, 0, 1, 0),
         Position = UDim2.new(0, 0, 0, 0),
-        BackgroundColor3 = Color3.fromRGB(25, 25, 25),
+        BackgroundColor3 = Color3.fromRGB(0, 0, 0),
         BorderSizePixel = 0,
         ZIndex = 2
     })
     
     local mainCorner = new('UICorner', {
         Parent = mainFrame,
-        CornerRadius = UDim.new(0, 8)
+        CornerRadius = UDim.new(0, 0) -- No rounded corners
     })
     
     local mainStroke = new('UIStroke', {
         Parent = mainFrame,
-        Thickness = 1,
-        Color = Color3.fromRGB(60, 60, 60),
+        Thickness = 2,
+        Color = Color3.fromRGB(255, 255, 255),
         Transparency = 0.5
     })
     
-    -- Title bar
+    -- Title bar (BLACK)
     local titleBar = new('Frame', {
         Parent = mainFrame,
         Size = UDim2.new(1, 0, 0, 35),
-        BackgroundColor3 = Color3.fromRGB(20, 20, 20),
+        BackgroundColor3 = Color3.fromRGB(0, 0, 0),
         BorderSizePixel = 0,
         ZIndex = 3
     })
     
     local titleCorner = new('UICorner', {
         Parent = titleBar,
-        CornerRadius = UDim.new(0, 8)
+        CornerRadius = UDim.new(0, 0)
     })
     
     local titleLabel = new('TextLabel', {
@@ -176,14 +176,15 @@ function Pickle.CreateWindow(options)
     
     local closeCorner = new('UICorner', {
         Parent = closeButton,
-        CornerRadius = UDim.new(0, 6)
+        CornerRadius = UDim.new(0, 0)
     })
     
+    -- Gray minimize button with black outline
     local minimizeButton = new('TextButton', {
         Parent = titleBar,
         Size = UDim2.new(0, 25, 0, 25),
         Position = UDim2.new(1, -60, 0, 5),
-        BackgroundColor3 = Color3.fromRGB(255, 189, 46),
+        BackgroundColor3 = Color3.fromRGB(128, 128, 128),
         BorderSizePixel = 0,
         Text = "−",
         TextColor3 = Color3.fromRGB(0, 0, 0),
@@ -195,7 +196,13 @@ function Pickle.CreateWindow(options)
     
     local minCorner = new('UICorner', {
         Parent = minimizeButton,
-        CornerRadius = UDim.new(0, 6)
+        CornerRadius = UDim.new(0, 0)
+    })
+    
+    local minStroke = new('UIStroke', {
+        Parent = minimizeButton,
+        Thickness = 1,
+        Color = Color3.fromRGB(0, 0, 0)
     })
     
     -- Content area
@@ -207,18 +214,18 @@ function Pickle.CreateWindow(options)
         ZIndex = 3
     })
     
-    -- Tab navigation (left side)
+    -- Tab navigation (left side) - Darker black
     local tabFrame = new('Frame', {
         Parent = contentFrame,
-        Size = UDim2.new(0, 120, 1, 0),
-        BackgroundColor3 = Color3.fromRGB(30, 30, 30),
+        Size = UDim2.new(0, 130, 1, 0),
+        BackgroundColor3 = Color3.fromRGB(10, 10, 10),
         BorderSizePixel = 0,
         ZIndex = 4
     })
     
     local tabCorner = new('UICorner', {
         Parent = tabFrame,
-        CornerRadius = UDim.new(0, 6)
+        CornerRadius = UDim.new(0, 0)
     })
     
     local tabScrollFrame = new('ScrollingFrame', {
@@ -228,30 +235,31 @@ function Pickle.CreateWindow(options)
         BackgroundTransparency = 1,
         ScrollBarThickness = 4,
         ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100),
-        ZIndex = 5
+        ZIndex = 5,
+        BorderSizePixel = 0
     })
     
     tabScrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
     
     local tabLayout = new('UIListLayout', {
         Parent = tabScrollFrame,
-        Padding = UDim.new(0, 5),
+        Padding = UDim.new(0, 3),
         SortOrder = Enum.SortOrder.LayoutOrder
     })
     
-    -- Content area (right side)
+    -- Content area (right side) - Darker black
     local pageFrame = new('Frame', {
         Parent = contentFrame,
-        Size = UDim2.new(1, -125, 1, 0),
-        Position = UDim2.new(0, 125, 0, 0),
-        BackgroundColor3 = Color3.fromRGB(35, 35, 35),
+        Size = UDim2.new(1, -135, 1, 0),
+        Position = UDim2.new(0, 135, 0, 0),
+        BackgroundColor3 = Color3.fromRGB(10, 10, 10),
         BorderSizePixel = 0,
         ZIndex = 4
     })
     
     local pageCorner = new('UICorner', {
         Parent = pageFrame,
-        CornerRadius = UDim.new(0, 6)
+        CornerRadius = UDim.new(0, 0)
     })
     
     -- Variables
@@ -298,7 +306,7 @@ function Pickle.CreateWindow(options)
         visible = not visible
         if visible then
             container.Visible = true
-            tween(container, {Size = UDim2.new(0, 420, 0, 300)}, 0.3, Enum.EasingStyle.Back)
+            tween(container, {Size = UDim2.new(0, 450, 0, 320)}, 0.3, Enum.EasingStyle.Back)
         else
             tween(container, {Size = UDim2.new(0, 0, 0, 0)}, 0.3, Enum.EasingStyle.Back)
             wait(0.3)
@@ -309,19 +317,19 @@ function Pickle.CreateWindow(options)
     minimizeButton.MouseButton1Click:Connect(function()
         minimized = not minimized
         if minimized then
-            tween(container, {Size = UDim2.new(0, 420, 0, 35)}, 0.3)
+            tween(container, {Size = UDim2.new(0, 450, 0, 35)}, 0.3)
         else
-            tween(container, {Size = UDim2.new(0, 420, 0, 300)}, 0.3)
+            tween(container, {Size = UDim2.new(0, 450, 0, 320)}, 0.3)
         end
     end)
     
-    -- RGB Animation
+    -- RGB Animation with 0.5 transparency
     if rgbEnabled then
         spawn(function()
             while screenGui and screenGui.Parent do
                 local color = RGBColors:Update()
-                titleBar.BackgroundColor3 = color:lerp(Color3.fromRGB(20, 20, 20), 0.7)
                 mainStroke.Color = color
+                mainStroke.Transparency = 0.5 -- RGB with 0.5 transparency
                 wait(0.1)
             end
         end)
@@ -334,7 +342,7 @@ function Pickle.CreateWindow(options)
         local tabButton = new('TextButton', {
             Parent = tabScrollFrame,
             Size = UDim2.new(1, 0, 0, 30),
-            BackgroundColor3 = Color3.fromRGB(40, 40, 40),
+            BackgroundColor3 = Color3.fromRGB(0, 0, 0),
             BorderSizePixel = 0,
             Text = name,
             TextColor3 = Color3.fromRGB(200, 200, 200),
@@ -347,7 +355,14 @@ function Pickle.CreateWindow(options)
         
         local buttonCorner = new('UICorner', {
             Parent = tabButton,
-            CornerRadius = UDim.new(0, 6)
+            CornerRadius = UDim.new(0, 0)
+        })
+        
+        local buttonStroke = new('UIStroke', {
+            Parent = tabButton,
+            Thickness = 1,
+            Color = Color3.fromRGB(128, 128, 128),
+            Transparency = 0
         })
         
         local tabContent = new('ScrollingFrame', {
@@ -358,7 +373,8 @@ function Pickle.CreateWindow(options)
             ScrollBarThickness = 4,
             ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100),
             Visible = false,
-            ZIndex = 5
+            ZIndex = 5,
+            BorderSizePixel = 0
         })
         
         tabContent.AutomaticCanvasSize = Enum.AutomaticSize.Y
@@ -377,13 +393,13 @@ function Pickle.CreateWindow(options)
         
         tabButton.MouseEnter:Connect(function()
             if currentTab ~= tabContent then
-                tween(tabButton, {BackgroundColor3 = Color3.fromRGB(50, 50, 50)}, 0.2)
+                tween(tabButton, {BackgroundColor3 = Color3.fromRGB(20, 20, 20)}, 0.2)
             end
         end)
         
         tabButton.MouseLeave:Connect(function()
             if currentTab ~= tabContent then
-                tween(tabButton, {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}, 0.2)
+                tween(tabButton, {BackgroundColor3 = Color3.fromRGB(0, 0, 0)}, 0.2)
             end
         end)
         
@@ -391,12 +407,12 @@ function Pickle.CreateWindow(options)
             -- Hide all other tabs
             for _, tab in pairs(tabs) do
                 tab.content.Visible = false
-                tween(tab.button, {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}, 0.2)
+                tween(tab.button, {BackgroundColor3 = Color3.fromRGB(0, 0, 0)}, 0.2)
             end
             
             -- Show current tab
             tabContent.Visible = true
-            tween(tabButton, {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}, 0.2)
+            tween(tabButton, {BackgroundColor3 = Color3.fromRGB(30, 30, 30)}, 0.2)
             currentTab = tabContent
         end)
         
@@ -420,7 +436,7 @@ function Pickle.CreateWindow(options)
                 Size = UDim2.new(1, 0, 0, 0),
                 BackgroundTransparency = 1,
                 ZIndex = 6,
-                LayoutOrder = tabContent:GetChildren() and #tabContent:GetChildren() or 1
+                LayoutOrder = #tabContent:GetChildren()
             })
             
             local sectionLabel = new('TextLabel', {
@@ -464,7 +480,7 @@ function Pickle.CreateWindow(options)
                 local button = new('TextButton', {
                     Parent = sectionContent,
                     Size = UDim2.new(1, 0, 0, 30),
-                    BackgroundColor3 = Color3.fromRGB(45, 45, 45),
+                    BackgroundColor3 = Color3.fromRGB(0, 0, 0),
                     BorderSizePixel = 0,
                     Text = buttonName,
                     TextColor3 = Color3.fromRGB(255, 255, 255),
@@ -477,15 +493,34 @@ function Pickle.CreateWindow(options)
                 
                 local buttonCorner = new('UICorner', {
                     Parent = button,
-                    CornerRadius = UDim.new(0, 6)
+                    CornerRadius = UDim.new(0, 0)
                 })
                 
+                local buttonStroke = new('UIStroke', {
+                    Parent = button,
+                    Thickness = 1,
+                    Color = Color3.fromRGB(128, 128, 128),
+                    Transparency = 0
+                })
+                
+                -- RGB effect for button if enabled
+                if rgbEnabled then
+                    spawn(function()
+                        while button and button.Parent do
+                            local color = RGBColors.current
+                            buttonStroke.Color = color
+                            buttonStroke.Transparency = 0.5
+                            wait(0.1)
+                        end
+                    end)
+                end
+                
                 button.MouseEnter:Connect(function()
-                    tween(button, {BackgroundColor3 = Color3.fromRGB(55, 55, 55)}, 0.2)
+                    tween(button, {BackgroundColor3 = Color3.fromRGB(20, 20, 20)}, 0.2)
                 end)
                 
                 button.MouseLeave:Connect(function()
-                    tween(button, {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}, 0.2)
+                    tween(button, {BackgroundColor3 = Color3.fromRGB(0, 0, 0)}, 0.2)
                 end)
                 
                 button.MouseButton1Click:Connect(function()
@@ -527,7 +562,7 @@ function Pickle.CreateWindow(options)
                     Parent = toggleFrame,
                     Size = UDim2.new(0, 40, 0, 20),
                     Position = UDim2.new(1, -45, 0, 5),
-                    BackgroundColor3 = defaultValue and Color3.fromRGB(0, 162, 255) or Color3.fromRGB(60, 60, 60),
+                    BackgroundColor3 = defaultValue and Color3.fromRGB(0, 162, 255) or Color3.fromRGB(0, 0, 0),
                     BorderSizePixel = 0,
                     Text = "",
                     AutoButtonColor = false,
@@ -536,7 +571,14 @@ function Pickle.CreateWindow(options)
                 
                 local toggleCorner = new('UICorner', {
                     Parent = toggleButton,
-                    CornerRadius = UDim.new(0, 10)
+                    CornerRadius = UDim.new(0, 0)
+                })
+                
+                local toggleStroke = new('UIStroke', {
+                    Parent = toggleButton,
+                    Thickness = 1,
+                    Color = Color3.fromRGB(128, 128, 128),
+                    Transparency = 0
                 })
                 
                 local toggleIndicator = new('Frame', {
@@ -550,7 +592,7 @@ function Pickle.CreateWindow(options)
                 
                 local indicatorCorner = new('UICorner', {
                     Parent = toggleIndicator,
-                    CornerRadius = UDim.new(0, 8)
+                    CornerRadius = UDim.new(0, 0)
                 })
                 
                 local toggled = defaultValue
@@ -558,7 +600,7 @@ function Pickle.CreateWindow(options)
                 toggleButton.MouseButton1Click:Connect(function()
                     toggled = not toggled
                     tween(toggleButton, {
-                        BackgroundColor3 = toggled and Color3.fromRGB(0, 162, 255) or Color3.fromRGB(60, 60, 60)
+                        BackgroundColor3 = toggled and Color3.fromRGB(0, 162, 255) or Color3.fromRGB(0, 0, 0)
                     }, 0.2)
                     tween(toggleIndicator, {
                         Position = toggled and UDim2.new(1, -18, 0, 2) or UDim2.new(0, 2, 0, 2)
@@ -572,11 +614,130 @@ function Pickle.CreateWindow(options)
                 return {
                     SetValue = function(value)
                         toggled = value
-                        toggleButton.BackgroundColor3 = toggled and Color3.fromRGB(0, 162, 255) or Color3.fromRGB(60, 60, 60)
+                        toggleButton.BackgroundColor3 = toggled and Color3.fromRGB(0, 162, 255) or Color3.fromRGB(0, 0, 0)
                         toggleIndicator.Position = toggled and UDim2.new(1, -18, 0, 2) or UDim2.new(0, 2, 0, 2)
                     end,
                     GetValue = function()
                         return toggled
+                    end
+                }
+            end
+            
+            function section:CreateSlider(sliderName, minValue, maxValue, defaultValue, callback)
+                minValue = minValue or 0
+                maxValue = maxValue or 100
+                defaultValue = defaultValue or minValue
+                
+                local sliderFrame = new('Frame', {
+                    Parent = sectionContent,
+                    Size = UDim2.new(1, 0, 0, 50),
+                    BackgroundTransparency = 1,
+                    ZIndex = 7,
+                    LayoutOrder = #sectionContent:GetChildren()
+                })
+                
+                local sliderLabel = new('TextLabel', {
+                    Parent = sliderFrame,
+                    Size = UDim2.new(1, 0, 0, 20),
+                    BackgroundTransparency = 1,
+                    Text = sliderName .. ": " .. defaultValue,
+                    TextColor3 = Color3.fromRGB(255, 255, 255),
+                    Font = Enum.Font.Gotham,
+                    TextSize = 12,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    ZIndex = 8
+                })
+                
+                local sliderTrack = new('Frame', {
+                    Parent = sliderFrame,
+                    Size = UDim2.new(1, 0, 0, 6),
+                    Position = UDim2.new(0, 0, 0, 25),
+                    BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+                    BorderSizePixel = 0,
+                    ZIndex = 8
+                })
+                
+                local trackCorner = new('UICorner', {
+                    Parent = sliderTrack,
+                    CornerRadius = UDim.new(0, 0)
+                })
+                
+                local trackStroke = new('UIStroke', {
+                    Parent = sliderTrack,
+                    Thickness = 1,
+                    Color = Color3.fromRGB(128, 128, 128),
+                    Transparency = 0
+                })
+                
+                local sliderFill = new('Frame', {
+                    Parent = sliderTrack,
+                    Size = UDim2.new((defaultValue - minValue) / (maxValue - minValue), 0, 1, 0),
+                    BackgroundColor3 = Color3.fromRGB(0, 162, 255),
+                    BorderSizePixel = 0,
+                    ZIndex = 9
+                })
+                
+                local fillCorner = new('UICorner', {
+                    Parent = sliderFill,
+                    CornerRadius = UDim.new(0, 0)
+                })
+                
+                local sliderButton = new('TextButton', {
+                    Parent = sliderTrack,
+                    Size = UDim2.new(0, 12, 0, 12),
+                    Position = UDim2.new((defaultValue - minValue) / (maxValue - minValue), -6, 0, -3),
+                    BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                    BorderSizePixel = 0,
+                    Text = "",
+                    AutoButtonColor = false,
+                    ZIndex = 10
+                })
+                
+                local buttonCorner = new('UICorner', {
+                    Parent = sliderButton,
+                    CornerRadius = UDim.new(0, 0)
+                })
+                
+                local currentValue = defaultValue
+                local dragging = false
+                
+                sliderButton.MouseButton1Down:Connect(function()
+                    dragging = true
+                end)
+                
+                UserInputService.InputEnded:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                        dragging = false
+                    end
+                end)
+                
+                UserInputService.InputChanged:Connect(function(input)
+                    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                        local mouse = UserInputService:GetMouseLocation()
+                        local relativeX = math.clamp((mouse.X - sliderTrack.AbsolutePosition.X) / sliderTrack.AbsoluteSize.X, 0, 1)
+                        
+                        currentValue = math.floor(minValue + (maxValue - minValue) * relativeX)
+                        sliderLabel.Text = sliderName .. ": " .. currentValue
+                        
+                        tween(sliderFill, {Size = UDim2.new(relativeX, 0, 1, 0)}, 0.1)
+                        tween(sliderButton, {Position = UDim2.new(relativeX, -6, 0, -3)}, 0.1)
+                        
+                        if callback then
+                            callback(currentValue)
+                        end
+                    end
+                end)
+                
+                return {
+                    SetValue = function(value)
+                        currentValue = math.clamp(value, minValue, maxValue)
+                        local relativeX = (currentValue - minValue) / (maxValue - minValue)
+                        sliderLabel.Text = sliderName .. ": " .. currentValue
+                        sliderFill.Size = UDim2.new(relativeX, 0, 1, 0)
+                        sliderButton.Position = UDim2.new(relativeX, -6, 0, -3)
+                    end,
+                    GetValue = function()
+                        return currentValue
                     end
                 }
             end
