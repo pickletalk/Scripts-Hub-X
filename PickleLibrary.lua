@@ -86,12 +86,49 @@ local Pickle = {}
 function Pickle.CreateWindow(options)
     options = options or {}
     local title = options.Title or "Pickle UI"
-    local configFolder = options.ConfigFolder or ("Pickle_" .. title:gsub("%W", ""))
-    local configFile = options.ConfigFile or (title .. ".json")
     local rgbEnabled = options.RGB ~= false
+    local configEnabled = options.SaveConfiguration == true
+    local configFolder = options.ConfigFolder or "PickleUI"
+    local configFile = options.ConfigFile or "config.json"
     
-    FileIO.mkdir(configFolder)
+    -- Configuration system
     local configPath = configFolder .. '/' .. configFile
+    local configData = {}
+    
+    if configEnabled then
+        FileIO.mkdir(configFolder)
+        print("Configuration enabled - Folder:", configFolder, "File:", configFile)
+    end
+    
+    local function saveConfig()
+        if configEnabled then
+            local success = FileIO.write(configPath, HttpService:JSONEncode(configData))
+            if success then
+                print("Configuration saved successfully")
+            else
+                print("Failed to save configuration")
+            end
+        end
+    end
+    
+    local function loadConfig()
+        if configEnabled and FileIO.exists(configPath) then
+            local data = FileIO.read(configPath)
+            if data then
+                local success, decoded = pcall(function()
+                    return HttpService:JSONDecode(data)
+                end)
+                if success then
+                    configData = decoded
+                    print("Configuration loaded successfully")
+                    return configData
+                else
+                    print("Failed to decode configuration")
+                end
+            end
+        end
+        return {}
+    end
     
     -- Main ScreenGui
     local screenGui = new('ScreenGui', {
@@ -104,7 +141,7 @@ function Pickle.CreateWindow(options)
     -- Main container
     local container = new('Frame', {
         Parent = screenGui,
-        Size = UDim2.new(0, 500, 0, 350),
+        Size = UDim2.new(0, 0, 0, 0), -- Start with 0 size for animation
         Position = UDim2.new(1, -510, 0, 10),
         BackgroundTransparency = 1,
         ZIndex = 1
@@ -267,6 +304,16 @@ function Pickle.CreateWindow(options)
     local currentTab = nil
     local visible = true
     local minimized = false
+    local configElements = {}
+    
+    -- Opening Animation
+    spawn(function()
+        wait(0.1)
+        -- Smooth opening animation
+        tween(container, {
+            Size = UDim2.new(0, 500, 0, 350)
+        }, 0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+    end)
     
     -- Dragging functionality
     local dragging = false
@@ -330,6 +377,15 @@ function Pickle.CreateWindow(options)
                 local color = RGBColors:Update()
                 mainStroke.Color = color
                 mainStroke.Transparency = 0.5
+                
+                -- Apply RGB to all elements with RGB enabled
+                for _, element in pairs(configElements) do
+                    if element.rgbStroke then
+                        element.rgbStroke.Color = color
+                        element.rgbStroke.Transparency = 0.5
+                    end
+                end
+                
                 wait(0.1)
             end
         end)
@@ -407,8 +463,6 @@ function Pickle.CreateWindow(options)
         end)
         
         tabButton.MouseButton1Click:Connect(function()
-            print("Switching to tab:", name) -- Debug print
-            
             -- Hide all other tabs and reset their colors
             for _, tab in pairs(tabs) do
                 tab.content.Visible = false
@@ -419,8 +473,6 @@ function Pickle.CreateWindow(options)
             tabContent.Visible = true
             tween(tabButton, {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}, 0.2)
             currentTab = tabContent
-            
-            print("Tab", name, "is now visible:", tabContent.Visible) -- Debug print
         end)
         
         local tab = {
@@ -433,17 +485,17 @@ function Pickle.CreateWindow(options)
         
         -- Auto-select first tab
         if #tabs == 1 then
-            wait() -- Small delay to ensure everything is loaded
-            tabButton.MouseButton1Click:Fire()
+            spawn(function()
+                wait(0.1)
+                tabButton.MouseButton1Click:Fire()
+            end)
         end
         
         -- Tab methods
         function tab:CreateSection(sectionName)
-            print("Creating section:", sectionName) -- Debug print
-            
             local sectionFrame = new('Frame', {
                 Parent = tabContent,
-                Size = UDim2.new(1, 0, 0, 25), -- Start with header height
+                Size = UDim2.new(1, 0, 0, 25),
                 BackgroundTransparency = 1,
                 ZIndex = 6,
                 LayoutOrder = #tabContent:GetChildren() + 1
@@ -478,10 +530,12 @@ function Pickle.CreateWindow(options)
             
             -- Auto-resize section when content changes
             local function updateSectionSize()
-                local contentSize = sectionLayout.AbsoluteContentSize.Y
-                sectionContent.Size = UDim2.new(1, 0, 0, contentSize)
-                sectionFrame.Size = UDim2.new(1, 0, 0, contentSize + 25)
-                print("Section", sectionName, "resized to:", contentSize + 25) -- Debug print
+                spawn(function()
+                    wait()
+                    local contentSize = sectionLayout.AbsoluteContentSize.Y
+                    sectionContent.Size = UDim2.new(1, 0, 0, contentSize)
+                    sectionFrame.Size = UDim2.new(1, 0, 0, contentSize + 25)
+                end)
             end
             
             sectionLayout.Changed:Connect(updateSectionSize)
@@ -493,7 +547,7 @@ function Pickle.CreateWindow(options)
             }
             
             function section:CreateButton(buttonName, callback)
-                print("Creating button:", buttonName) -- Debug print
+                local buttonId = name .. "_" .. sectionName .. "_" .. buttonName
                 
                 local button = new('TextButton', {
                     Parent = sectionContent,
@@ -521,16 +575,11 @@ function Pickle.CreateWindow(options)
                     Transparency = 0
                 })
                 
-                -- RGB effect for button if enabled
+                -- Add RGB effect if enabled
                 if rgbEnabled then
-                    spawn(function()
-                        while button and button.Parent do
-                            local color = RGBColors.current
-                            buttonStroke.Color = color
-                            buttonStroke.Transparency = 0.5
-                            wait(0.1)
-                        end
-                    end)
+                    configElements[buttonId] = {
+                        rgbStroke = buttonStroke
+                    }
                 end
                 
                 button.MouseEnter:Connect(function()
@@ -542,25 +591,24 @@ function Pickle.CreateWindow(options)
                 end)
                 
                 button.MouseButton1Click:Connect(function()
-                    print("Button clicked:", buttonName) -- Debug print
                     tween(button, {Size = UDim2.new(1, 0, 0, 26)}, 0.1)
-                    wait(0.1)
-                    tween(button, {Size = UDim2.new(1, 0, 0, 28)}, 0.1)
+                    spawn(function()
+                        wait(0.1)
+                        tween(button, {Size = UDim2.new(1, 0, 0, 28)}, 0.1)
+                    end)
+                    
                     if callback then
                         pcall(callback)
                     end
                 end)
                 
-                -- Update section size after adding button
-                wait()
-                section.updateSize()
-                
+                updateSectionSize()
                 return button
             end
             
             function section:CreateToggle(toggleName, defaultValue, callback)
-                print("Creating toggle:", toggleName) -- Debug print
                 defaultValue = defaultValue or false
+                local toggleId = name .. "_" .. sectionName .. "_" .. toggleName
                 
                 local toggleFrame = new('Frame', {
                     Parent = sectionContent,
@@ -621,9 +669,13 @@ function Pickle.CreateWindow(options)
                 
                 local toggled = defaultValue
                 
+                -- Save to config if config is enabled
+                if configEnabled then
+                    configData[toggleId] = defaultValue
+                end
+                
                 toggleButton.MouseButton1Click:Connect(function()
                     toggled = not toggled
-                    print("Toggle", toggleName, "set to:", toggled) -- Debug print
                     
                     tween(toggleButton, {
                         BackgroundColor3 = toggled and Color3.fromRGB(0, 162, 255) or Color3.fromRGB(0, 0, 0)
@@ -632,32 +684,41 @@ function Pickle.CreateWindow(options)
                         Position = toggled and UDim2.new(1, -16, 0, 2) or UDim2.new(0, 2, 0, 2)
                     }, 0.2)
                     
+                    -- Save to config
+                    if configEnabled then
+                        configData[toggleId] = toggled
+                        saveConfig()
+                    end
+                    
                     if callback then
                         pcall(callback, toggled)
                     end
                 end)
                 
-                -- Update section size after adding toggle
-                wait()
-                section.updateSize()
+                updateSectionSize()
                 
                 return {
                     SetValue = function(value)
                         toggled = value
                         toggleButton.BackgroundColor3 = toggled and Color3.fromRGB(0, 162, 255) or Color3.fromRGB(0, 0, 0)
                         toggleIndicator.Position = toggled and UDim2.new(1, -16, 0, 2) or UDim2.new(0, 2, 0, 2)
+                        
+                        if configEnabled then
+                            configData[toggleId] = toggled
+                        end
                     end,
                     GetValue = function()
                         return toggled
-                    end
+                    end,
+                    configId = toggleId
                 }
             end
             
             function section:CreateSlider(sliderName, minValue, maxValue, defaultValue, callback)
-                print("Creating slider:", sliderName) -- Debug print
                 minValue = minValue or 0
                 maxValue = maxValue or 100
                 defaultValue = defaultValue or minValue
+                local sliderId = name .. "_" .. sectionName .. "_" .. sliderName
                 
                 local sliderFrame = new('Frame', {
                     Parent = sectionContent,
@@ -732,6 +793,11 @@ function Pickle.CreateWindow(options)
                 local currentValue = defaultValue
                 local dragging = false
                 
+                -- Save to config if config is enabled
+                if configEnabled then
+                    configData[sliderId] = defaultValue
+                end
+                
                 sliderButton.MouseButton1Down:Connect(function()
                     dragging = true
                 end)
@@ -753,15 +819,19 @@ function Pickle.CreateWindow(options)
                         tween(sliderFill, {Size = UDim2.new(relativeX, 0, 1, 0)}, 0.1)
                         tween(sliderButton, {Position = UDim2.new(relativeX, -5, 0, -2)}, 0.1)
                         
+                        -- Save to config
+                        if configEnabled then
+                            configData[sliderId] = currentValue
+                            saveConfig()
+                        end
+                        
                         if callback then
                             pcall(callback, currentValue)
                         end
                     end
                 end)
                 
-                -- Update section size after adding slider
-                wait()
-                section.updateSize()
+                updateSectionSize()
                 
                 return {
                     SetValue = function(value)
@@ -770,10 +840,123 @@ function Pickle.CreateWindow(options)
                         sliderLabel.Text = sliderName .. ": " .. currentValue
                         sliderFill.Size = UDim2.new(relativeX, 0, 1, 0)
                         sliderButton.Position = UDim2.new(relativeX, -5, 0, -2)
+                        
+                        if configEnabled then
+                            configData[sliderId] = currentValue
+                        end
                     end,
                     GetValue = function()
                         return currentValue
+                    end,
+                    configId = sliderId
+                }
+            end
+            
+            function section:CreateKeybind(keybindName, defaultKey, callback)
+                defaultKey = defaultKey or "None"
+                local keybindId = name .. "_" .. sectionName .. "_" .. keybindName
+                
+                local keybindFrame = new('Frame', {
+                    Parent = sectionContent,
+                    Size = UDim2.new(1, 0, 0, 28),
+                    BackgroundTransparency = 1,
+                    ZIndex = 7,
+                    LayoutOrder = #sectionContent:GetChildren() + 1
+                })
+                
+                local keybindLabel = new('TextLabel', {
+                    Parent = keybindFrame,
+                    Size = UDim2.new(1, -80, 1, 0),
+                    BackgroundTransparency = 1,
+                    Text = keybindName,
+                    TextColor3 = Color3.fromRGB(255, 255, 255),
+                    Font = Enum.Font.Gotham,
+                    TextSize = 11,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    ZIndex = 8
+                })
+                
+                local keybindButton = new('TextButton', {
+                    Parent = keybindFrame,
+                    Size = UDim2.new(0, 75, 0, 20),
+                    Position = UDim2.new(1, -78, 0, 4),
+                    BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+                    BorderSizePixel = 0,
+                    Text = defaultKey,
+                    TextColor3 = Color3.fromRGB(255, 255, 255),
+                    Font = Enum.Font.Gotham,
+                    TextSize = 10,
+                    AutoButtonColor = false,
+                    ZIndex = 8
+                })
+                
+                local keybindCorner = new('UICorner', {
+                    Parent = keybindButton,
+                    CornerRadius = UDim.new(0, 0)
+                })
+                
+                local keybindStroke = new('UIStroke', {
+                    Parent = keybindButton,
+                    Thickness = 1,
+                    Color = Color3.fromRGB(128, 128, 128),
+                    Transparency = 0
+                })
+                
+                local currentKey = defaultKey
+                local listening = false
+                
+                -- Save to config if config is enabled
+                if configEnabled then
+                    configData[keybindId] = defaultKey
+                end
+                
+                keybindButton.MouseButton1Click:Connect(function()
+                    if not listening then
+                        listening = true
+                        keybindButton.Text = "Press a key..."
+                        keybindButton.TextColor3 = Color3.fromRGB(255, 255, 0)
                     end
+                end)
+                
+                UserInputService.InputBegan:Connect(function(input, gameProcessed)
+                    if gameProcessed then return end
+                    
+                    if listening and input.UserInputType == Enum.UserInputType.Keyboard then
+                        local keyName = input.KeyCode.Name
+                        currentKey = keyName
+                        keybindButton.Text = keyName
+                        keybindButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+                        listening = false
+                        
+                        -- Save to config
+                        if configEnabled then
+                            configData[keybindId] = currentKey
+                            saveConfig()
+                        end
+                    end
+                    
+                    if not listening and input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode.Name == currentKey then
+                        if callback then
+                            pcall(callback)
+                        end
+                    end
+                end)
+                
+                updateSectionSize()
+                
+                return {
+                    SetValue = function(key)
+                        currentKey = key
+                        keybindButton.Text = key
+                        
+                        if configEnabled then
+                            configData[keybindId] = currentKey
+                        end
+                    end,
+                    GetValue = function()
+                        return currentKey
+                    end,
+                    configId = keybindId
                 }
             end
             
@@ -792,9 +975,42 @@ function Pickle.CreateWindow(options)
         container.Visible = isVisible
     end
     
-    function Library:GetTabs()
-        return tabs
+    function Library:LoadConfiguration()
+        if configEnabled then
+            print("Loading configuration...")
+            local loadedConfig = loadConfig()
+            
+            -- Apply loaded configuration to all elements
+            for elementId, value in pairs(loadedConfig) do
+                -- Find the element and apply the value
+                for _, element in pairs(configElements) do
+                    if element.configId == elementId then
+                        if element.SetValue then
+                            element.SetValue(value)
+                        end
+                        break
+                    end
+                end
+            end
+            
+            print("Configuration loaded and applied")
+        else
+            print("Configuration is disabled for this window")
+        end
     end
+    
+    function Library:SaveConfiguration()
+        if configEnabled then
+            saveConfig()
+            print("Configuration saved manually")
+        else
+            print("Configuration is disabled for this window")
+        end
+    end
+    
+    -- Store elements for configuration loading
+    Library._configElements = configElements
+    Library._configData = configData
     
     return Library
 end
