@@ -204,40 +204,54 @@ local function teleportToSpawn()
         return
     end
     
-    teleportButton.Text = "💰 STEALING... 💰"
+    teleportButton.Text = "💰 STEALING 💰"
 
-    -- Micro-Movements (Silent Teleports) Method
+    -- Advanced Stealth Teleportation Method
     local startPos = hrp.Position
-    local targetPos = plotCFrame.Position + Vector3.new(0, 3, 0) -- Slight Y offset for safety
+    local targetPos = plotCFrame.Position + Vector3.new(0, 3, 0)
     local totalDistance = (targetPos - startPos).Magnitude
     
-    -- Calculate micro-movement parameters
-    local microStepSize = 8 -- Small increment size (8 studs per step)
-    local totalSteps = math.ceil(totalDistance / microStepSize)
+    -- Adaptive step sizing based on distance
+    local baseStepSize = math.clamp(totalDistance / 25, 4, 12) -- Dynamic step size
     local direction = (targetPos - startPos).Unit
     
-    -- Perform micro-movements at high speed
-    for i = 1, totalSteps do
-        if not hrp.Parent or not hum.Parent then break end
-        
-        local progress = i / totalSteps
-        local currentTarget = startPos:lerp(targetPos, progress)
-        
-        -- Move in small increment
-        hrp.CFrame = CFrame.new(currentTarget, currentTarget + direction)
-        
-        -- Simulate movement input to make it look natural
-        if hum then
-            local moveVector = (currentTarget - hrp.Position).Unit
-            hum:Move(Vector3.new(moveVector.X, 0, moveVector.Z), true)
-        end
-        
-        -- Very fast micro-movements (barely detectable)
-        RunService.Heartbeat:Wait()
+    -- Variable timing to avoid pattern detection
+    local function getVariableWait()
+        return math.random(15, 35) / 1000 -- Random 15-35ms delays
     end
     
-    -- Final position adjustment
-    hrp.CFrame = CFrame.new(targetPos, targetPos + direction)
+    -- Movement with realistic physics simulation
+    local currentPos = startPos
+    while (targetPos - currentPos).Magnitude > 2 do
+        if not hrp.Parent or not hum.Parent then break end
+        
+        local remainingDistance = (targetPos - currentPos).Magnitude
+        local stepSize = math.min(baseStepSize, remainingDistance)
+        
+        -- Add slight random variation to movement (human-like)
+        local randomOffset = Vector3.new(
+            math.random(-100, 100) / 1000,
+            0,
+            math.random(-100, 100) / 1000
+        )
+        
+        local nextPos = currentPos + (direction * stepSize) + randomOffset
+        
+        -- Smooth CFrame transition with proper orientation
+        local lookDirection = (nextPos - currentPos).Unit
+        hrp.CFrame = CFrame.lookAt(nextPos, nextPos + lookDirection)
+        
+        -- Simulate realistic humanoid movement
+        if hum then
+            hum:Move(Vector3.new(lookDirection.X, 0, lookDirection.Z), true)
+        end
+        
+        currentPos = nextPos
+        task.wait(getVariableWait()) -- Variable timing
+    end
+    
+    -- Final smooth positioning
+    hrp.CFrame = CFrame.lookAt(targetPos, targetPos + direction)
 
     -- Show "DONE CUH" message
     teleportButton.Text = "🎉 DONE CUH 🎉"
