@@ -6,50 +6,53 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
--- Function to find the player's actual spawnpoint
-local function findPlayerSpawnpoint()
-    local spawnCFrame = nil
+-- Function to find the player's plot by searching for their displayname
+local function findPlayerPlot()
+    local playerDisplayName = player.DisplayName
+    local targetText = playerDisplayName .. "'s Base"
+    local savedPlotName = nil
     
-    -- Look for the player's spawn in Teams service
-    local Teams = game:GetService("Teams")
-    if player.Team and player.Team.SpawnLocations then
-        for _, spawn in pairs(player.Team.SpawnLocations:GetChildren()) do
-            if spawn:IsA("SpawnLocation") and spawn.Enabled then
-                spawnCFrame = spawn.CFrame + Vector3.new(0, spawn.Size.Y/2 + 3, 0)
-                break
-            end
-        end
-    end
-    
-    -- If no team spawn found, look for neutral spawns assigned to this player
-    if not spawnCFrame then
-        for _, spawn in pairs(workspace:GetDescendants()) do
-            if spawn:IsA("SpawnLocation") and spawn.Enabled then
-                -- Check if this spawn is for all players or specifically this player
-                if spawn.AllowTeamChangeOnTouch == false or spawn.TeamColor == BrickColor.new("Medium stone grey") then
-                    spawnCFrame = spawn.CFrame + Vector3.new(0, spawn.Size.Y/2 + 3, 0)
-                    break
+    -- Search through all plots to find the one with player's name
+    if workspace:FindFirstChild("Plots") then
+        for _, plot in pairs(workspace.Plots:GetChildren()) do
+            local success, result = pcall(function()
+                local textLabel = plot.PlotSign.SurfaceGui.Frame.TextLabel
+                if textLabel.Text == targetText then
+                    savedPlotName = plot.Name
+                    return true
                 end
-            end
-        end
-    end
-    
-    -- Last resort: find any enabled spawn
-    if not spawnCFrame then
-        for _, spawn in pairs(workspace:GetDescendants()) do
-            if spawn:IsA("SpawnLocation") and spawn.Enabled then
-                spawnCFrame = spawn.CFrame + Vector3.new(0, spawn.Size.Y/2 + 3, 0)
+                return false
+            end)
+            
+            if success and result then
                 break
             end
         end
     end
     
-    -- Ultimate fallback
-    if not spawnCFrame then
-        spawnCFrame = CFrame.new(0, 50, 0)
+    return savedPlotName
+end
+
+-- Function to get teleport position from player's plot
+local function getPlotTeleportPosition()
+    local plotName = findPlayerPlot()
+    if not plotName then
+        return nil
     end
     
-    return spawnCFrame
+    local success, cframe = pcall(function()
+        local decorations = workspace.Plots[plotName].Decorations:GetChildren()
+        if decorations[11] then
+            return decorations[11].CFrame
+        end
+        return nil
+    end)
+    
+    if success and cframe then
+        return cframe
+    end
+    
+    return nil
 end
 
 -- ========================================
@@ -189,17 +192,21 @@ local function teleportToSpawn()
     local hum = char and char:FindFirstChildOfClass("Humanoid")
 
     if not hrp or not hum then
-        statusLabel.Text = "⚠ Character not ready"
         teleporting = false
         return
     end
 
-    -- Find the player's actual spawnpoint
-    local spawnCFrame = findPlayerSpawnpoint()
+    -- Find the player's plot teleport position
+    local plotCFrame = getPlotTeleportPosition()
+    
+    if not plotCFrame then
+        teleporting = false
+        return
+    end
     
     teleportButton.Text = "💰 STEALING 💰"
 
-    local targetPos = spawnCFrame.Position + (spawnCFrame.LookVector * 5)
+    local targetPos = plotCFrame.Position + (plotCFrame.LookVector * 5)
     local offset = targetPos - hrp.Position
     local dist = offset.Magnitude
     local steps = math.max(20, math.floor(dist / 2))
@@ -218,7 +225,6 @@ local function teleportToSpawn()
     -- Wait 1 second then revert back
     task.wait(1)
     teleportButton.Text = "💰 STEAL 💰"
-    statusLabel.Text = "by PickleTalk"
     teleporting = false
 end
 
