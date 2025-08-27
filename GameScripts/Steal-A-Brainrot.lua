@@ -1,130 +1,185 @@
 -- =========================================================
--- Steal A Brainrot (Spawnpoint + Old RGB UI)
+-- Steal A Brainrot (Player Spawnpoint Detection)
 -- =========================================================
 local player = game.Players.LocalPlayer
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
--- Track actual spawnpoint
-local actualSpawnCFrame = nil
-
--- Function to get the actual spawnpoint
-local function getSpawnPoint()
-    local spawnLocation = nil
+-- Function to find the player's actual spawnpoint
+local function findPlayerSpawnpoint()
+    local spawnCFrame = nil
     
-    -- Method 1: Check for SpawnLocation in workspace
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("SpawnLocation") and obj.Enabled then
-            spawnLocation = obj
-            break
+    -- Look for the player's spawn in Teams service
+    local Teams = game:GetService("Teams")
+    if player.Team and player.Team.SpawnLocations then
+        for _, spawn in pairs(player.Team.SpawnLocations:GetChildren()) do
+            if spawn:IsA("SpawnLocation") and spawn.Enabled then
+                spawnCFrame = spawn.CFrame + Vector3.new(0, spawn.Size.Y/2 + 3, 0)
+                break
+            end
         end
     end
     
-    -- Method 2: If no SpawnLocation found, use default spawn at (0, 50, 0)
-    if not spawnLocation then
-        return CFrame.new(0, 50, 0)
-    end
-    
-    -- Return the spawnpoint CFrame (spawn on top of the spawn)
-    local spawnCFrame = spawnLocation.CFrame
-    return CFrame.new(spawnCFrame.Position + Vector3.new(0, spawnLocation.Size.Y/2 + 5, 0))
-end
-
--- Set the actual spawn point when character is added
-player.CharacterAdded:Connect(function(char)
-    local hrp = char:WaitForChild("HumanoidRootPart")
-    -- Get the actual spawnpoint instead of player's position
-    actualSpawnCFrame = getSpawnPoint()
-end)
-
--- Initialize spawn point if character already exists
-if player.Character then
-    actualSpawnCFrame = getSpawnPoint()
-end
-
--- =========================================================
--- OLD RGB UI
--- =========================================================
-local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-screenGui.Name = "BrainrotGui"
-
-local frame = Instance.new("Frame", screenGui)
-frame.Size = UDim2.new(0, 220, 0, 120)
-frame.Position = UDim2.new(0.5, -110, 0.2, 0)
-frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-frame.BackgroundTransparency = 0.2
-frame.BorderSizePixel = 0
-frame.Active = true
-frame.Draggable = true
-
--- RGB outline
-local uiStroke = Instance.new("UIStroke", frame)
-uiStroke.Thickness = 2
-uiStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-
-task.spawn(function()
-    while frame.Parent do
-        for hue = 0, 255, 4 do
-            local col = Color3.fromHSV(hue/255, 0.7, 0.6) -- darker rgb
-            uiStroke.Color = col
-            task.wait(0.05)
+    -- If no team spawn found, look for neutral spawns assigned to this player
+    if not spawnCFrame then
+        for _, spawn in pairs(workspace:GetDescendants()) do
+            if spawn:IsA("SpawnLocation") and spawn.Enabled then
+                -- Check if this spawn is for all players or specifically this player
+                if spawn.AllowTeamChangeOnTouch == false or spawn.TeamColor == BrickColor.new("Medium stone grey") then
+                    spawnCFrame = spawn.CFrame + Vector3.new(0, spawn.Size.Y/2 + 3, 0)
+                    break
+                end
+            end
         end
     end
-end)
+    
+    -- Last resort: find any enabled spawn
+    if not spawnCFrame then
+        for _, spawn in pairs(workspace:GetDescendants()) do
+            if spawn:IsA("SpawnLocation") and spawn.Enabled then
+                spawnCFrame = spawn.CFrame + Vector3.new(0, spawn.Size.Y/2 + 3, 0)
+                break
+            end
+        end
+    end
+    
+    -- Ultimate fallback
+    if not spawnCFrame then
+        spawnCFrame = CFrame.new(0, 50, 0)
+    end
+    
+    return spawnCFrame
+end
 
-local title = Instance.new("TextLabel", frame)
-title.Size = UDim2.new(1, 0, 0, 30)
-title.BackgroundTransparency = 1
-title.Text = "Steal A Brainrot"
-title.Font = Enum.Font.SourceSansBold
-title.TextSize = 20
-title.TextColor3 = Color3.fromRGB(220, 220, 220)
+-- ========================================
+-- PLOT TELEPORTER UI
+-- ========================================
+local playerGui = player:WaitForChild("PlayerGui")
 
-local teleportButton = Instance.new("TextButton", frame)
-teleportButton.Size = UDim2.new(0, 160, 0, 40)
-teleportButton.Position = UDim2.new(0.5, -80, 0.5, -20)
-teleportButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-teleportButton.Text = "Steal"
-teleportButton.Font = Enum.Font.SourceSansBold
-teleportButton.TextSize = 18
+-- Create ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "PlotTeleporterUI"
+screenGui.Parent = playerGui
+screenGui.ResetOnSpawn = false
+
+-- Main Frame
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 250, 0, 120)
+mainFrame.Position = UDim2.new(1, -260, 0, 10)
+mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = screenGui
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 8)
+mainCorner.Parent = mainFrame
+
+-- Title Bar
+local titleBar = Instance.new("Frame")
+titleBar.Name = "TitleBar"
+titleBar.Size = UDim2.new(1, 0, 0, 30)
+titleBar.Position = UDim2.new(0, 0, 0, 0)
+titleBar.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+titleBar.BorderSizePixel = 0
+titleBar.Parent = mainFrame
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 8)
+titleCorner.Parent = titleBar
+
+local titleText = Instance.new("TextLabel")
+titleText.Name = "TitleText"
+titleText.Size = UDim2.new(1, -30, 1, 0)
+titleText.Position = UDim2.new(0, 5, 0, 0)
+titleText.BackgroundTransparency = 1
+titleText.Text = "💰 SHADOW HEIST 💰"
+titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleText.TextScaled = true
+titleText.Font = Enum.Font.GothamBold
+titleText.Parent = titleBar
+
+local closeButton = Instance.new("TextButton")
+closeButton.Name = "CloseButton"
+closeButton.Size = UDim2.new(0, 25, 0, 25)
+closeButton.Position = UDim2.new(1, -27, 0, 2)
+closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+closeButton.Text = "X"
+closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.TextScaled = true
+closeButton.Font = Enum.Font.GothamBold
+closeButton.BorderSizePixel = 0
+closeButton.Parent = titleBar
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 4)
+closeCorner.Parent = closeButton
+
+local teleportButton = Instance.new("TextButton")
+teleportButton.Name = "TeleportButton"
+teleportButton.Size = UDim2.new(0, 220, 0, 35)
+teleportButton.Position = UDim2.new(0, 15, 0, 45)
+teleportButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+teleportButton.Text = "💰 STEAL 💰"
 teleportButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+teleportButton.TextScaled = true
+teleportButton.Font = Enum.Font.GothamBold
+teleportButton.BorderSizePixel = 0
+teleportButton.Parent = mainFrame
 
--- RGB outline for button
-local btnStroke = Instance.new("UIStroke", teleportButton)
-btnStroke.Thickness = 2
-task.spawn(function()
-    while teleportButton.Parent do
-        for hue = 0, 255, 4 do
-            local col = Color3.fromHSV(hue/255, 0.7, 0.6)
-            btnStroke.Color = col
-            task.wait(0.05)
-        end
+local teleportCorner = Instance.new("UICorner")
+teleportCorner.CornerRadius = UDim.new(0, 6)
+teleportCorner.Parent = teleportButton
+
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Name = "StatusLabel"
+statusLabel.Size = UDim2.new(1, -20, 0, 25)
+statusLabel.Position = UDim2.new(0, 10, 0, 90)
+statusLabel.BackgroundTransparency = 1
+statusLabel.Text = "by PickleTalk"
+statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+statusLabel.TextScaled = true
+statusLabel.Font = Enum.Font.Gotham
+statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+statusLabel.Parent = mainFrame
+
+-- Dragging functionality
+local dragging = false
+local dragStart = nil
+local startPos = nil
+
+titleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
     end
 end)
 
-local statusLabel = Instance.new("TextLabel", frame)
-statusLabel.Size = UDim2.new(1, 0, 0, 20)
-statusLabel.Position = UDim2.new(0, 0, 1, -20)
-statusLabel.BackgroundTransparency = 1
-statusLabel.Font = Enum.Font.SourceSans
-statusLabel.TextSize = 14
-statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-statusLabel.Text = "Ready."
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
 
-local credits = Instance.new("TextLabel", frame)
-credits.Size = UDim2.new(1, 0, 0, 15)
-credits.Position = UDim2.new(0, 0, 1, 0)
-credits.BackgroundTransparency = 1
-credits.Font = Enum.Font.SourceSansItalic
-credits.TextSize = 12
-credits.TextColor3 = Color3.fromRGB(130, 130, 130)
-credits.Text = "by PickleTalk"
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+-- Close button functionality
+closeButton.MouseButton1Click:Connect(function()
+    screenGui:Destroy()
+end)
 
 -- =========================================================
--- Teleport (actual spawnpoint + 5 studs forward)
+-- Teleport to Player's Spawnpoint
 -- =========================================================
 local teleporting = false
+
 local function teleportToSpawn()
     if teleporting then return end
     teleporting = true
@@ -135,20 +190,16 @@ local function teleportToSpawn()
 
     if not hrp or not hum then
         statusLabel.Text = "⚠ Character not ready"
-        wait(1)
-        statusLabel.Text = "Ready."
         teleporting = false
         return
     end
+
+    -- Find the player's actual spawnpoint
+    local spawnCFrame = findPlayerSpawnpoint()
     
-    -- Get fresh spawnpoint if not set
-    if not actualSpawnCFrame then
-        actualSpawnCFrame = getSpawnPoint()
-    end
+    teleportButton.Text = "💰 STEALING 💰"
 
-    teleportButton.Text = "Stealing..."
-
-    local targetPos = actualSpawnCFrame.Position + (actualSpawnCFrame.LookVector * 5)
+    local targetPos = spawnCFrame.Position + (spawnCFrame.LookVector * 5)
     local offset = targetPos - hrp.Position
     local dist = offset.Magnitude
     local steps = math.max(20, math.floor(dist / 2))
@@ -161,13 +212,20 @@ local function teleportToSpawn()
         task.wait(0.05)
     end
 
-    teleportButton.Text = "Steal"
+    -- Show "DONE CUH" message
+    teleportButton.Text = "🎉 DONE CUH 🎉"
+    
+    -- Wait 1 second then revert back
+    task.wait(1)
+    teleportButton.Text = "💰 STEAL 💰"
+    statusLabel.Text = "by PickleTalk"
     teleporting = false
 end
+
 teleportButton.MouseButton1Click:Connect(teleportToSpawn)
 
 -- =========================================================
--- Infinite Jump (your version)
+-- Infinite Jump
 -- =========================================================
 local isInfiniteJumpEnabled = false
 local jumpConnections = {}
