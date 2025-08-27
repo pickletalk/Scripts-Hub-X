@@ -1,6 +1,6 @@
 -- test.lua example for PickleLibrary
 -- Replace <RAW_URL> with the raw GitHub URL where PickleLibrary.lua is hosted
-local Pickle = loadstring(game:HttpGet("<RAW_URL>/PickleLibrary.lua"))()
+local Pickle = loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/PickleLibrary.lua"))()
 local win = Pickle.CreateWindow({Title = "Pickle Demo", ConfigFolder = "PickleConfigs", UseRainbow = true})
 local tab1 = win.CreateTab("Main")
 local sec1 = win.CreateSection(tab1, "Controls")
