@@ -25,12 +25,12 @@ local Tab10 = Window:CreateTab("Info")
 -- TAB 1: COMBAT
 local CombatSection = Tab1:CreateSection("🗡️ Combat Features")
 
-CombatSection:CreateButton("Kill All", function()
+local killall = CombatSection:CreateButton("Kill All", function()
     print("Kill All activated!")
     -- Your kill all code here
 end)
 
-CombatSection:CreateButton("Kill Aura", function()
+local killaura = CombatSection:CreateButton("Kill Aura", function()
     print("Kill Aura toggled!")
     -- Your kill aura code here
 end)
@@ -53,7 +53,7 @@ end)
 -- TAB 2: MOVEMENT
 local MovementSection = Tab2:CreateSection("🏃 Movement Features")
 
-MovementSection:CreateButton("Fly", function()
+local fly = MovementSection:CreateButton("Fly", function()
     print("Fly toggled!")
     -- Your fly code here
 end)
@@ -85,7 +85,7 @@ end)
 -- TAB 3: VISUALS
 local VisualsSection = Tab3:CreateSection("👁️ Visual Features")
 
-VisualsSection:CreateButton("Player ESP", function()
+local esp = VisualsSection:CreateButton("Player ESP", function()
     print("Player ESP toggled!")
     -- Your ESP code here
 end)
@@ -110,7 +110,7 @@ end)
 -- TAB 4: FARMING
 local FarmingSection = Tab4:CreateSection("🌾 Auto Farming")
 
-FarmingSection:CreateButton("Start Farm", function()
+local startfarm = FarmingSection:CreateButton("Start Farm", function()
     print("Auto farming started!")
     -- Your farming code here
 end)
@@ -133,14 +133,14 @@ end)
 -- TAB 5: TELEPORTS
 local TeleportSection = Tab5:CreateSection("🚀 Teleportation")
 
-TeleportSection:CreateButton("Teleport to Spawn", function()
+local teleport = TeleportSection:CreateButton("Teleport to Spawn", function()
     print("Teleporting to spawn!")
     if game.Players.LocalPlayer.Character then
         game.Players.LocalPlayer.Character:MoveTo(Vector3.new(0, 10, 0))
     end
 end)
 
-TeleportSection:CreateButton("Teleport to Players", function()
+local teleporttoplayers = TeleportSection:CreateButton("Teleport to Players", function()
     print("Opening player teleport menu!")
     -- Your player teleport code here
 end)
@@ -160,7 +160,7 @@ end)
 -- TAB 6: PLAYER
 local PlayerSection = Tab6:CreateSection("🧑 Player Modifications")
 
-PlayerSection:CreateButton("Invisible", function()
+local invisible = PlayerSection:CreateButton("Invisible", function()
     print("Invisibility toggled!")
     -- Your invisibility code here
 end)
@@ -183,7 +183,7 @@ end)
 -- TAB 7: WORLD
 local WorldSection = Tab7:CreateSection("🌍 World Modifications")
 
-WorldSection:CreateButton("Remove Walls", function()
+local removewalls = WorldSection:CreateButton("Remove Walls", function()
     print("Removing walls!")
     -- Your wall removal code here
 end)
@@ -206,7 +206,7 @@ end)
 -- TAB 8: MISC
 local MiscSection = Tab8:CreateSection("⚡ Miscellaneous")
 
-MiscSection:CreateButton("Rejoin Server", function()
+local rejoin = MiscSection:CreateButton("Rejoin Server", function()
     print("Rejoining server...")
     game:GetService("TeleportService"):Teleport(game.PlaceId, game.Players.LocalPlayer)
 end)
@@ -229,17 +229,17 @@ end)
 -- TAB 9: SETTINGS
 local SettingsSection = Tab9:CreateSection("⚙️ Script Settings")
 
-SettingsSection:CreateButton("Save Config", function()
+local save = SettingsSection:CreateButton("Save Config", function()
     Window:SaveConfiguration()
     print("Configuration saved manually!")
 end)
 
-SettingsSection:CreateButton("Load Config", function()
+local save = SettingsSection:CreateButton("Load Config", function()
     Window:LoadConfiguration()
     print("Configuration loaded manually!")
 end)
 
-SettingsSection:CreateButton("Reset Config", function()
+local reset = SettingsSection:CreateButton("Reset Config", function()
     print("Resetting configuration...")
     -- Reset all toggles and sliders to defaults
     AutoAttackToggle.SetValue(false)
@@ -276,7 +276,7 @@ end)
 -- TAB 10: INFO
 local InfoSection = Tab10:CreateSection("ℹ️ Information")
 
-InfoSection:CreateButton("Script Info", function()
+local info = InfoSection:CreateButton("Script Info", function()
     print("=== SCRIPT INFORMATION ===")
     print("Script Name: My Enhanced Script")
     print("Version: 3.0.0")
@@ -287,13 +287,13 @@ InfoSection:CreateButton("Script Info", function()
     print("===========================")
 end)
 
-InfoSection:CreateButton("Discord Server", function()
+local discord = InfoSection:CreateButton("Discord Server", function()
     print("Discord: https://discord.gg/yourserver")
     print("Join our community for updates and support!")
     -- Copy to clipboard if possible
 end)
 
-InfoSection:CreateButton("GitHub Repository", function()
+local githubrepo = InfoSection:CreateButton("GitHub Repository", function()
     print("GitHub: https://github.com/yourrepo/enhanced-script")
     print("Check out the source code and contribute!")
 end)
