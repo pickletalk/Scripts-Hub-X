@@ -1,10 +1,10 @@
--- Load the Pickle UI Library (replace with your script URL)
+-- Load the Enhanced Pickle UI Library
 local Pickle = loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/PickleLibrary.lua"))()
 
--- Create the main window with configuration enabled
+-- Create the main window with RGB automatically enabled
 local Window = Pickle.CreateWindow({
-    Title = "My Script",
-    RGB = true, -- Enable RGB with 0.5 transparency
+    Title = "My Enhanced Script",
+    RGB = true, -- RGB is now automatically enabled
     SaveConfiguration = true, -- Enable automatic configuration saving
     ConfigFolder = "MyScriptConfigs", -- Folder name for configs
     ConfigFile = "settings.json" -- JSON file name for configs
@@ -23,7 +23,7 @@ local Tab9 = Window:CreateTab("Settings")
 local Tab10 = Window:CreateTab("Info")
 
 -- TAB 1: COMBAT
-local CombatSection = Tab1:CreateSection("Combat Features")
+local CombatSection = Tab1:CreateSection("🗡️ Combat Features")
 
 CombatSection:CreateButton("Kill All", function()
     print("Kill All activated!")
@@ -51,7 +51,7 @@ local KillAllKeybind = CombatSection:CreateKeybind("Kill All Hotkey", "K", funct
 end)
 
 -- TAB 2: MOVEMENT
-local MovementSection = Tab2:CreateSection("Movement Features")
+local MovementSection = Tab2:CreateSection("🏃 Movement Features")
 
 MovementSection:CreateButton("Fly", function()
     print("Fly toggled!")
@@ -83,7 +83,7 @@ local FlyKeybind = MovementSection:CreateKeybind("Fly Toggle", "F", function()
 end)
 
 -- TAB 3: VISUALS
-local VisualsSection = Tab3:CreateSection("Visual Features")
+local VisualsSection = Tab3:CreateSection("👁️ Visual Features")
 
 VisualsSection:CreateButton("Player ESP", function()
     print("Player ESP toggled!")
@@ -108,7 +108,7 @@ local ESPKeybind = VisualsSection:CreateKeybind("ESP Toggle", "E", function()
 end)
 
 -- TAB 4: FARMING
-local FarmingSection = Tab4:CreateSection("Auto Farming")
+local FarmingSection = Tab4:CreateSection("🌾 Auto Farming")
 
 FarmingSection:CreateButton("Start Farm", function()
     print("Auto farming started!")
@@ -131,7 +131,7 @@ local FarmKeybind = FarmingSection:CreateKeybind("Farm Toggle", "G", function()
 end)
 
 -- TAB 5: TELEPORTS
-local TeleportSection = Tab5:CreateSection("Teleportation")
+local TeleportSection = Tab5:CreateSection("🚀 Teleportation")
 
 TeleportSection:CreateButton("Teleport to Spawn", function()
     print("Teleporting to spawn!")
@@ -158,7 +158,7 @@ local TeleportKeybind = TeleportSection:CreateKeybind("Spawn TP", "H", function(
 end)
 
 -- TAB 6: PLAYER
-local PlayerSection = Tab6:CreateSection("Player Modifications")
+local PlayerSection = Tab6:CreateSection("🧑 Player Modifications")
 
 PlayerSection:CreateButton("Invisible", function()
     print("Invisibility toggled!")
@@ -181,7 +181,7 @@ local GodModeKeybind = PlayerSection:CreateKeybind("God Mode", "J", function()
 end)
 
 -- TAB 7: WORLD
-local WorldSection = Tab7:CreateSection("World Modifications")
+local WorldSection = Tab7:CreateSection("🌍 World Modifications")
 
 WorldSection:CreateButton("Remove Walls", function()
     print("Removing walls!")
@@ -204,7 +204,7 @@ local NoClipKeybind = WorldSection:CreateKeybind("NoClip Toggle", "N", function(
 end)
 
 -- TAB 8: MISC
-local MiscSection = Tab8:CreateSection("Miscellaneous")
+local MiscSection = Tab8:CreateSection("⚡ Miscellaneous")
 
 MiscSection:CreateButton("Rejoin Server", function()
     print("Rejoining server...")
@@ -227,7 +227,7 @@ local RejoinKeybind = MiscSection:CreateKeybind("Rejoin Server", "R", function()
 end)
 
 -- TAB 9: SETTINGS
-local SettingsSection = Tab9:CreateSection("Script Settings")
+local SettingsSection = Tab9:CreateSection("⚙️ Script Settings")
 
 SettingsSection:CreateButton("Save Config", function()
     Window:SaveConfiguration()
@@ -237,6 +237,30 @@ end)
 SettingsSection:CreateButton("Load Config", function()
     Window:LoadConfiguration()
     print("Configuration loaded manually!")
+end)
+
+SettingsSection:CreateButton("Reset Config", function()
+    print("Resetting configuration...")
+    -- Reset all toggles and sliders to defaults
+    AutoAttackToggle.SetValue(false)
+    SpeedToggle.SetValue(false)
+    FullbrightToggle.SetValue(false)
+    AutoFarmToggle.SetValue(false)
+    SafeTeleportToggle.SetValue(true)
+    GodModeToggle.SetValue(false)
+    NoClipToggle.SetValue(false)
+    ChatSpamToggle.SetValue(false)
+    
+    DamageSlider.SetValue(1)
+    WalkSpeedSlider.SetValue(16)
+    JumpPowerSlider.SetValue(50)
+    FarmSpeedSlider.SetValue(1)
+    HealthSlider.SetValue(100)
+    GravitySlider.SetValue(196)
+    SpamDelaySlider.SetValue(3)
+    UIScaleSlider.SetValue(1.0)
+    
+    print("Configuration reset to defaults!")
 end)
 
 local AutoSaveToggle = SettingsSection:CreateToggle("Auto Save", true, function(value)
@@ -250,34 +274,63 @@ local UIScaleSlider = SettingsSection:CreateSlider("UI Scale", 0.8, 1.5, 1.0, fu
 end)
 
 -- TAB 10: INFO
-local InfoSection = Tab10:CreateSection("Information")
+local InfoSection = Tab10:CreateSection("ℹ️ Information")
 
 InfoSection:CreateButton("Script Info", function()
-    print("Script Name: My Awesome Script")
-    print("Version: 2.1.0")
-    print("Author: YourName")
+    print("=== SCRIPT INFORMATION ===")
+    print("Script Name: My Enhanced Script")
+    print("Version: 3.0.0")
+    print("Author: Enhanced by Claude")
     print("Last Updated: " .. os.date("%m/%d/%Y"))
+    print("Features: RGB UI, Smooth Animations, Enhanced Sliders")
+    print("UI Framework: Pickle Library Enhanced")
+    print("===========================")
 end)
 
 InfoSection:CreateButton("Discord Server", function()
     print("Discord: https://discord.gg/yourserver")
+    print("Join our community for updates and support!")
     -- Copy to clipboard if possible
+end)
+
+InfoSection:CreateButton("GitHub Repository", function()
+    print("GitHub: https://github.com/yourrepo/enhanced-script")
+    print("Check out the source code and contribute!")
 end)
 
 local ShowFPSToggle = InfoSection:CreateToggle("Show FPS", false, function(value)
     print("Show FPS:", value)
     -- Your FPS display code here
+    if value then
+        -- Create FPS display
+        print("FPS display enabled")
+    else
+        -- Remove FPS display
+        print("FPS display disabled")
+    end
 end)
 
 local ShowPingToggle = InfoSection:CreateToggle("Show Ping", false, function(value)
     print("Show Ping:", value)
     -- Your ping display code here
+    if value then
+        -- Create ping display
+        print("Ping display enabled")
+    else
+        -- Remove ping display
+        print("Ping display disabled")
+    end
 end)
 
--- Example of how to use the toggle/slider values later
+local ShowTimeToggle = InfoSection:CreateToggle("Show Time", false, function(value)
+    print("Show Time:", value)
+    -- Your time display code here
+end)
+
+-- Advanced functionality loop
 spawn(function()
     while true do
-        wait(1)
+        wait(0.1) -- Faster update rate for smoother performance
         
         -- Example: Check if auto attack is enabled
         if AutoAttackToggle.GetValue() then
@@ -297,22 +350,66 @@ spawn(function()
                 game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = currentSpeed
             end
         end
+        
+        -- Example: Auto farm logic
+        if AutoFarmToggle.GetValue() then
+            -- Do farming logic based on farm speed
+            local farmSpeed = FarmSpeedSlider.GetValue()
+            -- Implement your farming code here
+        end
+        
+        -- Example: God mode check
+        if GodModeToggle.GetValue() then
+            -- Keep applying god mode
+            if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid") then
+                local maxHealth = HealthSlider.GetValue()
+                game.Players.LocalPlayer.Character.Humanoid.MaxHealth = maxHealth
+                game.Players.LocalPlayer.Character.Humanoid.Health = maxHealth
+            end
+        end
+        
+        -- Example: No clip logic
+        if NoClipToggle.GetValue() then
+            -- Apply no clip
+            if game.Players.LocalPlayer.Character then
+                for _, part in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
+                    if part:IsA("BasePart") and part.CanCollide then
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end
+        
+        -- Example: Chat spam
+        if ChatSpamToggle.GetValue() then
+            local spamDelay = SpamDelaySlider.GetValue()
+            -- Implement chat spam with delay
+        end
     end
 end)
 
-print("Pickle UI Test Script loaded successfully!")
-print("All 10 tabs created with various functions:")
-print("- Combat: 2 Buttons, 1 Toggle, 1 Slider, 1 Keybind")
-print("- Movement: 1 Button, 1 Toggle, 2 Sliders, 1 Keybind") 
-print("- Visuals: 1 Button, 1 Toggle, 1 Slider, 1 Keybind")
-print("- Farming: 1 Button, 1 Toggle, 1 Slider, 1 Keybind")
-print("- Teleports: 2 Buttons, 1 Toggle, 1 Keybind")
-print("- Player: 1 Button, 1 Toggle, 1 Slider, 1 Keybind")
-print("- World: 1 Button, 1 Toggle, 1 Slider, 1 Keybind")
-print("- Misc: 1 Button, 1 Toggle, 1 Slider, 1 Keybind")
-print("- Settings: 2 Buttons, 1 Toggle, 1 Slider")
-print("- Info: 2 Buttons, 2 Toggles")
-print("Configuration system: ENABLED - Saves to MyScriptConfigs/settings.json")
+-- Performance monitoring
+spawn(function()
+    local lastTime = tick()
+    while true do
+        wait(1)
+        local currentTime = tick()
+        local fps = math.floor(1 / (currentTime - lastTime))
+        lastTime = currentTime
+        
+        if ShowFPSToggle.GetValue() then
+            print("Current FPS:", fps)
+        end
+        
+        if ShowPingToggle.GetValue() then
+            local ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValueString()
+            print("Current Ping:", ping)
+        end
+        
+        if ShowTimeToggle.GetValue() then
+            print("Current Time:", os.date("%H:%M:%S"))
+        end
+    end
+end)
 
--- Load configuration at the bottom as requested
 Window:LoadConfiguration()
