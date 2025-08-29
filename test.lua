@@ -1,8 +1,5 @@
 -- Load the Pickle UI Library (replace with your script URL)
--- local Pickle = loadstring(game:HttpGet("your-script-url-here"))()
-
--- For testing purposes, assuming the library is already loaded
--- local Pickle = require(script.PickleLibrary) -- if using ModuleScript
+local Pickle = loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/PickleLibrary.lua"))()
 
 -- Create the main window with configuration enabled
 local Window = Pickle.CreateWindow({
