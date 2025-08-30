@@ -35,10 +35,7 @@ local StaffUserId = {
     "799427028", -- Roblox_xvt
     "9249886989" -- ALT
 }
-local BlacklistUsers = {
-		"4196292931" -- jvpogi233jj [TRIAL]
-	
-	}
+local BlacklistUsers = {}
 
 -- Animatronics Finder Configuration
 local TARGET_ANIMATRONICS = {"Radioactive Foxy", "Freddles", "Eclipse"}
