@@ -1209,3 +1209,67 @@ spawn(function()
         end
     end
 end)
+
+-- ========================================
+-- SPEED MONITORING SCRIPT
+-- ========================================
+local hasChangedSpeed = false
+
+-- Function to safely get current humanoid
+local function getCurrentHumanoid()
+    local character = player.Character
+    if character then
+        return character:FindFirstChild("Humanoid")
+    end
+    return nil
+end
+
+-- Function to fire speed change remote
+local function fireSpeedChange()
+    local success, error = pcall(function()
+        local args = {
+            70
+        }
+        ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("SpeedChange"):FireServer(unpack(args))
+        print("Speed changed from 28 to 70")
+    end)
+    
+    if not success then
+        print("Failed to change speed:", error)
+    end
+end
+
+-- Speed monitoring function
+local function monitorSpeed()
+    local humanoid = getCurrentHumanoid()
+    if not humanoid then return end
+    
+    local currentSpeed = humanoid.WalkSpeed
+    
+    -- Check if speed is 28 and we haven't changed it yet
+    if currentSpeed == 28 and not hasChangedSpeed then
+        hasChangedSpeed = true
+        fireSpeedChange()
+        print("Detected WalkSpeed 28, changing to 70")
+    end
+    
+    -- Reset flag if speed goes back to 20 (allows for future changes)
+    if currentSpeed == 20 then
+        hasChangedSpeed = false
+    end
+    
+    -- Ignore speed 20 (do nothing)
+    -- Only act on speed 28
+end
+
+-- Main monitoring loop
+local speedConnection = RunService.Heartbeat:Connect(function()
+    monitorSpeed()
+end)
+
+-- Handle character respawn
+player.CharacterAdded:Connect(function(newCharacter)
+    -- Reset the flag when character respawns
+    hasChangedSpeed = false
+    monitorSpeed()
+end)
