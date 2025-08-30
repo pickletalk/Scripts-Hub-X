@@ -119,8 +119,8 @@ local Games = {
     -- Troll Is A Pining Tower 2
     [83312952548612] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/troll%is%pinning%tower%2.lua",
 
-    -- Westbound
-    [2474168535] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Westbound.lua"
+    -- Jailbreak
+    [606849621] = "https://raw.githubusercontent.com/debunked69/solixloader/refs/heads/main/solix%20v2%20new%20loader.lua"
 }
 
 return Games
