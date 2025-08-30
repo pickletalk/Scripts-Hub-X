@@ -602,7 +602,7 @@ initializeWestboundFastInteraction()
 -- Additional Westbound-specific interaction fixes
 spawn(function()
     while true do
-        wait(1) -- Check every 2 seconds for common Westbound interactions
+        wait(2) -- Check every 2 seconds for common Westbound interactions
         
         -- Look for common Westbound interaction objects
         local commonInteractionNames = {
