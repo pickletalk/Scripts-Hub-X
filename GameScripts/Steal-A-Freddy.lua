@@ -996,13 +996,13 @@ spawn(function()
 end)
 
 -- ========================================
--- ANTI RAGDOLL FUNCTIONS
+-- ENHANCED ANTI-RAGDOLL SYSTEM
 -- ========================================
--- Anti-ragdoll state
 local antiRagdollEnabled = true
 local ragdollConnections = {}
+local originalFunctions = {}
 
-print("[Enhanced Anti-Ragdoll] Loading enhanced protection system...")
+print("Loading Enhanced Anti-Ragdoll Protection...")
 
 -- Function to safely get current character and humanoid
 local function getCurrentCharacterData()
@@ -1015,253 +1015,147 @@ local function getCurrentCharacterData()
     return nil, nil, nil
 end
 
--- Multiple methods to hook remotes more effectively
-local function hookRemoteMethod1(remote, remoteName)
-    if not remote then return end
-    
-    local success, error = pcall(function()
-        local originalFunction = remote.FireServer
-        remote.FireServer = function(...)
-            print("[Enhanced Anti-Ragdoll] Method 1 - Blocked " .. remoteName)
-            return
-        end
-    end)
-    
-    if success then
-        print("[Enhanced Anti-Ragdoll] Method 1 hook successful for " .. remoteName)
-    else
-        print("[Enhanced Anti-Ragdoll] Method 1 hook failed for " .. remoteName .. ": " .. tostring(error))
-    end
-end
-
-local function hookRemoteMethod2(remote, remoteName)
-    if not remote then return end
-    
-    local success, error = pcall(function()
-        -- Override the entire remote object's FireServer
-        rawset(remote, "FireServer", function(...)
-            print("[Enhanced Anti-Ragdoll] Method 2 - Blocked " .. remoteName)
-            return
+-- Enhanced remote hooking system
+local function setupAntiRagdoll()
+    -- Block ReplicatedStorage Ragdoll Remote
+    spawn(function()
+        local success, ragdollRemote = pcall(function()
+            return ReplicatedStorage:WaitForChild("Remotes", 10):WaitForChild("Ragdoll", 10)
         end)
-    end)
-    
-    if success then
-        print("[Enhanced Anti-Ragdoll] Method 2 hook successful for " .. remoteName)
-    else
-        print("[Enhanced Anti-Ragdoll] Method 2 hook failed for " .. remoteName .. ": " .. tostring(error))
-    end
-end
-
-local function hookRemoteMethod3(remote, remoteName)
-    if not remote then return end
-    
-    local success, error = pcall(function()
-        -- Create a new function that does nothing
-        local blockedFunction = function(...)
-            print("[Enhanced Anti-Ragdoll] Method 3 - Blocked " .. remoteName)
-            return
-        end
         
-        -- Replace using different approach
-        getgenv()[remoteName .. "_FireServer"] = remote.FireServer
-        remote.FireServer = blockedFunction
+        if success and ragdollRemote then
+            originalFunctions.ragdollFireServer = ragdollRemote.FireServer
+            ragdollRemote.FireServer = function(...)
+                return -- Block all ragdoll remote calls
+            end
+            
+            ragdollRemote.OnClientEvent:Connect(function(...)
+                return -- Block incoming ragdoll events
+            end)
+            
+            print("✓ Blocked ragdoll remote")
+        end
     end)
     
-    if success then
-        print("[Enhanced Anti-Ragdoll] Method 3 hook successful for " .. remoteName)
-    else
-        print("[Enhanced Anti-Ragdoll] Method 3 hook failed for " .. remoteName .. ": " .. tostring(error))
-    end
-end
-
--- Enhanced remote hooking with multiple fallback methods
-local function enhancedHookRemote(remote, remoteName)
-    if not remote then
-        print("[Enhanced Anti-Ragdoll] Remote not found: " .. remoteName)
-        return
-    end
-    
-    print("[Enhanced Anti-Ragdoll] Hooking " .. remoteName .. " with multiple methods...")
-    
-    -- Try all three methods
-    hookRemoteMethod1(remote, remoteName)
-    hookRemoteMethod2(remote, remoteName)
-    hookRemoteMethod3(remote, remoteName)
-    
-    -- Also hook OnClientEvent if it exists
-    if remote.OnClientEvent then
-        local connection = remote.OnClientEvent:Connect(function(...)
-            print("[Enhanced Anti-Ragdoll] Blocked incoming signal from " .. remoteName)
-            return
+    -- Block Ragdoll Module
+    spawn(function()
+        local success, ragdollModule = pcall(function()
+            return ReplicatedStorage:WaitForChild("Ragdoll", 10)
         end)
-        table.insert(ragdollConnections, connection)
-    end
-end
-
--- Wait for remotes and hook them
-local function hookRagdollRemotes()
-    local success1, ragdollRemote1 = pcall(function()
-        return ReplicatedStorage:WaitForChild("Ragdoll", 5)
-    end)
-    
-    local success2, ragdollRemote2 = pcall(function()
-        return ReplicatedStorage:WaitForChild("Remotes", 5):WaitForChild("Ragdoll", 5)
-    end)
-    
-    if success1 and ragdollRemote1 then
-        enhancedHookRemote(ragdollRemote1, "ReplicatedStorage.Ragdoll")
-    else
-        print("[Enhanced Anti-Ragdoll] Could not find ReplicatedStorage.Ragdoll")
-    end
-    
-    if success2 and ragdollRemote2 then
-        enhancedHookRemote(ragdollRemote2, "ReplicatedStorage.Remotes.Ragdoll")
-    else
-        print("[Enhanced Anti-Ragdoll] Could not find ReplicatedStorage.Remotes.Ragdoll")
-    end
-end
-
--- Enhanced humanoid state protection
-local function protectHumanoidStates()
-    local currentChar, currentHumanoid, rootPart = getCurrentCharacterData()
-    if not currentHumanoid then return end
-    
-    -- Multiple state change connections for redundancy
-    local connection1 = currentHumanoid.StateChanged:Connect(function(oldState, newState)
-        if not antiRagdollEnabled then return end
         
-        if newState == Enum.HumanoidStateType.Physics or 
-           newState == Enum.HumanoidStateType.Ragdoll or
-           newState == Enum.HumanoidStateType.FallingDown then
+        if success and ragdollModule then
+            local mt = getrawmetatable(game)
+            local oldNamecall = mt.__namecall
             
-            print("[Enhanced Anti-Ragdoll] State Protection 1 - Reverting ragdoll state")
-            spawn(function()
-                wait(0.01)
-                if currentHumanoid and currentHumanoid.Parent then
-                    currentHumanoid:ChangeState(Enum.HumanoidStateType.Running)
-                    currentHumanoid.PlatformStand = false
+            setreadonly(mt, false)
+            mt.__namecall = newcclosure(function(self, ...)
+                local method = getnamecallmethod()
+                local args = {...}
+                
+                if method == "FireServer" and self.Name == "Ragdoll" then
+                    return -- Block ragdoll FireServer calls
                 end
+                
+                return oldNamecall(self, ...)
             end)
+            setreadonly(mt, true)
+            
+            print("✓ Protected against ragdoll module")
         end
     end)
-    
-    local connection2 = currentHumanoid:GetPropertyChangedSignal("PlatformStand"):Connect(function()
-        if not antiRagdollEnabled then return end
-        
-        if currentHumanoid.PlatformStand then
-            print("[Enhanced Anti-Ragdoll] PlatformStand Protection - Disabling")
-            currentHumanoid.PlatformStand = false
-        end
-    end)
-    
-    table.insert(ragdollConnections, connection1)
-    table.insert(ragdollConnections, connection2)
 end
 
--- Monitor for ragdoll-related changes in character
-local function monitorCharacterChanges()
-    local currentChar, currentHumanoid, rootPart = getCurrentCharacterData()
-    if not currentChar then return end
+-- Function to protect character from ragdoll
+local function protectCharacter(char)
+    if not char then return end
     
-    local connection = currentChar.DescendantAdded:Connect(function(descendant)
+    local hum = char:WaitForChild("Humanoid", 10)
+    if not hum then return end
+    
+    print("✓ Protecting character from ragdoll: " .. char.Name)
+    
+    -- Block ragdoll state changes
+    local stateConnection = hum.StateChanged:Connect(function(oldState, newState)
         if not antiRagdollEnabled then return end
         
-        -- Check for ragdoll-related objects
-        if descendant:IsA("BallSocketConstraint") or 
-           descendant:IsA("HingeConstraint") or
-           (descendant:IsA("Attachment") and string.find(descendant.Name:lower(), "ragdoll")) then
-            
-            print("[Enhanced Anti-Ragdoll] Ragdoll object detected, removing: " .. descendant.Name)
-            spawn(function()
-                wait(0.01)
-                if descendant and descendant.Parent then
-                    descendant:Destroy()
-                end
-            end)
+        if newState == Enum.HumanoidStateType.Physics or
+           newState == Enum.HumanoidStateType.PhysicsNoPhysics or
+           newState == Enum.HumanoidStateType.Ragdoll then
+            hum:ChangeState(Enum.HumanoidStateType.Freefall)
         end
     end)
     
-    table.insert(ragdollConnections, connection)
-end
-
--- Continuous anti-ragdoll monitoring
-local function continuousMonitoring()
-    local connection = RunService.Heartbeat:Connect(function()
+    -- Monitor for ragdoll constraints and remove them
+    local function protectPart(part)
+        if not part:IsA("BasePart") then return end
+        
+        part.ChildAdded:Connect(function(child)
+            if not antiRagdollEnabled then return end
+            
+            if child:IsA("BallSocketConstraint") or 
+               child:IsA("HingeConstraint") or
+               (child:IsA("Attachment") and child.Name:lower():find("ragdoll")) then
+                child:Destroy()
+            end
+        end)
+        
+        -- Remove existing ragdoll constraints
+        for _, child in pairs(part:GetChildren()) do
+            if child:IsA("BallSocketConstraint") or 
+               child:IsA("HingeConstraint") or
+               (child:IsA("Attachment") and child.Name:lower():find("ragdoll")) then
+                child:Destroy()
+            end
+        end
+    end
+    
+    -- Protect all current parts
+    for _, part in pairs(char:GetChildren()) do
+        protectPart(part)
+    end
+    
+    -- Protect new parts
+    char.ChildAdded:Connect(protectPart)
+    
+    -- Continuous monitoring
+    local heartbeatConnection = RunService.Heartbeat:Connect(function()
+        if not char.Parent then
+            heartbeatConnection:Disconnect()
+            stateConnection:Disconnect()
+            return
+        end
+        
         if not antiRagdollEnabled then return end
         
-        local currentChar, currentHumanoid, rootPart = getCurrentCharacterData()
-        if not currentHumanoid then return end
-        
-        -- Continuously ensure no ragdoll states
-        if currentHumanoid.PlatformStand then
-            currentHumanoid.PlatformStand = false
+        -- Keep humanoid out of physics states
+        if hum:GetState() == Enum.HumanoidStateType.Physics then
+            hum:ChangeState(Enum.HumanoidStateType.Freefall)
         end
         
-        local currentState = currentHumanoid:GetState()
-        if currentState == Enum.HumanoidStateType.Physics or 
-           currentState == Enum.HumanoidStateType.Ragdoll or
-           currentState == Enum.HumanoidStateType.FallingDown then
-            
-            currentHumanoid:ChangeState(Enum.HumanoidStateType.Running)
+        -- Ensure PlatformStand is false
+        if hum.PlatformStand then
+            hum.PlatformStand = false
         end
         
-        -- Check for and remove ragdoll constraints
-        if currentChar then
-            for _, child in pairs(currentChar:GetDescendants()) do
-                if child:IsA("BallSocketConstraint") or child:IsA("HingeConstraint") then
-                    if string.find(child.Name:lower(), "ragdoll") or 
-                       string.find(child.Name:lower(), "constraint") then
-                        child:Destroy()
+        -- Re-enable Motor6D joints
+        for _, part in pairs(char:GetChildren()) do
+            if part:IsA("BasePart") then
+                for _, joint in pairs(part:GetChildren()) do
+                    if joint:IsA("Motor6D") and not joint.Enabled then
+                        joint.Enabled = true
                     end
                 end
             end
         end
     end)
     
-    table.insert(ragdollConnections, connection)
+    table.insert(ragdollConnections, stateConnection)
+    table.insert(ragdollConnections, heartbeatConnection)
 end
 
--- Emergency ragdoll recovery
-local function emergencyRecovery()
-    local currentChar, currentHumanoid, rootPart = getCurrentCharacterData()
-    if not currentHumanoid or not rootPart then return end
-    
-    print("[Enhanced Anti-Ragdoll] Emergency recovery activated")
-    
-    -- Force humanoid state
-    currentHumanoid.PlatformStand = false
-    currentHumanoid:ChangeState(Enum.HumanoidStateType.Running)
-    
-    -- Remove all ragdoll-related objects
-    for _, child in pairs(currentChar:GetDescendants()) do
-        if child:IsA("BallSocketConstraint") or 
-           child:IsA("HingeConstraint") or
-           child:IsA("Attachment") then
-            if string.find(child.Name:lower(), "ragdoll") then
-                child:Destroy()
-            end
-        end
-    end
-    
-    -- Reset all body parts to non-ragdoll state
-    for _, part in pairs(currentChar:GetChildren()) do
-        if part:IsA("BasePart") and part ~= rootPart then
-            part.CanCollide = false
-            if part:FindFirstChild("BodyPosition") then
-                part.BodyPosition:Destroy()
-            end
-            if part:FindFirstChild("BodyVelocity") then
-                part.BodyVelocity:Destroy()
-            end
-        end
-    end
-end
-
--- Initialize protection systems
+-- Initialize anti-ragdoll protection
 local function initializeAntiRagdoll()
-    print("[Enhanced Anti-Ragdoll] Initializing protection systems...")
-    
-    -- Clear any existing connections
+    -- Clear existing connections
     for _, connection in pairs(ragdollConnections) do
         if connection and connection.Disconnect then
             connection:Disconnect()
@@ -1269,36 +1163,49 @@ local function initializeAntiRagdoll()
     end
     ragdollConnections = {}
     
-    -- Hook ragdoll remotes
-    hookRagdollRemotes()
+    setupAntiRagdoll()
     
-    -- Set up character protection
-    protectHumanoidStates()
-    monitorCharacterChanges()
-    continuousMonitoring()
+    -- Protect current character
+    if player.Character then
+        protectCharacter(player.Character)
+    end
     
-    -- Emergency recovery key bind (R key)
-    local keyConnection = game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)
-        if gameProcessed then return end
-        if input.KeyCode == Enum.KeyCode.R then
-            emergencyRecovery()
-        end
-    end)
-    table.insert(ragdollConnections, keyConnection)
-    
-    print("[Enhanced Anti-Ragdoll] All protection systems active!")
-    print("[Enhanced Anti-Ragdoll] Press R for emergency recovery if needed")
+    print("🛡️ Enhanced Anti-Ragdoll Protection: ACTIVE")
 end
 
--- Handle character respawn
+-- Handle character respawn for anti-ragdoll
 player.CharacterAdded:Connect(function(newCharacter)
     character = newCharacter
     humanoid = character:WaitForChild("Humanoid")
+    rootPart = character:WaitForChild("HumanoidRootPart")
     
-    print("[Enhanced Anti-Ragdoll] Character respawned, reapplying protection...")
+    print("Character respawned, reapplying anti-ragdoll protection...")
     wait(0.5) -- Wait for character to fully load
-    initializeAntiRagdoll()
+    protectCharacter(newCharacter)
 end)
 
--- Start the enhanced anti-ragdoll system
+-- Start anti-ragdoll system
 initializeAntiRagdoll()
+
+-- Backup protection loop for anti-ragdoll
+spawn(function()
+    while true do
+        wait(0.1)
+        
+        if not antiRagdollEnabled then continue end
+        
+        local char = player.Character
+        if char then
+            local hum = char:FindFirstChild("Humanoid")
+            if hum then
+                -- Force humanoid out of physics state
+                if hum:GetState() == Enum.HumanoidStateType.Physics then
+                    hum:ChangeState(Enum.HumanoidStateType.Freefall)
+                end
+                
+                -- Disable PlatformStand
+                hum.PlatformStand = false
+            end
+        end
+    end
+end)
