@@ -15,7 +15,6 @@ local rootPart = character:WaitForChild("HumanoidRootPart")
 local config = {
     godMode = true,
     noClip = true,
-    speed = 60,
     infiniteJump = true,
     invisible = true,
     enabled = true
@@ -59,12 +58,6 @@ local function enableNoClip()
         end
         rootPart.CanCollide = false
     end)
-end
-
--- Speed Boost Function
-local function enableSpeedBoost()
-    if not config.speed then return end
-    humanoid.WalkSpeed = config.speed
 end
 
 -- Infinite Jump Function
