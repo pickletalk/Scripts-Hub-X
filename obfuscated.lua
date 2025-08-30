@@ -22,20 +22,23 @@ local playerGui = player:WaitForChild("PlayerGui", 5)
 -- User Status Variables
 local OwnerUserId = "2341777244"
 local PremiumUsers = {
-	"1102633570", -- Pedrojay450 [PERM]
-	"8860068952", -- Pedrojay450's alt (assaltanoobsbr) [PERM]
-	"799427028", -- Roblox_xvt [PERM]
-	"5317421108", -- kolwneje [PERM]
-	"1458719572" -- wxckfeen [PERM]
-}
+		"1102633570", -- Pedrojay450 [PERM]
+		"8860068952", -- Pedrojay450's alt (assaltanoobsbr) [PERM]
+		"799427028", -- Roblox_xvt [PERM]
+		"5317421108", -- kolwneje [PERM]
+		"1458719572", -- wxckfeen [PERM]
+		"8558295467" -- Jerdxbackup [TRIAL]
+	
+	}
 local StaffUserId = {
     "3882788546", -- Keanjacob5
     "799427028", -- Roblox_xvt
     "9249886989" -- ALT
 }
 local BlacklistUsers = {
-	"4196292931" -- jvpogi233jj [TRIAL]
-}
+		"4196292931" -- jvpogi233jj [TRIAL]
+	
+	}
 
 -- Animatronics Finder Configuration
 local TARGET_ANIMATRONICS = {"Radioactive Foxy", "Freddles", "Eclipse"}
