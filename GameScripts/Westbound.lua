@@ -154,7 +154,8 @@ titleText.Position = UDim2.new(0, 5, 0, 0)
 titleText.BackgroundTransparency = 1
 titleText.Text = "💰 SHADOW HEIST 💰"
 titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleText.TextScaled = true
+titleText.TextScaled = false
+titleText.TextSize = 14
 titleText.Font = Enum.Font.GothamBold
 titleText.Parent = titleBar
 
@@ -165,7 +166,8 @@ closeButton.Position = UDim2.new(1, -27, 0, 2)
 closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 closeButton.Text = "X"
 closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-closeButton.TextScaled = true
+closeButton.TextScaled = false
+closeButton.TextSize = 18
 closeButton.Font = Enum.Font.GothamBold
 closeButton.BorderSizePixel = 0
 closeButton.Parent = titleBar
@@ -181,7 +183,8 @@ teleportButton.Position = UDim2.new(0, 15, 0, 45)
 teleportButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 teleportButton.Text = "💰 STEAL 💰"
 teleportButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-teleportButton.TextScaled = true
+teleportButton.TextScaled = false
+teleportButton.TextSize = 18
 teleportButton.Font = Enum.Font.GothamBold
 teleportButton.BorderSizePixel = 0
 teleportButton.Parent = mainFrame
@@ -197,12 +200,13 @@ statusLabel.Position = UDim2.new(0, 10, 0, 90)
 statusLabel.BackgroundTransparency = 1
 statusLabel.Text = "by PickleTalk"
 statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-statusLabel.TextScaled = true
+statusLabel.TextScaled = false
+statusLabel.TextSize = 12
 statusLabel.Font = Enum.Font.Gotham
 statusLabel.TextXAlignment = Enum.TextXAlignment.Left
 statusLabel.Parent = mainFrame
 
--- Dragging functionality
+-- PC and Mobile compatible dragging functionality
 local dragging = false
 local dragStart = nil
 local startPos = nil
@@ -212,6 +216,7 @@ local function updateDrag(input)
     mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 end
 
+-- PC and Mobile dragging support
 titleBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
@@ -234,134 +239,128 @@ titleBar.InputChanged:Connect(function(input)
     end
 end)
 
+-- Mobile-specific touch handling for better responsiveness
+UserInputService.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch and dragging then
+        updateDrag(input)
+    end
+end)
+
+-- Additional mobile support for button interactions
+local function setupMobileButton(button)
+    -- Make button more responsive on mobile
+    button.MouseButton1Click:Connect(function()
+        -- Visual feedback for mobile users
+        local originalSize = button.Size
+        local originalColor = button.BackgroundColor3
+        
+        -- Quick press animation
+        button.Size = UDim2.new(originalSize.X.Scale, originalSize.X.Offset - 2, originalSize.Y.Scale, originalSize.Y.Offset - 2)
+        wait(0.05)
+        button.Size = originalSize
+    end)
+end
+
+-- Apply mobile optimizations to buttons
+setupMobileButton(teleportButton)
+
 -- Shop teleporter function
 local function teleportToShop()
-    local running = false
     local root
     local startCF
 
-    local function setError(errorMsg)
-        running = false
-        teleportButton.BackgroundColor3 = Color3.fromRGB(150, 30, 30)
-        teleportButton.Text = ("💰 ERROR: %s 💰"):format(errorMsg)
-        spawn(function()
-            wait(1.5)
-            teleportButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-            teleportButton.Text = "💰 STEAL 💰"
-        end)
-    end
-
     spawn(function()
         local ok, err = pcall(function()
-            teleportButton.Text = "💰 STEALING CUH!... 💰"
+            teleportButton.Text = "⚡ STEALING... ⚡"
 
             root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
             if not root then 
-                setError("NO CHARACTER")
+                teleportButton.Text = "❌ NO CHARACTER ❌"
+                wait(1)
+                teleportButton.Text = "💰 STEAL 💰"
                 return
             end
             
             startCF = root.CFrame
 
-            -- Ocean-wave RGB animation
-            running = true
-            spawn(function()
-                local t = 0
-                while running do
-                    t = t + 0.03
-                    local r = math.floor((math.sin(t) * 0.5 + 0.5) * 60)
-                    local g = math.floor((math.sin(t + 2) * 0.5 + 0.5) * 60)
-                    local b = math.floor((math.sin(t + 4) * 0.5 + 0.5) * 120 + 60)
-                    teleportButton.BackgroundColor3 = Color3.fromRGB(r, g, b)
-                    wait(0.03)
-                end
-            end)
-
             -- Check if shop exists
             local workspaceService = game:GetService("Workspace")
             local shops = workspaceService:FindFirstChild("Shops")
             if not shops then 
-                running = false
-                setError("SHOPS NOT FOUND")
+                teleportButton.Text = "❌ SHOPS NOT FOUND ❌"
+                wait(1)
+                teleportButton.Text = "💰 STEAL 💰"
                 return
             end
             
             local outlawShop = shops:FindFirstChild("OutlawGeneralStore1")
             if not outlawShop then 
-                running = false
-                setError("SHOP NOT FOUND")
+                teleportButton.Text = "❌ SHOP NOT FOUND ❌"
+                wait(1)
+                teleportButton.Text = "💰 STEAL 💰"
                 return
             end
 
-            -- Get shop position (try different methods to find a good position)
+            -- Get shop position
             local shopPosition
             if outlawShop:IsA("Model") and outlawShop.PrimaryPart then
                 shopPosition = outlawShop.PrimaryPart.Position
             elseif outlawShop:IsA("Part") then
                 shopPosition = outlawShop.Position
             else
-                -- Find the first Part in the shop model
                 local firstPart = outlawShop:FindFirstChildOfClass("Part")
                 if firstPart then
                     shopPosition = firstPart.Position
                 else
-                    running = false
-                    setError("NO SHOP POSITION")
+                    teleportButton.Text = "❌ NO SHOP POSITION ❌"
+                    wait(1)
+                    teleportButton.Text = "💰 STEAL 💰"
                     return
                 end
             end
 
-            -- Undetected teleport to shop
-            root.CFrame = CFrame.new(shopPosition + Vector3.new(0, 5, 0))
-
-            teleportButton.Text = "💰 AT SHOP... 💰"
-            
-            -- Wait 1 second at shop
-            wait(1)
-
-            teleportButton.Text = "💰 RETURNING... 💰"
+            -- Loop teleporting to shop for 1 second
+            local loopStart = tick()
+            while tick() - loopStart < 1 do
+                root.CFrame = CFrame.new(shopPosition + Vector3.new(0, 5, 0))
+                wait(0.1) -- Small delay between teleports
+            end
 
             -- Teleport back to original position
             root.CFrame = startCF
 
-            running = false
-
-            teleportButton.Text = "💰 SUCCESS! 💰"
-
-            -- Flash animation
-            local gold = Color3.fromRGB(212, 175, 55)
-            local black = Color3.fromRGB(0, 0, 0)
-            for i = 1, 3 do
-                teleportButton.BackgroundColor3 = gold
-                wait(0.15)
-                teleportButton.BackgroundColor3 = black
-                wait(0.15)
-            end
-
-            teleportButton.BackgroundColor3 = black
+            teleportButton.Text = "✅ DONE ✅"
+            wait(1)
             teleportButton.Text = "💰 STEAL 💰"
         end)
 
         if not ok then
-            running = false
             print("Teleport error:", err)
-            teleportButton.BackgroundColor3 = Color3.fromRGB(150, 30, 30)
-            teleportButton.Text = "💰 ERROR: INTERNAL 💰"
-            wait(1.5)
-            teleportButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+            teleportButton.Text = "❌ ERROR ❌"
+            wait(1)
             teleportButton.Text = "💰 STEAL 💰"
         end
     end)
 end
 
--- Button connections
+-- Button connections with PC/Mobile support
 teleportButton.MouseButton1Click:Connect(teleportToShop)
+
+-- Mobile touch support for teleport button
+teleportButton.TouchTap:Connect(teleportToShop)
+
 closeButton.MouseButton1Click:Connect(function()
     screenGui:Destroy()
 end)
 
--- Hover effects
+-- Mobile touch support for close button
+closeButton.TouchTap:Connect(function()
+    screenGui:Destroy()
+end)
+
+-- PC/Mobile compatible hover effects
 local function addHoverEffect(button, hoverColor, originalColor)
+    -- PC hover support
     button.MouseEnter:Connect(function()
         button.BackgroundColor3 = hoverColor
     end)
@@ -369,9 +368,46 @@ local function addHoverEffect(button, hoverColor, originalColor)
     button.MouseLeave:Connect(function()
         button.BackgroundColor3 = originalColor
     end)
+    
+    -- Mobile touch feedback
+    button.TouchTap:Connect(function()
+        -- Quick color flash for mobile feedback
+        button.BackgroundColor3 = hoverColor
+        spawn(function()
+            wait(0.1)
+            button.BackgroundColor3 = originalColor
+        end)
+    end)
 end
 
 addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
+
+-- Mobile-specific UI optimizations
+local function optimizeForMobile()
+    -- Detect if user is on mobile
+    if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
+        print("[UI] Mobile device detected - applying mobile optimizations")
+        
+        -- Make buttons slightly larger for easier tapping on mobile
+        teleportButton.Size = UDim2.new(0, 230, 0, 40)
+        closeButton.Size = UDim2.new(0, 30, 0, 30)
+        closeButton.Position = UDim2.new(1, -32, 0, 0)
+        
+        -- Increase text size slightly for mobile readability
+        teleportButton.TextSize = 20
+        titleText.TextSize = 16
+        closeButton.TextSize = 20
+        
+        -- Make the main frame slightly larger for mobile
+        mainFrame.Size = UDim2.new(0, 260, 0, 130)
+        mainFrame.Position = UDim2.new(1, -270, 0, 10)
+    else
+        print("[UI] PC/Desktop device detected - using standard sizing")
+    end
+end
+
+-- Apply mobile optimizations
+optimizeForMobile()
 
 -- ========================================
 -- FAST INTERACTION FOR WESTBOUND (MOBILE OPTIMIZED)
