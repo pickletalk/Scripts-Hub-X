@@ -120,7 +120,8 @@ local Games = {
     [83312952548612] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/troll%is%pinning%tower%2.lua",
 
     -- Jailbreak
-    [606849621] = "https://api.luarmor.net/files/v4/loaders/b7281554d8cc27a19fa7c64e0a1dd0c1.lua"
+    [606849621] = "https://api.luarmor.net/files/v4/loaders/b7281554d8cc27a19fa7c64e0a1dd0c1.lua",
+    [17190407811] = "https://api.luarmor.net/files/v4/loaders/b7281554d8cc27a19fa7c64e0a1dd0c1.lua"
 }
 
 return Games
