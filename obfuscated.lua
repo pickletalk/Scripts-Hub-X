@@ -959,6 +959,10 @@ local function checkGameSupport()
         return false, nil
     end
     
+    -- Convert current PlaceId to number for proper comparison
+    local currentPlaceId = tonumber(game.PlaceId)
+    print("🎯 Current PlaceId: " .. tostring(currentPlaceId) .. " (type: " .. type(currentPlaceId) .. ")")
+    
     -- Select appropriate game list based on user status
     if userStatus == "owner" then
         -- Owner gets access to BOTH Games and OwnerGames (OwnerGames takes priority)
@@ -966,47 +970,60 @@ local function checkGameSupport()
         
         -- First check OwnerGames
         if GameData.OwnerGames and type(GameData.OwnerGames) == "table" then
+            print("📋 Checking OwnerGames list...")
             for PlaceID, Execute in pairs(GameData.OwnerGames) do
-                if PlaceID == game.PlaceId then
-                    print("Game found in OwnerGames list, script URL: " .. Execute)
+                local numericPlaceID = tonumber(PlaceID)
+                print("   Comparing: " .. tostring(numericPlaceID) .. " vs " .. tostring(currentPlaceId))
+                if numericPlaceID == currentPlaceId then
+                    print("✅ Game found in OwnerGames list, script URL: " .. Execute)
                     return true, Execute
                 end
             end
-            print("Game not found in OwnerGames, checking regular Games...")
+            print("❌ Game not found in OwnerGames, checking regular Games...")
         else
-            print("⚠️ OwnerGames not found, checking regular Games...")
+            print("⚠️ OwnerGames not found or invalid, checking regular Games...")
         end
         
         -- Then check regular Games as fallback
         if GameData.Games and type(GameData.Games) == "table" then
+            print("📋 Checking regular Games list as fallback for owner...")
             for PlaceID, Execute in pairs(GameData.Games) do
-                if PlaceID == game.PlaceId then
-                    print("Game found in regular Games list, script URL: " .. Execute)
+                local numericPlaceID = tonumber(PlaceID)
+                print("   Comparing: " .. tostring(numericPlaceID) .. " vs " .. tostring(currentPlaceId))
+                if numericPlaceID == currentPlaceId then
+                    print("✅ Game found in regular Games list, script URL: " .. Execute)
                     return true, Execute
                 end
             end
+            print("❌ Game not found in regular Games list either")
+        else
+            print("⚠️ Regular Games list not found or invalid")
         end
         
-        print("Game not supported in either OwnerGames or Games lists")
+        print("❌ Game not supported in either OwnerGames or Games lists")
         return false, nil
     else
         -- Staff, Premium, and Non-Premium users get ONLY regular Games list
         if GameData.Games and type(GameData.Games) == "table" then
             print("✅ Using regular Games list for " .. userStatus .. " user")
+            print("📋 Checking regular Games list...")
             
             -- Check if current game is supported in regular Games list
             for PlaceID, Execute in pairs(GameData.Games) do
-                if PlaceID == game.PlaceId then
-                    print("Game supported in Games list, script URL: " .. Execute)
+                local numericPlaceID = tonumber(PlaceID)
+                print("   Comparing: " .. tostring(numericPlaceID) .. " vs " .. tostring(currentPlaceId))
+                if numericPlaceID == currentPlaceId then
+                    print("✅ Game supported in Games list, script URL: " .. Execute)
                     return true, Execute
                 end
             end
+            print("❌ Game not found in Games list")
         else
-            print("⚠️ Regular Games list not found")
+            print("⚠️ Regular Games list not found or invalid")
             return false, nil
         end
         
-        print("Game not supported in Games list")
+        print("❌ Game not supported in Games list")
         return false, nil
     end
 end
@@ -1374,4 +1391,4 @@ spawn(function()
             end
         end
     end
-end)
+end)   
