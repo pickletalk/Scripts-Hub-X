@@ -959,9 +959,9 @@ local function checkGameSupport()
         return false, nil
     end
     
-    -- Convert current PlaceId to number for proper comparison
-    local currentPlaceId = tonumber(game.PlaceId)
-    print("🎯 Current PlaceId: " .. tostring(currentPlaceId) .. " (type: " .. type(currentPlaceId) .. ")")
+    -- Convert current PlaceId to string for proper comparison (since lua table keys are usually strings)
+    local currentPlaceId = tostring(game.PlaceId)
+    print("🎯 Current PlaceId: " .. currentPlaceId .. " (type: " .. type(currentPlaceId) .. ")")
     
     -- Select appropriate game list based on user status
     if userStatus == "owner" then
@@ -971,15 +971,17 @@ local function checkGameSupport()
         -- First check OwnerGames
         if GameData.OwnerGames and type(GameData.OwnerGames) == "table" then
             print("📋 Checking OwnerGames list...")
+            local ownerGamesCount = 0
             for PlaceID, Execute in pairs(GameData.OwnerGames) do
-                local numericPlaceID = tonumber(PlaceID)
-                print("   Comparing: " .. tostring(numericPlaceID) .. " vs " .. tostring(currentPlaceId))
-                if numericPlaceID == currentPlaceId then
-                    print("✅ Game found in OwnerGames list, script URL: " .. Execute)
+                ownerGamesCount = ownerGamesCount + 1
+                local stringPlaceID = tostring(PlaceID)
+                print("   Comparing: '" .. stringPlaceID .. "' vs '" .. currentPlaceId .. "'")
+                if stringPlaceID == currentPlaceId then
+                    print("✅ Game found in OwnerGames list, script URL: " .. tostring(Execute))
                     return true, Execute
                 end
             end
-            print("❌ Game not found in OwnerGames, checking regular Games...")
+            print("❌ Game not found in OwnerGames (" .. ownerGamesCount .. " games checked), checking regular Games...")
         else
             print("⚠️ OwnerGames not found or invalid, checking regular Games...")
         end
@@ -987,15 +989,17 @@ local function checkGameSupport()
         -- Then check regular Games as fallback
         if GameData.Games and type(GameData.Games) == "table" then
             print("📋 Checking regular Games list as fallback for owner...")
+            local regularGamesCount = 0
             for PlaceID, Execute in pairs(GameData.Games) do
-                local numericPlaceID = tonumber(PlaceID)
-                print("   Comparing: " .. tostring(numericPlaceID) .. " vs " .. tostring(currentPlaceId))
-                if numericPlaceID == currentPlaceId then
-                    print("✅ Game found in regular Games list, script URL: " .. Execute)
+                regularGamesCount = regularGamesCount + 1
+                local stringPlaceID = tostring(PlaceID)
+                print("   Comparing: '" .. stringPlaceID .. "' vs '" .. currentPlaceId .. "'")
+                if stringPlaceID == currentPlaceId then
+                    print("✅ Game found in regular Games list, script URL: " .. tostring(Execute))
                     return true, Execute
                 end
             end
-            print("❌ Game not found in regular Games list either")
+            print("❌ Game not found in regular Games list either (" .. regularGamesCount .. " games checked)")
         else
             print("⚠️ Regular Games list not found or invalid")
         end
@@ -1008,16 +1012,18 @@ local function checkGameSupport()
             print("✅ Using regular Games list for " .. userStatus .. " user")
             print("📋 Checking regular Games list...")
             
+            local regularGamesCount = 0
             -- Check if current game is supported in regular Games list
             for PlaceID, Execute in pairs(GameData.Games) do
-                local numericPlaceID = tonumber(PlaceID)
-                print("   Comparing: " .. tostring(numericPlaceID) .. " vs " .. tostring(currentPlaceId))
-                if numericPlaceID == currentPlaceId then
-                    print("✅ Game supported in Games list, script URL: " .. Execute)
+                regularGamesCount = regularGamesCount + 1
+                local stringPlaceID = tostring(PlaceID)
+                print("   Comparing: '" .. stringPlaceID .. "' vs '" .. currentPlaceId .. "'")
+                if stringPlaceID == currentPlaceId then
+                    print("✅ Game supported in Games list, script URL: " .. tostring(Execute))
                     return true, Execute
                 end
             end
-            print("❌ Game not found in Games list")
+            print("❌ Game not found in Games list (" .. regularGamesCount .. " games checked)")
         else
             print("⚠️ Regular Games list not found or invalid")
             return false, nil
