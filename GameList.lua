@@ -19,6 +19,9 @@ local Games = {
     
     -- Troll Is A Pining Tower 2
     [83312952548612] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/troll%is%pinning%tower%2.lua",
+
+    -- Steal A Anime
+    [] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Steal-A-Anime.lua"
 }
 
 local OwnerGames = {   
