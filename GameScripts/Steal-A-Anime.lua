@@ -14,41 +14,6 @@ local ReplicatedStorage = waitForService("ReplicatedStorage")
 local player = Players.LocalPlayer
 
 -- ========================================
--- AUTO LOCK FEATURE (Every 2 seconds)
--- ========================================
-task.spawn(function()
-    while true do
-        task.wait(1.5) -- Execute every 2 seconds
-        
-        pcall(function()
-            local character = player.Character
-            if not character then return end
-            
-            local hrp = character:FindFirstChild("HumanoidRootPart")
-            if not hrp then return end
-            
-            -- Find player plot
-            local plotNumber = findPlayerPlot()
-            if not plotNumber then return end
-            
-            local workspace = game:GetService("Workspace")
-            local basesFolder = workspace:FindFirstChild("Bases")
-            if not basesFolder then return end
-            
-            local plot = basesFolder:FindFirstChild(plotNumber)
-            if not plot then return end
-            
-            local lockButton = plot:FindFirstChild("LockButton")
-            if not lockButton then return end
-            
-            -- Fire touch without moving player
-            firetouchinterest(hrp, lockButton, 0) -- 0 = touch begin
-            firetouchinterest(hrp, lockButton, 1) -- 1 = touch end
-        end)
-    end
-end)
-
--- ========================================
 -- INFINITE JUMP SCRIPT (Default Jump Height, Respawn Supported)
 -- by pickletalk
 -- ========================================
@@ -448,4 +413,39 @@ task.spawn(function()
     mainFrame.Visible = true
     
     return statusLabel
+end)
+
+-- ========================================
+-- AUTO LOCK FEATURE (Every 2 seconds)
+-- ========================================
+task.spawn(function()
+    while true do
+        task.wait(1.5) -- Execute every 2 seconds
+        
+        pcall(function()
+            local character = player.Character
+            if not character then return end
+            
+            local hrp = character:FindFirstChild("HumanoidRootPart")
+            if not hrp then return end
+            
+            -- Find player plot
+            local plotNumber = findPlayerPlot()
+            if not plotNumber then return end
+            
+            local workspace = game:GetService("Workspace")
+            local basesFolder = workspace:FindFirstChild("Bases")
+            if not basesFolder then return end
+            
+            local plot = basesFolder:FindFirstChild(plotNumber)
+            if not plot then return end
+            
+            local lockButton = plot:FindFirstChild("LockButton")
+            if not lockButton then return end
+            
+            -- Fire touch without moving player
+            firetouchinterest(hrp, lockButton, 0) -- 0 = touch begin
+            firetouchinterest(hrp, lockButton, 1) -- 1 = touch end
+        end)
+    end
 end)
