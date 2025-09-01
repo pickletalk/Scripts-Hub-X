@@ -24,6 +24,8 @@ local Games = {
     [] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Steal-A-Anime.lua"
 }
 
+return Games
+
 local OwnerGames = {   
     -- Grow A Garden
     [126884695634066] = "https://raw.githubusercontent.com/AhmadV99/Script-Games/refs/heads/main/Grow%20a%20Garden.lua",
@@ -123,7 +125,4 @@ local OwnerGames = {
     [17190407811] = "https://api.luarmor.net/files/v4/loaders/b7281554d8cc27a19fa7c64e0a1dd0c1.lua"
 }
 
-return {
-    Games = Games,
-    OwnerGames = OwnerGames
-}
+return OwnerGames
