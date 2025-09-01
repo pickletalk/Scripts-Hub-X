@@ -1,13 +1,20 @@
 -- ========================================
--- MAIN SERVICES AND VARIABLES
+-- STEALTHY INITIALIZATION
 -- ========================================
-local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local function waitForService(serviceName)
+    return game:GetService(serviceName)
+end
+
+local Players = waitForService("Players")
+local UserInputService = waitForService("UserInputService")
+local TweenService = waitForService("TweenService")
+local RunService = waitForService("RunService")
+local ReplicatedStorage = waitForService("ReplicatedStorage")
 
 local player = Players.LocalPlayer
+
+-- Stealthy delay
+task.wait(math.random(1, 3))
 
 -- ========================================
 -- INFINITE JUMP SCRIPT (Default Jump Height, Respawn Supported)
@@ -17,6 +24,7 @@ local originalJumpPower = nil
 
 -- Function to update the default jump power when character spawns/resets
 local function onCharacterAdded(character)
+    task.wait(math.random(0.1, 0.5))
     local humanoid = character:WaitForChild("Humanoid")
     originalJumpPower = humanoid.JumpPower
 end
@@ -24,19 +32,26 @@ end
 -- Connect for first spawn + future respawns
 player.CharacterAdded:Connect(onCharacterAdded)
 if player.Character then
-    onCharacterAdded(player.Character)
+    task.spawn(function()
+        onCharacterAdded(player.Character)
+    end)
 end
 
 -- Infinite Jump (always uses normal default jump height)
-UserInputService.JumpRequest:Connect(function()
-    local character = player.Character
-    if character then
-        local humanoid = character:FindFirstChildOfClass("Humanoid")
-        if humanoid and originalJumpPower then
-            humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-            humanoid.JumpPower = originalJumpPower -- always normal default jump
+task.spawn(function()
+    task.wait(1)
+    UserInputService.JumpRequest:Connect(function()
+        local character = player.Character
+        if character then
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            if humanoid and originalJumpPower then
+                task.spawn(function()
+                    humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                    humanoid.JumpPower = originalJumpPower
+                end)
+            end
         end
-    end
+    end)
 end)
 
 -- ========================================
@@ -55,248 +70,167 @@ local function getHumanoid()
 end
 
 local function enableGodMode()
-    local humanoid = getHumanoid()
-    if not humanoid then 
-        print("No humanoid found!")
-        return 
+    task.spawn(function()
+        local humanoid = getHumanoid()
+        if not humanoid then 
+            return 
+        end
+        
+        if not GodModeEnabled then
+            OriginalMaxHealth = humanoid.MaxHealth
+        end
+        
+        GodModeEnabled = true
+        
+        humanoid.MaxHealth = math.huge
+        humanoid.Health = math.huge
+        
+        if HealthConnection then
+            HealthConnection:Disconnect()
+        end
+        
+        HealthConnection = humanoid.HealthChanged:Connect(function(health)
+            if GodModeEnabled and health < math.huge then
+                task.spawn(function()
+                    humanoid.Health = math.huge
+                end)
+            end
+        end)
+    end)
+end
+
+-- Initialize God Mode with delay
+task.spawn(function()
+    task.wait(math.random(0.5, 1.5))
+    if player.Character then
+        enableGodMode()
+    else
+        player.CharacterAdded:Connect(function()
+            task.wait(math.random(0.3, 0.8))
+            enableGodMode()
+        end)
     end
     
-    if not GodModeEnabled then
-        OriginalMaxHealth = humanoid.MaxHealth
-        print("Stored original health:", OriginalMaxHealth)
-    end
-    
-    GodModeEnabled = true
-    
-    humanoid.MaxHealth = math.huge
-    humanoid.Health = math.huge
-    
-    if HealthConnection then
-        HealthConnection:Disconnect()
-    end
-    
-    HealthConnection = humanoid.HealthChanged:Connect(function(health)
-        if GodModeEnabled and health < math.huge then
-            humanoid.Health = math.huge
+    -- Handle respawning for God Mode
+    player.CharacterAdded:Connect(function()
+        task.wait(math.random(0.5, 1.0))
+        if GodModeEnabled then
+            enableGodMode()
         end
     end)
-    
-    print("God Mode enabled")
-end
-
-local function disableGodMode()
-    GodModeEnabled = false
-    
-    local humanoid = getHumanoid()
-    if humanoid then
-        humanoid.MaxHealth = OriginalMaxHealth
-        humanoid.Health = OriginalMaxHealth
-        print("God Mode disabled, health restored to:", OriginalMaxHealth)
-    end
-    
-    if HealthConnection then
-        HealthConnection:Disconnect()
-        HealthConnection = nil
-    end
-end
-
--- Initialize God Mode
-if player.Character then
-    enableGodMode()
-else
-    player.CharacterAdded:Connect(function()
-        wait(0.5)
-        enableGodMode()
-    end)
-end
-
--- Handle respawning for God Mode
-player.CharacterAdded:Connect(function()
-    wait(0.5)
-    if GodModeEnabled then
-        enableGodMode()
-    end
 end)
 
 -- ========================================
 -- FAST INTERACTION SCRIPT
 -- ========================================
--- Function to modify proximity prompt for instant interaction
-local function modifyProximityPrompt(prompt)
-    if not prompt or not prompt:IsA("ProximityPrompt") then
-        return
+task.spawn(function()
+    task.wait(math.random(1, 2))
+    
+    -- Continuous monitoring with random intervals
+    local function continuousMonitor()
+        task.spawn(function()
+            while task.wait(math.random(0.3, 0.7)) do
+                for _, obj in pairs(workspace:GetDescendants()) do
+                    if obj:IsA("ProximityPrompt") and obj.HoldDuration > 0 then
+                        task.spawn(function()
+                            obj.HoldDuration = 0
+                        end)
+                    end
+                end
+                
+                if player.Character then
+                    for _, obj in pairs(player.Character:GetDescendants()) do
+                        if obj:IsA("ProximityPrompt") and obj.HoldDuration > 0 then
+                            task.spawn(function()
+                                obj.HoldDuration = 0
+                            end)
+                        end
+                    end
+                end
+            end
+        end)
     end
     
-    -- Set hold duration to 0 for instant interaction
-    prompt.HoldDuration = 0
-    
-    -- Also override any style that might interfere
-    prompt.Style = Enum.ProximityPromptStyle.Default
-    
-    -- Ensure it stays at 0 even if the game tries to change it
-    local promptConnection
-    promptConnection = prompt:GetPropertyChangedSignal("HoldDuration"):Connect(function()
-        if prompt.HoldDuration ~= 0 then
-            prompt.HoldDuration = 0
-        end
-    end)
-    
-    print("Modified proximity prompt:", prompt.Name or "Unnamed")
-end
-
--- Function to scan and modify all proximity prompts in a container
-local function scanAndModifyPrompts(container)
-    -- Check current object
-    if container:IsA("ProximityPrompt") then
-        modifyProximityPrompt(container)
-    end
-    
-    -- Check all descendants
-    for _, descendant in pairs(container:GetDescendants()) do
+    -- Handle new proximity prompts
+    workspace.DescendantAdded:Connect(function(descendant)
         if descendant:IsA("ProximityPrompt") then
-            modifyProximityPrompt(descendant)
-        end
-    end
-end
-
--- Function to handle new proximity prompts being added
-local function onDescendantAdded(descendant)
-    if descendant:IsA("ProximityPrompt") then
-        -- Small delay to ensure the prompt is fully initialized
-        wait(0.1)
-        modifyProximityPrompt(descendant)
-    end
-end
-
--- Function to continuously monitor and fix proximity prompts
-local function continuousMonitor()
-    RunService.Heartbeat:Connect(function()
-        -- Scan workspace for any new or reset proximity prompts
-        for _, obj in pairs(workspace:GetDescendants()) do
-            if obj:IsA("ProximityPrompt") and obj.HoldDuration > 0 then
-                obj.HoldDuration = 0
-            end
-        end
-        
-        -- Also check player's character if it exists
-        if player.Character then
-            for _, obj in pairs(player.Character:GetDescendants()) do
-                if obj:IsA("ProximityPrompt") and obj.HoldDuration > 0 then
-                    obj.HoldDuration = 0
-                end
-            end
+            task.spawn(function()
+                task.wait(math.random(0.1, 0.3))
+                descendant.HoldDuration = 0
+                descendant.Style = Enum.ProximityPromptStyle.Default
+            end)
         end
     end)
-end
-
--- Function to handle character respawn for fast interaction
-local function onCharacterAddedForInteraction(character)
-    wait(1) -- Wait for character to fully load
-    scanAndModifyPrompts(character)
-    print("Fast Interaction applied to new character!")
-end
-
--- Main initialization for fast interaction
-local function initializeFastInteraction()
-    print("Initializing Fast Interaction script...")
     
-    -- Scan entire workspace initially
-    scanAndModifyPrompts(workspace)
-    
-    -- Connect to new objects being added
-    workspace.DescendantAdded:Connect(onDescendantAdded)
-    
-    -- Handle character respawning
-    player.CharacterAdded:Connect(onCharacterAddedForInteraction)
-    
-    -- If character already exists, process it
-    if player.Character then
-        onCharacterAddedForInteraction(player.Character)
-    end
-    
-    -- Start continuous monitoring
     continuousMonitor()
-    
-    print("Fast Interaction script loaded! All interactions should now be instant.")
-    print("Found and modified proximity prompts in the game.")
-end
-
--- Start the fast interaction script
-initializeFastInteraction()
-
--- Alternative method using direct prompt manipulation
-spawn(function()
-    while true do
-        wait(0.5) -- Check every half second
-        
-        -- Find all proximity prompts and force them to instant
-        for _, obj in pairs(workspace:GetDescendants()) do
-            if obj:IsA("ProximityPrompt") then
-                if obj.HoldDuration > 0 then
-                    obj.HoldDuration = 0
-                    print("Fixed prompt:", obj.Parent.Name)
-                end
-            end
-        end
-    end
 end)
 
 -- ========================================
--- PLOT FINDING FUNCTION (Used by both teleporter and autolock)
+-- PLOT FINDING FUNCTION
 -- ========================================
 local function findPlayerPlot()
-    local workspace = game:GetService("Workspace")
-    local basesFolder = workspace:FindFirstChild("Bases")
-    
-    if not basesFolder then
-        print("Bases folder not found!")
-        return nil
-    end
-    
-    local playerDisplayName = player.DisplayName
-    
-    -- Check plots 1 to 8
-    for i = 1, 8 do
-        local plotName = tostring(i)
-        local plot = basesFolder:FindFirstChild(plotName)
+    local success, result = pcall(function()
+        local workspace = game:GetService("Workspace")
+        local basesFolder = workspace:FindFirstChild("Bases")
         
-        if plot then
-            local sign = plot:FindFirstChild("Sign")
-            if sign then
-                local signPart = sign:FindFirstChild("SignPart")
-                if signPart then
-                    local surfaceGui = signPart:FindFirstChild("SurfaceGui")
-                    if surfaceGui then
-                        local textLabel = surfaceGui:FindFirstChild("TextLabel")
-                        if textLabel then
-                            local signText = textLabel.Text
-                            local expectedText = playerDisplayName .. "'s Base"
-                            
-                            if signText == expectedText then
-                                return plotName
+        if not basesFolder then
+            return nil
+        end
+        
+        local playerDisplayName = player.DisplayName
+        
+        -- Check plots 1 to 8
+        for i = 1, 8 do
+            local plotName = tostring(i)
+            local plot = basesFolder:FindFirstChild(plotName)
+            
+            if plot then
+                local sign = plot:FindFirstChild("Sign")
+                if sign then
+                    local signPart = sign:FindFirstChild("SignPart")
+                    if signPart then
+                        local surfaceGui = signPart:FindFirstChild("SurfaceGui")
+                        if surfaceGui then
+                            local textLabel = surfaceGui:FindFirstChild("TextLabel")
+                            if textLabel then
+                                local signText = textLabel.Text
+                                local expectedText = playerDisplayName .. "'s Base"
+                                
+                                if signText == expectedText then
+                                    return plotName
+                                end
                             end
                         end
                     end
                 end
             end
         end
-    end
+        
+        return nil
+    end)
     
-    print("Player plot not found!")
-    return nil
+    if success then
+        return result
+    else
+        return nil
+    end
 end
 
 -- ========================================
--- PLOT TELEPORTER UI
+-- STEALTHY UI CREATION
 -- ========================================
-local function createPlotTeleporterUI()
+task.spawn(function()
+    task.wait(math.random(2, 4))
+    
     local playerGui = player:WaitForChild("PlayerGui")
 
-    -- Create ScreenGui
+    -- Create ScreenGui with random delay
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "PlotTeleporterUI"
-    screenGui.Parent = playerGui
     screenGui.ResetOnSpawn = false
+    
+    task.wait(0.1)
+    screenGui.Parent = playerGui
 
     -- Main Frame
     local mainFrame = Instance.new("Frame")
@@ -305,6 +239,7 @@ local function createPlotTeleporterUI()
     mainFrame.Position = UDim2.new(1, -260, 0, 10)
     mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
     mainFrame.BorderSizePixel = 0
+    mainFrame.Visible = false
     mainFrame.Parent = screenGui
 
     local mainCorner = Instance.new("UICorner")
@@ -379,14 +314,16 @@ local function createPlotTeleporterUI()
     statusLabel.TextXAlignment = Enum.TextXAlignment.Left
     statusLabel.Parent = mainFrame
 
-    -- Dragging functionality
+    -- Stealthy dragging functionality
     local dragging = false
     local dragStart = nil
     local startPos = nil
 
     local function updateDrag(input)
-        local delta = input.Position - dragStart
-        mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        task.spawn(function()
+            local delta = input.Position - dragStart
+            mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end)
     end
 
     titleBar.InputBegan:Connect(function(input)
@@ -411,182 +348,259 @@ local function createPlotTeleporterUI()
         end
     end)
 
-    -- Steal function
+    -- Stealthy steal function
     local function stealFromPlot()
-        local running = false
-        local root
+        task.spawn(function()
+            local running = false
+            local root
 
-        local function setError(partName)
-            running = false
-            teleportButton.BackgroundColor3 = Color3.fromRGB(150, 30, 30)
-            teleportButton.Text = ("💰 ERROR ON %s 💰"):format(partName)
-            task.wait(1.5)
-            teleportButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-            teleportButton.Text = "💰 STEAL 💰"
-        end
-
-        local ok, err = pcall(function()
-            teleportButton.Text = "💰 STEALING CUH!... 💰"
-
-            root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-            if not root then return setError("HumanoidRootPart") end
-
-            -- Ocean-wave RGB animation
-            running = true
-            task.spawn(function()
-                local t = 0
-                while running do
-                    t = t + 0.03
-                    local r = math.floor((math.sin(t)     * 0.5 + 0.5) * 60)
-                    local g = math.floor((math.sin(t + 2) * 0.5 + 0.5) * 60)
-                    local b = math.floor((math.sin(t + 4) * 0.5 + 0.5) * 120 + 60)
-                    teleportButton.BackgroundColor3 = Color3.fromRGB(r, g, b)
-                    task.wait(0.03)
-                end
-            end)
-
-            -- Find player plot
-            local plotNumber = findPlayerPlot()
-            if not plotNumber then return setError("PlayerPlot") end
-
-            local workspace = game:GetService("Workspace")
-            local basesFolder = workspace:FindFirstChild("Bases")
-            if not basesFolder then return setError("Bases") end
-
-            local plot = basesFolder:FindFirstChild(plotNumber)
-            if not plot then return setError("Plot") end
-
-            local stealCollect2 = plot:FindFirstChild("StealCollect2")
-            if not stealCollect2 then return setError("StealCollect2") end
-
-            local touchInterest = stealCollect2:FindFirstChild("TouchInterest")
-            if not touchInterest then return setError("TouchInterest") end
-
-            -- Fire the touch interest
-            firetouchinterest(stealCollect2, root, 0)
-            wait(0.1)
-            firetouchinterest(stealCollect2, root, 1)
-
-            running = false
-
-            teleportButton.Text = "💰 SUCCESS CUH! 💰"
-
-            -- Flash
-            local gold = Color3.fromRGB(212, 175, 55)
-            local black = Color3.fromRGB(0, 0, 0)
-            for i = 1, 3 do
-                teleportButton.BackgroundColor3 = gold
-                task.wait(0.15)
-                teleportButton.BackgroundColor3 = black
-                task.wait(0.15)
+            local function setError(partName)
+                running = false
+                task.spawn(function()
+                    teleportButton.BackgroundColor3 = Color3.fromRGB(150, 30, 30)
+                    teleportButton.Text = ("💰 ERROR ON %s 💰"):format(partName)
+                    task.wait(1.5)
+                    teleportButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+                    teleportButton.Text = "💰 STEAL 💰"
+                end)
             end
 
-            teleportButton.BackgroundColor3 = black
-            teleportButton.Text = "💰 STEAL 💰"
-        end)
+            local ok, err = pcall(function()
+                teleportButton.Text = "💰 STEALING CUH!... 💰"
 
-        if not ok then
-            running = false
-            teleportButton.BackgroundColor3 = Color3.fromRGB(150, 30, 30)
-            teleportButton.Text = "💰 ERROR ON INTERNAL 💰"
-            task.wait(1.5)
-            teleportButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-            teleportButton.Text = "💰 STEAL 💰"
-        end
+                root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+                if not root then return setError("HumanoidRootPart") end
+
+                -- Ocean-wave RGB animation
+                running = true
+                task.spawn(function()
+                    local t = 0
+                    while running do
+                        t = t + 0.03
+                        local r = math.floor((math.sin(t)     * 0.5 + 0.5) * 60)
+                        local g = math.floor((math.sin(t + 2) * 0.5 + 0.5) * 60)
+                        local b = math.floor((math.sin(t + 4) * 0.5 + 0.5) * 120 + 60)
+                        task.spawn(function()
+                            teleportButton.BackgroundColor3 = Color3.fromRGB(r, g, b)
+                        end)
+                        task.wait(0.03)
+                    end
+                end)
+
+                -- Find player plot
+                local plotNumber = findPlayerPlot()
+                if not plotNumber then return setError("PlayerPlot") end
+
+                local workspace = game:GetService("Workspace")
+                local basesFolder = workspace:FindFirstChild("Bases")
+                if not basesFolder then return setError("Bases") end
+
+                local plot = basesFolder:FindFirstChild(plotNumber)
+                if not plot then return setError("Plot") end
+
+                local stealCollect2 = plot:FindFirstChild("StealCollect2")
+                if not stealCollect2 then return setError("StealCollect2") end
+
+                local touchInterest = stealCollect2:FindFirstChild("TouchInterest")
+                if not touchInterest then return setError("TouchInterest") end
+
+                -- Fire the touch interest with 0.5 second delay
+                task.spawn(function()
+                    firetouchinterest(stealCollect2, root, 0)
+                    task.wait(0.5)
+                    firetouchinterest(stealCollect2, root, 1)
+                end)
+
+                running = false
+
+                task.wait(0.6)
+                teleportButton.Text = "💰 SUCCESS CUH! 💰"
+
+                -- Flash
+                task.spawn(function()
+                    local gold = Color3.fromRGB(212, 175, 55)
+                    local black = Color3.fromRGB(0, 0, 0)
+                    for i = 1, 3 do
+                        teleportButton.BackgroundColor3 = gold
+                        task.wait(0.15)
+                        teleportButton.BackgroundColor3 = black
+                        task.wait(0.15)
+                    end
+
+                    teleportButton.BackgroundColor3 = black
+                    teleportButton.Text = "💰 STEAL 💰"
+                end)
+            end)
+
+            if not ok then
+                running = false
+                setError("INTERNAL")
+            end
+        end)
     end
 
     -- Button connections
     teleportButton.MouseButton1Click:Connect(stealFromPlot)
     closeButton.MouseButton1Click:Connect(function()
-        screenGui:Destroy()
+        task.spawn(function()
+            screenGui:Destroy()
+        end)
     end)
 
     -- Hover effects
     local function addHoverEffect(button, hoverColor, originalColor)
         button.MouseEnter:Connect(function()
-            button.BackgroundColor3 = hoverColor
+            task.spawn(function()
+                button.BackgroundColor3 = hoverColor
+            end)
         end)
         
         button.MouseLeave:Connect(function()
-            button.BackgroundColor3 = originalColor
+            task.spawn(function()
+                button.BackgroundColor3 = originalColor
+            end)
         end)
     end
 
     addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
     
+    -- Show UI with fade in
+    task.wait(math.random(0.5, 1))
+    mainFrame.Visible = true
+    
     return statusLabel
-end
+end)
 
--- Create the UI
-local statusLabel = createPlotTeleporterUI()
+-- ========================================
+-- PLOT FINDING FUNCTION
+-- ========================================
+local function findPlayerPlot()
+    local success, result = pcall(function()
+        task.wait(math.random(0.05, 0.15))
+        
+        local workspace = game:GetService("Workspace")
+        local basesFolder = workspace:FindFirstChild("Bases")
+        
+        if not basesFolder then
+            return nil
+        end
+        
+        local playerDisplayName = player.DisplayName
+        
+        -- Check plots 1 to 8 with random order
+        local plots = {1, 2, 3, 4, 5, 6, 7, 8}
+        for i = #plots, 2, -1 do
+            local j = math.random(i)
+            plots[i], plots[j] = plots[j], plots[i]
+        end
+        
+        for _, i in ipairs(plots) do
+            local plotName = tostring(i)
+            local plot = basesFolder:FindFirstChild(plotName)
+            
+            if plot then
+                local sign = plot:FindFirstChild("Sign")
+                if sign then
+                    local signPart = sign:FindFirstChild("SignPart")
+                    if signPart then
+                        local surfaceGui = signPart:FindFirstChild("SurfaceGui")
+                        if surfaceGui then
+                            local textLabel = surfaceGui:FindFirstChild("TextLabel")
+                            if textLabel then
+                                local signText = textLabel.Text
+                                local expectedText = playerDisplayName .. "'s Base"
+                                
+                                if signText == expectedText then
+                                    return plotName
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            task.wait(0.05)
+        end
+        
+        return nil
+    end)
+    
+    if success then
+        return result
+    else
+        return nil
+    end
+end
 
 -- ========================================
 -- AUTO LOCK FUNCTION
 -- ========================================
-local function autoLock()
-    local plotNumber = findPlayerPlot()
-    if not plotNumber then
-        return
-    end
+task.spawn(function()
+    task.wait(math.random(3, 5))
     
-    local workspace = game:GetService("Workspace")
-    local basesFolder = workspace:FindFirstChild("Bases")
-    if not basesFolder then
-        return
-    end
-    
-    local plot = basesFolder:FindFirstChild(plotNumber)
-    if not plot then
-        return
-    end
-    
-    local lockButton = plot:FindFirstChild("LockButton")
-    if not lockButton then
-        return
-    end
-    
-    local billboardGui = lockButton:FindFirstChild("BillboardGui")
-    if not billboardGui then
-        return
-    end
-    
-    local frame = billboardGui:FindFirstChild("Frame")
-    if not frame then
-        return
-    end
-    
-    local countdown = frame:FindFirstChild("Countdown")
-    if not countdown then
-        return
-    end
-    
-    -- Check if countdown text is "0"
-    if countdown.Text == "0" then
-        local touchInterest = lockButton:FindFirstChild("TouchInterest")
-        if touchInterest and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            local rootPart = player.Character.HumanoidRootPart
-            
-            -- Fire TouchInterest for 1 second
-            local startTime = tick()
-            while tick() - startTime < 1 do
-                wait(0.05)
-                firetouchinterest(lockButton, rootPart, 0)
-                wait(0.5)
-                firetouchinterest(lockButton, rootPart, 1)
-                wait(0.05)
+    local function autoLock()
+        task.spawn(function()
+            local plotNumber = findPlayerPlot()
+            if not plotNumber then
+                return
             end
             
-            print("Auto lock fired for plot " .. plotNumber)
-        end
+            local success, _ = pcall(function()
+                local workspace = game:GetService("Workspace")
+                local basesFolder = workspace:FindFirstChild("Bases")
+                if not basesFolder then
+                    return
+                end
+                
+                local plot = basesFolder:FindFirstChild(plotNumber)
+                if not plot then
+                    return
+                end
+                
+                local lockButton = plot:FindFirstChild("LockButton")
+                if not lockButton then
+                    return
+                end
+                
+                local billboardGui = lockButton:FindFirstChild("BillboardGui")
+                if not billboardGui then
+                    return
+                end
+                
+                local frame = billboardGui:FindFirstChild("Frame")
+                if not frame then
+                    return
+                end
+                
+                local countdown = frame:FindFirstChild("Countdown")
+                if not countdown then
+                    return
+                end
+                
+                -- Check if countdown text is "0"
+                if countdown.Text == "0" then
+                    local touchInterest = lockButton:FindFirstChild("TouchInterest")
+                    if touchInterest and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                        local rootPart = player.Character.HumanoidRootPart
+                        
+                        -- Fire TouchInterest for 1 second with 0.5 delay
+                        task.spawn(function()
+                            local startTime = tick()
+                            while tick() - startTime < 1 do
+                                task.wait(0.05)
+                                firetouchinterest(lockButton, rootPart, 0)
+                                task.wait(0.5)
+                                firetouchinterest(lockButton, rootPart, 1)
+                                task.wait(0.5)
+                            end
+                        end)
+                    end
+                end
+            end)
+        end)
     end
-end
 
--- Main loop for auto lock
-spawn(function()
-    while true do
-        wait(0.1) -- Check every 0.1 seconds for quick response
+    -- Main loop for auto lock with random intervals
+    while task.wait(math.random(0.8, 1.2)) do
         autoLock()
     end
 end)
-
-print("Script loaded successfully! All features are now active.")
