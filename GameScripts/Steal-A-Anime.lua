@@ -219,65 +219,37 @@ local function updateNoclip()
 end
 
 -- ========================================
--- ENHANCED NOCLIP SYSTEM WITH VOID PROTECTION & ANTI-TELEPORT
+-- NORMAL NOCLIP WITH ANTI-CHEAT BYPASS
 -- ========================================
 local noclipEnabled = false
 local originalCanCollide = {}
-local excludedParts = {}
+local lastPlayerPosition = nil
 local playerPosition = nil
-local lastSafePosition = nil
-local antiTeleportActive = false
-local voidProtectionHeight = -50 -- Minimum Y position before teleporting back
+local antiCheatTeleportDetected = false
 
--- Store important parts that should never lose collision
-local function setupExcludedParts()
-    task.spawn(function()
-        local workspace = game:GetService("Workspace")
-        
-        -- Exclude spawn areas and important game parts
-        local map = workspace:FindFirstChild("Map")
-        if map then
-            local part = map:FindFirstChild("Part")
-            if part then
-                excludedParts[part] = true
-            end
-        end
-        
-        -- Exclude all CollectZone parts in plots
-        local basesFolder = workspace:FindFirstChild("Bases")
-        if basesFolder then
-            for i = 1, 8 do
-                local plot = basesFolder:FindFirstChild(tostring(i))
-                if plot then
-                    local stealCollect2 = plot:FindFirstChild("StealCollect2")
-                    if stealCollect2 then
-                        excludedParts[stealCollect2] = true
-                    end
-                    
-                    local lockButton = plot:FindFirstChild("LockButton")
-                    if lockButton then
-                        excludedParts[lockButton] = true
-                    end
-                end
-            end
-        end
-    end)
-end
-
--- Enhanced noclip function that preserves ground collision
-local function applySafeNoclip(part)
+-- Enhanced noclip function
+local function applyNoclip(part)
     if not part:IsA("BasePart") then return end
-    if excludedParts[part] then return end
     if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
     
     local rootPart = player.Character.HumanoidRootPart
     
-    -- Don't noclip parts directly below the player (void protection)
+    -- Don't noclip Map.Path
+    if part.Parent and part.Parent.Name == "Map" and part.Name == "Path" then
+        return
+    end
+    
+    -- Don't noclip Union parts
+    if part.Name == "Union" then
+        return
+    end
+    
+    -- Don't noclip the ground the player is standing on
     local raycastParams = RaycastParams.new()
     raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
     raycastParams.FilterDescendantsInstances = {player.Character}
     
-    local raycast = workspace:Raycast(rootPart.Position, Vector3.new(0, -20, 0), raycastParams)
+    local raycast = workspace:Raycast(rootPart.Position, Vector3.new(0, -5, 0), raycastParams)
     
     if raycast and raycast.Instance == part then
         return -- Keep collision for ground parts
@@ -300,40 +272,21 @@ local function restoreCollision(part)
     end
 end
 
--- Smart noclip that updates based on player movement
+-- Update noclip for all parts
 local function updateNoclip()
     if not noclipEnabled then return end
     if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
     
-    local rootPart = player.Character.HumanoidRootPart
-    local currentPos = rootPart.Position
-    
-    -- Store safe position when on solid ground
-    local raycastParams = RaycastParams.new()
-    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-    raycastParams.FilterDescendantsInstances = {player.Character}
-    
-    local raycast = workspace:Raycast(currentPos, Vector3.new(0, -10, 0), raycastParams)
-    if raycast and raycast.Instance.CanCollide then
-        lastSafePosition = currentPos
-    end
-    
-    -- Void protection - teleport back if falling too low
-    if currentPos.Y < voidProtectionHeight and lastSafePosition then
-        rootPart.CFrame = CFrame.new(lastSafePosition + Vector3.new(0, 5, 0))
-        return
-    end
-    
-    -- Apply noclip to all parts except ground below player
+    -- Apply noclip to all parts in workspace
     for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") and obj ~= rootPart and obj.Parent ~= player.Character then
-            applySafeNoclip(obj)
+        if obj:IsA("BasePart") and obj.Parent ~= player.Character then
+            applyNoclip(obj)
         end
     end
 end
 
--- Enhanced anti-teleport system
-local function monitorPosition()
+-- Anti-cheat detection and counter
+local function monitorAntiCheat()
     if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
     if not noclipEnabled then return end
     
@@ -343,24 +296,27 @@ local function monitorPosition()
     -- Store current position for comparison
     if not playerPosition then
         playerPosition = currentPos
+        lastPlayerPosition = currentPos
         return
     end
     
     local distanceMoved = (currentPos - playerPosition).Magnitude
-    local timeDelta = RunService.Heartbeat:Wait()
     
     -- Detect anti-cheat teleport (sudden large movement)
-    if distanceMoved > 100 and lastSafePosition then
-        antiTeleportActive = true
+    if distanceMoved > 50 and lastPlayerPosition then
+        antiCheatTeleportDetected = true
         
-        -- Counter the teleport by moving back to last safe position
+        -- Counter the teleport by moving back to last position
         task.spawn(function()
             task.wait(0.1) -- Small delay to avoid conflict
-            if antiTeleportActive and lastSafePosition then
-                rootPart.CFrame = CFrame.new(lastSafePosition + Vector3.new(0, 2, 0))
-                antiTeleportActive = false
+            if antiCheatTeleportDetected and lastPlayerPosition then
+                rootPart.CFrame = CFrame.new(lastPlayerPosition)
+                antiCheatTeleportDetected = false
             end
         end)
+    else
+        -- Update last position only if movement seems legitimate
+        lastPlayerPosition = playerPosition
     end
     
     playerPosition = currentPos
@@ -369,27 +325,29 @@ end
 -- Initialize noclip system
 local function initializeNoclip()
     task.spawn(function()
-        -- task.wait(math.random(2, 4)) -- Removed delay
-        
-        setupExcludedParts()
         noclipEnabled = true
         
-        -- Position monitoring for anti-teleport
-        RunService.Heartbeat:Connect(function()
-            task.spawn(monitorPosition)
+        -- Anti-cheat monitoring with 2 second delay
+        task.spawn(function()
+            while noclipEnabled do
+                monitorAntiCheat()
+                task.wait(2) -- 2 second delay as requested
+            end
         end)
         
-        -- Noclip updating
-        RunService.Heartbeat:Connect(function()
-            task.spawn(updateNoclip)
+        -- Noclip updating with 2 second delay
+        task.spawn(function()
+            while noclipEnabled do
+                updateNoclip()
+                task.wait(2) -- 2 second delay as requested
+            end
         end)
         
         -- Handle new parts
         workspace.DescendantAdded:Connect(function(descendant)
             if noclipEnabled and descendant:IsA("BasePart") then
                 task.spawn(function()
-                    -- task.wait(0.1) -- Removed delay
-                    applySafeNoclip(descendant)
+                    applyNoclip(descendant)
                 end)
             end
         end)
@@ -399,23 +357,64 @@ local function initializeNoclip()
             if originalCanCollide[descendant] then
                 originalCanCollide[descendant] = nil
             end
-            if excludedParts[descendant] then
-                excludedParts[descendant] = nil
+        end)
+        
+        -- Handle character respawn
+        player.CharacterAdded:Connect(function()
+            playerPosition = nil
+            lastPlayerPosition = nil
+            antiCheatTeleportDetected = false
+        end)
+        
+        print("Normal Noclip with Anti-Cheat Bypass enabled")
+    end)
+end
+
+-- Initialize noclip system
+local function initializeNoclip()
+    task.spawn(function()
+        noclipEnabled = true
+        
+        -- Anti-cheat monitoring with 2 second delay
+        task.spawn(function()
+            while noclipEnabled do
+                monitorAntiCheat()
+                task.wait(2) -- 2 second delay as requested
+            end
+        end)
+        
+        -- Noclip updating with 2 second delay
+        task.spawn(function()
+            while noclipEnabled do
+                updateNoclip()
+                task.wait(2) -- 2 second delay as requested
+            end
+        end)
+        
+        -- Handle new parts
+        workspace.DescendantAdded:Connect(function(descendant)
+            if noclipEnabled and descendant:IsA("BasePart") then
+                task.spawn(function()
+                    applyNoclip(descendant)
+                end)
+            end
+        end)
+        
+        -- Clean up removed parts
+        workspace.DescendantRemoving:Connect(function(descendant)
+            if originalCanCollide[descendant] then
+                originalCanCollide[descendant] = nil
             end
         end)
         
         -- Handle character respawn
         player.CharacterAdded:Connect(function()
-            -- task.wait(math.random(0.5, 1.5)) -- Removed delay
             playerPosition = nil
-            lastSafePosition = nil
-            antiTeleportActive = false
-            
-            -- task.wait(1) -- Removed delay
-            setupExcludedParts()
+            lastPlayerPosition = nil
+            antiCheatTeleportDetected = false
         end)
         
-        print("Enhanced Noclip with Void Protection enabled")
+        print("Normal Noclip with Anti-Cheat Bypass enabled")
     end)
 end
 
@@ -750,11 +749,9 @@ task.spawn(function()
 end)
 
 -- ========================================
--- AUTO LOCK FUNCTION
+-- AUTO LOCK FUNCTION WITH TELEPORTATION
 -- ========================================
 task.spawn(function()
-    -- task.wait(math.random(3, 5)) -- Removed delay
-    
     local function autoLock()
         task.spawn(function()
             local plotNumber = findPlayerPlot()
@@ -796,18 +793,22 @@ task.spawn(function()
                 
                 -- Check if countdown text is "0"
                 if countdown.Text == "0" then
-                    local touchInterest = lockButton:FindFirstChild("TouchInterest")
-                    if touchInterest and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                         local rootPart = player.Character.HumanoidRootPart
+                        local originalPosition = rootPart.CFrame
                         
-                        -- Fire TouchInterest 4 times with 0.3 delay for 2 seconds total
+                        -- Teleport to LockButton 2 times with delays
                         task.spawn(function()
-                            for i = 1, 4 do
-                                firetouchinterest(lockButton, rootPart, 0)
-                                task.wait(0.3)
-                                firetouchinterest(lockButton, rootPart, 1)
-                                if i < 4 then -- Don't wait after the last iteration
-                                    task.wait(0.3)
+                            for i = 1, 2 do
+                                -- Teleport to LockButton
+                                rootPart.CFrame = lockButton.CFrame + Vector3.new(0, 3, 0)
+                                task.wait(0.5) -- Stay there for 0.5 seconds
+                                
+                                -- Return to original position
+                                rootPart.CFrame = originalPosition
+                                
+                                if i < 2 then -- Don't wait after the last teleport
+                                    task.wait(0.5) -- 0.5 delay between teleports
                                 end
                             end
                         end)
@@ -817,8 +818,8 @@ task.spawn(function()
         end)
     end
 
-    -- Main loop for auto lock with faster intervals
-    while task.wait(0.5) do -- Reduced from random(0.8, 1.2) to 0.5
+    -- Main loop for auto lock with 2 second delay
+    while task.wait(2) do -- 2 second delay as requested
         autoLock()
     end
 end)
