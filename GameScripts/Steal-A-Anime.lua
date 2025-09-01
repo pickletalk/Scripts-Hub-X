@@ -210,14 +210,9 @@ local function updateNoclip()
         lastSafePosition = currentPos
     end
     
-    -- Apply noclip to nearby parts only
-    local region = Region3.new(
-        currentPos - Vector3.new(20, 10, 20),
-        currentPos + Vector3.new(20, 20, 20)
-    )
-    
-    for _, obj in pairs(workspace:GetPartBoundsInRegion(region, math.huge)) do
-        if obj and obj:IsA("BasePart") then
+    -- Apply noclip to all parts in workspace (simpler approach)
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and obj ~= rootPart then
             applySafeNoclip(obj)
         end
     end
@@ -681,12 +676,17 @@ task.spawn(function()
                     if touchInterest and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                         local rootPart = player.Character.HumanoidRootPart
                         
-                        -- Fire TouchInterest with 0.07 initial delay and 0.5 delay between touches
+                        -- Fire TouchInterest 4 times with 0.3 delay for 2 seconds total
                         task.spawn(function()
-                            task.wait(0.4) -- Added delay before firing first touch interest
-                            firetouchinterest(lockButton, rootPart, 0)
-                            task.wait(0.5)
-                            firetouchinterest(lockButton, rootPart, 1)
+                            task.wait(0.07) -- Added delay before firing first touch interest
+                            for i = 1, 4 do
+                                firetouchinterest(lockButton, rootPart, 0)
+                                task.wait(0.3)
+                                firetouchinterest(lockButton, rootPart, 1)
+                                if i < 4 then -- Don't wait after the last iteration
+                                    task.wait(0.3)
+                                end
+                            end
                         end)
                     end
                 end
