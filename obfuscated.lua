@@ -875,30 +875,81 @@ local function loadKeySystem()
     return true, result
 end
 
+-- Updated checkGameSupport function with owner having access to both Games and OwnerGames
 local function checkGameSupport()
     print("Checking game support for PlaceID: " .. game.PlaceId)
-    local success, Games = pcall(function()
+    
+    -- Get current user status first
+    local userStatus = checkPremiumUser()
+    print("User status: " .. userStatus)
+    
+    local success, GameData = pcall(function()
         local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameList.lua")
         return loadstring(script)()
     end)
+    
     if not success then
-        warn("Failed to load game list: " .. tostring(Games))
+        warn("Failed to load game list: " .. tostring(GameData))
         return false, nil
     end
     
-    if type(Games) ~= "table" then
+    if type(GameData) ~= "table" then
         warn("Game list returned invalid data")
         return false, nil
     end
     
-    for PlaceID, Execute in pairs(Games) do
-        if PlaceID == game.PlaceId then
-            print("Game supported, script URL: " .. Execute)
-            return true, Execute
+    -- Select appropriate game list based on user status
+    local Games = nil
+    if userStatus == "owner" then
+        -- Owner gets access to BOTH Games and OwnerGames (OwnerGames takes priority)
+        print("🔑 Owner detected - Checking both OwnerGames and Games lists")
+        
+        -- First check OwnerGames
+        if GameData.OwnerGames and type(GameData.OwnerGames) == "table" then
+            for PlaceID, Execute in pairs(GameData.OwnerGames) do
+                if PlaceID == game.PlaceId then
+                    print("Game found in OwnerGames list, script URL: " .. Execute)
+                    return true, Execute
+                end
+            end
+            print("Game not found in OwnerGames, checking regular Games...")
+        else
+            print("⚠️ OwnerGames not found, checking regular Games...")
         end
+        
+        -- Then check regular Games as fallback
+        if GameData.Games and type(GameData.Games) == "table" then
+            for PlaceID, Execute in pairs(GameData.Games) do
+                if PlaceID == game.PlaceId then
+                    print("Game found in regular Games list, script URL: " .. Execute)
+                    return true, Execute
+                end
+            end
+        end
+        
+        print("Game not supported in either OwnerGames or Games lists")
+        return false, nil
+    else
+        -- Staff, Premium, and Non-Premium users get ONLY regular Games list
+        if GameData.Games and type(GameData.Games) == "table" then
+            Games = GameData.Games
+            print("✅ Using regular Games list for " .. userStatus .. " user")
+        else
+            print("⚠️ Regular Games list not found")
+            return false, nil
+        end
+        
+        -- Check if current game is supported in regular Games list
+        for PlaceID, Execute in pairs(Games) do
+            if PlaceID == game.PlaceId then
+                print("Game supported in Games list, script URL: " .. Execute)
+                return true, Execute
+            end
+        end
+        
+        print("Game not supported in Games list")
+        return false, nil
     end
-    print("Game not supported")
-    return false, nil
 end
 
 local function loadGameScript(scriptUrl)
@@ -923,7 +974,7 @@ end
 -- ================================
 
 local function checkPremiumUser()
-    local userId = tostring(player.UserId)  -- FIXED: Changed toString to tostring
+    local userId = tostring(player.UserId)
     print("Checking user status for UserId: " .. userId)
     
     if BlacklistUsers and table.find(BlacklistUsers, userId) then
@@ -1013,7 +1064,7 @@ end
 -- ================================
 
 -- Main execution
-spawn(function()  -- FIXED: Changed coroutine.wrap to spawn for better compatibility
+spawn(function()
     print("🚀 Starting main execution at " .. os.date("%H:%M:%S"))
     
     -- Check user status
