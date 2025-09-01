@@ -420,7 +420,7 @@ end)
 -- ========================================
 task.spawn(function()
     while true do
-        task.wait(1.5) -- Execute every 2 seconds
+        task.wait(0.7) -- Execute every 2 seconds
         
         pcall(function()
             local character = player.Character
