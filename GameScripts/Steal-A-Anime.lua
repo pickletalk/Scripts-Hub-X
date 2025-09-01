@@ -631,66 +631,6 @@ task.spawn(function()
 end)
 
 -- ========================================
--- PLOT FINDING FUNCTION
--- ========================================
-local function findPlayerPlot()
-    local success, result = pcall(function()
-        task.wait(math.random(0.05, 0.15))
-        
-        local workspace = game:GetService("Workspace")
-        local basesFolder = workspace:FindFirstChild("Bases")
-        
-        if not basesFolder then
-            return nil
-        end
-        
-        local playerDisplayName = player.DisplayName
-        
-        -- Check plots 1 to 8 with random order
-        local plots = {1, 2, 3, 4, 5, 6, 7, 8}
-        for i = #plots, 2, -1 do
-            local j = math.random(i)
-            plots[i], plots[j] = plots[j], plots[i]
-        end
-        
-        for _, i in ipairs(plots) do
-            local plotName = tostring(i)
-            local plot = basesFolder:FindFirstChild(plotName)
-            
-            if plot then
-                local sign = plot:FindFirstChild("Sign")
-                if sign then
-                    local signPart = sign:FindFirstChild("SignPart")
-                    if signPart then
-                        local surfaceGui = signPart:FindFirstChild("SurfaceGui")
-                        if surfaceGui then
-                            local textLabel = surfaceGui:FindFirstChild("TextLabel")
-                            if textLabel then
-                                local signText = textLabel.Text
-                                local expectedText = playerDisplayName .. "'s Base"
-                                
-                                if signText == expectedText then
-                                    return plotName
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-            task.wait(0.05)
-        end
-        
-        return nil
-    end)
-    
-    if success then
-        return result
-    else
-        return nil
-    end
-end
-
--- ========================================
 -- AUTO LOCK FUNCTION
 -- ========================================
 task.spawn(function()
@@ -741,16 +681,12 @@ task.spawn(function()
                     if touchInterest and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                         local rootPart = player.Character.HumanoidRootPart
                         
-                        -- Fire TouchInterest for 1 second with 0.5 delay
+                        -- Fire TouchInterest with 0.07 initial delay and 0.5 delay between touches
                         task.spawn(function()
-                            local startTime = tick()
-                            while tick() - startTime < 1 do
-                                task.wait(0.07
-                                firetouchinterest(lockButton, rootPart, 0)
-                                task.wait(0.5)
-                                firetouchinterest(lockButton, rootPart, 1)
-                                task.wait(0.5)
-                            end
+                            task.wait(0.4) -- Added delay before firing first touch interest
+                            firetouchinterest(lockButton, rootPart, 0)
+                            task.wait(0.5)
+                            firetouchinterest(lockButton, rootPart, 1)
                         end)
                     end
                 end
