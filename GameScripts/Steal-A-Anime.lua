@@ -121,49 +121,208 @@ task.spawn(function()
 end)
 
 -- ========================================
--- FAST INTERACTION SCRIPT
+-- UNDETECTABLE NOCLIP SYSTEM
 -- ========================================
-task.spawn(function()
-    task.wait(math.random(1, 2))
-    
-    -- Continuous monitoring with random intervals
-    local function continuousMonitor()
-        task.spawn(function()
-            while task.wait(math.random(0.3, 0.7)) do
-                for _, obj in pairs(workspace:GetDescendants()) do
-                    if obj:IsA("ProximityPrompt") and obj.HoldDuration > 0 then
-                        task.spawn(function()
-                            obj.HoldDuration = 0
-                        end)
+local noclipEnabled = false
+local originalCanCollide = {}
+local excludedParts = {}
+local playerPosition = nil
+local lastSafePosition = nil
+
+-- Store important parts that should never lose collision
+local function setupExcludedParts()
+    task.spawn(function()
+        local workspace = game:GetService("Workspace")
+        
+        -- Exclude spawn areas and important game parts
+        local map = workspace:FindFirstChild("Map")
+        if map then
+            local part = map:FindFirstChild("Part")
+            if part then
+                excludedParts[part] = true
+            end
+        end
+        
+        -- Exclude all CollectZone parts in plots
+        local basesFolder = workspace:FindFirstChild("Bases")
+        if basesFolder then
+            for i = 1, 8 do
+                local plot = basesFolder:FindFirstChild(tostring(i))
+                if plot then
+                    local stealCollect2 = plot:FindFirstChild("StealCollect2")
+                    if stealCollect2 then
+                        excludedParts[stealCollect2] = true
                     end
-                end
-                
-                if player.Character then
-                    for _, obj in pairs(player.Character:GetDescendants()) do
-                        if obj:IsA("ProximityPrompt") and obj.HoldDuration > 0 then
-                            task.spawn(function()
-                                obj.HoldDuration = 0
-                            end)
-                        end
+                    
+                    local lockButton = plot:FindFirstChild("LockButton")
+                    if lockButton then
+                        excludedParts[lockButton] = true
                     end
                 end
             end
-        end)
-    end
-    
-    -- Handle new proximity prompts
-    workspace.DescendantAdded:Connect(function(descendant)
-        if descendant:IsA("ProximityPrompt") then
-            task.spawn(function()
-                task.wait(math.random(0.1, 0.3))
-                descendant.HoldDuration = 0
-                descendant.Style = Enum.ProximityPromptStyle.Default
-            end)
         end
     end)
+end
+
+-- Safe noclip function that preserves floor collision
+local function applySafeNoclip(part)
+    if not part:IsA("BasePart") then return end
+    if excludedParts[part] then return end
     
-    continuousMonitor()
+    -- Don't noclip the floor the player is standing on
+    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        local rootPart = player.Character.HumanoidRootPart
+        local raycast = workspace:Raycast(rootPart.Position, Vector3.new(0, -10, 0))
+        
+        if raycast and raycast.Instance == part then
+            return -- Keep floor collision
+        end
+    end
+    
+    -- Store original state if not already stored
+    if originalCanCollide[part] == nil then
+        originalCanCollide[part] = part.CanCollide
+    end
+    
+    -- Apply noclip
+    part.CanCollide = false
+end
+
+-- Restore collision to a part
+local function restoreCollision(part)
+    if originalCanCollide[part] ~= nil then
+        part.CanCollide = originalCanCollide[part]
+        originalCanCollide[part] = nil
+    end
+end
+
+-- Smart noclip that updates based on player movement
+local function updateNoclip()
+    if not noclipEnabled then return end
+    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
+    
+    local rootPart = player.Character.HumanoidRootPart
+    local currentPos = rootPart.Position
+    
+    -- Store safe position when on ground
+    local raycast = workspace:Raycast(currentPos, Vector3.new(0, -5, 0))
+    if raycast then
+        lastSafePosition = currentPos
+    end
+    
+    -- Apply noclip to nearby parts only
+    local region = Region3.new(
+        currentPos - Vector3.new(20, 10, 20),
+        currentPos + Vector3.new(20, 20, 20)
+    )
+    
+    for _, obj in pairs(workspace:GetPartBoundsInRegion(region, math.huge)) do
+        if obj and obj:IsA("BasePart") then
+            applySafeNoclip(obj)
+        end
+    end
+end
+
+-- Enhanced position monitoring to prevent teleport-back
+local function monitorPosition()
+    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
+    
+    local rootPart = player.Character.HumanoidRootPart
+    local currentPos = rootPart.Position
+    
+    -- If player gets teleported back unexpectedly, restore to last safe position
+    if lastSafePosition and playerPosition then
+        local distanceMoved = (currentPos - playerPosition).Magnitude
+        
+        -- If player moved more than 50 studs instantly (likely teleport-back)
+        if distanceMoved > 50 then
+            task.wait(0.1)
+            -- Smoothly move back instead of instant teleport
+            local tween = TweenService:Create(rootPart, TweenInfo.new(0.3), {
+                CFrame = CFrame.new(lastSafePosition)
+            })
+            tween:Play()
+        end
+    end
+    
+    playerPosition = currentPos
+end
+
+-- Initialize noclip system
+local function initializeNoclip()
+    task.spawn(function()
+        task.wait(math.random(2, 4))
+        
+        setupExcludedParts()
+        noclipEnabled = true
+        
+        -- Position monitoring
+        RunService.Heartbeat:Connect(function()
+            task.spawn(monitorPosition)
+        end)
+        
+        -- Noclip updating
+        RunService.Heartbeat:Connect(function()
+            task.spawn(updateNoclip)
+        end)
+        
+        -- Handle new parts
+        workspace.DescendantAdded:Connect(function(descendant)
+            if noclipEnabled and descendant:IsA("BasePart") then
+                task.spawn(function()
+                    task.wait(0.1)
+                    applySafeNoclip(descendant)
+                end)
+            end
+        end)
+        
+        -- Clean up removed parts
+        workspace.DescendantRemoving:Connect(function(descendant)
+            if originalCanCollide[descendant] then
+                originalCanCollide[descendant] = nil
+            end
+            if excludedParts[descendant] then
+                excludedParts[descendant] = nil
+            end
+        end)
+        
+        -- Handle character respawn
+        player.CharacterAdded:Connect(function()
+            task.wait(math.random(0.5, 1.5))
+            playerPosition = nil
+            lastSafePosition = nil
+            
+            task.wait(1)
+            setupExcludedParts()
+        end)
+        
+        print("Undetectable Noclip enabled")
+    end)
+end
+
+-- Toggle noclip with N key (optional)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == Enum.KeyCode.N then
+        task.spawn(function()
+            noclipEnabled = not noclipEnabled
+            if not noclipEnabled then
+                -- Restore all collisions
+                for part, originalValue in pairs(originalCanCollide) do
+                    if part and part.Parent then
+                        part.CanCollide = originalValue
+                    end
+                end
+                originalCanCollide = {}
+                print("Noclip disabled")
+            else
+                print("Noclip enabled")
+            end
+        end)
+    end
 end)
+
+-- Start noclip
+initializeNoclip()
 
 -- ========================================
 -- PLOT FINDING FUNCTION
@@ -586,7 +745,7 @@ task.spawn(function()
                         task.spawn(function()
                             local startTime = tick()
                             while tick() - startTime < 1 do
-                                task.wait(0.05)
+                                task.wait(0.07
                                 firetouchinterest(lockButton, rootPart, 0)
                                 task.wait(0.5)
                                 firetouchinterest(lockButton, rootPart, 1)
