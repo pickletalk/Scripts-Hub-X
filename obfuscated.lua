@@ -1,4 +1,4 @@
--- Scripts Hub X | Official Main Script (Optimized with Character Respawn & Smooth Performance)
+-- Scripts Hub X | Official Main Script (Fixed Version)
 
 -- ================================
 -- ALL VARIABLES (TOP OF SCRIPT)
@@ -17,19 +17,18 @@ local RunService = game:GetService("RunService")
 
 -- Player Variables
 local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui", 5)
+local playerGui = player:WaitForChild("PlayerGui")
 
 -- User Status Variables
 local OwnerUserId = "2341777244"
 local PremiumUsers = {
-		"1102633570", -- Pedrojay450 [PERM]
-		"8860068952", -- Pedrojay450's alt (assaltanoobsbr) [PERM]
-		"799427028", -- Roblox_xvt [PERM]
-		"5317421108", -- kolwneje [PERM]
-		"1458719572", -- wxckfeen [PERM]
-		"8558295467" -- Jerdxbackup [TRIAL]
-	
-	}
+    "1102633570", -- Pedrojay450 [PERM]
+    "8860068952", -- Pedrojay450's alt (assaltanoobsbr) [PERM]
+    "799427028", -- Roblox_xvt [PERM]
+    "5317421108", -- kolwneje [PERM]
+    "1458719572", -- wxckfeen [PERM]
+    "8558295467" -- Jerdxbackup [TRIAL]
+}
 local StaffUserId = {
     "3882788546", -- Keanjacob5
     "799427028", -- Roblox_xvt
@@ -47,7 +46,8 @@ local STEAL_A_FREDDY_PLACE_ID = 137167142636546
 local HIGHLIGHT_COLORS = {
     ["Radioactive Foxy"] = Color3.fromRGB(0, 255, 0), -- GREEN
     ["Freddles"] = Color3.fromRGB(139, 69, 19), -- BROWN
-    ["Eclipse"] = Color3.fromRGB(0, 0, 0) -- BLACK
+    ["Eclipse"] = Color3.fromRGB(0, 0, 0), -- BLACK
+    ["Default"] = Color3.fromRGB(255, 255, 255) -- WHITE
 }
 
 -- Auto-Execute Server Hopper Variables
@@ -60,7 +60,7 @@ local _servers = Api.._place.."/servers/Public?sortOrder=Desc&limit=100"
 local webhookUrl = "https://discord.com/api/webhooks/1396650841045209169/Mx_0dcjOVnzp5f5zMhYM2uOBCPGt9SPr908shfLh_FGKZJ5eFc4tMsiiNNp1CGDx_M21"
 
 -- File System Variables
-local keyFileName = "Scripts Hub X OFFICIAL - Key.txt"
+local keyFileName = "Scripts_Hub_X_OFFICIAL_Key.txt"
 
 -- Performance optimization variables
 local highlightUpdateConnection = nil
@@ -90,17 +90,48 @@ end
 -- UTILITY FUNCTIONS
 -- ================================
 
+-- Safer HTTP request function
+local function safeHttpGet(url)
+    local success, result = pcall(function()
+        return game:HttpGet(url)
+    end)
+    if success then
+        return result
+    else
+        warn("HTTP request failed for: " .. url .. " Error: " .. tostring(result))
+        return nil
+    end
+end
+
 -- Server listing function
 local function ListServers(cursor)
-    local Raw = game:HttpGet(_servers .. ((cursor and "&cursor="..cursor) or ""))
-    return HttpService:JSONDecode(Raw)
+    local url = _servers .. ((cursor and "&cursor="..cursor) or "")
+    local Raw = safeHttpGet(url)
+    if not Raw then
+        return nil
+    end
+    
+    local success, decoded = pcall(function()
+        return HttpService:JSONDecode(Raw)
+    end)
+    
+    if success then
+        return decoded
+    else
+        warn("Failed to decode server list JSON")
+        return nil
+    end
 end
 
 -- Notification function
 local function notify(title, text)
     spawn(function()
         pcall(function()
-            game:GetService("StarterGui"):SetCore("SendNotification", {Title = title, Text = text, Duration = 3})
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = title, 
+                Text = text, 
+                Duration = 3
+            })
         end)
     end)
 end
@@ -171,6 +202,10 @@ local function createTracer(animatronicModel, animatronicName)
         return nil
     end
     
+    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+        return nil
+    end
+    
     -- Create optimized tracer beam (super thin)
     local beam = Instance.new("Beam")
     beam.Name = "AnimatronicTracer_" .. animatronicName
@@ -187,7 +222,7 @@ local function createTracer(animatronicModel, animatronicName)
     -- Create attachment points
     local startAttachment = Instance.new("Attachment")
     startAttachment.Name = "TracerStart_" .. animatronicName
-    startAttachment.Parent = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    startAttachment.Parent = player.Character.HumanoidRootPart
     
     local endAttachment = Instance.new("Attachment")
     endAttachment.Name = "TracerEnd_" .. animatronicName
@@ -212,17 +247,23 @@ end
 local function cleanupHighlights()
     -- Disconnect any running connections first
     if highlightUpdateConnection then
-        highlightUpdateConnection:Disconnect()
+        pcall(function()
+            highlightUpdateConnection:Disconnect()
+        end)
         highlightUpdateConnection = nil
     end
     
     if tracerUpdateConnection then
-        tracerUpdateConnection:Disconnect()
+        pcall(function()
+            tracerUpdateConnection:Disconnect()
+        end)
         tracerUpdateConnection = nil
     end
     
     if characterRespawnConnection then
-        characterRespawnConnection:Disconnect()
+        pcall(function()
+            characterRespawnConnection:Disconnect()
+        end)
         characterRespawnConnection = nil
     end
     
@@ -326,7 +367,9 @@ end
 local function setupCharacterRespawnHandling()
     -- Clean up existing connection
     if characterRespawnConnection then
-        characterRespawnConnection:Disconnect()
+        pcall(function()
+            characterRespawnConnection:Disconnect()
+        end)
     end
     
     -- Connect to character respawn events
@@ -363,23 +406,21 @@ local function checkAllPlots()
 
     -- Get player's plot number ONCE and normalize it to a number (avoid type mismatches)
     local playerPlotNumber = nil
-    do
-        local plotValue = player:FindFirstChild("Plot")
-        -- wait shortly if Plot isn't set yet (race condition)
-        if not plotValue then
-            for i = 1, 10 do
-                wait(0.1)
-                plotValue = player:FindFirstChild("Plot")
-                if plotValue then break end
-            end
+    local plotValue = player:FindFirstChild("Plot")
+    -- wait shortly if Plot isn't set yet (race condition)
+    if not plotValue then
+        for i = 1, 10 do
+            wait(0.1)
+            plotValue = player:FindFirstChild("Plot")
+            if plotValue then break end
         end
+    end
 
-        if plotValue then
-            playerPlotNumber = tonumber(plotValue.Value) or tonumber(tostring(plotValue.Value))
-            print("ℹ️ Detected playerPlotNumber = " .. tostring(playerPlotNumber) .. " (type: " .. type(playerPlotNumber) .. ")")
-        else
-            print("⚠️ Player Plot value not found on player; continuing without skipping.")
-        end
+    if plotValue then
+        playerPlotNumber = tonumber(plotValue.Value) or tonumber(tostring(plotValue.Value))
+        print("ℹ️ Detected playerPlotNumber = " .. tostring(playerPlotNumber) .. " (type: " .. type(playerPlotNumber) .. ")")
+    else
+        print("⚠️ Player Plot value not found on player; continuing without skipping.")
     end
 
     local foundAnimatronics = {}
@@ -476,8 +517,8 @@ local function joinRandomServer()
                 local serversChecked = 0
                 
                 repeat
-                    local success, Servers = pcall(ListServers, Next)
-                    if not success then
+                    local Servers = ListServers(Next)
+                    if not Servers then
                         print("❌ Failed to get server list")
                         wait(2)
                         if attempts < maxAttempts then
@@ -603,33 +644,33 @@ local function detectExecutor()
         return "Synapse X"
     elseif KRNL_LOADED then
         return "KRNL"
-    elseif getgenv().isfluxus then
+    elseif getgenv and getgenv().isfluxus then
         return "Fluxus"
-    elseif getgenv().scriptware then
+    elseif getgenv and getgenv().scriptware then
         return "Script-Ware"
-    elseif getgenv().protosmasher then
+    elseif getgenv and getgenv().protosmasher then
         return "ProtoSmasher"
-    elseif getgenv().sirhurt then
+    elseif getgenv and getgenv().sirhurt then
         return "SirHurt"
-    elseif getgenv().sentinellib then
+    elseif getgenv and getgenv().sentinellib then
         return "Sentinel"
-    elseif getgenv().vega then
+    elseif getgenv and getgenv().vega then
         return "Vega X"
-    elseif getgenv().oxygen then
+    elseif getgenv and getgenv().oxygen then
         return "Oxygen U"
-    elseif getgenv().comet then
+    elseif getgenv and getgenv().comet then
         return "Comet"
-    elseif getgenv().nihon then
+    elseif getgenv and getgenv().nihon then
         return "Nihon"
-    elseif getgenv().delta then
+    elseif getgenv and getgenv().delta then
         return "Delta"
-    elseif getgenv().evon then
+    elseif getgenv and getgenv().evon then
         return "Evon"
-    elseif getgenv().electron then
+    elseif getgenv and getgenv().electron then
         return "Electron"
     elseif identifyexecutor then
-        local executor = identifyexecutor()
-        if executor then
+        local success, executor = pcall(identifyexecutor)
+        if success and executor then
             return executor
         end
     end
@@ -639,7 +680,7 @@ end
 -- Fixed webhook notification function
 local function sendWebhookNotification(userStatus, scriptUrl)
     print("Sending webhook notification")
-    local webhookUrl = "https://discord.com/api/webhooks/1396650841045209169/Mx_0dcjOVnzp5f5zMhYM2uOBCPGt9SPr908shfLh_FGKZJ5eFc4tMsiiNNp1CGDx_M21"
+    
     if webhookUrl == "" then
         warn("Webhook URL is empty")
         return
@@ -685,15 +726,9 @@ local function sendWebhookNotification(userStatus, scriptUrl)
     
     local headers = {["Content-Type"] = "application/json"}
     local success, err = pcall(function()
-        if request and type(request) == "function" then
-            request({
-                Url = webhookUrl,
-                Method = "POST",
-                Headers = headers,
-                Body = HttpService:JSONEncode(send_data)
-            })
-        elseif http_request and type(http_request) == "function" then
-            http_request({
+        local http_request_func = request or http_request or syn.request
+        if http_request_func and type(http_request_func) == "function" then
+            http_request_func({
                 Url = webhookUrl,
                 Method = "POST",
                 Headers = headers,
@@ -715,6 +750,11 @@ end
 
 -- Error function to display custom error message
 local function showError(text)
+    if not playerGui then
+        warn("PlayerGui not available")
+        return
+    end
+
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "ErrorNotification"
     screenGui.IgnoreGuiInset = true
@@ -841,36 +881,52 @@ end
 
 local function loadLoadingScreen()
     print("Attempting to load loading screen from GitHub")
-    local success, result = pcall(function()
-        local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/main/loadingscreen.lua")
-        return loadstring(script)()
-    end)
-    if not success then
-        warn("Failed to load loading screen: " .. tostring(result))
+    local script = safeHttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/main/loadingscreen.lua")
+    if not script then
+        warn("Failed to load loading screen")
         return false, nil
     end
+    
+    local success, result = pcall(function()
+        return loadstring(script)()
+    end)
+    
+    if not success then
+        warn("Failed to execute loading screen: " .. tostring(result))
+        return false, nil
+    end
+    
     if not result or type(result) ~= "table" then
         warn("Loading screen script returned invalid data")
         return false, nil
     end
+    
     print("Loading screen loaded successfully")
     return true, result
 end
 
 local function loadKeySystem()
     print("Attempting to load key system from GitHub")
-    local success, result = pcall(function()
-        local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/main/keysystem.lua")
-        return loadstring(script)()
-    end)
-    if not success then
-        warn("Failed to load key system: " .. tostring(result))
+    local script = safeHttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/main/keysystem.lua")
+    if not script then
+        warn("Failed to load key system")
         return false, nil
     end
+    
+    local success, result = pcall(function()
+        return loadstring(script)()
+    end)
+    
+    if not success then
+        warn("Failed to execute key system: " .. tostring(result))
+        return false, nil
+    end
+    
     if not result or type(result) ~= "table" then
         warn("Key system script returned invalid data")
         return false, nil
     end
+    
     print("Key system loaded successfully")
     return true, result
 end
@@ -883,13 +939,18 @@ local function checkGameSupport()
     local userStatus = checkPremiumUser()
     print("User status: " .. userStatus)
     
+    local script = safeHttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameList.lua")
+    if not script then
+        warn("Failed to load game list")
+        return false, nil
+    end
+    
     local success, GameData = pcall(function()
-        local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameList.lua")
         return loadstring(script)()
     end)
     
     if not success then
-        warn("Failed to load game list: " .. tostring(GameData))
+        warn("Failed to execute game list: " .. tostring(GameData))
         return false, nil
     end
     
@@ -899,7 +960,6 @@ local function checkGameSupport()
     end
     
     -- Select appropriate game list based on user status
-    local Games = nil
     if userStatus == "owner" then
         -- Owner gets access to BOTH Games and OwnerGames (OwnerGames takes priority)
         print("🔑 Owner detected - Checking both OwnerGames and Games lists")
@@ -932,19 +992,18 @@ local function checkGameSupport()
     else
         -- Staff, Premium, and Non-Premium users get ONLY regular Games list
         if GameData.Games and type(GameData.Games) == "table" then
-            Games = GameData.Games
             print("✅ Using regular Games list for " .. userStatus .. " user")
+            
+            -- Check if current game is supported in regular Games list
+            for PlaceID, Execute in pairs(GameData.Games) do
+                if PlaceID == game.PlaceId then
+                    print("Game supported in Games list, script URL: " .. Execute)
+                    return true, Execute
+                end
+            end
         else
             print("⚠️ Regular Games list not found")
             return false, nil
-        end
-        
-        -- Check if current game is supported in regular Games list
-        for PlaceID, Execute in pairs(Games) do
-            if PlaceID == game.PlaceId then
-                print("Game supported in Games list, script URL: " .. Execute)
-                return true, Execute
-            end
         end
         
         print("Game not supported in Games list")
@@ -954,14 +1013,21 @@ end
 
 local function loadGameScript(scriptUrl)
     print("Attempting to load game script from URL: " .. scriptUrl)
-    local success, result = pcall(function()
-        local script = game:HttpGet(scriptUrl)
-        return loadstring(script)()
-    end)
-    if not success then
-        warn("Failed to load game script: " .. tostring(result))
+    local script = safeHttpGet(scriptUrl)
+    if not script then
+        warn("Failed to load game script")
         return false
     end
+    
+    local success, result = pcall(function()
+        return loadstring(script)()
+    end)
+    
+    if not success then
+        warn("Failed to execute game script: " .. tostring(result))
+        return false
+    end
+    
     print("Game script loaded successfully")
     if game.PlaceId == STEAL_A_FREDDY_PLACE_ID and _G.AnimatronicsFinder then
         _G.AnimatronicsFinder.scriptLoaded = true
@@ -973,7 +1039,7 @@ end
 -- USER STATUS AND AUTHENTICATION
 -- ================================
 
-local function checkPremiumUser()
+function checkPremiumUser()
     local userId = tostring(player.UserId)
     print("Checking user status for UserId: " .. userId)
     
