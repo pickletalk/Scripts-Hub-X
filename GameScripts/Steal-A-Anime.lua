@@ -481,37 +481,129 @@ end)
 -- ========================================
 -- AUTO LOCK FEATURE (Every 1 seconds)
 -- ========================================
+-- Creates (or reuses) a hidden part that will be "held" by the player
+local FAKE_NAME = "__steal_fakepart"
+
+local function makeFakePart()
+    local f = workspace:FindFirstChild(FAKE_NAME)
+    if f and f:IsA("BasePart") then return f end
+
+    f = Instance.new("Part")
+    f.Name = FAKE_NAME
+    f.Size = Vector3.new(1,1,1)
+    f.Transparency = 1
+    f.Anchored = false
+    f.CanCollide = false
+    f.Massless = true
+    f.Parent = workspace
+    return f
+end
+
+local fakePart = makeFakePart()
+
+-- Attach fakePart to current character's HRP using a WeldConstraint
+local function attachFakeToCharacter()
+    pcall(function()
+        if not player.Character then return end
+        local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+
+        -- remove old weld if present
+        local old = fakePart:FindFirstChild("__fake_weld")
+        if old then old:Destroy() end
+
+        -- position fakePart near HRP and weld it
+        fakePart.CFrame = hrp.CFrame * CFrame.new(0, -3, 0)
+        local weld = Instance.new("WeldConstraint")
+        weld.Name = "__fake_weld"
+        weld.Part0 = fakePart
+        weld.Part1 = hrp
+        weld.Parent = fakePart
+    end)
+end
+
+-- reattach on respawn
+player.CharacterAdded:Connect(function()
+    task.wait(0.3)
+    attachFakeToCharacter()
+end)
+if player.Character then
+    attachFakeToCharacter()
+end
+
+-- Main loop: clone TouchInterest(s) into fakePart, teleport fakePart to touch, return and reattach
 task.spawn(function()
     while true do
         task.wait(1)
 
         pcall(function()
-            -- Find your plot (1–8)
+            -- ensure character + fake part attached
+            if not player.Character then return end
+            local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+            if not hrp then return end
+            if not fakePart.Parent then fakePart.Parent = workspace end
+            attachFakeToCharacter()
+
+            -- find plot 1-8 (uses your existing function)
             local plotNumber = findPlayerPlot()
             if not plotNumber then return end
-
             local bases = workspace:FindFirstChild("Bases")
             if not bases then return end
-
             local plot = bases:FindFirstChild(plotNumber)
             if not plot then return end
-
             local lockButton = plot:FindFirstChild("LockButton")
             if not lockButton then return end
 
-            -- Fire all BaseParts with TouchInterest (up to 200 children)
-            for i, child in ipairs(lockButton:GetChildren()) do
-                if i > 200 then break end -- safety cutoff
+            -- collect all BaseParts that contain TouchInterest (safety cap 200)
+            local touchParts = {}
+            if lockButton:FindFirstChild("TouchInterest") then
+                table.insert(touchParts, lockButton)
+            end
+            for i,child in ipairs(lockButton:GetChildren()) do
+                if i > 200 then break end
                 if child:IsA("BasePart") and child:FindFirstChild("TouchInterest") then
-                    firetouchinterest(child, child, 0)
-                    firetouchinterest(child, child, 1)
+                    table.insert(touchParts, child)
+                end
+            end
+            if #touchParts == 0 then return end
+
+            -- remove any old TouchInterest clones on fakePart
+            for _,c in ipairs(fakePart:GetChildren()) do
+                if c.ClassName == "TouchInterest" then pcall(function() c:Destroy() end) end
+            end
+
+            -- clone TouchInterest(s) from target parts and parent into fakePart
+            local clones = {}
+            for _,tp in ipairs(touchParts) do
+                local ti = tp:FindFirstChild("TouchInterest")
+                if ti then
+                    local nt = ti:Clone()
+                    nt.Parent = fakePart
+                    table.insert(clones, nt)
                 end
             end
 
-            -- Also fire directly on LockButton if it has TouchInterest
-            if lockButton:FindFirstChild("TouchInterest") then
-                firetouchinterest(lockButton, lockButton, 0)
-                firetouchinterest(lockButton, lockButton, 1)
+            -- temporarily break weld, move fakePart to each touchPart quickly to trigger touches, then return & reattach
+            local savedWeld = fakePart:FindFirstChild("__fake_weld")
+            if savedWeld then savedWeld:Destroy() end
+
+            local originalCFrame = hrp and hrp.CFrame * CFrame.new(0, -3, 0) or fakePart.CFrame
+
+            for _,tp in ipairs(touchParts) do
+                -- teleport fakePart to target part's CFrame (slight offset to ensure overlap)
+                fakePart.CFrame = tp.CFrame * CFrame.new(0, 0.1, 0)
+                task.wait(0.09)          -- short dwell so server can (try to) register the contact
+                -- return to original (or you could keep it welded back to HRP immediately)
+                fakePart.CFrame = originalCFrame
+                task.wait(0.02)
+            end
+
+            -- reattach to HRP
+            attachFakeToCharacter()
+
+            -- cleanup clones from fakePart
+            for _,c in ipairs(clones) do
+                pcall(function() c:Destroy() end)
             end
         end)
     end
