@@ -14,6 +14,112 @@ local humanoid = character:WaitForChild("Humanoid")
 local rootPart = character:WaitForChild("HumanoidRootPart")
 
 -- ========================================
+--// ESP for all Plots (1–8), scanning up to 200 children in Floor1
+-- ========================================
+local RunService = game:GetService("RunService")
+
+-- Which plots to scan
+local plotRange = {1, 8}
+
+-- Function to create the ESP UI
+local function createESP(obj, seconds, title)
+    -- BillboardGui
+    local billboard = Instance.new("BillboardGui")
+    billboard.Size = UDim2.new(0, 70, 0, 35) -- same size you wanted
+    billboard.AlwaysOnTop = true
+    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.Parent = obj
+    billboard.Adornee = obj
+
+    -- Title label (on top)
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    titleLabel.Position = UDim2.new(0, 0, 0, 0)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.TextStrokeTransparency = 0.2
+    titleLabel.TextScaled = true
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.Text = ""
+    titleLabel.Parent = billboard
+
+    -- Countdown label (below title)
+    local countdownLabel = Instance.new("TextLabel")
+    countdownLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    countdownLabel.Position = UDim2.new(0, 0, 0.5, 0)
+    countdownLabel.BackgroundTransparency = 1
+    countdownLabel.TextStrokeTransparency = 0.2
+    countdownLabel.TextScaled = true
+    countdownLabel.Font = Enum.Font.GothamBold
+    countdownLabel.Text = ""
+    countdownLabel.Parent = billboard
+
+    -- Update loop
+    RunService.RenderStepped:Connect(function()
+        -- Handle title
+        local t = title.Text
+        if t == "Lock Base" then
+            titleLabel.Text = "UNLOCKED"
+            titleLabel.TextColor3 = Color3.fromRGB(0, 255, 0) -- green
+        elseif t == "LOCKED" then
+            titleLabel.Text = "LOCKED"
+            titleLabel.TextColor3 = Color3.fromRGB(255, 0, 0) -- red
+        else
+            titleLabel.Text = t
+            titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255) -- default white
+        end
+
+        -- Handle countdown
+        local s = seconds.Text
+        if s == "" then
+            countdownLabel.Text = "" -- do nothing if blank
+        else
+            local num = tonumber(s)
+            if num then
+                countdownLabel.Text = s
+                if num <= 10 then
+                    countdownLabel.TextColor3 = Color3.fromRGB(255, 0, 0) -- red
+                else
+                    countdownLabel.TextColor3 = Color3.fromRGB(255, 255, 0) -- yellow
+                end
+            else
+                countdownLabel.Text = s
+                countdownLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+            end
+        end
+    end)
+end
+
+-- Scan all plots
+for i = plotRange[1], plotRange[2] do
+    local plot = workspace.Plots:FindFirstChild(tostring(i))
+    if plot and plot:FindFirstChild("Floor1") then
+        local children = plot.Floor1:GetChildren()
+        for idx = 1, math.min(#children, 200) do
+            local obj = children[idx]
+            if obj:FindFirstChild("BillboardGui") then
+                local billboardGui = obj.BillboardGui
+                local seconds = billboardGui:FindFirstChild("Seconds")
+                local title = billboardGui:FindFirstChild("Title")
+                if seconds and seconds:IsA("TextLabel") and title and title:IsA("TextLabel") then
+                    createESP(obj, seconds, title)
+                end
+            elseif obj:FindFirstChild("Part") then
+                -- Some cases had a "Part" wrapper
+                local part = obj.Part
+                if part:FindFirstChild("BillboardGui") then
+                    local billboardGui = part.BillboardGui
+                    local seconds = billboardGui:FindFirstChild("Seconds")
+                    local title = billboardGui:FindFirstChild("Title")
+                    if seconds and seconds:IsA("TextLabel") and title and title:IsA("TextLabel") then
+                        createESP(part, seconds, title)
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- ========================================
 -- INFINITE JUMP SCRIPT
 -- ========================================
 local isInfiniteJumpEnabled = false
