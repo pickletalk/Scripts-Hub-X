@@ -480,36 +480,45 @@ task.spawn(function()
 end)
 
 -- ========================================
--- AUTO LOCK FEATURE (Every 2 seconds)
+-- AUTO LOCK FEATURE (Every 1 seconds)
 -- ========================================
 task.spawn(function()
     while true do
-        task.wait(0.7) -- Execute every 2 seconds
-        
+        task.wait(1)
+
         pcall(function()
             local character = player.Character
             if not character then return end
-            
             local hrp = character:FindFirstChild("HumanoidRootPart")
             if not hrp then return end
-            
-            -- Find player plot
+
+            -- Find your plot (1–8)
             local plotNumber = findPlayerPlot()
             if not plotNumber then return end
-            
-            local workspace = game:GetService("Workspace")
-            local basesFolder = workspace:FindFirstChild("Bases")
-            if not basesFolder then return end
-            
-            local plot = basesFolder:FindFirstChild(plotNumber)
+
+            local bases = workspace:FindFirstChild("Bases")
+            if not bases then return end
+
+            local plot = bases:FindFirstChild(plotNumber)
             if not plot then return end
-            
+
             local lockButton = plot:FindFirstChild("LockButton")
             if not lockButton then return end
-            
-            -- Fire touch without moving player
-            firetouchinterest(hrp, lockButton, 0) -- 0 = touch begin
-            firetouchinterest(hrp, lockButton, 1) -- 1 = touch end
+
+            -- Loop through LockButton children (up to 200)
+            for i, child in ipairs(lockButton:GetChildren()) do
+                if i > 200 then break end -- safety cutoff
+                if child:IsA("BasePart") and child:FindFirstChild("TouchInterest") then
+                    firetouchinterest(hrp, child, 0)
+                    firetouchinterest(hrp, child, 1)
+                end
+            end
+
+            -- Also fire directly on LockButton if it has TouchInterest
+            if lockButton:FindFirstChild("TouchInterest") then
+                firetouchinterest(hrp, lockButton, 0)
+                firetouchinterest(hrp, lockButton, 1)
+            end
         end)
     end
 end)
