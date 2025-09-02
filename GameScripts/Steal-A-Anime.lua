@@ -14,6 +14,70 @@ local ReplicatedStorage = waitForService("ReplicatedStorage")
 local player = Players.LocalPlayer
 
 -- ========================================
+--// ESP for LockButton countdowns
+-- ========================================
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+-- Which bases to track
+local baseRange = {1, 8} -- from Base["1"] to Base["8"]
+
+-- Create BillboardGui ESP
+local function createESP(targetPart, textObj)
+    local billboard = Instance.new("BillboardGui")
+    billboard.Size = UDim2.new(0, 70, 0, 20) -- smaller box
+    billboard.AlwaysOnTop = true
+    billboard.StudsOffset = Vector3.new(0, 2, 0)
+    billboard.Parent = targetPart
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.TextColor3 = Color3.fromRGB(255, 255, 0) -- yellow
+    label.TextStrokeTransparency = 0.2
+    label.TextScaled = true
+    label.Font = Enum.Font.GothamBold
+    label.Text = ""
+    label.Parent = billboard
+
+    -- Update loop
+    RunService.RenderStepped:Connect(function()
+        local num = tonumber(textObj.Text)
+        if num then
+            label.Text = textObj.Text
+            if num <= 3 then
+                label.TextColor3 = Color3.fromRGB(255, 0, 0) -- red
+            else
+                label.TextColor3 = Color3.fromRGB(255, 255, 0) -- yellow
+            end
+        else
+            label.Text = textObj.Text -- fallback if not number
+        end
+    end)
+end
+
+-- Attach ESPs to all lock buttons
+for i = baseRange[1], baseRange[2] do
+    local base = workspace:FindFirstChild("Bases"):FindFirstChild(tostring(i))
+    if base then
+        local lockBtn = base:FindFirstChild("LockButton")
+        if lockBtn then
+            local billboardGui = lockBtn:FindFirstChild("BillboardGui")
+            if billboardGui then
+                local frame = billboardGui:FindFirstChild("Frame")
+                if frame then
+                    local countdown = frame:FindFirstChild("Countdown")
+                    if countdown and countdown:IsA("TextLabel") then
+                        createESP(lockBtn, countdown)
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- ========================================
 -- INFINITE JUMP SCRIPT (Default Jump Height, Respawn Supported)
 -- by pickletalk
 -- ========================================
