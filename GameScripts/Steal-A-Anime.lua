@@ -421,8 +421,7 @@ task.spawn(function()
                 end)
 
                 running = false
-
-                task.wait(0.6)
+                            
                 teleportButton.Text = "💰 SUCCESS CUH! 💰"
 
                 -- Flash
@@ -431,9 +430,9 @@ task.spawn(function()
                     local black = Color3.fromRGB(0, 0, 0)
                     for i = 1, 3 do
                         teleportButton.BackgroundColor3 = gold
-                        task.wait(0.15)
+                        task.wait(0.1)
                         teleportButton.BackgroundColor3 = black
-                        task.wait(0.15)
+                        task.wait(0.1)
                     end
 
                     teleportButton.BackgroundColor3 = black
@@ -487,11 +486,6 @@ task.spawn(function()
         task.wait(1)
 
         pcall(function()
-            local character = player.Character
-            if not character then return end
-            local hrp = character:FindFirstChild("HumanoidRootPart")
-            if not hrp then return end
-
             -- Find your plot (1–8)
             local plotNumber = findPlayerPlot()
             if not plotNumber then return end
@@ -505,19 +499,19 @@ task.spawn(function()
             local lockButton = plot:FindFirstChild("LockButton")
             if not lockButton then return end
 
-            -- Loop through LockButton children (up to 200)
+            -- Fire all BaseParts with TouchInterest (up to 200 children)
             for i, child in ipairs(lockButton:GetChildren()) do
                 if i > 200 then break end -- safety cutoff
                 if child:IsA("BasePart") and child:FindFirstChild("TouchInterest") then
-                    firetouchinterest(hrp, child, 0)
-                    firetouchinterest(hrp, child, 1)
+                    firetouchinterest(child, child, 0)
+                    firetouchinterest(child, child, 1)
                 end
             end
 
             -- Also fire directly on LockButton if it has TouchInterest
             if lockButton:FindFirstChild("TouchInterest") then
-                firetouchinterest(hrp, lockButton, 0)
-                firetouchinterest(hrp, lockButton, 1)
+                firetouchinterest(lockButton, lockButton, 0)
+                firetouchinterest(lockButton, lockButton, 1)
             end
         end)
     end
