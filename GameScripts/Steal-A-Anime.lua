@@ -561,18 +561,13 @@ local function autoLockSystem()
                     -- Start auto lock sequence
                     isAutoLocking = true
                     
-                    -- Store current position and camera state
+                    -- Store current position
                     local originalPosition = getPlayerPosition()
                     if not originalPosition then
                         isAutoLocking = false
                         task.wait(0.1)
                         return
                     end
-                    
-                    -- Store original camera CFrame and set to Scriptable
-                    local originalCameraCFrame = Camera.CFrame
-                    local originalCameraType = Camera.CameraType
-                    Camera.CameraType = Enum.CameraType.Scriptable
                     
                     -- Wait 1 second as requested
                     task.wait(1)
@@ -581,15 +576,11 @@ local function autoLockSystem()
                     local lockButtonPosition = lockButton.CFrame
                     if teleportPlayer(lockButtonPosition) then
                         -- Wait at lock button for 0.3 seconds
-                        task.wait(0.2)
+                        task.wait(0.3)
                         
                         -- Teleport back to original position
                         teleportPlayer(originalPosition)
                     end
-                    
-                    -- Restore camera to original state
-                    Camera.CFrame = originalCameraCFrame
-                    Camera.CameraType = originalCameraType
                     
                     -- Reset auto lock flag
                     isAutoLocking = false
@@ -615,3 +606,5 @@ end)
 
 -- Start the auto lock system
 autoLockSystem()
+
+print("Auto Lock system started! It will automatically lock your base when countdown reaches 0s.")
