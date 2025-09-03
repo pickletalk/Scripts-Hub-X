@@ -152,7 +152,7 @@ function ESPModule:CreateESP(tycoonName, part, text, color)
     billboardGui.Size = UDim2.new(1, 0, 0.5, 0)
     billboardGui.StudsOffset = Vector3.new(0, 3, 0)
     billboardGui.AlwaysOnTop = true
-    billboardGui.Parent = playerGui
+    billboardGui.Parent = part
 
     local textLabel = Instance.new("TextLabel")
     textLabel.Size = UDim2.new(1, 0, 0.5, 0)
