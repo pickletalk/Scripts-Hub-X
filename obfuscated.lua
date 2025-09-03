@@ -34,6 +34,7 @@ local PremiumUsers = {
 local StaffUserId = {
 	"3882788546", -- Keanjacob5
     "799427028", -- Roblox_xvt
+	"9249886989", -- ALT
 	"2726723958" -- mhicel235TOH
 }
 local BlacklistUsers = {}
@@ -58,7 +59,7 @@ local _place, _id = game.PlaceId, game.JobId
 local _servers = Api.._place.."/servers/Public?sortOrder=Desc&limit=100"
 
 -- Webhook URL
-local webhookUrl = "https://discord.com/api/webhooks/1396650841045209169/Mx_0dcjOVnzp5f5zMhYM2uOBCPGt9SPr908shfLh_FGKZJ5eFc4tMsiiNNp1CGDx_M21"
+local webhookUrl = os.getenv("WEBHOOK_SECRET")
 
 -- File System Variables
 local keyFileName = "Scripts Hub X OFFICIAL - Key.txt"
@@ -879,7 +880,7 @@ end
 local function checkGameSupport()
     print("Checking game support for PlaceID: " .. game.PlaceId)
     local success, Games = pcall(function()
-        local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameList.lua")
+        local script = game:HttpGet(os.getenv("GAMELIST_URL")
         return loadstring(script)()
     end)
     if not success then
