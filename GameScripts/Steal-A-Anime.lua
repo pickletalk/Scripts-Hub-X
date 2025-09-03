@@ -480,25 +480,24 @@ end)
 -- ========================================
 -- AUTO LOCK SYSTEM
 -- ========================================
-
 local autoLockEnabled = true
 local isAutoLocking = false
 
--- Function to get player's current position
-local function getPlayerPosition()
-    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-        return player.Character.HumanoidRootPart.CFrame
-    end
-    return nil
+-- Function to save and restore camera
+local function saveCamera()
+    local camera = workspace.CurrentCamera
+    return {
+        CFrame = camera.CFrame,
+        CameraType = camera.CameraType,
+        CameraSubject = camera.CameraSubject
+    }
 end
 
--- Function to teleport player to a position
-local function teleportPlayer(cframe)
-    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-        player.Character.HumanoidRootPart.CFrame = cframe
-        return true
-    end
-    return false
+local function restoreCamera(cameraData)
+    local camera = workspace.CurrentCamera
+    camera.CameraType = cameraData.CameraType
+    camera.CFrame = cameraData.CFrame
+    camera.CameraSubject = cameraData.CameraSubject
 end
 
 -- Main auto lock function
@@ -506,105 +505,95 @@ local function autoLockSystem()
     task.spawn(function()
         while autoLockEnabled do
             pcall(function()
-                -- Skip if already auto locking
                 if isAutoLocking then
                     task.wait(0.1)
                     return
                 end
                 
-                -- Find player's plot using existing function
+                -- Find player plot using existing function
                 local plotNumber = findPlayerPlot()
-                if not plotNumber then
+                if not plotNumber then 
                     task.wait(0.5)
-                    return
+                    return 
                 end
                 
                 local bases = workspace:FindFirstChild("Bases")
-                if not bases then
+                if not bases then 
                     task.wait(0.5)
-                    return
+                    return 
                 end
                 
                 local plot = bases:FindFirstChild(plotNumber)
-                if not plot then
+                if not plot then 
                     task.wait(0.5)
-                    return
+                    return 
                 end
                 
                 local lockButton = plot:FindFirstChild("LockButton")
-                if not lockButton then
+                if not lockButton then 
                     task.wait(0.5)
-                    return
+                    return 
                 end
                 
                 local billboardGui = lockButton:FindFirstChild("BillboardGui")
-                if not billboardGui then
-                    task.wait(0.1)
-                    return
+                if not billboardGui then 
+                    task.wait(0.5)
+                    return 
                 end
                 
                 local frame = billboardGui:FindFirstChild("Frame")
-                if not frame then
-                    task.wait(0.1)
-                    return
+                if not frame then 
+                    task.wait(0.5)
+                    return 
                 end
                 
                 local countdown = frame:FindFirstChild("Countdown")
-                if not countdown or not countdown:IsA("TextLabel") then
-                    task.wait(0.1)
-                    return
+                if not countdown then 
+                    task.wait(0.5)
+                    return 
                 end
                 
-                -- Check if countdown is 0s
-                local countdownText = countdown.Text
-                if countdownText == "0s" then
-                    -- Start auto lock sequence
+                -- Check if countdown is "0s"
+                if countdown.Text == "0s" then
                     isAutoLocking = true
                     
-                    -- Store current position
-                    local originalPosition = getPlayerPosition()
-                    if not originalPosition then
-                        isAutoLocking = false
-                        task.wait(0.1)
-                        return
-                    end
+                    local character = player.Character
+                    local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
                     
-                    -- Wait 1 second as requested
-                    task.wait(1)
-                    
-                    -- Teleport to LockButton
-                    local lockButtonPosition = lockButton.CFrame
-                    if teleportPlayer(lockButtonPosition) then
-                        -- Wait at lock button for 0.3 seconds
+                    if humanoidRootPart then
+                        -- Save original position and camera
+                        local originalPosition = humanoidRootPart.CFrame
+                        local cameraData = saveCamera()
+                        
+                        -- Wait 1 second as requested
+                        task.wait(1)
+                        
+                        -- Teleport to LockButton
+                        humanoidRootPart.CFrame = lockButton.CFrame + Vector3.new(0, 5, 0) -- Slightly above the button
+                        
+                        -- Restore camera immediately after teleport
+                        restoreCamera(cameraData)
+                        
+                        -- Wait at the lock button for 0.4 seconds
                         task.wait(0.3)
                         
                         -- Teleport back to original position
-                        teleportPlayer(originalPosition)
+                        humanoidRootPart.CFrame = originalPosition
+                        
+                        -- Restore camera again to ensure it stays in place
+                        restoreCamera(cameraData)
                     end
                     
-                    -- Reset auto lock flag
                     isAutoLocking = false
-                    
-                    -- Wait a bit longer before next check to avoid spam
-                    task.wait(1)
-                else
-                    -- Small delay if countdown is not 0s
-                    task.wait(0.1)
                 end
             end)
             
-            task.wait(0.05) -- Small delay between checks
+            task.wait(1) -- Check every 1 seconds
         end
     end)
 end
 
--- Handle character respawn
-player.CharacterAdded:Connect(function()
-    task.wait(2) -- Wait for character to fully load
-    isAutoLocking = false -- Reset auto lock state
-end)
-
 -- Start the auto lock system
 autoLockSystem()
 
-print("Auto Lock system started! It will automatically lock your base when countdown reaches 0s.")
+print("Auto Lock system started!")
