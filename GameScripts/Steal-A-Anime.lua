@@ -566,7 +566,7 @@ local function autoLockSystem()
                         local cameraData = saveCamera()
                         
                         -- Wait 1 second as requested
-                        task.wait(0.9)
+                        task.wait(0.7)
                         
                         -- Teleport to LockButton
                         humanoidRootPart.CFrame = lockButton.CFrame + Vector3.new(0, 5, 0) -- Slightly above the button
