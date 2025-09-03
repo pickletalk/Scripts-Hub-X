@@ -1,4 +1,4 @@
--- Scripts Hub X | Key System
+-- Scripts Hub X | Key System (Fixed)
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
@@ -15,6 +15,9 @@ local secret = "dd2c65bc-6361-4147-9a25-246cd334eedd"
 local useNonce = true
 local cachedLink, cachedTime = "", 0
 local verifiedKey = nil
+
+-- Global request tracking to prevent spam
+local requestSending = false
 
 local function lEncode(data)
     return HttpService:JSONEncode(data)
@@ -111,106 +114,111 @@ local function cacheLink()
     end
 end
 
+-- Forward declare UI elements
+local statusLabel
+
 local function verifyKey(key)
-    local requestSending = false
     if requestSending then
-        statusLabel.Text = "A request is already being sent, please slow down."
+        if statusLabel then
+            statusLabel.Text = "A request is already being sent, please slow down."
+        end
         return false
-    else
-        requestSending = true
     end
-    local nonce = generateNonce()
-    local endpoint = host .. "/public/whitelist/" .. tostring(service) .. "?identifier=" .. lDigest(player.UserId) .. "&key=" .. key
-    if useNonce then
-        endpoint = endpoint .. "&nonce=" .. nonce
-    end
-    local response = request({
-        Url = endpoint,
-        Method = "GET"
-    })
-    requestSending = false
-    if response.StatusCode == 200 then
-        local decoded = lDecode(response.Body)
-        if decoded.success == true then
-            if decoded.data.valid == true then
-                if useNonce then
+    
+    requestSending = true
+    
+    local success, result = pcall(function()
+        local nonce = generateNonce()
+        local endpoint = host .. "/public/whitelist/" .. tostring(service) .. "?identifier=" .. lDigest(player.UserId) .. "&key=" .. key
+        if useNonce then
+            endpoint = endpoint .. "&nonce=" .. nonce
+        end
+        
+        local response = request({
+            Url = endpoint,
+            Method = "GET"
+        })
+        
+        if response.StatusCode == 200 then
+            local decoded = lDecode(response.Body)
+            if decoded.success == true then
+                if decoded.data.valid == true then
                     verifiedKey = key
-                    return true
+                    return true, "Key verified successfully"
                 else
-                    verifiedKey = key
-                    return true
-                end
-            else
-                if string.sub(key, 1, 4) == "FREE_" then
-                    local nonce = generateNonce()
-                    local endpoint = host .. "/public/redeem/" .. tostring(service)
-                    local body = {
-                        identifier = lDigest(player.UserId),
-                        key = key
-                    }
-                    if useNonce then
-                        body.nonce = nonce
-                    end
-                    local response = request({
-                        Url = endpoint,
-                        Method = "POST",
-                        Body = lEncode(body),
-                        Headers = {
-                            ["Content-Type"] = "application/json"
+                    -- Handle FREE_ keys
+                    if string.sub(key, 1, 4) == "FREE_" then
+                        local redeemNonce = generateNonce()
+                        local redeemEndpoint = host .. "/public/redeem/" .. tostring(service)
+                        local body = {
+                            identifier = lDigest(player.UserId),
+                            key = key
                         }
-                    })
-                    if response.StatusCode == 200 then
-                        local decoded = lDecode(response.Body)
-                        if decoded.success == true then
-                            if decoded.data.valid == true then
-                                if useNonce then
-                                    if decoded.data.hash == lDigest("true" .. "-" .. nonce .. "-" .. secret) then
-                                        verifiedKey = key
-                                        return true
+                        if useNonce then
+                            body.nonce = redeemNonce
+                        end
+                        
+                        local redeemResponse = request({
+                            Url = redeemEndpoint,
+                            Method = "POST",
+                            Body = lEncode(body),
+                            Headers = {
+                                ["Content-Type"] = "application/json"
+                            }
+                        })
+                        
+                        if redeemResponse.StatusCode == 200 then
+                            local redeemDecoded = lDecode(redeemResponse.Body)
+                            if redeemDecoded.success == true then
+                                if redeemDecoded.data.valid == true then
+                                    if useNonce then
+                                        if redeemDecoded.data.hash == lDigest("true" .. "-" .. redeemNonce .. "-" .. secret) then
+                                            verifiedKey = key
+                                            return true, "Free key redeemed successfully"
+                                        else
+                                            return false, "Failed to verify integrity."
+                                        end
                                     else
-                                        statusLabel.Text = "Failed to verify integrity."
-                                        return false
+                                        verifiedKey = key
+                                        return true, "Free key redeemed successfully"
                                     end
                                 else
-                                    verifiedKey = key
-                                    return true
+                                    return false, "Key is invalid."
                                 end
                             else
-                                statusLabel.Text = "Key is invalid."
-                                return false
+                                if string.sub(redeemDecoded.message, 1, 27) == "unique constraint violation" then
+                                    return false, "You already have an active key, please wait for it to expire."
+                                else
+                                    return false, redeemDecoded.message
+                                end
                             end
+                        elseif redeemResponse.StatusCode == 429 then
+                            return false, "You are being rate limited, please wait 20 seconds."
                         else
-                            if string.sub(decoded.message, 1, 27) == "unique constraint violation" then
-                                statusLabel.Text = "You already have an active key, please wait for it to expire."
-                                return false
-                            else
-                                statusLabel.Text = decoded.message
-                                return false
-                            end
+                            return false, "Server returned an invalid status code."
                         end
-                    elseif response.StatusCode == 429 then
-                        statusLabel.Text = "You are being rate limited, please wait 20 seconds."
-                        return false
                     else
-                        statusLabel.Text = "Server returned an invalid status code."
-                        return false
+                        return false, "Key is invalid."
                     end
-                else
-                    statusLabel.Text = "Key is invalid."
-                    return false
                 end
+            else
+                return false, decoded.message
             end
+        elseif response.StatusCode == 429 then
+            return false, "You are being rate limited, please wait 20 seconds."
         else
-            statusLabel.Text = decoded.message
-            return false
+            return false, "Server returned an invalid status code."
         end
-    elseif response.StatusCode == 429 then
-        statusLabel.Text = "You are being rate limited, please wait 20 seconds."
-        return false
-    else
-        statusLabel.Text = "Server returned an invalid status code."
-        return false
+    end)
+    
+    requestSending = false
+    
+    if not success then
+        print("Error in verifyKey: " .. tostring(result))
+        return false, "Verification failed: " .. tostring(result)
     end
+    
+    return result
 end
 
 local screenGui = Instance.new("ScreenGui")
@@ -285,12 +293,12 @@ local inputCorner = Instance.new("UICorner")
 inputCorner.CornerRadius = UDim.new(0, 10)
 inputCorner.Parent = keyInput
 
--- Status Label
-local statusLabel = Instance.new("TextLabel")
+-- Status Label (NOW PROPERLY DEFINED)
+statusLabel = Instance.new("TextLabel")
 statusLabel.Size = UDim2.new(1, -30, 0, 30)
 statusLabel.Position = UDim2.new(0, 15, 0, 90)
 statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "Get key or join Discord server to get the key!"
+statusLabel.Text = "Get key or join Discord server to buy a premium!"
 statusLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
 statusLabel.TextSize = 11
 statusLabel.Font = Enum.Font.Gotham
@@ -500,7 +508,7 @@ getKeyButton.MouseButton1Click:Connect(function()
                 wait(2)
                 getKeyButton.Text = "Get Key"
                 getKeyButton.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
-                statusLabel.Text = "Get key or join Discord server to get the key!"
+                statusLabel.Text = "Get key or join Discord server to buy a premium!"
                 statusLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
             else
                 statusLabel.Text = "Failed: Empty link received"
@@ -545,7 +553,11 @@ verifyButton.MouseButton1Click:Connect(function()
             statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
             return
         end
-        local verified = verifyKey(keyInput.Text)
+        
+        statusLabel.Text = "Verifying key..."
+        statusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+        
+        local verified, message = verifyKey(keyInput.Text)
         if verified then
             statusLabel.Text = "Key accepted! Loading..."
             statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
@@ -553,17 +565,22 @@ verifyButton.MouseButton1Click:Connect(function()
             wait(1)
             HideKeySystem()
         else
+            statusLabel.Text = message or "Key verification failed"
+            statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
             keyInput.Text = ""
-            wait(2)
-            statusLabel.Text = "Get key or join Discord server to get the key!"
+            wait(3)
+            statusLabel.Text = "Get key or join Discord server to buy a premium!"
             statusLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
         end
     end)
     if not success then
         warn("Verify button failed: " .. tostring(err))
+        statusLabel.Text = "Verification error occurred"
+        statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
     end
 end)
 
+-- Return the key system API
 return {
     ShowKeySystem = ShowKeySystem,
     HideKeySystem = HideKeySystem,
