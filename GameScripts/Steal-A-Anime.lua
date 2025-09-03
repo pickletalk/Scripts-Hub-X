@@ -574,14 +574,14 @@ local function autoLockSystem()
                     local originalCameraType = Camera.CameraType
                     Camera.CameraType = Enum.CameraType.Scriptable
                     
-                    -- Wait 0.8 second as requested
-                    task.wait(0.8)
+                    -- Wait 1 second as requested
+                    task.wait(1)
                     
                     -- Teleport to LockButton
                     local lockButtonPosition = lockButton.CFrame
                     if teleportPlayer(lockButtonPosition) then
-                        -- Wait at lock button for 0.07 seconds
-                        task.wait(0.1)
+                        -- Wait at lock button for 0.3 seconds
+                        task.wait(0.2)
                         
                         -- Teleport back to original position
                         teleportPlayer(originalPosition)
@@ -609,7 +609,7 @@ end
 
 -- Handle character respawn
 player.CharacterAdded:Connect(function()
-    task.wait(1) -- Wait for character to fully load
+    task.wait(2) -- Wait for character to fully load
     isAutoLocking = false -- Reset auto lock state
 end)
 
