@@ -478,10 +478,131 @@ task.spawn(function()
 end)
 
 -- ========================================
--- AUTO LOCK SYSTEM
+-- AUTO LOCK SYSTEM WITH MOVEMENT PREVENTION
 -- ========================================
 local autoLockEnabled = true
 local isAutoLocking = false
+local movementDisabled = false
+local originalConnections = {}
+
+-- Function to disable all player movement
+local function disableMovement()
+    if movementDisabled then return end
+    
+    local character = player.Character
+    if not character then return end
+    
+    local humanoid = character:FindFirstChild("Humanoid")
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    
+    if not humanoid or not humanoidRootPart then return end
+    
+    movementDisabled = true
+    
+    -- Store original values
+    originalConnections.walkSpeed = humanoid.WalkSpeed
+    originalConnections.jumpPower = humanoid.JumpPower
+    originalConnections.jumpHeight = humanoid.JumpHeight
+    originalConnections.platformStand = humanoid.PlatformStand
+    
+    -- Disable all movement
+    humanoid.WalkSpeed = 0
+    humanoid.JumpPower = 0
+    humanoid.JumpHeight = 0
+    humanoid.PlatformStand = false -- Allow falling by gravity
+    
+    -- Prevent any velocity changes except gravity
+    task.spawn(function()
+        while movementDisabled do
+            if humanoidRootPart and humanoidRootPart.Parent then
+                -- Allow only downward velocity (gravity)
+                local velocity = humanoidRootPart.Velocity
+                local newVelocity = Vector3.new(0, velocity.Y, 0) -- Keep Y velocity for gravity
+                
+                -- Only update if there's unwanted horizontal movement
+                if math.abs(velocity.X) > 0.1 or math.abs(velocity.Z) > 0.1 then
+                    humanoidRootPart.Velocity = newVelocity
+                end
+                
+                -- Remove any angular velocity (spinning)
+                if humanoidRootPart.AngularVelocity.Magnitude > 0.1 then
+                    humanoidRootPart.AngularVelocity = Vector3.new(0, 0, 0)
+                end
+                
+                -- Disable assembly velocities as well
+                humanoidRootPart.AssemblyLinearVelocity = Vector3.new(0, humanoidRootPart.AssemblyLinearVelocity.Y, 0)
+                humanoidRootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+            else
+                break
+            end
+            
+            task.wait(0.03) -- Update frequently to maintain control
+        end
+    end)
+    
+    -- Block user input
+    originalConnections.inputConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        
+        -- Block movement keys
+        local blockedKeys = {
+            Enum.KeyCode.W, Enum.KeyCode.A, Enum.KeyCode.S, Enum.KeyCode.D,
+            Enum.KeyCode.Space, Enum.KeyCode.LeftShift, Enum.KeyCode.LeftControl,
+            Enum.KeyCode.Up, Enum.KeyCode.Down, Enum.KeyCode.Left, Enum.KeyCode.Right
+        }
+        
+        for _, key in ipairs(blockedKeys) do
+            if input.KeyCode == key then
+                -- Consume the input to prevent movement
+                return
+            end
+        end
+    end)
+    
+    -- Block touch/mobile movement
+    if UserInputService.TouchEnabled then
+        originalConnections.touchConnection = UserInputService.TouchStarted:Connect(function(touch, gameProcessed)
+            if gameProcessed then return end
+            -- Block touch movement on mobile
+        end)
+    end
+    
+    print("🔒 MOVEMENT DISABLED - Only gravity allowed!")
+end
+
+-- Function to restore player movement
+local function enableMovement()
+    if not movementDisabled then return end
+    
+    local character = player.Character
+    if not character then return end
+    
+    local humanoid = character:FindFirstChild("Humanoid")
+    
+    if humanoid and originalConnections.walkSpeed then
+        -- Restore original values
+        humanoid.WalkSpeed = originalConnections.walkSpeed
+        humanoid.JumpPower = originalConnections.jumpPower
+        humanoid.JumpHeight = originalConnections.jumpHeight
+        humanoid.PlatformStand = originalConnections.platformStand
+    end
+    
+    -- Disconnect input blocking connections
+    if originalConnections.inputConnection then
+        originalConnections.inputConnection:Disconnect()
+        originalConnections.inputConnection = nil
+    end
+    
+    if originalConnections.touchConnection then
+        originalConnections.touchConnection:Disconnect()
+        originalConnections.touchConnection = nil
+    end
+    
+    movementDisabled = false
+    originalConnections = {}
+    
+    print("🔓 MOVEMENT RESTORED - Player can move freely!")
+end
 
 -- Function to save and restore camera
 local function saveCamera()
@@ -565,8 +686,13 @@ local function autoLockSystem()
                         local originalPosition = humanoidRootPart.CFrame
                         local cameraData = saveCamera()
                         
+                        print("🎯 AUTO LOCK ACTIVATED - Teleporting to lock button...")
+                        
                         -- Wait 1 second as requested
                         task.wait(0.8)
+                        
+                        -- DISABLE MOVEMENT BEFORE TELEPORT
+                        disableMovement()
                         
                         -- Teleport to LockButton
                         humanoidRootPart.CFrame = lockButton.CFrame + Vector3.new(0, 6, 0) -- Slightly above the button
@@ -574,29 +700,61 @@ local function autoLockSystem()
                         -- Restore camera immediately after teleport
                         restoreCamera(cameraData)
                         
-                        -- Wait at the lock button for 0.4 seconds
-                        task.wait(0.4)
+                        print("🔒 PLAYER LOCKED AT POSITION - Only gravity movement allowed!")
+                        
+                        -- Wait at the lock button for 0.4 seconds with X,Z movement locked
+                        local lockStart = tick()
+                        while tick() - lockStart < 0.4 do
+                            if humanoidRootPart then
+                                humanoidRootPart.Velocity = Vector3.new(0, humanoidRootPart.Velocity.Y, 0)
+                                humanoidRootPart.AssemblyLinearVelocity = Vector3.new(0, humanoidRootPart.AssemblyLinearVelocity.Y, 0)
+                            end
+                            task.wait()
+                        end
                         
                         -- Teleport back to original position
                         humanoidRootPart.CFrame = originalPosition
                         
                         -- Restore camera again to ensure it stays in place
                         restoreCamera(cameraData)
+                        
+                        -- RESTORE MOVEMENT AFTER TELEPORT BACK
+                        enableMovement()
+                        
+                        print("✅ AUTO LOCK COMPLETE - Movement restored!")
                     end
                     
                     isAutoLocking = false
                 end
             end)
             
-            task.wait(1) -- Check every 1 seconds
+            task.wait(1) -- Check every 1 second
         end
     end)
 end
 
+-- Handle character respawn (restore movement if disabled)
+player.CharacterAdded:Connect(function()
+    if movementDisabled then
+        -- Reset movement state on respawn
+        movementDisabled = false
+        originalConnections = {}
+    end
+end)
+
+-- Emergency movement restore (in case something goes wrong)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    
+    -- Press "R" key to force restore movement (emergency override)
+    if input.KeyCode == Enum.KeyCode.R and movementDisabled then
+        print("🆘 EMERGENCY MOVEMENT RESTORE ACTIVATED!")
+        enableMovement()
+    end
+end)
+
 -- Start the auto lock system
 autoLockSystem()
-
-print("Auto Lock system started!")
 
 -- ========================================
 -- ENHANCED ANTI-CHEAT NOCLIP WITH RUNNING ANIMATION
