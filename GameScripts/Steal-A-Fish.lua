@@ -95,7 +95,9 @@ function AutoLockSystem:TeleportToForcefield()
                         self.oldPosition = localPlayer.Character.HumanoidRootPart.CFrame
                         
                         print("[AUTO LOCK] Teleporting to forcefield button...")
-                        localPlayer.Character.HumanoidRootPart.CFrame = forcefield.CFrame
+                        -- Teleport 6 studs above the target
+                        local targetCFrame = forcefield.CFrame + Vector3.new(0, 6, 0)
+                        localPlayer.Character.HumanoidRootPart.CFrame = targetCFrame
                         
                         wait(0.4)
                         
@@ -137,7 +139,7 @@ spawn(function()
 end)
 
 -- ========================================
--- ESP MODULE
+-- ESP SYSTEM
 -- ========================================
 
 local ESPModule = {}
@@ -147,8 +149,8 @@ function ESPModule:CreateESP(tycoonName, part, text, color)
     local billboardGui = Instance.new("BillboardGui")
     billboardGui.Name = "ForceFieldESP_" .. tycoonName
     billboardGui.Adornee = part
-    billboardGui.Size = UDim2.new(0, 200, 0, 100)
-    billboardGui.StudsOffset = Vector3.new(0, 5, 0)
+    billboardGui.Size = UDim2.new(0, 80, 0, 40)
+    billboardGui.StudsOffset = Vector3.new(0, 3, 0)
     billboardGui.AlwaysOnTop = true
     billboardGui.Parent = playerGui
 
@@ -186,10 +188,6 @@ function ESPModule:RemoveESP(tycoonName)
         self.ESPObjects[tycoonName] = nil
     end
 end
-
--- ========================================
--- ESP FUNCTIONS
--- ========================================
 
 local function GetForceFieldTime(tycoonName)
     local tycoonPath = Workspace.Map.Tycoons:FindFirstChild(tycoonName)
@@ -234,7 +232,7 @@ local function UpdateESP()
                 color = Color3.new(1, 0, 0) -- Red
             end
             
-            local displayText = tycoonName .. "\n" .. timeText
+            local displayText = i .. "\n" .. timeText
             
             if not ESPModule.ESPObjects[tycoonName] then
                 ESPModule:CreateESP(tycoonName, screenPart, displayText, color)
