@@ -597,3 +597,271 @@ end
 autoLockSystem()
 
 print("Auto Lock system started!")
+
+-- ========================================
+
+-- ADVANCED ANTI-SNAPBACK NOCLIP
+
+-- ========================================
+
+local Players = game:GetService("Players")
+
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+
+local ANTI_CHEAT_THRESHOLD = 10 -- If moved more than 20 studs instantly, it's anti-cheat
+
+local RAY_LENGTH = 100
+
+local character, humanoid, hrp
+
+local lastValidPosition -- Last position before anti-cheat snapback
+
+local currentPosition
+
+local positionHistory = {} -- Store last 5 positions for better detection
+
+local historySize = 5
+
+-- Function to apply noclip to character
+
+local function applyNoclip(char)
+
+    for _, v in ipairs(char:GetDescendants()) do
+
+        if v:IsA("BasePart") then
+
+            v.CanCollide = false
+
+        end
+
+    end
+
+    
+
+    -- Handle new parts added to character
+
+    char.DescendantAdded:Connect(function(v)
+
+        if v:IsA("BasePart") then
+
+            v.CanCollide = false
+
+        end
+
+    end)
+
+end
+
+-- Refresh character references
+
+local function refreshCharacter()
+
+    character = player.Character or player.CharacterAdded:Wait()
+
+    humanoid = character:WaitForChild("Humanoid")
+
+    hrp = character:WaitForChild("HumanoidRootPart")
+
+    
+
+    applyNoclip(character)
+
+    
+
+    -- Reset position tracking
+
+    lastValidPosition = hrp.Position
+
+    currentPosition = hrp.Position
+
+    positionHistory = {}
+
+    
+
+    -- Fill initial position history
+
+    for i = 1, historySize do
+
+        positionHistory[i] = hrp.Position
+
+    end
+
+end
+
+-- Update position history
+
+local function updatePositionHistory(newPos)
+
+    table.insert(positionHistory, 1, newPos)
+
+    if #positionHistory > historySize then
+
+        table.remove(positionHistory, historySize + 1)
+
+    end
+
+end
+
+-- Detect if movement was caused by anti-cheat
+
+local function detectAntiCheatSnapback(newPos, oldPos)
+
+    local distance = (newPos - oldPos).Magnitude
+
+    
+
+    -- If moved more than threshold instantly, it's likely anti-cheat
+
+    if distance > ANTI_CHEAT_THRESHOLD then
+
+        return true
+
+    end
+
+    
+
+    -- Check if position jumped to a significantly different location
+
+    -- compared to recent movement pattern
+
+    if #positionHistory >= 3 then
+
+        local avgRecentPos = Vector3.new(0, 0, 0)
+
+        for i = 1, 3 do
+
+            avgRecentPos = avgRecentPos + positionHistory[i]
+
+        end
+
+        avgRecentPos = avgRecentPos / 3
+
+        
+
+        local distanceFromAverage = (newPos - avgRecentPos).Magnitude
+
+        if distanceFromAverage > ANTI_CHEAT_THRESHOLD then
+
+            return true
+
+        end
+
+    end
+
+    
+
+    return false
+
+end
+
+-- Floor raycast check to prevent falling through ground
+
+local function checkFloor()
+
+    if not hrp then return end
+
+    
+
+    local rayOrigin = hrp.Position
+
+    local rayDirection = Vector3.new(0, -RAY_LENGTH, 0)
+
+    local rayParams = RaycastParams.new()
+
+    rayParams.FilterDescendantsInstances = {character}
+
+    rayParams.FilterType = Enum.RaycastFilterType.Blacklist
+
+    
+
+    local result = workspace:Raycast(rayOrigin, rayDirection, rayParams)
+
+    if result then
+
+        local floorY = result.Position.Y
+
+        -- If player is below floor, move them up
+
+        if hrp.Position.Y < floorY + 3 then
+
+            local correctedPos = Vector3.new(hrp.Position.X, floorY + 3, hrp.Position.Z)
+
+            hrp.CFrame = CFrame.new(correctedPos, correctedPos + hrp.CFrame.LookVector)
+
+            lastValidPosition = correctedPos
+
+        end
+
+    end
+
+end
+
+-- Initialize character on script start
+
+refreshCharacter()
+
+-- Handle character respawn
+
+player.CharacterAdded:Connect(function()
+
+    refreshCharacter()
+
+end)
+
+-- Main monitoring loop
+
+RunService.Heartbeat:Connect(function()
+
+    if not hrp or not character then return end
+
+    
+
+    -- Continuously apply noclip
+
+    for _, v in ipairs(character:GetDescendants()) do
+
+        if v:IsA("BasePart") and v.CanCollide then
+
+            v.CanCollide = false
+
+        end
+
+    end
+
+    
+
+    -- Get current position
+
+    currentPosition = hrp.Position
+
+    
+
+    -- Check for anti-cheat snapback
+
+    if detectAntiCheatSnapback(currentPosition, lastValidPosition) then
+
+        -- Anti-cheat detected - snap back to last valid position immediately
+
+        hrp.CFrame = CFrame.new(lastValidPosition, lastValidPosition + hrp.CFrame.LookVector)
+
+        print("Anti-cheat snapback detected - restored to valid position")
+
+    else
+
+        -- Normal movement - update valid position and history
+
+        lastValidPosition = currentPosition
+
+        updatePositionHistory(currentPosition)
+
+    end
+
+    
+
+    -- Floor check to prevent falling
+
+    checkFloor()
+
+end)
