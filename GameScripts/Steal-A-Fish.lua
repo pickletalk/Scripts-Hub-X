@@ -130,7 +130,7 @@ spawn(function()
         if AutoLockSystem.playerTycoon then
             local timeText = AutoLockSystem:GetForceFieldTime(AutoLockSystem.playerTycoon)
             if timeText == "0s" then
-                wait(0.5)
+                wait(0.3)
                 AutoLockSystem:TeleportToForcefield()
             end
         end
@@ -255,3 +255,5 @@ spawn(function()
         wait(0.1)
     end
 end)
+
+print("[AUTO LOCK & ESP] System loaded!")
