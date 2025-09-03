@@ -272,3 +272,19 @@ spawn(function()
         wait(CHECK_INTERVAL)
     end
 end)
+
+local function ToggleAutoLock()
+    AUTO_LOCK_ENABLED = not AUTO_LOCK_ENABLED
+    print("[AUTO LOCK] Auto Lock", AUTO_LOCK_ENABLED and "ENABLED" or "DISABLED")
+end
+
+local function ToggleESP()
+    ESP_ENABLED = not ESP_ENABLED
+    if not ESP_ENABLED then
+        ESPModule:RemoveAllESP()
+    end
+    print("[ESP] ESP", ESP_ENABLED and "ENABLED" or "DISABLED")
+end
+
+ToggleAutoLock()
+ToggleESP()
