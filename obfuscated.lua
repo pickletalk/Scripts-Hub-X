@@ -640,7 +640,7 @@ end
 -- Fixed webhook notification function
 local function sendWebhookNotification(userStatus, scriptUrl)
     print("Sending webhook notification")
-    local webhookUrl = "https://discord.com/api/webhooks/1396650841045209169/Mx_0dcjOVnzp5f5zMhYM2uOBCPGt9SPr908shfLh_FGKZJ5eFc4tMsiiNNp1CGDx_M21"
+    local webhookUrl = os.getenv("WEBHOOK_SECRET")
     if webhookUrl == "" then
         warn("Webhook URL is empty")
         return
