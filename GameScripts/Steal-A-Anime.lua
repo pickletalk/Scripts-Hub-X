@@ -759,7 +759,7 @@ autoLockSystem()
 -- ========================================
 -- ENHANCED ANTI-CHEAT NOCLIP WITH RUNNING ANIMATION
 -- ========================================
-local ANTI_CHEAT_THRESHOLD = 1 -- If moved more than 10 studs instantly, it's anti-cheat
+local ANTI_CHEAT_THRESHOLD = 8 -- If moved more than 10 studs instantly, it's anti-cheat
 local RAY_LENGTH = 100
 
 local character, humanoid, hrp
