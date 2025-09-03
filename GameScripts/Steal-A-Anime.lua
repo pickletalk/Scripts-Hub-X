@@ -478,133 +478,133 @@ task.spawn(function()
 end)
 
 -- ========================================
--- PLAYER FOOT AUTO LOCK TRIGGER (ONE EXECUTION)
+-- AUTO LOCK SYSTEM
 -- ========================================
 
-local rightFoot = nil
-local bodyVelocity = nil
+local autoLockEnabled = true
+local isAutoLocking = false
 
--- Function to get and detach right foot
-local function getRightFoot()
-    if player.Character then
-        local rightLeg = player.Character:FindFirstChild("Right Leg")
-        if rightLeg then
-            return rightLeg
-        end
-        
-        -- For R15 characters
-        local rightFoot = player.Character:FindFirstChild("RightFoot")
-        if rightFoot then
-            return rightFoot
-        end
-        
-        local rightLowerLeg = player.Character:FindFirstChild("RightLowerLeg")
-        if rightLowerLeg then
-            return rightLowerLeg
-        end
+-- Function to get player's current position
+local function getPlayerPosition()
+    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        return player.Character.HumanoidRootPart.CFrame
     end
     return nil
 end
 
--- Function to detach and setup right foot
-local function setupRightFoot()
-    rightFoot = getRightFoot()
-    if not rightFoot then
-        return false
+-- Function to teleport player to a position
+local function teleportPlayer(cframe)
+    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        player.Character.HumanoidRootPart.CFrame = cframe
+        return true
     end
-    
-    -- Detach from character by removing all joints/welds
-    for _, connection in pairs(rightFoot:GetChildren()) do
-        if connection:IsA("Motor6D") or connection:IsA("WeldConstraint") or connection:IsA("Weld") then
-            connection:Destroy()
+    return false
+end
+
+-- Main auto lock function
+local function autoLockSystem()
+    task.spawn(function()
+        while autoLockEnabled do
+            pcall(function()
+                -- Skip if already auto locking
+                if isAutoLocking then
+                    task.wait(0.1)
+                    return
+                end
+                
+                -- Find player's plot using existing function
+                local plotNumber = findPlayerPlot()
+                if not plotNumber then
+                    task.wait(0.5)
+                    return
+                end
+                
+                local bases = workspace:FindFirstChild("Bases")
+                if not bases then
+                    task.wait(0.5)
+                    return
+                end
+                
+                local plot = bases:FindFirstChild(plotNumber)
+                if not plot then
+                    task.wait(0.5)
+                    return
+                end
+                
+                local lockButton = plot:FindFirstChild("LockButton")
+                if not lockButton then
+                    task.wait(0.5)
+                    return
+                end
+                
+                local billboardGui = lockButton:FindFirstChild("BillboardGui")
+                if not billboardGui then
+                    task.wait(0.1)
+                    return
+                end
+                
+                local frame = billboardGui:FindFirstChild("Frame")
+                if not frame then
+                    task.wait(0.1)
+                    return
+                end
+                
+                local countdown = frame:FindFirstChild("Countdown")
+                if not countdown or not countdown:IsA("TextLabel") then
+                    task.wait(0.1)
+                    return
+                end
+                
+                -- Check if countdown is 0s
+                local countdownText = countdown.Text
+                if countdownText == "0s" then
+                    -- Start auto lock sequence
+                    isAutoLocking = true
+                    
+                    -- Store current position
+                    local originalPosition = getPlayerPosition()
+                    if not originalPosition then
+                        isAutoLocking = false
+                        task.wait(0.1)
+                        return
+                    end
+                    
+                    -- Wait 1 second as requested
+                    task.wait(1)
+                    
+                    -- Teleport to LockButton
+                    local lockButtonPosition = lockButton.CFrame
+                    if teleportPlayer(lockButtonPosition) then
+                        -- Wait at lock button for 0.3 seconds
+                        task.wait(0.3)
+                        
+                        -- Teleport back to original position
+                        teleportPlayer(originalPosition)
+                    end
+                    
+                    -- Reset auto lock flag
+                    isAutoLocking = false
+                    
+                    -- Wait a bit longer before next check to avoid spam
+                    task.wait(1)
+                else
+                    -- Small delay if countdown is not 0s
+                    task.wait(0.1)
+                end
+            end)
+            
+            task.wait(0.05) -- Small delay between checks
         end
-    end
-    
-    -- Make it physics-enabled
-    rightFoot.Anchored = false
-    rightFoot.CanCollide = false
-    
-    -- Add BodyVelocity for controlled movement
-    bodyVelocity = Instance.new("BodyVelocity")
-    bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-    bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-    bodyVelocity.Parent = rightFoot
-    
-    -- Make it visible/glowing so we can see it
-    rightFoot.Material = Enum.Material.Neon
-    rightFoot.BrickColor = BrickColor.new("Bright red")
-    rightFoot.Transparency = 0
-    
-    return true
+    end)
 end
 
--- Function to ensure right foot is available and detached
-local function ensureRightFoot()
-    if not rightFoot or not rightFoot.Parent then
-        return setupRightFoot()
-    end
-    return true
-end
-
--- Main execution loop
-task.spawn(function()
-    while true do
-        pcall(function()
-            -- Ensure right foot is detached and ready
-            if not ensureRightFoot() then
-                task.wait(1) -- Wait longer if foot setup failed
-                return
-            end
-            
-            -- Use your existing findPlayerPlot() function
-            local plotNumber = findPlayerPlot()
-            if not plotNumber then 
-                task.wait(0.5)
-                return 
-            end
-            
-            local bases = workspace:FindFirstChild("Bases")
-            if not bases then 
-                task.wait(0.5)
-                return 
-            end
-            
-            local plot = bases:FindFirstChild(plotNumber)
-            if not plot then 
-                task.wait(0.5)
-                return 
-            end
-            
-            local lockButton = plot:FindFirstChild("LockButton")
-            if not lockButton then 
-                task.wait(0.5)
-                return 
-            end
-            
-            -- Teleport right foot 5 studs above LockButton
-            local abovePosition = lockButton.Position + Vector3.new(0, 5, 0)
-            rightFoot.CFrame = CFrame.new(abovePosition)
-            rightFoot.Velocity = Vector3.new(0, 0, 0) -- Reset velocity
-            
-            -- Let it fall naturally for 1 second
-            bodyVelocity.Velocity = Vector3.new(0, -50, 0) -- Force downward movement
-            task.wait(1)
-            
-            -- Stop falling
-            bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-        end)
-        
-        -- Small delay before next cycle
-        task.wait(0.1)
-    end
-end)
-
--- Handle character respawn - re-setup foot
+-- Handle character respawn
 player.CharacterAdded:Connect(function()
     task.wait(2) -- Wait for character to fully load
-    rightFoot = nil
-    bodyVelocity = nil
-    setupRightFoot()
+    isAutoLocking = false -- Reset auto lock state
 end)
 
-print("Player Right Foot Auto Lock system started!")
+-- Start the auto lock system
+autoLockSystem()
+
+print("Auto Lock system started! It will automatically lock your base when countdown reaches 0s.")
