@@ -478,54 +478,83 @@ task.spawn(function()
 end)
 
 -- ========================================
--- FAKE HRP AUTO LOCK TRIGGER (ONE EXECUTION)
+-- PLAYER FOOT AUTO LOCK TRIGGER (ONE EXECUTION)
 -- ========================================
 
--- Create fake HRP with proper settings for TouchInterest triggering
-local fakeHRP = Instance.new("Part")
-fakeHRP.Name = "AutoLockFakeHRP"
-fakeHRP.Size = Vector3.new(4, 4, 2)
-fakeHRP.Material = Enum.Material.Neon
-fakeHRP.BrickColor = BrickColor.new("Bright red")
-fakeHRP.Transparency = 0
-fakeHRP.CanCollide = false -- Changed to false so it can fall through
-fakeHRP.Anchored = false -- Not anchored so it can fall
-fakeHRP.Parent = workspace
+local rightFoot = nil
+local bodyVelocity = nil
 
--- Add BodyVelocity for controlled falling
-local bodyVelocity = Instance.new("BodyVelocity")
-bodyVelocity.MaxForce = Vector3.new(0, math.huge, 0) -- Only control Y axis
-bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-bodyVelocity.Parent = fakeHRP
-
--- Function to recreate fake HRP if destroyed
-local function ensureFakeHRP()
-    if not fakeHRP or not fakeHRP.Parent then
-        fakeHRP = Instance.new("Part")
-        fakeHRP.Name = "AutoLockFakeHRP"
-        fakeHRP.Size = Vector3.new(4, 4, 2)
-        fakeHRP.Material = Enum.Material.Neon
-        fakeHRP.BrickColor = BrickColor.new("Bright red")
-        fakeHRP.Transparency = 0
-        fakeHRP.CanCollide = false
-        fakeHRP.Anchored = false
-        fakeHRP.Parent = workspace
+-- Function to get and detach right foot
+local function getRightFoot()
+    if player.Character then
+        local rightLeg = player.Character:FindFirstChild("Right Leg")
+        if rightLeg then
+            return rightLeg
+        end
         
-        -- Recreate BodyVelocity
-        if bodyVelocity then bodyVelocity:Destroy() end
-        bodyVelocity = Instance.new("BodyVelocity")
-        bodyVelocity.MaxForce = Vector3.new(0, math.huge, 0)
-        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-        bodyVelocity.Parent = fakeHRP
+        -- For R15 characters
+        local rightFoot = player.Character:FindFirstChild("RightFoot")
+        if rightFoot then
+            return rightFoot
+        end
+        
+        local rightLowerLeg = player.Character:FindFirstChild("RightLowerLeg")
+        if rightLowerLeg then
+            return rightLowerLeg
+        end
     end
+    return nil
+end
+
+-- Function to detach and setup right foot
+local function setupRightFoot()
+    rightFoot = getRightFoot()
+    if not rightFoot then
+        return false
+    end
+    
+    -- Detach from character by removing all joints/welds
+    for _, connection in pairs(rightFoot:GetChildren()) do
+        if connection:IsA("Motor6D") or connection:IsA("WeldConstraint") or connection:IsA("Weld") then
+            connection:Destroy()
+        end
+    end
+    
+    -- Make it physics-enabled
+    rightFoot.Anchored = false
+    rightFoot.CanCollide = false
+    
+    -- Add BodyVelocity for controlled movement
+    bodyVelocity = Instance.new("BodyVelocity")
+    bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+    bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+    bodyVelocity.Parent = rightFoot
+    
+    -- Make it visible/glowing so we can see it
+    rightFoot.Material = Enum.Material.Neon
+    rightFoot.BrickColor = BrickColor.new("Bright red")
+    rightFoot.Transparency = 0
+    
+    return true
+end
+
+-- Function to ensure right foot is available and detached
+local function ensureRightFoot()
+    if not rightFoot or not rightFoot.Parent then
+        return setupRightFoot()
+    end
+    return true
 end
 
 -- Main execution loop
 task.spawn(function()
     while true do
         pcall(function()
-            -- Ensure fake HRP exists (respawn/destroy protection)
-            ensureFakeHRP()
+            -- Ensure right foot is detached and ready
+            if not ensureRightFoot() then
+                task.wait(1) -- Wait longer if foot setup failed
+                return
+            end
             
             -- Use your existing findPlayerPlot() function
             local plotNumber = findPlayerPlot()
@@ -552,10 +581,10 @@ task.spawn(function()
                 return 
             end
             
-            -- Teleport 5 studs above LockButton
+            -- Teleport right foot 5 studs above LockButton
             local abovePosition = lockButton.Position + Vector3.new(0, 5, 0)
-            fakeHRP.CFrame = CFrame.new(abovePosition)
-            fakeHRP.Velocity = Vector3.new(0, 0, 0) -- Reset velocity
+            rightFoot.CFrame = CFrame.new(abovePosition)
+            rightFoot.Velocity = Vector3.new(0, 0, 0) -- Reset velocity
             
             -- Let it fall naturally for 1 second
             bodyVelocity.Velocity = Vector3.new(0, -50, 0) -- Force downward movement
@@ -570,10 +599,12 @@ task.spawn(function()
     end
 end)
 
--- Handle character respawn support
+-- Handle character respawn - re-setup foot
 player.CharacterAdded:Connect(function()
-    task.wait(1)
-    ensureFakeHRP()
+    task.wait(2) -- Wait for character to fully load
+    rightFoot = nil
+    bodyVelocity = nil
+    setupRightFoot()
 end)
 
-print("Fake HRP Auto Lock system started and running indefinitely!")
+print("Player Right Foot Auto Lock system started!")
