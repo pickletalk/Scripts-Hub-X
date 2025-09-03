@@ -911,3 +911,370 @@ RunService.Heartbeat:Connect(function()
     -- Floor check to prevent falling
     checkFloor()
 end)
+
+-- ========================================
+-- CHARACTERS NOCLIP SYSTEM (IMPROVED)
+-- ========================================
+local charactersFolder = ReplicatedStorage:FindFirstChild("Characters")
+local processedCharacters = {} -- Track which characters we've already processed
+
+-- Function to apply comprehensive noclip to a character model
+local function applyNoclipToCharacter(characterModel)
+    if not characterModel then return end
+    
+    local characterId = tostring(characterModel)
+    if processedCharacters[characterId] then return end
+    
+    processedCharacters[characterId] = true
+    
+    -- Function to make a part noclip
+    local function makePartNoclip(part)
+        if part:IsA("BasePart") then
+            part.CanCollide = false
+            part.CanTouch = false -- Prevent touch events too
+            
+            -- Remove any collision-related constraints
+            for _, constraint in ipairs(part:GetChildren()) do
+                if constraint:IsA("Attachment") then
+                    for _, connectedConstraint in ipairs(constraint:GetChildren()) do
+                        if connectedConstraint:IsA("Constraint") then
+                            connectedConstraint.Enabled = false
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Apply noclip to all current parts
+    for _, descendant in ipairs(characterModel:GetDescendants()) do
+        makePartNoclip(descendant)
+    end
+    
+    -- Handle new parts added to character
+    local addedConnection = characterModel.DescendantAdded:Connect(function(newDescendant)
+        makePartNoclip(newDescendant)
+    end)
+    
+    -- Continuous noclip enforcement
+    local heartbeatConnection = RunService.Heartbeat:Connect(function()
+        if characterModel.Parent then
+            for _, descendant in ipairs(characterModel:GetDescendants()) do
+                if descendant:IsA("BasePart") then
+                    if descendant.CanCollide then
+                        descendant.CanCollide = false
+                    end
+                    if descendant.CanTouch then
+                        descendant.CanTouch = false
+                    end
+                end
+            end
+        end
+    end)
+    
+    -- Clean up when character is removed
+    characterModel.AncestryChanged:Connect(function()
+        if not characterModel.Parent then
+            processedCharacters[characterId] = nil
+            if addedConnection then addedConnection:Disconnect() end
+            if heartbeatConnection then heartbeatConnection:Disconnect() end
+        end
+    end)
+    
+    print("Applied comprehensive noclip to character:", characterModel.Name)
+end
+
+-- Function to monitor and apply noclip to all characters
+local function initializeCharacterNoclip()
+    if not charactersFolder then
+        warn("Characters folder not found in ReplicatedStorage")
+        
+        -- Try to wait for the folder to appear
+        local connection
+        connection = ReplicatedStorage.ChildAdded:Connect(function(child)
+            if child.Name == "Characters" then
+                charactersFolder = child
+                connection:Disconnect()
+                initializeCharacterNoclip() -- Restart initialization
+            end
+        end)
+        
+        return
+    end
+    
+    -- Apply noclip to existing characters
+    for _, character in ipairs(charactersFolder:GetChildren()) do
+        if character:IsA("Model") or character:IsA("Folder") then
+            task.spawn(function()
+                applyNoclipToCharacter(character)
+            end)
+        end
+    end
+    
+    -- Monitor for new characters
+    charactersFolder.ChildAdded:Connect(function(newCharacter)
+        if newCharacter:IsA("Model") or newCharacter:IsA("Folder") then
+            task.wait(0.1) -- Wait for character to fully load
+            applyNoclipToCharacter(newCharacter)
+        end
+    end)
+    
+    print("Character noclip system initialized and monitoring", charactersFolder:GetFullName())
+end
+
+-- Initialize the system
+task.spawn(function()
+    initializeCharacterNoclip()
+end)
+
+-- ========================================
+-- PLAYER ANTI-RAGDOLL SYSTEM (ENHANCED)
+-- ========================================
+local antiRagdollEnabled = true
+local originalJointData = {}
+local connections = {}
+
+-- Function to store original joint data
+local function storeJointData(character)
+    originalJointData = {}
+    
+    for _, descendant in ipairs(character:GetDescendants()) do
+        if descendant:IsA("Motor6D") then
+            originalJointData[descendant.Name] = {
+                C0 = descendant.C0,
+                C1 = descendant.C1,
+                Parent = descendant.Parent,
+                Part0 = descendant.Part0,
+                Part1 = descendant.Part1,
+                Transform = descendant.Transform,
+                MaxVelocity = descendant.MaxVelocity,
+                DesiredAngle = descendant.DesiredAngle
+            }
+        end
+    end
+    
+    print("Stored joint data for", #originalJointData, "joints")
+end
+
+-- Function to restore and maintain joints
+local function maintainJoints(character)
+    if not antiRagdollEnabled then return end
+    
+    for _, descendant in ipairs(character:GetDescendants()) do
+        if descendant:IsA("Motor6D") then
+            local originalData = originalJointData[descendant.Name]
+            if originalData then
+                -- Ensure joint properties are maintained
+                descendant.C0 = originalData.C0
+                descendant.C1 = originalData.C1
+                descendant.MaxVelocity = originalData.MaxVelocity
+                descendant.DesiredAngle = originalData.DesiredAngle
+                
+                -- Ensure joint is enabled and functioning
+                if not descendant.Enabled then
+                    descendant.Enabled = true
+                end
+            end
+        end
+    end
+    
+    -- Check for missing joints and recreate them
+    for jointName, data in pairs(originalJointData) do
+        local existingJoint = character:FindFirstChild(jointName, true)
+        if not existingJoint or not existingJoint.Parent then
+            -- Recreate the joint
+            local newJoint = Instance.new("Motor6D")
+            newJoint.Name = jointName
+            newJoint.C0 = data.C0
+            newJoint.C1 = data.C1
+            newJoint.Part0 = data.Part0
+            newJoint.Part1 = data.Part1
+            newJoint.MaxVelocity = data.MaxVelocity
+            newJoint.DesiredAngle = data.DesiredAngle
+            newJoint.Parent = data.Parent
+            
+            print("Recreated joint:", jointName)
+        end
+    end
+end
+
+-- Function to prevent physics-based ragdolling
+local function preventPhysicsRagdoll(character)
+    if not antiRagdollEnabled then return end
+    
+    local humanoid = character:FindFirstChild("Humanoid")
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    
+    if humanoid and rootPart then
+        -- Lock the root part position to prevent unwanted movement
+        local bodyPosition = rootPart:FindFirstChild("AntiRagdollBodyPosition")
+        if not bodyPosition then
+            bodyPosition = Instance.new("BodyPosition")
+            bodyPosition.Name = "AntiRagdollBodyPosition"
+            bodyPosition.MaxForce = Vector3.new(0, 0, 0) -- Disabled by default
+            bodyPosition.Parent = rootPart
+        end
+        
+        local bodyAngularVelocity = rootPart:FindFirstChild("AntiRagdollBodyAngularVelocity")
+        if not bodyAngularVelocity then
+            bodyAngularVelocity = Instance.new("BodyAngularVelocity")
+            bodyAngularVelocity.Name = "AntiRagdollBodyAngularVelocity"
+            bodyAngularVelocity.MaxTorque = Vector3.new(0, 0, 0) -- Disabled by default
+            bodyAngularVelocity.AngularVelocity = Vector3.new(0, 0, 0)
+            bodyAngularVelocity.Parent = rootPart
+        end
+        
+        -- Prevent humanoid state changes that cause ragdolling
+        local stateConnection = humanoid.StateChanged:Connect(function(oldState, newState)
+            if newState == Enum.HumanoidStateType.Physics or 
+               newState == Enum.HumanoidStateType.FallingDown or
+               newState == Enum.HumanoidStateType.Ragdoll then
+                
+                -- Temporarily enable body position to lock player in place
+                bodyPosition.MaxForce = Vector3.new(4000, 4000, 4000)
+                bodyPosition.Position = rootPart.Position
+                bodyAngularVelocity.MaxTorque = Vector3.new(4000, 4000, 4000)
+                
+                task.wait(0.1)
+                
+                if humanoid.Parent and antiRagdollEnabled then
+                    humanoid:ChangeState(Enum.HumanoidStateType.Running)
+                    
+                    -- Disable body position after recovering
+                    task.wait(0.1)
+                    bodyPosition.MaxForce = Vector3.new(0, 0, 0)
+                    bodyAngularVelocity.MaxTorque = Vector3.new(0, 0, 0)
+                end
+            end
+        end)
+        
+        -- Monitor for RequiresNeck changes
+        local neckConnection = humanoid:GetPropertyChangedSignal("RequiresNeck"):Connect(function()
+            if antiRagdollEnabled then
+                humanoid.RequiresNeck = true
+            end
+        end)
+        
+        humanoid.RequiresNeck = true
+        
+        -- Store connections for cleanup
+        table.insert(connections, stateConnection)
+        table.insert(connections, neckConnection)
+    end
+    
+    -- Monitor all body parts for excessive physics
+    for _, part in ipairs(character:GetChildren()) do
+        if part:IsA("BasePart") and part ~= rootPart then
+            local velocityConnection = RunService.Heartbeat:Connect(function()
+                if antiRagdollEnabled and part.Parent then
+                    -- Reset excessive velocities
+                    if part.AssemblyLinearVelocity.Magnitude > 50 then
+                        part.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                    end
+                    if part.AssemblyAngularVelocity.Magnitude > 50 then
+                        part.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                    end
+                end
+            end)
+            
+            table.insert(connections, velocityConnection)
+        end
+    end
+end
+
+-- Function to setup anti-ragdoll for a character
+local function setupAntiRagdoll(character)
+    -- Clear previous connections
+    for _, connection in ipairs(connections) do
+        if connection then
+            connection:Disconnect()
+        end
+    end
+    connections = {}
+    
+    -- Wait for character to fully load
+    local humanoid = character:WaitForChild("Humanoid", 10)
+    local rootPart = character:WaitForChild("HumanoidRootPart", 10)
+    
+    if not humanoid or not rootPart then
+        warn("Failed to load character properly for anti-ragdoll")
+        return
+    end
+    
+    -- Wait a bit more for joints to load
+    task.wait(1)
+    
+    -- Store joint data
+    storeJointData(character)
+    
+    -- Setup anti-ragdoll measures
+    preventPhysicsRagdoll(character)
+    
+    -- Continuous joint monitoring and restoration
+    local heartbeatConnection = RunService.Heartbeat:Connect(function()
+        if character.Parent and antiRagdollEnabled then
+            maintainJoints(character)
+        end
+    end)
+    
+    table.insert(connections, heartbeatConnection)
+    
+    -- Handle character removal
+    local ancestryConnection = character.AncestryChanged:Connect(function()
+        if not character.Parent then
+            -- Clean up connections
+            for _, connection in ipairs(connections) do
+                if connection then
+                    connection:Disconnect()
+                end
+            end
+            connections = {}
+        end
+    end)
+    
+    table.insert(connections, ancestryConnection)
+    
+    print("Enhanced anti-ragdoll enabled for player:", player.Name)
+end
+
+-- Initialize anti-ragdoll system
+local function initializeAntiRagdoll()
+    -- Handle current character
+    if player.Character then
+        task.spawn(function()
+            setupAntiRagdoll(player.Character)
+        end)
+    end
+    
+    -- Handle future characters (respawn)
+    player.CharacterAdded:Connect(function(character)
+        task.spawn(function()
+            setupAntiRagdoll(character)
+        end)
+    end)
+end
+
+-- Start anti-ragdoll system
+initializeAntiRagdoll()
+
+-- Function to toggle anti-ragdoll
+local function toggleAntiRagdoll()
+    antiRagdollEnabled = not antiRagdollEnabled
+    print("Enhanced anti-ragdoll", antiRagdollEnabled and "enabled" or "disabled")
+    
+    if not antiRagdollEnabled then
+        -- Remove body movers when disabled
+        if player.Character then
+            local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
+            if rootPart then
+                local bodyPos = rootPart:FindFirstChild("AntiRagdollBodyPosition")
+                local bodyAngVel = rootPart:FindFirstChild("AntiRagdollBodyAngularVelocity")
+                if bodyPos then bodyPos.MaxForce = Vector3.new(0, 0, 0) end
+                if bodyAngVel then bodyAngVel.MaxTorque = Vector3.new(0, 0, 0) end
+            end
+        end
+    end
+end
+
+-- Export toggle function
+_G.toggleAntiRagdoll = toggleAntiRagdoll
