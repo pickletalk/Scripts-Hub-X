@@ -52,6 +52,26 @@ local HIGHLIGHT_COLORS = {
     ["Eclipse"] = Color3.fromRGB(0, 0, 0) -- BLACK
 }
 
+-- Load .env file into a Lua table
+local function load_env(file)
+    local env = {}
+    for line in io.lines(file) do
+        -- skip empty lines and comments (# ...)
+        if line:match("%S") and not line:match("^%s*#") then
+            local key, value = line:match("([^=]+)=(.+)")
+            if key and value then
+                key = key:match("^%s*(.-)%s*$")     -- trim spaces
+                value = value:match("^%s*(.-)%s*$") -- trim spaces
+                env[key] = value
+            end
+        end
+    end
+    return env
+end
+
+-- Example usage
+local env = load_env(".env")
+
 -- Auto-Execute Server Hopper Variables
 local TPS = TeleportService
 local Api = "https://games.roblox.com/v1/games/"
