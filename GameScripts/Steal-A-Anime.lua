@@ -759,14 +759,14 @@ autoLockSystem()
 -- ========================================
 -- ENHANCED ANTI-CHEAT NOCLIP WITH RUNNING ANIMATION
 -- ========================================
-local ANTI_CHEAT_THRESHOLD = 10 -- If moved more than 10 studs instantly, it's anti-cheat
+local ANTI_CHEAT_THRESHOLD = 1 -- If moved more than 10 studs instantly, it's anti-cheat
 local RAY_LENGTH = 100
 
 local character, humanoid, hrp
 local lastValidPosition -- Last position before anti-cheat snapback
 local currentPosition
 local positionHistory = {} -- Store last 5 positions for better detection
-local historySize = 10
+local historySize = 5
 
 -- Track legitimate teleports
 local legitimateTeleport = false
