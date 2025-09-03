@@ -37,7 +37,10 @@ local StaffUserId = {
 	"9249886989", -- ALT
 	"2726723958" -- mhicel235TOH
 }
-local BlacklistUsers = {}
+local BlacklistUsers = {
+		"716599904" -- ImRottingInHell [PERM]
+	
+	}
 
 -- Animatronics Finder Configuration
 local TARGET_ANIMATRONICS = {"Radioactive Foxy", "Freddles", "Eclipse"}
