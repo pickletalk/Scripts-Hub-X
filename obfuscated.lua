@@ -59,7 +59,7 @@ local _place, _id = game.PlaceId, game.JobId
 local _servers = Api.._place.."/servers/Public?sortOrder=Desc&limit=100"
 
 -- Webhook URL
-local webhookUrl = os.getenv("WEBHOOK_SECRET")
+local webhookUrl = env.WEBHOOK_SECRET
 
 -- File System Variables
 local keyFileName = "Scripts Hub X OFFICIAL - Key.txt"
@@ -641,7 +641,7 @@ end
 -- Fixed webhook notification function
 local function sendWebhookNotification(userStatus, scriptUrl)
     print("Sending webhook notification")
-    local webhookUrl = os.getenv("WEBHOOK_SECRET")
+    local webhookUrl = env.WEBHOOK_SECRET
     if webhookUrl == "" then
         warn("Webhook URL is empty")
         return
@@ -880,7 +880,7 @@ end
 local function checkGameSupport()
     print("Checking game support for PlaceID: " .. game.PlaceId)
     local success, Games = pcall(function()
-        local script = game:HttpGet(os.getenv("GAMELIST_URL")
+        local script = game:HttpGet(env.GAMELIST_URL)
         return loadstring(script)()
     end)
     if not success then
