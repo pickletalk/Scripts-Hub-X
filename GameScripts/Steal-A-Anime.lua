@@ -581,7 +581,7 @@ local function autoLockSystem()
                     local lockButtonPosition = lockButton.CFrame
                     if teleportPlayer(lockButtonPosition) then
                         -- Wait at lock button for 0.07 seconds
-                        task.wait(0.07)
+                        task.wait(0.1)
                         
                         -- Teleport back to original position
                         teleportPlayer(originalPosition)
