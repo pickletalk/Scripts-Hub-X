@@ -52,25 +52,43 @@ local HIGHLIGHT_COLORS = {
     ["Eclipse"] = Color3.fromRGB(0, 0, 0) -- BLACK
 }
 
--- Load .env file into a Lua table
+-- env.lua
 local function load_env(file)
     local env = {}
-    for line in io.lines(file) do
-        -- skip empty lines and comments (# ...)
-        if line:match("%S") and not line:match("^%s*#") then
-            local key, value = line:match("([^=]+)=(.+)")
+
+    -- Try to open the file
+    local f = io.open(file, "r")
+    if not f then
+        error("Could not open " .. file)
+    end
+
+    for line in f:lines() do
+        -- Ignore comments and blank lines
+        if line:match("^%s*#") == nil and line:match("%S") then
+            local key, value = line:match("([^=]+)=([^=]+)")
             if key and value then
-                key = key:match("^%s*(.-)%s*$")     -- trim spaces
-                value = value:match("^%s*(.-)%s*$") -- trim spaces
+                -- Trim spaces
+                key = key:match("^%s*(.-)%s*$")
+                value = value:match("^%s*(.-)%s*$")
+
+                -- Remove quotes if present
+                value = value:gsub('^"(.*)"$', "%1")
+                value = value:gsub("^'(.*)'$", "%1")
+
                 env[key] = value
             end
         end
     end
+
+    f:close()
     return env
 end
 
--- Example usage
-local env = load_env(".env")
+return {
+    load_env = load_env
+}
+
+local env = require("env").load_env(".env")
 
 -- Auto-Execute Server Hopper Variables
 local TPS = TeleportService
