@@ -38,7 +38,8 @@ local StaffUserId = {
 	"2726723958" -- mhicel235TOH
 }
 local BlacklistUsers = {
-		"716599904" -- ImRottingInHell [PERM]
+		"716599904", -- ImRottingInHell [PERM]
+		"229691" -- ravyn [PERM]
 	
 	}
 
