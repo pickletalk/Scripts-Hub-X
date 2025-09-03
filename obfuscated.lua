@@ -27,7 +27,8 @@ local PremiumUsers = {
 		"799427028", -- Roblox_xvt [PERM]
 		"5317421108", -- kolwneje [PERM]
 		"1458719572", -- wxckfeen [PERM]
-		"8558295467" -- Jerdxbackup [TRIAL]
+		"8558295467", -- Jerdxbackup [TRIAL]
+		"8931026465" -- genderwillnottell [PERM]
 	
 	}
 local StaffUserId = {
