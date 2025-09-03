@@ -480,16 +480,23 @@ end)
 -- ========================================
 -- FAKE HRP AUTO LOCK TRIGGER (ONE EXECUTION)
 -- ========================================
+
 -- Create fake HRP with proper settings for TouchInterest triggering
 local fakeHRP = Instance.new("Part")
 fakeHRP.Name = "AutoLockFakeHRP"
-fakeHRP.Size = Vector3.new(4, 4, 2) -- Larger size for better collision
+fakeHRP.Size = Vector3.new(4, 4, 2)
 fakeHRP.Material = Enum.Material.Neon
 fakeHRP.BrickColor = BrickColor.new("Bright red")
-fakeHRP.Transparency = 0 -- Fully visible
-fakeHRP.CanCollide = true -- Enable collision for TouchInterest
-fakeHRP.Anchored = true -- Anchored for precise positioning
+fakeHRP.Transparency = 0
+fakeHRP.CanCollide = false -- Changed to false so it can fall through
+fakeHRP.Anchored = false -- Not anchored so it can fall
 fakeHRP.Parent = workspace
+
+-- Add BodyVelocity for controlled falling
+local bodyVelocity = Instance.new("BodyVelocity")
+bodyVelocity.MaxForce = Vector3.new(0, math.huge, 0) -- Only control Y axis
+bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+bodyVelocity.Parent = fakeHRP
 
 -- Function to recreate fake HRP if destroyed
 local function ensureFakeHRP()
@@ -500,9 +507,16 @@ local function ensureFakeHRP()
         fakeHRP.Material = Enum.Material.Neon
         fakeHRP.BrickColor = BrickColor.new("Bright red")
         fakeHRP.Transparency = 0
-        fakeHRP.CanCollide = true
-        fakeHRP.Anchored = true
+        fakeHRP.CanCollide = false
+        fakeHRP.Anchored = false
         fakeHRP.Parent = workspace
+        
+        -- Recreate BodyVelocity
+        if bodyVelocity then bodyVelocity:Destroy() end
+        bodyVelocity = Instance.new("BodyVelocity")
+        bodyVelocity.MaxForce = Vector3.new(0, math.huge, 0)
+        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+        bodyVelocity.Parent = fakeHRP
     end
 end
 
@@ -538,30 +552,28 @@ task.spawn(function()
                 return 
             end
             
-            -- Teleport directly to LockButton position (overlapping for TouchInterest)
-            fakeHRP.CFrame = lockButton.CFrame
+            -- Teleport 5 studs above LockButton
+            local abovePosition = lockButton.Position + Vector3.new(0, 5, 0)
+            fakeHRP.CFrame = CFrame.new(abovePosition)
+            fakeHRP.Velocity = Vector3.new(0, 0, 0) -- Reset velocity
             
-            -- Wait 1 second
+            -- Let it fall naturally for 1 second
+            bodyVelocity.Velocity = Vector3.new(0, -50, 0) -- Force downward movement
             task.wait(1)
             
-            -- Teleport 2 studs above LockButton
-            local abovePosition = lockButton.Position + Vector3.new(0, 2, 0)
-            fakeHRP.CFrame = CFrame.new(abovePosition)
-            
-            -- Brief pause before next cycle
-            task.wait(0.1)
+            -- Stop falling
+            bodyVelocity.Velocity = Vector3.new(0, 0, 0)
         end)
         
-        -- Small delay to prevent overwhelming the system
+        -- Small delay before next cycle
         task.wait(0.1)
     end
 end)
 
 -- Handle character respawn support
 player.CharacterAdded:Connect(function()
-    task.wait(1) -- Wait for character to fully load
-    ensureFakeHRP() -- Ensure fake HRP is recreated if needed
+    task.wait(1)
+    ensureFakeHRP()
 end)
 
 print("Fake HRP Auto Lock system started and running indefinitely!")
-
