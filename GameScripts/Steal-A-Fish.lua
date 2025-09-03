@@ -149,13 +149,13 @@ function ESPModule:CreateESP(tycoonName, part, text, color)
     local billboardGui = Instance.new("BillboardGui")
     billboardGui.Name = "ForceFieldESP_" .. tycoonName
     billboardGui.Adornee = part
-    billboardGui.Size = UDim2.new(0, 80, 0, 40)
+    billboardGui.Size = UDim2.new(1, 0, 0.5, 0)
     billboardGui.StudsOffset = Vector3.new(0, 3, 0)
     billboardGui.AlwaysOnTop = true
     billboardGui.Parent = playerGui
 
     local textLabel = Instance.new("TextLabel")
-    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.Size = UDim2.new(1, 0, 0.5, 0)
     textLabel.BackgroundTransparency = 1
     textLabel.Text = text
     textLabel.TextColor3 = color
