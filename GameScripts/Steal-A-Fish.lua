@@ -96,7 +96,7 @@ function AutoLockSystem:TeleportToForcefield()
                         
                         print("[AUTO LOCK] Teleporting to forcefield button...")
                         -- Teleport 6 studs above the target
-                        local targetCFrame = forcefield.CFrame + Vector3.new(0, 6, 0)
+                        local targetCFrame = forcefield.CFrame + Vector3.new(0, 4, 0)
                         localPlayer.Character.HumanoidRootPart.CFrame = targetCFrame
                         
                         wait(0.4)
