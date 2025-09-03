@@ -575,7 +575,7 @@ local function autoLockSystem()
                         restoreCamera(cameraData)
                         
                         -- Wait at the lock button for 0.4 seconds
-                        task.wait(0.2)
+                        task.wait(0.3)
                         
                         -- Teleport back to original position
                         humanoidRootPart.CFrame = originalPosition
