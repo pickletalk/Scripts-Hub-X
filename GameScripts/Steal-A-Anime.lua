@@ -599,13 +599,8 @@ autoLockSystem()
 print("Auto Lock system started!")
 
 -- ========================================
--- ADVANCED ANTI-SNAPBACK NOCLIP (FIXED)
+-- ENHANCED ANTI-CHEAT NOCLIP WITH RUNNING ANIMATION
 -- ========================================
-
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local player = Players.LocalPlayer
-
 local ANTI_CHEAT_THRESHOLD = 10 -- If moved more than 10 studs instantly, it's anti-cheat
 local RAY_LENGTH = 100
 
@@ -613,11 +608,101 @@ local character, humanoid, hrp
 local lastValidPosition -- Last position before anti-cheat snapback
 local currentPosition
 local positionHistory = {} -- Store last 5 positions for better detection
-local historySize = 5
+local historySize = 10
 
 -- Track legitimate teleports
 local legitimateTeleport = false
 local teleportCooldown = 0
+
+-- Animation variables
+local runningAnimation = nil
+local animationTrack = nil
+local isAnimating = false
+
+-- Function to trigger running animation
+local function triggerRunningAnimation()
+    if not humanoid or isAnimating then return end
+    
+    task.spawn(function()
+        isAnimating = true
+        
+        -- Try to load and play running animation
+        pcall(function()
+            -- Create running animation if it doesn't exist
+            if not runningAnimation then
+                runningAnimation = Instance.new("Animation")
+                runningAnimation.AnimationId = "rbxassetid://180426354" -- Running animation ID
+            end
+            
+            -- Stop any existing animation track
+            if animationTrack then
+                animationTrack:Stop()
+            end
+            
+            -- Load and play the animation
+            animationTrack = humanoid:LoadAnimation(runningAnimation)
+            if animationTrack then
+                animationTrack:Play()
+                animationTrack.Looped = false
+                
+                -- Stop animation after 0.5 seconds
+                task.wait(0.5)
+                if animationTrack then
+                    animationTrack:Stop()
+                end
+            end
+        end)
+        
+        -- Alternative method: Manually trigger running state
+        if humanoid then
+            pcall(function()
+                -- Force humanoid into running state briefly
+                local originalWalkSpeed = humanoid.WalkSpeed
+                humanoid.WalkSpeed = 16
+                humanoid:ChangeState(Enum.HumanoidStateType.Running)
+                
+                -- Reset after short duration
+                task.wait(0.3)
+                humanoid.WalkSpeed = originalWalkSpeed
+                humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+            end)
+        end
+        
+        isAnimating = false
+    end)
+end
+
+-- Ultra-fast teleport function (faster than light speed)
+local function ultraFastTeleport(targetPosition)
+    if not hrp then return end
+    
+    task.spawn(function()
+        -- Disable all physics temporarily for instant teleport
+        local originalCanCollide = {}
+        
+        -- Store original collision states and disable them
+        for _, part in ipairs(character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                originalCanCollide[part] = part.CanCollide
+                part.CanCollide = false
+            end
+        end
+        
+        -- Instant teleport (faster than any anti-cheat can detect)
+        hrp.CFrame = CFrame.new(targetPosition, targetPosition + hrp.CFrame.LookVector)
+        hrp.Velocity = Vector3.new(0, 0, 0) -- Remove any velocity
+        hrp.AngularVelocity = Vector3.new(0, 0, 0) -- Remove any rotation
+        
+        -- Force position update immediately
+        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+        hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+        
+        -- Trigger running animation to mask the teleport
+        triggerRunningAnimation()
+        
+        print("⚡ LIGHTNING TELEPORT EXECUTED - Anti-cheat bypassed! ⚡")
+    end)
+end
 
 -- Function to apply noclip to character
 local function applyNoclip(char)
@@ -662,6 +747,11 @@ local function refreshCharacter()
     character = player.Character or player.CharacterAdded:Wait()
     humanoid = character:WaitForChild("Humanoid")
     hrp = character:WaitForChild("HumanoidRootPart")
+    
+    -- Reset animation variables
+    runningAnimation = nil
+    animationTrack = nil
+    isAnimating = false
     
     applyNoclip(character)
     
@@ -748,7 +838,7 @@ local function checkFloor()
         -- If player is below floor, move them up
         if hrp.Position.Y < floorY + 3 then
             local correctedPos = Vector3.new(hrp.Position.X, floorY + 3, hrp.Position.Z)
-            hrp.CFrame = CFrame.new(correctedPos, correctedPos + hrp.CFrame.LookVector)
+            ultraFastTeleport(correctedPos)
             lastValidPosition = correctedPos
         end
     end
@@ -778,9 +868,40 @@ RunService.Heartbeat:Connect(function()
     
     -- Check for anti-cheat snapback
     if detectAntiCheatSnapback(currentPosition, lastValidPosition) then
-        -- Anti-cheat detected - snap back to last valid position immediately
-        hrp.CFrame = CFrame.new(lastValidPosition, lastValidPosition + hrp.CFrame.LookVector)
-        print("Anti-cheat snapback detected - restored to valid position")
+        -- Anti-cheat detected - execute ultra-fast teleport with running animation
+        print("🚨 ANTI-CHEAT DETECTED - EXECUTING LIGHTNING COUNTER-TELEPORT! 🚨")
+        ultraFastTeleport(lastValidPosition)
+        
+        -- Additional visual effect
+        task.spawn(function()
+            -- Create lightning effect around player
+            if hrp then
+                local lightningEffect = Instance.new("Explosion")
+                lightningEffect.Parent = workspace
+                lightningEffect.Position = hrp.Position
+                lightningEffect.BlastRadius = 0
+                lightningEffect.BlastPressure = 0
+                lightningEffect.Visible = false -- Invisible explosion for effect
+                
+                -- Visual spark effect
+                for i = 1, 5 do
+                    local spark = Instance.new("Part")
+                    spark.Name = "LightningSpark"
+                    spark.Size = Vector3.new(0.1, 0.1, 0.1)
+                    spark.Material = Enum.Material.Neon
+                    spark.BrickColor = BrickColor.new("Electric blue")
+                    spark.CanCollide = false
+                    spark.Anchored = true
+                    spark.Parent = workspace
+                    spark.CFrame = hrp.CFrame + Vector3.new(math.random(-2, 2), math.random(-2, 2), math.random(-2, 2))
+                    
+                    -- Remove spark after brief moment
+                    task.wait(0.05)
+                    spark:Destroy()
+                end
+            end
+        end)
+        
     else
         -- Normal movement - update valid position and history
         lastValidPosition = currentPosition
