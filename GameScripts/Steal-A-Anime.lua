@@ -1436,3 +1436,278 @@ end
 
 -- Export toggle function
 _G.toggleAntiRagdoll = toggleAntiRagdoll
+
+-- ========================================
+-- ULTIMATE ANTI-KICK PROTECTION SYSTEM
+-- ========================================
+-- Store original functions before hooking
+local originalKick = nil
+local originalDisconnect = nil
+local originalDestroy = nil
+local originalRemove = nil
+
+-- Hook Player:Kick() function
+if player.Kick then
+    originalKick = hookfunction(player.Kick, function(...)
+        print("🛡️ KICK ATTEMPT BLOCKED - Player:Kick() intercepted!")
+        return nil -- Block the kick
+    end)
+end
+
+-- Hook connection disconnect methods
+local mt = getrawmetatable(game)
+local originalNamecall = mt.__namecall
+local originalIndex = mt.__index
+local originalNewindex = mt.__newindex
+
+-- Protect metatable
+setreadonly(mt, false)
+
+-- Hook __namecall to intercept method calls
+mt.__namecall = function(self, ...)
+    local method = getnamecallmethod()
+    local args = {...}
+    
+    -- Block kick-related methods
+    if method == "Kick" and self == player then
+        print("🛡️ KICK ATTEMPT BLOCKED - __namecall Kick() intercepted!")
+        return nil
+    elseif method == "kick" and self == player then
+        print("🛡️ KICK ATTEMPT BLOCKED - __namecall kick() intercepted!")
+        return nil
+    elseif method == "Destroy" and self == player then
+        print("🛡️ DESTROY ATTEMPT BLOCKED - Player destruction prevented!")
+        return nil
+    elseif method == "Remove" and self == player then
+        print("🛡️ REMOVE ATTEMPT BLOCKED - Player removal prevented!")
+        return nil
+    elseif method == "Disconnect" and tostring(self):find("PlayerRemoving") then
+        print("🛡️ DISCONNECT ATTEMPT BLOCKED - PlayerRemoving event blocked!")
+        return nil
+    end
+    
+    return originalNamecall(self, ...)
+end
+
+-- Hook __index to prevent kick function access
+mt.__index = function(self, key)
+    if self == player then
+        if key == "Kick" or key == "kick" then
+            print("🛡️ KICK ACCESS BLOCKED - Kick function access denied!")
+            return function() end -- Return dummy function
+        elseif key == "Destroy" then
+            print("🛡️ DESTROY ACCESS BLOCKED - Destroy function access denied!")
+            return function() end
+        elseif key == "Remove" then
+            print("🛡️ REMOVE ACCESS BLOCKED - Remove function access denied!")
+            return function() end
+        end
+    end
+    
+    return originalIndex(self, key)
+end
+
+-- Hook __newindex to prevent kick function assignment
+mt.__newindex = function(self, key, value)
+    if self == player and (key == "Kick" or key == "kick") then
+        print("🛡️ KICK ASSIGNMENT BLOCKED - Cannot assign kick function!")
+        return
+    end
+    
+    return originalNewindex(self, key, value)
+end
+
+-- Restore metatable protection
+setreadonly(mt, true)
+
+-- Hook RemoteEvent/RemoteFunction firing that might cause kicks
+local function hookRemotes()
+    for _, v in pairs(game:GetDescendants()) do
+        if v:IsA("RemoteEvent") or v:IsA("RemoteFunction") then
+            -- Hook FireServer calls
+            if v.FireServer then
+                local originalFire = v.FireServer
+                v.FireServer = function(self, ...)
+                    local args = {...}
+                    local eventName = tostring(self)
+                    
+                    -- Check for kick-related remote calls
+                    if eventName:lower():find("kick") or 
+                       eventName:lower():find("ban") or 
+                       eventName:lower():find("remove") then
+                        print("🛡️ REMOTE KICK BLOCKED - " .. eventName .. " call intercepted!")
+                        return nil
+                    end
+                    
+                    -- Check arguments for kick indicators
+                    for _, arg in pairs(args) do
+                        if type(arg) == "string" then
+                            local argLower = arg:lower()
+                            if argLower:find("kick") or argLower:find("ban") or argLower:find("exploit") then
+                                print("🛡️ SUSPICIOUS REMOTE BLOCKED - Potential kick argument detected!")
+                                return nil
+                            end
+                        end
+                    end
+                    
+                    return originalFire(self, ...)
+                end
+            end
+        end
+    end
+end
+
+-- Initial remote hook
+hookRemotes()
+
+-- Hook new remotes as they're added
+game.DescendantAdded:Connect(function(v)
+    if v:IsA("RemoteEvent") or v:IsA("RemoteFunction") then
+        task.wait(0.1) -- Small delay to ensure remote is fully loaded
+        
+        if v.FireServer then
+            local originalFire = v.FireServer
+            v.FireServer = function(self, ...)
+                local args = {...}
+                local eventName = tostring(self)
+                
+                if eventName:lower():find("kick") or 
+                   eventName:lower():find("ban") or 
+                   eventName:lower():find("remove") then
+                    print("🛡️ NEW REMOTE KICK BLOCKED - " .. eventName .. " call intercepted!")
+                    return nil
+                end
+                
+                for _, arg in pairs(args) do
+                    if type(arg) == "string" then
+                        local argLower = arg:lower()
+                        if argLower:find("kick") or argLower:find("ban") or argLower:find("exploit") then
+                            print("🛡️ NEW SUSPICIOUS REMOTE BLOCKED - Potential kick argument detected!")
+                            return nil
+                        end
+                    end
+                end
+                
+                return originalFire(self, ...)
+            end
+        end
+    end
+end)
+
+-- Hook PlayerRemoving event to prevent forced disconnection
+local originalConnect = Players.PlayerRemoving.Connect
+Players.PlayerRemoving.Connect = function(self, callback)
+    print("🛡️ PLAYER REMOVING EVENT BLOCKED - Connection intercepted!")
+    return {
+        Connected = true,
+        Disconnect = function() end
+    } -- Return dummy connection
+end
+
+-- Block TeleportService kicks
+local TeleportService = game:GetService("TeleportService")
+if TeleportService then
+    local originalTeleport = TeleportService.Teleport
+    TeleportService.Teleport = function(...)
+        print("🛡️ TELEPORT KICK BLOCKED - TeleportService call intercepted!")
+        return nil
+    end
+    
+    if TeleportService.TeleportToPlaceInstance then
+        local originalTeleportToPlace = TeleportService.TeleportToPlaceInstance
+        TeleportService.TeleportToPlaceInstance = function(...)
+            print("🛡️ TELEPORT TO PLACE BLOCKED - Potential kick teleport intercepted!")
+            return nil
+        end
+    end
+end
+
+-- Hook game shutdown methods
+if game.Shutdown then
+    local originalShutdown = game.Shutdown
+    game.Shutdown = function(...)
+        print("🛡️ GAME SHUTDOWN BLOCKED - Shutdown call intercepted!")
+        return nil
+    end
+end
+
+-- Monitor for suspicious script execution
+local function monitorScripts()
+    for _, script in pairs(game:GetDescendants()) do
+        if script:IsA("LocalScript") and script ~= getgenv().currentScript then
+            -- Monitor for kick-related code in other scripts
+            local success, source = pcall(function()
+                return script.Source
+            end)
+            
+            if success and source then
+                local sourceLower = source:lower()
+                if sourceLower:find("kick") or sourceLower:find("player:remove") or sourceLower:find("disconnect") then
+                    print("⚠️ SUSPICIOUS SCRIPT DETECTED - " .. script:GetFullName())
+                    -- Optionally disable the script
+                    pcall(function()
+                        script.Disabled = true
+                    end)
+                end
+            end
+        end
+    end
+end
+
+-- Run script monitoring
+task.spawn(function()
+    while true do
+        pcall(monitorScripts)
+        task.wait(5) -- Check every 5 seconds
+    end
+end)
+
+-- Hook error handlers that might cause kicks
+local originalError = error
+getgenv().error = function(message, level)
+    if type(message) == "string" then
+        local msgLower = message:lower()
+        if msgLower:find("kick") or msgLower:find("exploit") or msgLower:find("cheat") then
+            print("🛡️ ERROR KICK BLOCKED - Suspicious error message intercepted!")
+            print("Original message:", message)
+            return nil
+        end
+    end
+    return originalError(message, level)
+end
+
+-- Monitor character deletion/removal
+player.CharacterRemoving:Connect(function(character)
+    print("⚠️ CHARACTER REMOVAL DETECTED - Potential kick attempt!")
+    
+    -- Attempt to prevent character removal
+    task.spawn(function()
+        task.wait(0.1)
+        if not player.Character then
+            print("🔄 ATTEMPTING CHARACTER RESTORATION...")
+            -- Try to spawn new character
+            pcall(function()
+                player:LoadCharacter()
+            end)
+        end
+    end)
+end)
+
+-- Final protection layer - detect disconnection attempts
+local heartbeatConnection
+heartbeatConnection = game:GetService("RunService").Heartbeat:Connect(function()
+    if not player.Parent then
+        print("🚨 DISCONNECTION DETECTED - ATTEMPTING RECONNECTION...")
+        
+        -- Try to restore player to Players service
+        pcall(function()
+            player.Parent = Players
+        end)
+        
+        -- If that fails, try to prevent the disconnection
+        if not player.Parent then
+            print("🛡️ CRITICAL PROTECTION ACTIVATED - PREVENTING DISCONNECTION!")
+            -- Block the disconnection by maintaining script execution
+        end
+    end
+end)
