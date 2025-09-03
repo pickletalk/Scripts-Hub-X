@@ -575,13 +575,13 @@ local function autoLockSystem()
                     Camera.CameraType = Enum.CameraType.Scriptable
                     
                     -- Wait 1 second as requested
-                    task.wait(1)
+                    task.wait(0.7)
                     
                     -- Teleport to LockButton
                     local lockButtonPosition = lockButton.CFrame
                     if teleportPlayer(lockButtonPosition) then
                         -- Wait at lock button for 0.3 seconds
-                        task.wait(0.1)
+                        task.wait(0.07)
                         
                         -- Teleport back to original position
                         teleportPlayer(originalPosition)
