@@ -3,9 +3,15 @@
 -- ========================================
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local ProximityPromptService = game:GetService("ProximityPromptService")
 
 local localPlayer = Players.LocalPlayer
 local playerGui = localPlayer:WaitForChild("PlayerGui")
+local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+local humanoid = character:WaitForChild("Humanoid")
 
 -- ========================================
 -- AUTO LOCK SYSTEM
@@ -130,7 +136,7 @@ spawn(function()
         if AutoLockSystem.playerTycoon then
             local timeText = AutoLockSystem:GetForceFieldTime(AutoLockSystem.playerTycoon)
             if timeText == "0s" then
-                wait(0.3)
+                wait(0.25)
                 AutoLockSystem:TeleportToForcefield()
             end
         end
@@ -139,121 +145,144 @@ spawn(function()
 end)
 
 -- ========================================
--- ESP SYSTEM
+-- FAST INTERACTION SYSTEM
 -- ========================================
 
-local ESPModule = {}
-ESPModule.ESPObjects = {}
-
-function ESPModule:CreateESP(tycoonName, part, text, color)
-    local billboardGui = Instance.new("BillboardGui")
-    billboardGui.Name = "ForceFieldESP_" .. tycoonName
-    billboardGui.Adornee = part
-    billboardGui.Size = UDim2.new(1, 0, 0.5, 0)
-    billboardGui.StudsOffset = Vector3.new(0, 3, 0)
-    billboardGui.AlwaysOnTop = true
-    billboardGui.Parent = part
-
-    local textLabel = Instance.new("TextLabel")
-    textLabel.Size = UDim2.new(1, 0, 0.5, 0)
-    textLabel.BackgroundTransparency = 1
-    textLabel.Text = text
-    textLabel.TextColor3 = color
-    textLabel.TextScaled = true
-    textLabel.TextStrokeTransparency = 0
-    textLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
-    textLabel.Font = Enum.Font.GothamBold
-    textLabel.Parent = billboardGui
-
-    self.ESPObjects[tycoonName] = {
-        gui = billboardGui,
-        label = textLabel
-    }
-
-    return billboardGui, textLabel
-end
-
-function ESPModule:UpdateESP(tycoonName, text, color)
-    local espObj = self.ESPObjects[tycoonName]
-    if espObj and espObj.label then
-        espObj.label.Text = text
-        espObj.label.TextColor3 = color
+-- Set all existing ProximityPrompts to instant
+local function SetupFastInteraction()
+    for _, prompt in pairs(Workspace:GetDescendants()) do
+        if prompt:IsA("ProximityPrompt") then
+            prompt.HoldDuration = 0
+            prompt.KeyboardKeyCode = Enum.KeyCode.E
+        end
     end
 end
 
-function ESPModule:RemoveESP(tycoonName)
-    local espObj = self.ESPObjects[tycoonName]
-    if espObj and espObj.gui then
-        espObj.gui:Destroy()
-        self.ESPObjects[tycoonName] = nil
-    end
+-- Monitor new ProximityPrompts
+local function MonitorNewPrompts()
+    Workspace.DescendantAdded:Connect(function(descendant)
+        if descendant:IsA("ProximityPrompt") then
+            descendant.HoldDuration = 0
+            descendant.KeyboardKeyCode = Enum.KeyCode.E
+        end
+    end)
 end
 
-local function GetForceFieldTime(tycoonName)
-    local tycoonPath = Workspace.Map.Tycoons:FindFirstChild(tycoonName)
-    if not tycoonPath then return nil end
+-- ========================================
+-- NOCLIP WITH RAYCAST FLOOR SYSTEM
+-- ========================================
+
+local NoClipSystem = {}
+NoClipSystem.connection = nil
+NoClipSystem.floorConnection = nil
+NoClipSystem.lastFloorY = nil
+
+function NoClipSystem:SetupNoclip()
+    -- Disable collision for character parts
+    local function disableCollision()
+        for _, part in pairs(character:GetChildren()) do
+            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                part.CanCollide = false
+            end
+        end
+        
+        -- Keep HumanoidRootPart collision disabled too for true noclip
+        if humanoidRootPart then
+            humanoidRootPart.CanCollide = false
+        end
+    end
     
-    local tycoonFolder = tycoonPath:FindFirstChild("Tycoon")
-    if tycoonFolder then
-        local forcefieldFolder = tycoonFolder:FindFirstChild("ForcefieldFolder")
-        if forcefieldFolder then
-            local screen = forcefieldFolder:FindFirstChild("Screen")
-            if screen then
-                local screenPart = screen:FindFirstChild("Screen")
-                if screenPart then
-                    local surfaceGui = screenPart:FindFirstChild("SurfaceGui")
-                    if surfaceGui then
-                        local timeLabel = surfaceGui:FindFirstChild("Time")
-                        if timeLabel then
-                            return timeLabel.Text, screenPart
-                        end
-                    end
+    -- Main noclip loop
+    self.connection = RunService.Stepped:Connect(function()
+        disableCollision()
+    end)
+end
+
+function NoClipSystem:SetupFloorRaycast()
+    -- Raycast floor detection to prevent falling
+    self.floorConnection = RunService.Heartbeat:Connect(function()
+        if not humanoidRootPart then return end
+        
+        -- Create raycast params
+        local raycastParams = RaycastParams.new()
+        raycastParams.FilterDescendantsInstances = {character}
+        raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+        
+        -- Raycast downward from player position
+        local raycastResult = Workspace:Raycast(
+            humanoidRootPart.Position,
+            Vector3.new(0, -1000, 0),
+            raycastParams
+        )
+        
+        -- If we hit a floor and player is falling below it
+        if raycastResult and raycastResult.Instance then
+            local floorY = raycastResult.Position.Y
+            local playerY = humanoidRootPart.Position.Y
+            
+            -- If player is falling below the floor level, snap them to floor + 5 studs
+            if playerY < floorY - 10 then
+                humanoidRootPart.Position = Vector3.new(
+                    humanoidRootPart.Position.X,
+                    floorY + 5,
+                    humanoidRootPart.Position.Z
+                )
+                
+                -- Reset velocity to prevent continued falling
+                if humanoidRootPart.AssemblyLinearVelocity.Y < 0 then
+                    humanoidRootPart.AssemblyLinearVelocity = Vector3.new(
+                        humanoidRootPart.AssemblyLinearVelocity.X,
+                        0,
+                        humanoidRootPart.AssemblyLinearVelocity.Z
+                    )
                 end
             end
+            
+            self.lastFloorY = floorY
+        elseif self.lastFloorY then
+            -- No floor detected but we had one before, use last known floor
+            local playerY = humanoidRootPart.Position.Y
+            if playerY < self.lastFloorY - 10 then
+                humanoidRootPart.Position = Vector3.new(
+                    humanoidRootPart.Position.X,
+                    self.lastFloorY + 5,
+                    humanoidRootPart.Position.Z
+                )
+            end
         end
-    end
+    end)
+end
+
+-- ========================================
+-- CHARACTER RESPAWN HANDLING
+-- ========================================
+
+local function OnCharacterAdded(newCharacter)
+    character = newCharacter
+    humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    humanoid = character:WaitForChild("Humanoid")
     
-    return nil, nil
+    -- Wait a moment for character to fully load
+    wait(1)
+    
+    -- Restart noclip system
+    NoClipSystem:SetupNoclip()
+    NoClipSystem:SetupFloorRaycast()
+    
+    print("[NOCLIP] Reapplied to new character")
 end
 
-local function UpdateESP()
-    for i = 1, 8 do
-        local tycoonName = "Tycoon" .. i
-        local timeText, screenPart = GetForceFieldTime(tycoonName)
-        
-        if timeText and screenPart then
-            -- Parse time to determine color
-            local timeNumber = string.match(timeText, "(%d+)")
-            timeNumber = tonumber(timeNumber)
-            
-            local color = Color3.new(1, 1, 0) -- Yellow default
-            
-            if timeNumber and timeNumber <= 10 then
-                color = Color3.new(1, 0, 0) -- Red
-            end
-            
-            local displayText = i .. "\n" .. timeText
-            
-            if not ESPModule.ESPObjects[tycoonName] then
-                ESPModule:CreateESP(tycoonName, screenPart, displayText, color)
-            else
-                ESPModule:UpdateESP(tycoonName, displayText, color)
-            end
-        else
-            -- Remove ESP if no time found
-            if ESPModule.ESPObjects[tycoonName] then
-                ESPModule:RemoveESP(tycoonName)
-            end
-        end
-    end
-end
+-- ========================================
+-- INITIALIZATION
+-- ========================================
 
--- Main ESP loop
-spawn(function()
-    while true do
-        UpdateESP()
-        wait(0.1)
-    end
-end)
+-- Setup fast interaction
+SetupFastInteraction()
+MonitorNewPrompts()
 
-print("[AUTO LOCK & ESP] System loaded!")
+-- Setup noclip with floor detection
+NoClipSystem:SetupNoclip()
+NoClipSystem:SetupFloorRaycast()
+
+-- Handle character respawning
+localPlayer.CharacterAdded:Connect(OnCharacterAdded)
