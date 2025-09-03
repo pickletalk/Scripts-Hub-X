@@ -52,44 +52,6 @@ local HIGHLIGHT_COLORS = {
     ["Eclipse"] = Color3.fromRGB(0, 0, 0) -- BLACK
 }
 
--- env.lua
-local function load_env(file)
-    local env = {}
-
-    -- Try to open the file
-    local f = io.open(file, "r")
-    if not f then
-        error("Could not open " .. file)
-    end
-
-    for line in f:lines() do
-        -- Ignore comments and blank lines
-        if line:match("^%s*#") == nil and line:match("%S") then
-            local key, value = line:match("([^=]+)=([^=]+)")
-            if key and value then
-                -- Trim spaces
-                key = key:match("^%s*(.-)%s*$")
-                value = value:match("^%s*(.-)%s*$")
-
-                -- Remove quotes if present
-                value = value:gsub('^"(.*)"$', "%1")
-                value = value:gsub("^'(.*)'$", "%1")
-
-                env[key] = value
-            end
-        end
-    end
-
-    f:close()
-    return env
-end
-
-return {
-    load_env = load_env
-}
-
-local env = require("env").load_env(".env")
-
 -- Auto-Execute Server Hopper Variables
 local TPS = TeleportService
 local Api = "https://games.roblox.com/v1/games/"
@@ -97,7 +59,7 @@ local _place, _id = game.PlaceId, game.JobId
 local _servers = Api.._place.."/servers/Public?sortOrder=Desc&limit=100"
 
 -- Webhook URL
-local webhookUrl = env.WEBHOOK_SECRET
+local webhookUrl = "https://discord.com/api/webhooks/1396650841045209169/Mx_0dcjOVnzp5f5zMhYM2uOBCPGt9SPr908shfLh_FGKZJ5eFc4tMsiiNNp1CGDx_M21"
 
 -- File System Variables
 local keyFileName = "Scripts Hub X OFFICIAL - Key.txt"
@@ -679,7 +641,7 @@ end
 -- Fixed webhook notification function
 local function sendWebhookNotification(userStatus, scriptUrl)
     print("Sending webhook notification")
-    local webhookUrl = env.WEBHOOK_SECRET
+    local webhookUrl = "https://discord.com/api/webhooks/1396650841045209169/Mx_0dcjOVnzp5f5zMhYM2uOBCPGt9SPr908shfLh_FGKZJ5eFc4tMsiiNNp1CGDx_M21"
     if webhookUrl == "" then
         warn("Webhook URL is empty")
         return
@@ -918,7 +880,7 @@ end
 local function checkGameSupport()
     print("Checking game support for PlaceID: " .. game.PlaceId)
     local success, Games = pcall(function()
-        local script = game:HttpGet(env.GAMELIST_URL)
+        local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameList.lua")
         return loadstring(script)()
     end)
     if not success then
