@@ -303,30 +303,6 @@ local function stealFish()
             end
         end)
 
-        -- Detect nearby players for 3 seconds
-        local startTime = tick()
-        while tick() - startTime < 3.5 do
-            local closePlayerFound = false
-            for _, plr in ipairs(game.Players:GetPlayers()) do
-                if plr ~= localPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-                    local dist = (plr.Character.HumanoidRootPart.Position - root.Position).Magnitude
-                    if dist <= 30 then
-                        closePlayerFound = true
-                        break
-                    end
-                end
-            end
-
-            if closePlayerFound then
-                -- Teleport away 20 studs in a random direction
-                local angle = math.rad(math.random(0, 359))
-                local offset = Vector3.new(math.cos(angle) * 25, 0, math.sin(angle) * 25)
-                root.CFrame = root.CFrame + offset
-            end
-
-            task.wait(0.1) -- check 10 times per second
-        end
-
         -- Find player tycoon using the existing system
         if not AutoLockSystem.playerTycoon then
             return setError("PlayerTycoon")
