@@ -17,11 +17,6 @@ local humanoid = character:WaitForChild("Humanoid")
 -- ========================================
 -- NEW AUTO LOCK SYSTEM FOR STEAL-A-FISH
 -- ========================================
-local Players = game:GetService("Players")
-local Workspace = game:GetService("Workspace")
-
-local localPlayer = Players.LocalPlayer
-
 local AutoLockSystem = {}
 AutoLockSystem.playerTycoon = nil
 AutoLockSystem.isLocking = false
