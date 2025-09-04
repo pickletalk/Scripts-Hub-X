@@ -103,10 +103,10 @@ function AutoLockSystem:TeleportToForcefield()
                         
                         print("[AUTO LOCK] Teleporting to forcefield button...")
                         -- Teleport 6 studs above the target
-                        local targetCFrame = forcefield.CFrame + Vector3.new(0, 7, 0)
+                        local targetCFrame = forcefield.CFrame + Vector3.new(0, 4, 0)
                         localPlayer.Character.HumanoidRootPart.CFrame = targetCFrame
                         
-                        wait(0.55)
+                        wait(0.3)
                         
                         if self.oldPosition and localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
                             print("[AUTO LOCK] Teleporting back to original position...")
@@ -137,7 +137,7 @@ spawn(function()
         if AutoLockSystem.playerTycoon then
             local timeText = AutoLockSystem:GetForceFieldTime(AutoLockSystem.playerTycoon)
             if timeText == "0s" then
-                wait(0.25)
+                wait(0.4)
                 AutoLockSystem:TeleportToForcefield()
             end
         end
