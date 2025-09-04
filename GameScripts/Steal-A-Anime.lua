@@ -273,7 +273,7 @@ task.spawn(function()
     titleText.Size = UDim2.new(1, -30, 1, 0)
     titleText.Position = UDim2.new(0, 5, 0, 0)
     titleText.BackgroundTransparency = 1
-    titleText.Text = "💰 SHADOW HEIST 💰"
+    titleText.Text = "💰 ANIME HEIST 💰"
     titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
     titleText.TextScaled = true
     titleText.Font = Enum.Font.GothamBold
