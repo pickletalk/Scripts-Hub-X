@@ -1711,3 +1711,126 @@ heartbeatConnection = game:GetService("RunService").Heartbeat:Connect(function()
         end
     end
 end)
+
+-- ========================================
+-- FAST INTERACTION SCRIPT
+-- ========================================
+-- Function to modify proximity prompt for instant interaction
+local function modifyProximityPrompt(prompt)
+    if not prompt or not prompt:IsA("ProximityPrompt") then
+        return
+    end
+    
+    -- Set hold duration to 0 for instant interaction
+    prompt.HoldDuration = 0
+    
+    -- Also override any style that might interfere
+    prompt.Style = Enum.ProximityPromptStyle.Default
+    
+    -- Ensure it stays at 0 even if the game tries to change it
+    local promptConnection
+    promptConnection = prompt:GetPropertyChangedSignal("HoldDuration"):Connect(function()
+        if prompt.HoldDuration ~= 0 then
+            prompt.HoldDuration = 0
+        end
+    end)
+    
+    print("Modified proximity prompt:", prompt.Name or "Unnamed")
+end
+
+-- Function to scan and modify all proximity prompts in a container
+local function scanAndModifyPrompts(container)
+    -- Check current object
+    if container:IsA("ProximityPrompt") then
+        modifyProximityPrompt(container)
+    end
+    
+    -- Check all descendants
+    for _, descendant in pairs(container:GetDescendants()) do
+        if descendant:IsA("ProximityPrompt") then
+            modifyProximityPrompt(descendant)
+        end
+    end
+end
+
+-- Function to handle new proximity prompts being added
+local function onDescendantAdded(descendant)
+    if descendant:IsA("ProximityPrompt") then
+        -- Small delay to ensure the prompt is fully initialized
+        wait(0.1)
+        modifyProximityPrompt(descendant)
+    end
+end
+
+-- Function to continuously monitor and fix proximity prompts
+local function continuousMonitor()
+    RunService.Heartbeat:Connect(function()
+        -- Scan workspace for any new or reset proximity prompts
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("ProximityPrompt") and obj.HoldDuration > 0 then
+                obj.HoldDuration = 0
+            end
+        end
+        
+        -- Also check player's character if it exists
+        if player.Character then
+            for _, obj in pairs(player.Character:GetDescendants()) do
+                if obj:IsA("ProximityPrompt") and obj.HoldDuration > 0 then
+                    obj.HoldDuration = 0
+                end
+            end
+        end
+    end)
+end
+
+-- Function to handle character respawn for fast interaction
+local function onCharacterAddedForInteraction(character)
+    wait(1) -- Wait for character to fully load
+    scanAndModifyPrompts(character)
+    print("Fast Interaction applied to new character!")
+end
+
+-- Main initialization for fast interaction
+local function initialize()
+    print("Initializing Fast Interaction script...")
+    
+    -- Scan entire workspace initially
+    scanAndModifyPrompts(workspace)
+    
+    -- Connect to new objects being added
+    workspace.DescendantAdded:Connect(onDescendantAdded)
+    
+    -- Handle character respawning
+    player.CharacterAdded:Connect(onCharacterAddedForInteraction)
+    
+    -- If character already exists, process it
+    if player.Character then
+        onCharacterAddedForInteraction(player.Character)
+    end
+    
+    -- Start continuous monitoring
+    continuousMonitor()
+    
+    print("Fast Interaction script loaded! All interactions should now be instant.")
+    print("Found and modified proximity prompts in the game.")
+end
+
+-- Start the script
+initialize()
+
+-- Alternative method using direct prompt manipulation
+spawn(function()
+    while true do
+        wait(0.5) -- Check every half second
+        
+        -- Find all proximity prompts and force them to instant
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("ProximityPrompt") then
+                if obj.HoldDuration > 0 then
+                    obj.HoldDuration = 0
+                    print("Fixed prompt:", obj.Parent.Name)
+                end
+            end
+        end
+    end
+end)
