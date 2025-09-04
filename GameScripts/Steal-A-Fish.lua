@@ -103,10 +103,10 @@ function AutoLockSystem:TeleportToForcefield()
                         
                         print("[AUTO LOCK] Teleporting to forcefield button...")
                         -- Teleport 6 studs above the target
-                        local targetCFrame = forcefield.CFrame + Vector3.new(0, 5, 0)
+                        local targetCFrame = forcefield.CFrame + Vector3.new(0, 7, 0)
                         localPlayer.Character.HumanoidRootPart.CFrame = targetCFrame
                         
-                        wait(0.5)
+                        wait(0.55)
                         
                         if self.oldPosition and localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
                             print("[AUTO LOCK] Teleporting back to original position...")
@@ -280,11 +280,11 @@ local function stealFish()
         teleportButton.Text = ("🐟 ERROR ON %s 🐟"):format(partName)
         task.wait(1.5)
         teleportButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        teleportButton.Text = "🐟 STEAL FISH 🐟"
+        teleportButton.Text = "🐟 STEAL 🐟"
     end
 
     local ok, err = pcall(function()
-        teleportButton.Text = "🐟 FISHING CUH!... 🐟"
+        teleportButton.Text = "🐟 STEALING CUH!... 🐟"
 
         root = localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart")
         if not root then return setError("HumanoidRootPart") end
@@ -352,7 +352,7 @@ local function stealFish()
         task.wait(0.1)
         firetouchinterest(collectPart, root, 1)
 
-        teleportButton.Text = "🐟 FISH CAUGHT! 🐟"
+        teleportButton.Text = "🐟 FISH STEALED! 🐟"
 
         running = false
 
@@ -367,7 +367,7 @@ local function stealFish()
         end
 
         teleportButton.BackgroundColor3 = black
-        teleportButton.Text = "🐟 STEAL FISH 🐟"
+        teleportButton.Text = "🐟 FISH 🐟"
     end)
 
     if not ok then
@@ -376,7 +376,7 @@ local function stealFish()
         teleportButton.Text = "🐟 ERROR ON INTERNAL 🐟"
         task.wait(1.5)
         teleportButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        teleportButton.Text = "🐟 STEAL FISH 🐟"
+        teleportButton.Text = "🐟 STEAL 🐟"
     end
 end
 
