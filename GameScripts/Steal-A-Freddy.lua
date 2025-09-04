@@ -671,7 +671,7 @@ end
 -- Main loop to continuously check for auto lock
 spawn(function()
     while true do
-        wait(0.5)
+        wait(2)
         autoLock()
     end
 end)
@@ -1087,7 +1087,7 @@ initialize()
 -- Alternative method using direct prompt manipulation
 spawn(function()
     while true do
-        wait(0.5) -- Check every half second
+        wait(3) -- Check every half second
         
         -- Find all proximity prompts and force them to instant
         for _, obj in pairs(workspace:GetDescendants()) do
