@@ -6,6 +6,7 @@ local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local ProximityPromptService = game:GetService("ProximityPromptService")
+local TweenService = game:GetService("TweenService")
 
 local localPlayer = Players.LocalPlayer
 local playerGui = localPlayer:WaitForChild("PlayerGui")
@@ -145,6 +146,260 @@ spawn(function()
 end)
 
 -- ========================================
+-- FISH TELEPORTER UI (BASED ON FREDDY UI)
+-- ========================================
+local playerGui = localPlayer:WaitForChild("PlayerGui")
+
+-- Create ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "FishTeleporterUI"
+screenGui.Parent = playerGui
+screenGui.ResetOnSpawn = false
+
+-- Main Frame
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 250, 0, 120)
+mainFrame.Position = UDim2.new(1, -260, 0, 10)
+mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = screenGui
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 8)
+mainCorner.Parent = mainFrame
+
+-- Title Bar
+local titleBar = Instance.new("Frame")
+titleBar.Name = "TitleBar"
+titleBar.Size = UDim2.new(1, 0, 0, 30)
+titleBar.Position = UDim2.new(0, 0, 0, 0)
+titleBar.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+titleBar.BorderSizePixel = 0
+titleBar.Parent = mainFrame
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 8)
+titleCorner.Parent = titleBar
+
+local titleText = Instance.new("TextLabel")
+titleText.Name = "TitleText"
+titleText.Size = UDim2.new(1, -30, 1, 0)
+titleText.Position = UDim2.new(0, 5, 0, 0)
+titleText.BackgroundTransparency = 1
+titleText.Text = "🐟 FISHY HEIST 🐟"
+titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleText.TextScaled = true
+titleText.Font = Enum.Font.GothamBold
+titleText.Parent = titleBar
+
+local closeButton = Instance.new("TextButton")
+closeButton.Name = "CloseButton"
+closeButton.Size = UDim2.new(0, 25, 0, 25)
+closeButton.Position = UDim2.new(1, -27, 0, 2)
+closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+closeButton.Text = "X"
+closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.TextScaled = true
+closeButton.Font = Enum.Font.GothamBold
+closeButton.BorderSizePixel = 0
+closeButton.Parent = titleBar
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 4)
+closeCorner.Parent = closeButton
+
+local teleportButton = Instance.new("TextButton")
+teleportButton.Name = "TeleportButton"
+teleportButton.Size = UDim2.new(0, 220, 0, 35)
+teleportButton.Position = UDim2.new(0, 15, 0, 45)
+teleportButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+teleportButton.Text = "🐟 STEAL FISH 🐟"
+teleportButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+teleportButton.TextScaled = true
+teleportButton.Font = Enum.Font.GothamBold
+teleportButton.BorderSizePixel = 0
+teleportButton.Parent = mainFrame
+
+local teleportCorner = Instance.new("UICorner")
+teleportCorner.CornerRadius = UDim.new(0, 6)
+teleportCorner.Parent = teleportButton
+
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Name = "StatusLabel"
+statusLabel.Size = UDim2.new(1, -20, 0, 25)
+statusLabel.Position = UDim2.new(0, 10, 0, 90)
+statusLabel.BackgroundTransparency = 1
+statusLabel.Text = "by PickleTalk"
+statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+statusLabel.TextScaled = true
+statusLabel.Font = Enum.Font.Gotham
+statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+statusLabel.Parent = mainFrame
+
+-- Dragging functionality
+local dragging = false
+local dragStart = nil
+local startPos = nil
+
+local function updateDrag(input)
+    local delta = input.Position - dragStart
+    mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+titleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+titleBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        if dragging then
+            updateDrag(input)
+        end
+    end
+end)
+
+-- Fish stealing function using the existing FindPlayerTycoon system
+local function stealFish()
+    local running = false
+    local root
+
+    local function setError(partName)
+        running = false
+        teleportButton.BackgroundColor3 = Color3.fromRGB(150, 30, 30)
+        teleportButton.Text = ("🐟 ERROR ON %s 🐟"):format(partName)
+        task.wait(1.5)
+        teleportButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        teleportButton.Text = "🐟 STEAL FISH 🐟"
+    end
+
+    local ok, err = pcall(function()
+        teleportButton.Text = "🐟 FISHING CUH!... 🐟"
+
+        root = localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if not root then return setError("HumanoidRootPart") end
+
+        -- Ocean-wave RGB animation
+        running = true
+        task.spawn(function()
+            local t = 0
+            while running do
+                t += 0.03
+                local r = math.floor((math.sin(t)     * 0.5 + 0.5) * 60)
+                local g = math.floor((math.sin(t + 2) * 0.5 + 0.5) * 60)
+                local b = math.floor((math.sin(t + 4) * 0.5 + 0.5) * 120 + 60)
+                teleportButton.BackgroundColor3 = Color3.fromRGB(r, g, b)
+                task.wait(0.03)
+            end
+        end)
+
+        -- Detect nearby players for 3 seconds
+        local startTime = tick()
+        while tick() - startTime < 3.5 do
+            local closePlayerFound = false
+            for _, plr in ipairs(game.Players:GetPlayers()) do
+                if plr ~= localPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                    local dist = (plr.Character.HumanoidRootPart.Position - root.Position).Magnitude
+                    if dist <= 30 then
+                        closePlayerFound = true
+                        break
+                    end
+                end
+            end
+
+            if closePlayerFound then
+                -- Teleport away 20 studs in a random direction
+                local angle = math.rad(math.random(0, 359))
+                local offset = Vector3.new(math.cos(angle) * 25, 0, math.sin(angle) * 25)
+                root.CFrame = root.CFrame + offset
+            end
+
+            task.wait(0.1) -- check 10 times per second
+        end
+
+        -- Find player tycoon using the existing system
+        if not AutoLockSystem.playerTycoon then
+            return setError("PlayerTycoon")
+        end
+
+        local tycoonPath = Workspace.Map.Tycoons:FindFirstChild(AutoLockSystem.playerTycoon)
+        if not tycoonPath then return setError("TycoonPath") end
+
+        local tycoonFolder = tycoonPath:FindFirstChild("Tycoon")
+        if not tycoonFolder then return setError("TycoonFolder") end
+
+        local collectZone = tycoonFolder:FindFirstChild("CollectZone")
+        if not collectZone then return setError("CollectZone") end
+
+        local collectPart = collectZone:FindFirstChild("CollectPart")
+        if not collectPart then return setError("CollectPart") end
+
+        local touchInterest = collectPart:FindFirstChild("TouchInterest")
+        if not touchInterest then return setError("TouchInterest") end
+
+        -- Fire the TouchInterest
+        firetouchinterest(collectPart, root, 0)
+        task.wait(0.1)
+        firetouchinterest(collectPart, root, 1)
+
+        teleportButton.Text = "🐟 FISH CAUGHT! 🐟"
+
+        running = false
+
+        -- Flash animation
+        local blue = Color3.fromRGB(70, 130, 180)
+        local black = Color3.fromRGB(0, 0, 0)
+        for i = 1, 3 do
+            teleportButton.BackgroundColor3 = blue
+            task.wait(0.15)
+            teleportButton.BackgroundColor3 = black
+            task.wait(0.15)
+        end
+
+        teleportButton.BackgroundColor3 = black
+        teleportButton.Text = "🐟 STEAL FISH 🐟"
+    end)
+
+    if not ok then
+        running = false
+        teleportButton.BackgroundColor3 = Color3.fromRGB(150, 30, 30)
+        teleportButton.Text = "🐟 ERROR ON INTERNAL 🐟"
+        task.wait(1.5)
+        teleportButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        teleportButton.Text = "🐟 STEAL FISH 🐟"
+    end
+end
+
+-- Button connections
+teleportButton.MouseButton1Click:Connect(stealFish)
+closeButton.MouseButton1Click:Connect(function()
+    screenGui:Destroy()
+end)
+
+-- Hover effects
+local function addHoverEffect(button, hoverColor, originalColor)
+    button.MouseEnter:Connect(function()
+        button.BackgroundColor3 = hoverColor
+    end)
+    
+    button.MouseLeave:Connect(function()
+        button.BackgroundColor3 = originalColor
+    end)
+end
+
+addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
+
+-- ========================================
 -- FAST INTERACTION SYSTEM
 -- ========================================
 
@@ -169,9 +424,14 @@ local function MonitorNewPrompts()
 end
 
 -- ========================================
--- ENHANCED ANTI-CHEAT NOCLIP WITH RUNNING ANIMATION
+-- ENHANCED ANTI-CHEAT NOCLIP FOR STEAL-A-FISH
 -- ========================================
-local ANTI_CHEAT_THRESHOLD = 8 -- If moved more than 10 studs instantly, it's anti-cheat
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+
+local localPlayer = Players.LocalPlayer
+local ANTI_CHEAT_THRESHOLD = 8 -- If moved more than 8 studs instantly, it's anti-cheat
 local RAY_LENGTH = 100
 
 local character, humanoid, hrp
@@ -188,6 +448,51 @@ local teleportCooldown = 0
 local runningAnimation = nil
 local animationTrack = nil
 local isAnimating = false
+
+-- Auto Lock System reference for finding player tycoon
+local AutoLockSystem = {}
+AutoLockSystem.playerTycoon = nil
+
+function AutoLockSystem:FindPlayerTycoon()
+    local username = localPlayer.Name
+    
+    for i = 1, 8 do
+        local tycoonName = "Tycoon" .. i
+        local tycoonPath = Workspace.Map.Tycoons:FindFirstChild(tycoonName)
+        
+        if tycoonPath then
+            local tycoonFolder = tycoonPath:FindFirstChild("Tycoon")
+            if tycoonFolder then
+                local board = tycoonFolder:FindFirstChild("Board")
+                if board then
+                    local boardPart = board:FindFirstChild("Board")
+                    if boardPart then
+                        local surfaceGui = boardPart:FindFirstChild("SurfaceGui")
+                        if surfaceGui then
+                            local usernameLabel = surfaceGui:FindFirstChild("Username")
+                            if usernameLabel and usernameLabel.Text == username then
+                                self.playerTycoon = tycoonName
+                                return tycoonName
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    return nil
+end
+
+-- Find player tycoon
+spawn(function()
+    while not AutoLockSystem.playerTycoon do
+        AutoLockSystem:FindPlayerTycoon()
+        if not AutoLockSystem.playerTycoon then
+            wait(1)
+        end
+    end
+end)
 
 -- Function to trigger running animation
 local function triggerRunningAnimation()
@@ -290,31 +595,39 @@ local function applyNoclip(char)
     end)
 end
 
--- Check if position is near any LockButton
-local function isNearLockButton(position)
-    local workspace = game:GetService("Workspace")
-    local basesFolder = workspace:FindFirstChild("Bases")
-    if not basesFolder then return false end
+-- Check if position is near forcefield button (where auto lock teleports)
+local function isNearForcefieldButton(position)
+    if not AutoLockSystem.playerTycoon then return false end
     
-    -- Check all bases 1-8
-    for i = 1, 8 do
-        local base = basesFolder:FindFirstChild(tostring(i))
-        if base then
-            local lockButton = base:FindFirstChild("LockButton")
-            if lockButton then
-                local distance = (position - lockButton.Position).Magnitude
-                if distance < 15 then -- Within 15 studs of any lock button
-                    return true
+    local tycoonPath = Workspace.Map.Tycoons:FindFirstChild(AutoLockSystem.playerTycoon)
+    if not tycoonPath then return false end
+    
+    local tycoonFolder = tycoonPath:FindFirstChild("Tycoon")
+    if tycoonFolder then
+        local forcefieldFolder = tycoonFolder:FindFirstChild("ForcefieldFolder")
+        if forcefieldFolder then
+            local buttons = forcefieldFolder:FindFirstChild("Buttons")
+            if buttons then
+                local forceFieldBuy = buttons:FindFirstChild("ForceFieldBuy")
+                if forceFieldBuy then
+                    local forcefield = forceFieldBuy:FindFirstChild("Forcefield")
+                    if forcefield then
+                        local distance = (position - forcefield.Position).Magnitude
+                        if distance < 15 then -- Within 15 studs of forcefield button
+                            return true
+                        end
+                    end
                 end
             end
         end
     end
+    
     return false
 end
 
 -- Refresh character references
 local function refreshCharacter()
-    character = player.Character or player.CharacterAdded:Wait()
+    character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
     humanoid = character:WaitForChild("Humanoid")
     hrp = character:WaitForChild("HumanoidRootPart")
     
@@ -355,8 +668,8 @@ local function detectAntiCheatSnapback(newPos, oldPos)
     
     -- If moved more than threshold instantly
     if distance > ANTI_CHEAT_THRESHOLD then
-        -- Check if this is a legitimate teleport (near LockButton)
-        if isNearLockButton(newPos) or isNearLockButton(oldPos) then
+        -- Check if this is a legitimate teleport (near forcefield button where auto lock teleports)
+        if isNearForcefieldButton(newPos) or isNearForcefieldButton(oldPos) then
             legitimateTeleport = true
             teleportCooldown = 30 -- 30 frames cooldown (~0.5 seconds at 60fps)
             return false
@@ -381,8 +694,8 @@ local function detectAntiCheatSnapback(newPos, oldPos)
         
         local distanceFromAverage = (newPos - avgRecentPos).Magnitude
         if distanceFromAverage > ANTI_CHEAT_THRESHOLD then
-            -- Check if this teleport is near a LockButton
-            if isNearLockButton(newPos) then
+            -- Check if this teleport is near forcefield button
+            if isNearForcefieldButton(newPos) then
                 return false
             end
             return true
@@ -418,7 +731,7 @@ end
 refreshCharacter()
 
 -- Handle character respawn
-player.CharacterAdded:Connect(function()
+localPlayer.CharacterAdded:Connect(function()
     refreshCharacter()
 end)
 
