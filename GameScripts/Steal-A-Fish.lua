@@ -116,10 +116,10 @@ local function teleportTrigger()
     print("[AUTO LOCK] Teleporting to trigger forcefield...")
     
     -- Teleport to forcefield position
-    humanoidRootPart.CFrame = forcefield.CFrame + Vector3.new(0, 7, 0)
+    humanoidRootPart.CFrame = forcefield.CFrame + Vector3.new(0, 5, 0)
     
     -- Wait for 0.5 seconds near the forcefield
-    wait(0.5)
+    wait(0.8)
     
     -- Teleport back to original position
     humanoidRootPart.CFrame = originalPosition
