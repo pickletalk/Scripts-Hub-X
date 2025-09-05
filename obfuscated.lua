@@ -40,7 +40,7 @@ local BlacklistUsers = {
 	
 	}
 
-local KeySystem = true -- Set to false to bypass key system for non-premium users
+local KeySystem = true
 
 local TARGET_ANIMATRONICS = {"Radioactive Foxy", "Freddles", "Eclipse"}
 local MAX_PLOTS = 8
@@ -75,7 +75,7 @@ if game.PlaceId == STEAL_A_FREDDY_PLACE_ID then
             isRunning = false,
             foundAnimatronic = nil,
             scriptLoaded = false,
-            highlightedObjects = {} -- Store highlighted objects for cleanup
+            highlightedObjects = {}
         }
         print("🆕 FIRST RUN: Initializing animatronics finder for Steal a Freddy")
     else
@@ -145,8 +145,8 @@ local function highlightAnimatronic(animatronicModel, animatronicName)
     local color = HIGHLIGHT_COLORS[animatronicName] or HIGHLIGHT_COLORS["Default"]
     highlight.OutlineColor = color
 
-    highlight.FillTransparency = 1 -- Completely transparent fill for performance
-    highlight.OutlineTransparency = 0 -- Solid outline
+    highlight.FillTransparency = 1
+    highlight.OutlineTransparency = 0.4
     highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
 
     highlight.Parent = CoreGui
@@ -1183,13 +1183,33 @@ spawn(function()
         else
             -- Non-premium user - check KeySystem toggle
             if KeySystem == false then
-                print("🔓 KeySystem disabled - Loading script directly for non-premium user")
-                local scriptLoaded = loadGameScript(scriptUrl)
-                if scriptLoaded then
-                    print("✅ Scripts Hub X | Complete for non-premium user (KeySystem bypassed)")
-                else
-                    showError("Script failed to load")
-                end
+                print("🎨 Premium - Showing loading screen")
+                local success, LoadingScreen = loadLoadingScreen()
+                if success and LoadingScreen then
+                    spawn(function()
+                        pcall(function()
+                            if LoadingScreen.initialize then LoadingScreen.initialize() end
+                            if LoadingScreen.setLoadingText then
+                                LoadingScreen.setLoadingText("Found " .. foundAnimatronic .. "!", Color3.fromRGB(0, 255, 0))
+                            end
+                            wait(2)
+                            if LoadingScreen.setLoadingText then
+                                LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
+                            end
+                            if LoadingScreen.animateLoadingBar then
+                                LoadingScreen.animateLoadingBar(function()
+                                    if LoadingScreen.playExitAnimations then
+                                        LoadingScreen.playExitAnimations(function()
+                                            local scriptLoaded = loadGameScript(scriptUrl)
+                                            if scriptLoaded then
+                                                print("✅ Scripts Hub X | Complete for Premium (Found: " .. foundAnimatronic .. ")")
+                                            end
+                                        end)
+                                    end
+                                end)
+                            end
+                        end)
+                    end)
             else
                 print("🔑 Non-premium user - Loading key system")
                 local successKS, KeySystemModule = loadKeySystem()
