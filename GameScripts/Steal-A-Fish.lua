@@ -15,18 +15,21 @@ local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 local humanoid = character:WaitForChild("Humanoid")
 
 -- ========================================
--- NEW AUTO LOCK SYSTEM FOR STEAL-A-FISH
+-- AUTO LOCK SYSTEM - TELEPORT TRIGGER
 -- ========================================
-local AutoLockSystem = {}
-AutoLockSystem.playerTycoon = nil
-AutoLockSystem.isLocking = false
 
-function AutoLockSystem:FindPlayerTycoon()
+local localPlayer = game.Players.LocalPlayer
+local workspace = game:GetService("Workspace")
+
+local playerTycoon = nil
+
+-- Function to find player's tycoon
+local function findPlayerTycoon()
     local username = localPlayer.Name
     
     for i = 1, 8 do
         local tycoonName = "Tycoon" .. i
-        local tycoonPath = Workspace.Map.Tycoons:FindFirstChild(tycoonName)
+        local tycoonPath = workspace.Map.Tycoons:FindFirstChild(tycoonName)
         
         if tycoonPath then
             local tycoonFolder = tycoonPath:FindFirstChild("Tycoon")
@@ -39,7 +42,7 @@ function AutoLockSystem:FindPlayerTycoon()
                         if surfaceGui then
                             local usernameLabel = surfaceGui:FindFirstChild("Username")
                             if usernameLabel and usernameLabel.Text == username then
-                                self.playerTycoon = tycoonName
+                                playerTycoon = tycoonName
                                 print("[AUTO LOCK] Found player tycoon:", tycoonName)
                                 return tycoonName
                             end
@@ -53,8 +56,11 @@ function AutoLockSystem:FindPlayerTycoon()
     return nil
 end
 
-function AutoLockSystem:GetForceFieldTime(tycoonName)
-    local tycoonPath = Workspace.Map.Tycoons:FindFirstChild(tycoonName)
+-- Function to get forcefield time text
+local function getForcefieldTime()
+    if not playerTycoon then return nil end
+    
+    local tycoonPath = workspace.Map.Tycoons:FindFirstChild(playerTycoon)
     if not tycoonPath then return nil end
     
     local tycoonFolder = tycoonPath:FindFirstChild("Tycoon")
@@ -80,105 +86,56 @@ function AutoLockSystem:GetForceFieldTime(tycoonName)
     return nil
 end
 
-function AutoLockSystem:TriggerLockButton()
-    if not self.playerTycoon or self.isLocking then return end
+-- Function to teleport and trigger forcefield
+local function teleportTrigger()
+    if not playerTycoon then return end
     
-    local tycoonPath = Workspace.Map.Tycoons:FindFirstChild(self.playerTycoon)
+    local character = localPlayer.Character
+    if not character then return end
+    
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
+    
+    local tycoonPath = workspace.Map.Tycoons:FindFirstChild(playerTycoon)
     if not tycoonPath then return end
     
     local tycoonFolder = tycoonPath:FindFirstChild("Tycoon")
-    if tycoonFolder then
-        local forcefieldFolder = tycoonFolder:FindFirstChild("ForcefieldFolder")
-        if forcefieldFolder then
-            local buttons = forcefieldFolder:FindFirstChild("Buttons")
-            if buttons then
-                local forceFieldBuy = buttons:FindFirstChild("ForceFieldBuy")
-                if forceFieldBuy then
-                    local lock = forceFieldBuy:FindFirstChild("Lock")
-                    if lock then
-                        local lockMeshPart = lock:FindFirstChild("Lock")
-                        if lockMeshPart and lockMeshPart:IsA("MeshPart") then
-                            self.isLocking = true
-                            
-                            print("[AUTO LOCK] Triggering lock button...")
-                            
-                            -- Try multiple methods to trigger the lock
-                            local success = false
-                            
-                            -- Method 1: TouchInterest
-                            local touchInterest = lockMeshPart:FindFirstChild("TouchInterest")
-                            if touchInterest and localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                                local humanoidRootPart = localPlayer.Character.HumanoidRootPart
-                                
-                                for i = 1, 3 do
-                                    firetouchinterest(lockMeshPart, humanoidRootPart, 0)
-                                    wait(0.1)
-                                    firetouchinterest(lockMeshPart, humanoidRootPart, 1)
-                                    wait(0.1)
-                                end
-                                success = true
-                                print("[AUTO LOCK] Used TouchInterest method")
-                            end
-                            
-                            -- Method 2: ClickDetector
-                            if not success then
-                                local clickDetector = lockMeshPart:FindFirstChild("ClickDetector")
-                                if clickDetector then
-                                    for i = 1, 3 do
-                                        fireclickdetector(clickDetector)
-                                        wait(0.2)
-                                    end
-                                    success = true
-                                    print("[AUTO LOCK] Used ClickDetector method")
-                                end
-                            end
-                            
-                            -- Method 3: ProximityPrompt
-                            if not success then
-                                local proximityPrompt = lockMeshPart:FindFirstChild("ProximityPrompt")
-                                if proximityPrompt then
-                                    for i = 1, 3 do
-                                        fireproximityprompt(proximityPrompt)
-                                        wait(0.2)
-                                    end
-                                    success = true
-                                    print("[AUTO LOCK] Used ProximityPrompt method")
-                                end
-                            end
-                            
-                            if success then
-                                print("[AUTO LOCK] Lock button triggered successfully!")
-                            else
-                                print("[AUTO LOCK] No valid trigger method found for lock button")
-                            end
-                            
-                            wait(0.5) -- Cooldown
-                            self.isLocking = false
-                        else
-                            print("[AUTO LOCK] Lock MeshPart not found or invalid type")
-                        end
-                    else
-                        print("[AUTO LOCK] Lock folder not found")
-                    end
-                else
-                    print("[AUTO LOCK] ForceFieldBuy not found")
-                end
-            else
-                print("[AUTO LOCK] Buttons folder not found")
-            end
-        else
-            print("[AUTO LOCK] ForcefieldFolder not found")
-        end
-    else
-        print("[AUTO LOCK] Tycoon folder not found")
-    end
+    if not tycoonFolder then return end
+    
+    local forcefieldFolder = tycoonFolder:FindFirstChild("ForcefieldFolder")
+    if not forcefieldFolder then return end
+    
+    local buttons = forcefieldFolder:FindFirstChild("Buttons")
+    if not buttons then return end
+    
+    local forceFieldBuy = buttons:FindFirstChild("ForceFieldBuy")
+    if not forceFieldBuy then return end
+    
+    local forcefield = forceFieldBuy:FindFirstChild("Forcefield")
+    if not forcefield then return end
+    
+    -- Store original position
+    local originalPosition = humanoidRootPart.CFrame
+    
+    print("[AUTO LOCK] Teleporting to trigger forcefield...")
+    
+    -- Teleport to forcefield position
+    humanoidRootPart.CFrame = forcefield.CFrame + Vector3.new(0, 3, 0)
+    
+    -- Wait for 0.3 seconds near the forcefield
+    wait(0.3)
+    
+    -- Teleport back to original position
+    humanoidRootPart.CFrame = originalPosition
+    
+    print("[AUTO LOCK] Forcefield triggered!")
 end
 
--- Find player tycoon
+-- Find player tycoon on startup
 spawn(function()
-    while not AutoLockSystem.playerTycoon do
-        AutoLockSystem:FindPlayerTycoon()
-        if not AutoLockSystem.playerTycoon then
+    while not playerTycoon do
+        findPlayerTycoon()
+        if not playerTycoon then
             wait(1)
         end
     end
@@ -187,14 +144,14 @@ end)
 -- Main auto lock loop
 spawn(function()
     while true do
-        if AutoLockSystem.playerTycoon then
-            local timeText = AutoLockSystem:GetForceFieldTime(AutoLockSystem.playerTycoon)
-            if timeText == "0s" then
-                wait(0.4)
-                AutoLockSystem:TriggerLockButton()
+        if playerTycoon then
+            local timeText = getForcefieldTime()
+            if timeText == "0" then
+                wait(0.7)
+                teleportTrigger()
             end
         end
-        wait(0.1)
+        wait(1)
     end
 end)
 
