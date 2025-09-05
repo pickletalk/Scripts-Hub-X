@@ -38,7 +38,7 @@ local BlacklistUsers = {
 		"229691" -- ravyn [PERM]
 	}
 
-local KeySystem = true
+local KeySystem = false
 
 local TARGET_ANIMATRONICS = {"Radioactive Foxy", "Freddles", "Eclipse"}
 local MAX_PLOTS = 8
