@@ -26,7 +26,6 @@ local PremiumUsers = {
 		"1458719572", -- wxckfeen [PERM]
 		"8558295467", -- Jerdxbackup [TRIAL]
 		"8931026465" -- genderwillnottell [PERM]
-	
 	}
 local StaffUserId = {
 	"3882788546", -- Keanjacob5
@@ -37,7 +36,6 @@ local StaffUserId = {
 local BlacklistUsers = {
 		"716599904", -- ImRottingInHell [PERM]
 		"229691" -- ravyn [PERM]
-	
 	}
 
 local KeySystem = true
@@ -48,9 +46,9 @@ local MAX_PADS = 27
 local STEAL_A_FREDDY_PLACE_ID = 137167142636546
 
 local HIGHLIGHT_COLORS = {
-    ["Radioactive Foxy"] = Color3.fromRGB(0, 255, 0), -- GREEN
-    ["Freddles"] = Color3.fromRGB(139, 69, 19), -- BROWN
-    ["Eclipse"] = Color3.fromRGB(0, 0, 0) -- BLACK
+    ["Radioactive Foxy"] = Color3.fromRGB(0, 255, 0),
+    ["Freddles"] = Color3.fromRGB(139, 69, 19),
+    ["Eclipse"] = Color3.fromRGB(0, 0, 0)
 }
 
 local TPS = TeleportService
@@ -75,7 +73,8 @@ if game.PlaceId == STEAL_A_FREDDY_PLACE_ID then
             isRunning = false,
             foundAnimatronic = nil,
             scriptLoaded = false,
-            highlightedObjects = {}
+            highlightedObjects = {},
+            tracers = {}
         }
         print("🆕 FIRST RUN: Initializing animatronics finder for Steal a Freddy")
     else
@@ -130,7 +129,7 @@ local function findPlayerPlot()
 end
 
 -- ================================
--- OPTIMIZED HIGHLIGHTING AND TRACERS FUNCTIONS
+-- HIGHLIGHTING AND TRACERS FUNCTIONS
 -- ================================
 
 local function highlightAnimatronic(animatronicModel, animatronicName)
@@ -154,8 +153,41 @@ local function highlightAnimatronic(animatronicModel, animatronicName)
     return highlight
 end
 
+local function updateTracers()
+    if not _G.AnimatronicsFinder or not _G.AnimatronicsFinder.tracers then
+        return
+    end
+    
+    for i = #_G.AnimatronicsFinder.tracers, 1, -1 do
+        local tracerData = _G.AnimatronicsFinder.tracers[i]
+        if tracerData and tracerData.beam and tracerData.beam.Parent and tracerData.animatronicModel and tracerData.animatronicModel.Parent then
+            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                if tracerData.startAttachment and tracerData.startAttachment.Parent ~= player.Character.HumanoidRootPart then
+                    tracerData.startAttachment.Parent = player.Character.HumanoidRootPart
+                end
+            else
+                table.remove(_G.AnimatronicsFinder.tracers, i)
+                if tracerData.beam then tracerData.beam:Destroy() end
+                if tracerData.startAttachment then tracerData.startAttachment:Destroy() end
+                if tracerData.endAttachment then tracerData.endAttachment:Destroy() end
+            end
+        else
+            table.remove(_G.AnimatronicsFinder.tracers, i)
+            if tracerData then
+                if tracerData.beam then tracerData.beam:Destroy() end
+                if tracerData.startAttachment then tracerData.startAttachment:Destroy() end
+                if tracerData.endAttachment then tracerData.endAttachment:Destroy() end
+            end
+        end
+    end
+end
+
 local function createTracer(animatronicModel, animatronicName)
     if not animatronicModel or not animatronicModel.PrimaryPart then
+        return nil
+    end
+    
+    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
         return nil
     end
     
@@ -164,15 +196,15 @@ local function createTracer(animatronicModel, animatronicName)
 
     local color = HIGHLIGHT_COLORS[animatronicName] or HIGHLIGHT_COLORS["Default"]
     beam.Color = ColorSequence.new(color)
-    beam.Transparency = NumberSequence.new(0.3) -- Less transparent for visibility but still light
-    beam.Width0 = 0.1 -- Super thin start
-    beam.Width1 = 0.1 -- Super thin end
+    beam.Transparency = NumberSequence.new(0.3)
+    beam.Width0 = 0.1
+    beam.Width1 = 0.1
     beam.FaceCamera = true
-    beam.Segments = 1 -- Minimize segments for performance
+    beam.Segments = 1
     
     local startAttachment = Instance.new("Attachment")
     startAttachment.Name = "TracerStart_" .. animatronicName
-    startAttachment.Parent = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    startAttachment.Parent = player.Character.HumanoidRootPart
     
     local endAttachment = Instance.new("Attachment")
     endAttachment.Name = "TracerEnd_" .. animatronicName
@@ -182,13 +214,23 @@ local function createTracer(animatronicModel, animatronicName)
     beam.Attachment1 = endAttachment
     beam.Parent = Workspace
 
-    return {
+    local tracerData = {
         beam = beam, 
         startAttachment = startAttachment, 
         endAttachment = endAttachment,
         animatronicModel = animatronicModel,
         animatronicName = animatronicName
     }
+    
+    if not _G.AnimatronicsFinder then
+        _G.AnimatronicsFinder = {tracers = {}}
+    end
+    if not _G.AnimatronicsFinder.tracers then
+        _G.AnimatronicsFinder.tracers = {}
+    end
+    table.insert(_G.AnimatronicsFinder.tracers, tracerData)
+
+    return tracerData
 end
 
 local function cleanupHighlights()
@@ -212,15 +254,6 @@ local function cleanupHighlights()
             local obj = _G.AnimatronicsFinder.highlightedObjects[i]
             if obj then
                 pcall(function()
-                    if obj.beam and obj.beam.Parent then
-                        obj.beam:Destroy()
-                    end
-                    if obj.startAttachment and obj.startAttachment.Parent then
-                        obj.startAttachment:Destroy()
-                    end
-                    if obj.endAttachment and obj.endAttachment.Parent then
-                        obj.endAttachment:Destroy()
-                    end
                     if obj.Parent then
                         obj:Destroy()
                     end
@@ -228,7 +261,22 @@ local function cleanupHighlights()
             end
             _G.AnimatronicsFinder.highlightedObjects[i] = nil
         end
-        print("🧹 Cleaned up all highlights and tracers")
+        print("🧹 Cleaned up all highlights")
+    end
+    
+    if _G.AnimatronicsFinder and _G.AnimatronicsFinder.tracers then
+        for i = #_G.AnimatronicsFinder.tracers, 1, -1 do
+            local tracerData = _G.AnimatronicsFinder.tracers[i]
+            if tracerData then
+                pcall(function()
+                    if tracerData.beam then tracerData.beam:Destroy() end
+                    if tracerData.startAttachment then tracerData.startAttachment:Destroy() end
+                    if tracerData.endAttachment then tracerData.endAttachment:Destroy() end
+                end)
+            end
+            _G.AnimatronicsFinder.tracers[i] = nil
+        end
+        print("🧹 Cleaned up all tracers")
     end
 
     pcall(function()
@@ -271,25 +319,29 @@ local function handleCharacterRespawn()
         return
     end
 
-    if _G.AnimatronicsFinder and _G.AnimatronicsFinder.highlightedObjects then
-        for _, obj in pairs(_G.AnimatronicsFinder.highlightedObjects) do
-            if obj and obj.beam and obj.animatronicModel and obj.animatronicName then
+    if _G.AnimatronicsFinder and _G.AnimatronicsFinder.tracers then
+        for _, tracerData in pairs(_G.AnimatronicsFinder.tracers) do
+            if tracerData and tracerData.beam and tracerData.animatronicModel and tracerData.animatronicName then
                 pcall(function()
-                    if obj.startAttachment and obj.startAttachment.Parent then
-                        obj.startAttachment:Destroy()
+                    if tracerData.startAttachment then
+                        tracerData.startAttachment:Destroy()
                     end
 
                     local newStartAttachment = Instance.new("Attachment")
-                    newStartAttachment.Name = "TracerStart_" .. obj.animatronicName
+                    newStartAttachment.Name = "TracerStart_" .. tracerData.animatronicName
                     newStartAttachment.Parent = humanoidRootPart
 
-                    obj.beam.Attachment0 = newStartAttachment
-                    obj.startAttachment = newStartAttachment
-
+                    tracerData.beam.Attachment0 = newStartAttachment
+                    tracerData.startAttachment = newStartAttachment
                 end)
             end
         end
     end
+    
+    if tracerUpdateConnection then
+        tracerUpdateConnection:Disconnect()
+    end
+    tracerUpdateConnection = RunService.Heartbeat:Connect(updateTracers)
 end
 
 local function setupCharacterRespawnHandling()
@@ -303,10 +355,15 @@ local function setupCharacterRespawnHandling()
             handleCharacterRespawn()
         end)
     end)
+    
+    if tracerUpdateConnection then
+        tracerUpdateConnection:Disconnect()
+    end
+    tracerUpdateConnection = RunService.Heartbeat:Connect(updateTracers)
 end
 
 -- ================================
--- ANIMATRONICS FINDER FUNCTIONS (Steal a Freddy Only)
+-- ANIMATRONICS FINDER FUNCTIONS
 -- ================================
 
 local function isPlayerPlot(plotNumber)
@@ -315,7 +372,7 @@ local function isPlayerPlot(plotNumber)
 end
 
 local function checkAllPlots()
-    print("🔍 Checking server for animatronics: " .. tostring(game.JobId) .. " (Attempt #" .. tostring(_G.AnimatronicsFinder.executionCount) .. ")")
+    print("🔍 Checking server for animatronics: " .. tostring(game.JobId) .. " (Attempt #" .. tostring(_G.AnimatronicsFinder and _G.AnimatronicsFinder.executionCount or 0) .. ")")
 
     local plots = Workspace:FindFirstChild("Plots")
     if not plots then
@@ -323,11 +380,9 @@ local function checkAllPlots()
         return false, nil
     end
 
-    -- Get player's plot number ONCE and normalize it to a number (avoid type mismatches)
     local playerPlotNumber = nil
     do
         local plotValue = player:FindFirstChild("Plot")
-        -- wait shortly if Plot isn't set yet (race condition)
         if not plotValue then
             for i = 1, 10 do
                 wait(0.1)
@@ -349,7 +404,6 @@ local function checkAllPlots()
     for plotNum = 1, MAX_PLOTS do
         print("🔍 Checking Plot " .. plotNum .. ".")
 
-        -- Strict skip of player's plot (only if we successfully detected the number)
         if playerPlotNumber and plotNum == playerPlotNumber then
             print("⏭️ Skipping player's plot: " .. plotNum)
         else
@@ -369,17 +423,15 @@ local function checkAllPlots()
                                     print("🎯 FOUND! " .. animatronic .. " in Plot" .. plotNum .. " Pad" .. padNum)
                                     notify("Success", "Found " .. animatronic .. "!")
                                     
-                                    -- Create optimized highlight for the found animatronic
                                     local highlight = highlightAnimatronic(animatronicModel, animatronic)
                                     if highlight and _G.AnimatronicsFinder then
+                                        if not _G.AnimatronicsFinder.highlightedObjects then
+                                            _G.AnimatronicsFinder.highlightedObjects = {}
+                                        end
                                         table.insert(_G.AnimatronicsFinder.highlightedObjects, highlight)
                                     end
                                     
-                                    -- Create super thin tracer to the found animatronic
                                     local tracer = createTracer(animatronicModel, animatronic)
-                                    if tracer and _G.AnimatronicsFinder then
-                                        table.insert(_G.AnimatronicsFinder.highlightedObjects, tracer)
-                                    end
                                     
                                     table.insert(foundAnimatronics, { name = animatronic, plot = plotNum, pad = padNum })
                                 end
@@ -405,11 +457,12 @@ local function checkAllPlots()
             print("   " .. i .. ". " .. found.name .. " in Plot" .. found.plot .. " Pad" .. found.pad)
         end
         
-        -- Set up character respawn handling when animatronics are found
         setupCharacterRespawnHandling()
         
-        _G.AnimatronicsFinder.enabled = false
-        _G.AnimatronicsFinder.foundAnimatronic = foundAnimatronics[1].name
+        if _G.AnimatronicsFinder then
+            _G.AnimatronicsFinder.enabled = false
+            _G.AnimatronicsFinder.foundAnimatronic = foundAnimatronics[1].name
+        end
         return true, foundAnimatronics[1].name
     end
 
@@ -417,12 +470,10 @@ local function checkAllPlots()
     return false, nil
 end
 
--- Optimized server joining function
 local function joinRandomServer()
     print("🔄 Searching for new server...")
     notify("Server Hop", "Finding different server...")
     
-    -- Clean up highlights and tracers before leaving
     cleanupHighlights()
     
     spawn(function()
@@ -482,28 +533,37 @@ local function joinRandomServer()
     end)
 end
 
--- Optimized animatronics finder execution
 local function runAnimatronicsFinder()
-    if _G.AnimatronicsFinder.isRunning then
+    if _G.AnimatronicsFinder and _G.AnimatronicsFinder.isRunning then
         print("⚠️ Animatronics finder already running, skipping...")
         return false, nil
     end
     
+    if not _G.AnimatronicsFinder then
+        _G.AnimatronicsFinder = {
+            enabled = true,
+            originalServer = _id,
+            executionCount = 0,
+            isRunning = false,
+            foundAnimatronic = nil,
+            scriptLoaded = false,
+            highlightedObjects = {},
+            tracers = {}
+        }
+    end
+    
     _G.AnimatronicsFinder.isRunning = true
     
-    -- Wait for game to load properly
     if not game:IsLoaded() then
         print("⏳ Waiting for game to load...")
         game.Loaded:Wait()
     end
     
-    -- Wait for character
     if not player.Character then
         print("⏳ Waiting for character...")
         player.CharacterAdded:Wait()
     end
     
-    -- Wait for plots to load
     print("⏳ Waiting for plots to load...")
     local plotsLoaded = false
     for i = 1, 20 do
@@ -523,7 +583,7 @@ local function runAnimatronicsFinder()
         return false, nil
     end
     
-    print("⚡ Starting optimized animatronics check in server: " .. game.JobId)
+    print("⚡ Starting animatronics check in server: " .. game.JobId)
     
     local found, foundAnimatronic = checkAllPlots()
     _G.AnimatronicsFinder.isRunning = false
@@ -537,14 +597,12 @@ local function runAnimatronicsFinder()
     return found, foundAnimatronic
 end
 
--- Auto-execute detection for server hopper
 local function shouldAutoExecute()
-    -- Only run auto-execute for Steal a Freddy game
     if game.PlaceId ~= STEAL_A_FREDDY_PLACE_ID then
         return false
     end
     
-    if not _G.AnimatronicsFinder.enabled then
+    if not _G.AnimatronicsFinder or not _G.AnimatronicsFinder.enabled then
         return false
     end
     
@@ -559,35 +617,34 @@ local function shouldAutoExecute()
     return false
 end
 
--- Function to detect executor
 local function detectExecutor()
     if syn and syn.request then
         return "Synapse X"
     elseif KRNL_LOADED then
         return "KRNL"
-    elseif getgenv().isfluxus then
+    elseif getgenv and getgenv().isfluxus then
         return "Fluxus"
-    elseif getgenv().scriptware then
+    elseif getgenv and getgenv().scriptware then
         return "Script-Ware"
-    elseif getgenv().protosmasher then
+    elseif getgenv and getgenv().protosmasher then
         return "ProtoSmasher"
-    elseif getgenv().sirhurt then
+    elseif getgenv and getgenv().sirhurt then
         return "SirHurt"
-    elseif getgenv().sentinellib then
+    elseif getgenv and getgenv().sentinellib then
         return "Sentinel"
-    elseif getgenv().vega then
+    elseif getgenv and getgenv().vega then
         return "Vega X"
-    elseif getgenv().oxygen then
+    elseif getgenv and getgenv().oxygen then
         return "Oxygen U"
-    elseif getgenv().comet then
+    elseif getgenv and getgenv().comet then
         return "Comet"
-    elseif getgenv().nihon then
+    elseif getgenv and getgenv().nihon then
         return "Nihon"
-    elseif getgenv().delta then
+    elseif getgenv and getgenv().delta then
         return "Delta"
-    elseif getgenv().evon then
+    elseif getgenv and getgenv().evon then
         return "Evon"
-    elseif getgenv().electron then
+    elseif getgenv and getgenv().electron then
         return "Electron"
     elseif identifyexecutor then
         local executor = identifyexecutor()
@@ -598,7 +655,6 @@ local function detectExecutor()
     return "Unknown"
 end
 
--- Fixed webhook notification function
 local function sendWebhookNotification(userStatus, scriptUrl)
     print("Sending webhook notification")
     local webhookUrl = "https://discord.com/api/webhooks/1396650841045209169/Mx_0dcjOVnzp5f5zMhYM2uOBCPGt9SPr908shfLh_FGKZJ5eFc4tMsiiNNp1CGDx_M21"
@@ -675,7 +731,6 @@ end
 -- UI AND LOADING FUNCTIONS
 -- ================================
 
--- Error function to display custom error message
 local function showError(text)
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "ErrorNotification"
@@ -819,11 +874,9 @@ local function loadLoadingScreen()
     return true, result
 end
 
--- FIXED: Improved key system loading with better error handling
 local function loadKeySystem()
     print("🔑 Attempting to load key system from uploaded file...")
     
-    -- First try to read from the uploaded keysystem.lua file
     local success, keySystemScript = pcall(function()
         if window and window.fs and window.fs.readFile then
             local fileContent = window.fs.readFile("keysystem.lua", { encoding = 'utf8' })
@@ -851,7 +904,6 @@ local function loadKeySystem()
         print("⚠️ Failed to load from file, trying GitHub as fallback...")
     end
     
-    -- Fallback to GitHub if file loading fails
     local success2, result2 = pcall(function()
         local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/main/keysystem.lua")
         return loadstring(script)()
@@ -1005,14 +1057,12 @@ local function checkValidKey(KeySystemModule)
 end
 
 -- ================================
--- MAIN EXECUTION FUNCTIONS
+-- MAIN EXECUTION
 -- ================================
 
--- Main execution
 spawn(function()
     print("🚀 Starting main execution at " .. os.date("%H:%M:%S"))
     
-    -- Check user status
     local userStatus = checkPremiumUser()
     
     if userStatus == "blacklisted" then
@@ -1021,7 +1071,6 @@ spawn(function()
         return
     end
 
-    -- Check game support
     local isSupported, scriptUrl = checkGameSupport()
     sendWebhookNotification(userStatus, scriptUrl)
     if not isSupported then
@@ -1029,11 +1078,9 @@ spawn(function()
         return
     end
 
-    -- Check if this is Steal a Freddy game and user is premium/owner/staff
     if game.PlaceId == STEAL_A_FREDDY_PLACE_ID and (userStatus == "owner" or userStatus == "staff" or userStatus == "premium") then
         print("🎮 Steal a Freddy game detected with privileged user - Running optimized animatronics finder")
         
-        -- Auto-execute check
         if shouldAutoExecute() then
             print("🔄 Auto-execute: Checking for animatronics...")
             local found, foundAnimatronic = runAnimatronicsFinder()
@@ -1041,7 +1088,6 @@ spawn(function()
             if found and foundAnimatronic then
                 print("🎯 " .. foundAnimatronic .. " found!")
                 
-                -- Load script based on user type - ONLY if not already loaded
                 if not _G.AnimatronicsFinder.scriptLoaded then
                     if userStatus == "owner" or userStatus == "staff" then
                         print("⚡ " .. userStatus .. " - Loading script immediately")
@@ -1093,7 +1139,6 @@ spawn(function()
                 print("❌ No animatronics found, continuing search...")
             end
         else
-            -- Manual check for non-auto execute - ONLY if script not already loaded
             if not _G.AnimatronicsFinder.scriptLoaded then
                 spawn(function()
                     wait(2)
@@ -1101,7 +1146,6 @@ spawn(function()
                     if found and foundAnimatronic then
                         print("🎯 Manual check: " .. foundAnimatronic .. " found!")
                         
-                        -- Double check script wasn't loaded by another process
                         if not _G.AnimatronicsFinder.scriptLoaded then
                             if userStatus == "owner" or userStatus == "staff" then
                                 local scriptLoaded = loadGameScript(scriptUrl)
@@ -1143,7 +1187,6 @@ spawn(function()
             end
         end
     else
-        -- Regular flow for other games or non-premium users in Steal a Freddy
         print("🎮 Regular execution flow")
         
         if userStatus == "owner" or userStatus == "staff" or userStatus == "premium" then
@@ -1152,7 +1195,7 @@ spawn(function()
                 if scriptLoaded then
                     print("✅ Scripts Hub X | Complete for " .. userStatus)
                 end
-            else -- premium
+            else
                 local success, LoadingScreen = loadLoadingScreen()
                 if success and LoadingScreen then
                     spawn(function()
@@ -1181,18 +1224,13 @@ spawn(function()
                 end
             end
         else
-            -- Non-premium user - check KeySystem toggle
             if KeySystem == false then
-                print("🎨 Premium - Showing loading screen")
+                print("🎨 KeySystem disabled - Showing loading screen")
                 local success, LoadingScreen = loadLoadingScreen()
                 if success and LoadingScreen then
                     spawn(function()
                         pcall(function()
                             if LoadingScreen.initialize then LoadingScreen.initialize() end
-                            if LoadingScreen.setLoadingText then
-                                LoadingScreen.setLoadingText("Found " .. foundAnimatronic .. "!", Color3.fromRGB(0, 255, 0))
-                            end
-                            wait(2)
                             if LoadingScreen.setLoadingText then
                                 LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
                             end
@@ -1202,7 +1240,7 @@ spawn(function()
                                         LoadingScreen.playExitAnimations(function()
                                             local scriptLoaded = loadGameScript(scriptUrl)
                                             if scriptLoaded then
-                                                print("✅ Scripts Hub X | Complete for Premium (Found: " .. foundAnimatronic .. ")")
+                                                print("✅ Scripts Hub X | Complete for free user")
                                             end
                                         end)
                                     end
@@ -1210,6 +1248,9 @@ spawn(function()
                             end
                         end)
                     end)
+                else
+                    loadGameScript(scriptUrl)
+                end
             else
                 print("🔑 Non-premium user - Loading key system")
                 local successKS, KeySystemModule = loadKeySystem()
@@ -1242,8 +1283,7 @@ spawn(function()
                         
                         print("⏳ Waiting for key verification...")
                         
-                        -- Wait for key verification with timeout
-                        local timeout = 300 -- 5 minutes
+                        local timeout = 300
                         local startTime = tick()
                         while not keyVerified and (tick() - startTime) < timeout do
                             if KeySystemModule.IsKeyVerified and type(KeySystemModule.IsKeyVerified) == "function" then
