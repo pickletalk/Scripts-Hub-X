@@ -671,7 +671,7 @@ end
 -- Main loop to continuously check for auto lock
 spawn(function()
     while true do
-        wait(2)
+        wait(1)
         autoLock()
     end
 end)
@@ -1023,7 +1023,7 @@ end
 local function onDescendantAdded(descendant)
     if descendant:IsA("ProximityPrompt") then
         -- Small delay to ensure the prompt is fully initialized
-        wait(0.1)
+        wait(1)
         modifyProximityPrompt(descendant)
     end
 end
