@@ -17,10 +17,6 @@ local humanoid = character:WaitForChild("Humanoid")
 -- ========================================
 -- AUTO LOCK SYSTEM - TELEPORT TRIGGER
 -- ========================================
-
-local localPlayer = game.Players.LocalPlayer
-local workspace = game:GetService("Workspace")
-
 local playerTycoon = nil
 
 -- Function to find player's tycoon
@@ -146,7 +142,7 @@ spawn(function()
     while true do
         if playerTycoon then
             local timeText = getForcefieldTime()
-            if timeText == "0" then
+            if timeText == "0s" then
                 wait(0.7)
                 teleportTrigger()
             end
@@ -156,10 +152,8 @@ spawn(function()
 end)
 
 -- ========================================
--- FISH TELEPORTER UI (BASED ON FREDDY UI)
+-- FIXED FISH TELEPORTER UI
 -- ========================================
-local playerGui = localPlayer:WaitForChild("PlayerGui")
-
 -- Create ScreenGui
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "FishTeleporterUI"
@@ -279,90 +273,176 @@ titleBar.InputChanged:Connect(function(input)
     end
 end)
 
--- Fish stealing function using the existing FindPlayerTycoon system
+-- Player tycoon finding system
+local playerTycoon = nil
+
+local function findPlayerTycoon()
+    local username = localPlayer.Name
+    
+    for i = 1, 8 do
+        local tycoonName = "Tycoon" .. i
+        local tycoonPath = Workspace.Map.Tycoons:FindFirstChild(tycoonName)
+        
+        if tycoonPath then
+            local tycoonFolder = tycoonPath:FindFirstChild("Tycoon")
+            if tycoonFolder then
+                local board = tycoonFolder:FindFirstChild("Board")
+                if board then
+                    local boardPart = board:FindFirstChild("Board")
+                    if boardPart then
+                        local surfaceGui = boardPart:FindFirstChild("SurfaceGui")
+                        if surfaceGui then
+                            local usernameLabel = surfaceGui:FindFirstChild("Username")
+                            if usernameLabel and usernameLabel.Text == username then
+                                playerTycoon = tycoonName
+                                return tycoonName
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    return nil
+end
+
+-- Find player tycoon on startup
+spawn(function()
+    while not playerTycoon do
+        findPlayerTycoon()
+        if not playerTycoon then
+            wait(1)
+        end
+    end
+end)
+
+-- Fixed fish stealing function
 local function stealFish()
     local running = false
     local root
-
+    
     local function setError(partName)
         running = false
         teleportButton.BackgroundColor3 = Color3.fromRGB(150, 30, 30)
-        teleportButton.Text = ("🐟 ERROR ON %s 🐟"):format(partName)
-        task.wait(1.5)
+        teleportButton.Text = ("🐟 ERROR: %s 🐟"):format(partName)
+        wait(2)
         teleportButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
         teleportButton.Text = "🐟 STEAL 🐟"
     end
-
-    local ok, err = pcall(function()
-        teleportButton.Text = "🐟 STEALING CUH!... 🐟"
-
-        root = localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if not root then return setError("HumanoidRootPart") end
-
+    
+    -- Prevent multiple clicks while running
+    if running then return end
+    running = true
+    
+    local success, errorMessage = pcall(function()
+        teleportButton.Text = "🐟 STEALING... 🐟"
+        
+        -- Check for character and root part
+        local character = localPlayer.Character
+        if not character then 
+            setError("NO CHARACTER")
+            return
+        end
+        
+        root = character:FindFirstChild("HumanoidRootPart")
+        if not root then 
+            setError("NO ROOT PART")
+            return
+        end
+        
         -- Ocean-wave RGB animation
-        running = true
-        task.spawn(function()
+        spawn(function()
             local t = 0
             while running do
-                t += 0.03
-                local r = math.floor((math.sin(t)     * 0.5 + 0.5) * 60)
+                t = t + 0.03
+                local r = math.floor((math.sin(t) * 0.5 + 0.5) * 60)
                 local g = math.floor((math.sin(t + 2) * 0.5 + 0.5) * 60)
                 local b = math.floor((math.sin(t + 4) * 0.5 + 0.5) * 120 + 60)
                 teleportButton.BackgroundColor3 = Color3.fromRGB(r, g, b)
-                task.wait(0.03)
+                wait(0.03)
             end
         end)
-
-        -- Find player tycoon using the existing system
-        if not AutoLockSystem.playerTycoon then
-            return setError("PlayerTycoon")
+        
+        -- Find player tycoon
+        if not playerTycoon then
+            findPlayerTycoon()
         end
-
-        local tycoonPath = Workspace.Map.Tycoons:FindFirstChild(AutoLockSystem.playerTycoon)
-        if not tycoonPath then return setError("TycoonPath") end
-
+        
+        if not playerTycoon then
+            setError("NO TYCOON FOUND")
+            return
+        end
+        
+        local tycoonPath = Workspace.Map.Tycoons:FindFirstChild(playerTycoon)
+        if not tycoonPath then 
+            setError("TYCOON PATH")
+            return
+        end
+        
         local tycoonFolder = tycoonPath:FindFirstChild("Tycoon")
-        if not tycoonFolder then return setError("TycoonFolder") end
-
+        if not tycoonFolder then 
+            setError("TYCOON FOLDER")
+            return
+        end
+        
         local collectZone = tycoonFolder:FindFirstChild("CollectZone")
-        if not collectZone then return setError("CollectZone") end
-
+        if not collectZone then 
+            setError("COLLECT ZONE")
+            return
+        end
+        
         local collectPart = collectZone:FindFirstChild("CollectPart")
-        if not collectPart then return setError("CollectPart") end
-
+        if not collectPart then 
+            setError("COLLECT PART")
+            return
+        end
+        
+        -- Try to fire touch interest
         local touchInterest = collectPart:FindFirstChild("TouchInterest")
-        if not touchInterest then return setError("TouchInterest") end
-
-        -- Fire the TouchInterest
-        firetouchinterest(collectPart, root, 0)
-        task.wait(0.1)
-        firetouchinterest(collectPart, root, 1)
-
-        teleportButton.Text = "🐟 FISH STEALED! 🐟"
-
+        if touchInterest then
+            print("[FISH STEAL] Using TouchInterest method")
+            for i = 1, 3 do
+                firetouchinterest(collectPart, root, 0)
+                wait(0.1)
+                firetouchinterest(collectPart, root, 1)
+                wait(0.1)
+            end
+        else
+            -- Alternative: Try proximity prompt
+            local proximityPrompt = collectPart:FindFirstChild("ProximityPrompt")
+            if proximityPrompt then
+                print("[FISH STEAL] Using ProximityPrompt method")
+                for i = 1, 3 do
+                    fireproximityprompt(proximityPrompt)
+                    wait(0.2)
+                end
+            else
+                setError("NO TRIGGER METHOD")
+                return
+            end
+        end
+        
         running = false
-
-        -- Flash animation
+        teleportButton.Text = "🐟 FISH STOLEN! 🐟"
+        
+        -- Success flash animation
         local blue = Color3.fromRGB(70, 130, 180)
         local black = Color3.fromRGB(0, 0, 0)
         for i = 1, 3 do
             teleportButton.BackgroundColor3 = blue
-            task.wait(0.15)
+            wait(0.15)
             teleportButton.BackgroundColor3 = black
-            task.wait(0.15)
+            wait(0.15)
         end
-
+        
         teleportButton.BackgroundColor3 = black
-        teleportButton.Text = "🐟 FISH 🐟"
-    end)
-
-    if not ok then
-        running = false
-        teleportButton.BackgroundColor3 = Color3.fromRGB(150, 30, 30)
-        teleportButton.Text = "🐟 ERROR ON INTERNAL 🐟"
-        task.wait(1.5)
-        teleportButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
         teleportButton.Text = "🐟 STEAL 🐟"
+    end)
+    
+    if not success then
+        print("[FISH STEAL] Error occurred:", errorMessage)
+        setError("SCRIPT ERROR")
     end
 end
 
