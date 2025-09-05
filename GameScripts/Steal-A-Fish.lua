@@ -466,30 +466,6 @@ end
 addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
 
 -- ========================================
--- FAST INTERACTION SYSTEM
--- ========================================
-
--- Set all existing ProximityPrompts to instant
-local function SetupFastInteraction()
-    for _, prompt in pairs(Workspace:GetDescendants()) do
-        if prompt:IsA("ProximityPrompt") then
-            prompt.HoldDuration = 0
-            prompt.KeyboardKeyCode = Enum.KeyCode.E
-        end
-    end
-end
-
--- Monitor new ProximityPrompts
-local function MonitorNewPrompts()
-    Workspace.DescendantAdded:Connect(function(descendant)
-        if descendant:IsA("ProximityPrompt") then
-            descendant.HoldDuration = 0
-            descendant.KeyboardKeyCode = Enum.KeyCode.E
-        end
-    end)
-end
-
--- ========================================
 -- ENHANCED ANTI-CHEAT NOCLIP FOR STEAL-A-FISH
 -- ========================================
 local Players = game:GetService("Players")
@@ -497,7 +473,7 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 local localPlayer = Players.LocalPlayer
-local ANTI_CHEAT_THRESHOLD = 8 -- If moved more than 8 studs instantly, it's anti-cheat
+local ANTI_CHEAT_THRESHOLD = 10 -- If moved more than 8 studs instantly, it's anti-cheat
 local RAY_LENGTH = 100
 
 local character, humanoid, hrp
@@ -645,17 +621,18 @@ local function ultraFastTeleport(targetPosition)
     end)
 end
 
--- Function to apply noclip to character
-local function applyNoclip(char)
+-- Function to apply natural noclip to character
+local function applyNaturalNoclip(char)
     for _, v in ipairs(char:GetDescendants()) do
-        if v:IsA("BasePart") then
+        if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
+            -- Only disable collision for non-HumanoidRootPart parts
             v.CanCollide = false
         end
     end
     
     -- Handle new parts added to character
     char.DescendantAdded:Connect(function(v)
-        if v:IsA("BasePart") then
+        if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
             v.CanCollide = false
         end
     end)
@@ -689,30 +666,6 @@ local function isNearForcefieldButton(position)
     end
     
     return false
-end
-
--- Refresh character references
-local function refreshCharacter()
-    character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
-    humanoid = character:WaitForChild("Humanoid")
-    hrp = character:WaitForChild("HumanoidRootPart")
-    
-    -- Reset animation variables
-    runningAnimation = nil
-    animationTrack = nil
-    isAnimating = false
-    
-    applyNoclip(character)
-    
-    -- Reset position tracking
-    lastValidPosition = hrp.Position
-    currentPosition = hrp.Position
-    positionHistory = {}
-    
-    -- Fill initial position history
-    for i = 1, historySize do
-        positionHistory[i] = hrp.Position
-    end
 end
 
 -- Update position history
@@ -771,11 +724,17 @@ local function detectAntiCheatSnapback(newPos, oldPos)
     return false
 end
 
--- Floor raycast check to prevent falling through ground
+-- Improved floor raycast check to prevent falling and floating
 local function checkFloor()
-    if not hrp then return end
+    if not hrp or not humanoid then return end
     
-    local rayOrigin = hrp.Position
+    -- Only check floor if player is not jumping or falling naturally
+    if humanoid:GetState() == Enum.HumanoidStateType.Freefall or 
+       humanoid:GetState() == Enum.HumanoidStateType.Jumping then
+        return
+    end
+    
+    local rayOrigin = hrp.Position + Vector3.new(0, 1, 0) -- Start ray slightly above
     local rayDirection = Vector3.new(0, -RAY_LENGTH, 0)
     local rayParams = RaycastParams.new()
     rayParams.FilterDescendantsInstances = {character}
@@ -784,12 +743,54 @@ local function checkFloor()
     local result = workspace:Raycast(rayOrigin, rayDirection, rayParams)
     if result then
         local floorY = result.Position.Y
-        -- If player is below floor, move them up
-        if hrp.Position.Y < floorY + 3 then
-            local correctedPos = Vector3.new(hrp.Position.X, floorY + 3, hrp.Position.Z)
-            ultraFastTeleport(correctedPos)
+        local playerY = hrp.Position.Y
+        local humanoidHeight = 5 -- Approximate humanoid height
+        
+        -- If player is significantly below floor (fell through)
+        if playerY < floorY - 2 then
+            local correctedPos = Vector3.new(hrp.Position.X, floorY + humanoidHeight/2, hrp.Position.Z)
+            hrp.CFrame = CFrame.new(correctedPos, correctedPos + hrp.CFrame.LookVector)
+            hrp.Velocity = Vector3.new(hrp.Velocity.X, 0, hrp.Velocity.Z) -- Keep horizontal movement
             lastValidPosition = correctedPos
         end
+        -- If player is floating too high above ground (only when walking)
+        elseif playerY > floorY + humanoidHeight + 2 and humanoid.MoveDirection.Magnitude > 0 then
+            -- Gently bring player down to ground level
+            local targetY = floorY + humanoidHeight/2
+            local currentY = hrp.Position.Y
+            local newY = currentY - math.min(2, currentY - targetY) -- Gradual descent
+            
+            hrp.CFrame = CFrame.new(hrp.Position.X, newY, hrp.Position.Z, hrp.CFrame.LookVector.X, 0, hrp.CFrame.LookVector.Z)
+        end
+    else
+        -- No floor detected - player might be in void, teleport to last valid position
+        if hrp.Position.Y < -100 then
+            ultraFastTeleport(lastValidPosition)
+        end
+    end
+end
+
+-- Refresh character references
+local function refreshCharacter()
+    character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
+    humanoid = character:WaitForChild("Humanoid")
+    hrp = character:WaitForChild("HumanoidRootPart")
+    
+    -- Reset animation variables
+    runningAnimation = nil
+    animationTrack = nil
+    isAnimating = false
+    
+    applyNaturalNoclip(character)  -- Use natural noclip
+    
+    -- Reset position tracking
+    lastValidPosition = hrp.Position
+    currentPosition = hrp.Position
+    positionHistory = {}
+    
+    -- Fill initial position history
+    for i = 1, historySize do
+        positionHistory[i] = hrp.Position
     end
 end
 
@@ -805,9 +806,9 @@ end)
 RunService.Heartbeat:Connect(function()
     if not hrp or not character then return end
     
-    -- Continuously apply noclip
+    -- Apply natural noclip (keep HumanoidRootPart collision enabled for ground detection)
     for _, v in ipairs(character:GetDescendants()) do
-        if v:IsA("BasePart") and v.CanCollide then
+        if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" and v.CanCollide then
             v.CanCollide = false
         end
     end
@@ -857,7 +858,7 @@ RunService.Heartbeat:Connect(function()
         updatePositionHistory(currentPosition)
     end
     
-    -- Floor check to prevent falling
+    -- Improved floor check to prevent falling and floating
     checkFloor()
 end)
 
