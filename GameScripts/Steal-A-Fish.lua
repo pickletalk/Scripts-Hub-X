@@ -116,7 +116,7 @@ local function teleportTrigger()
     print("[AUTO LOCK] Teleporting to trigger forcefield...")
     
     -- Teleport to forcefield position
-    humanoidRootPart.CFrame = forcefield.CFrame + Vector3.new(0, 5, 0)
+    humanoidRootPart.CFrame = forcefield.CFrame + Vector3.new(0, 0, 0)
     
     -- Wait for 0.5 seconds near the forcefield
     wait(0.8)
@@ -983,3 +983,115 @@ spawn(function()
         end
     end
 end)
+
+-- ========================================
+-- FORCEFIELD TIMER CHANGER - ALL TYCOONS EXCEPT PLAYER
+-- ========================================
+
+local workspace = game:GetService("Workspace")
+
+-- Function to change forcefield timer text to "0s" for a specific tycoon
+local function changeForcefieldTimer(tycoonName)
+    local tycoonPath = workspace.Map.Tycoons:FindFirstChild(tycoonName)
+    if not tycoonPath then 
+        print("[TIMER CHANGER] Tycoon not found:", tycoonName)
+        return false
+    end
+    
+    local tycoonFolder = tycoonPath:FindFirstChild("Tycoon")
+    if not tycoonFolder then 
+        print("[TIMER CHANGER] Tycoon folder not found for:", tycoonName)
+        return false
+    end
+    
+    local forcefieldFolder = tycoonFolder:FindFirstChild("ForcefieldFolder")
+    if not forcefieldFolder then 
+        print("[TIMER CHANGER] ForcefieldFolder not found for:", tycoonName)
+        return false
+    end
+    
+    local screen = forcefieldFolder:FindFirstChild("Screen")
+    if not screen then 
+        print("[TIMER CHANGER] Screen not found for:", tycoonName)
+        return false
+    end
+    
+    local screenPart = screen:FindFirstChild("Screen")
+    if not screenPart then 
+        print("[TIMER CHANGER] Screen part not found for:", tycoonName)
+        return false
+    end
+    
+    local surfaceGui = screenPart:FindFirstChild("SurfaceGui")
+    if not surfaceGui then 
+        print("[TIMER CHANGER] SurfaceGui not found for:", tycoonName)
+        return false
+    end
+    
+    local timeLabel = surfaceGui:FindFirstChild("Time")
+    if not timeLabel then 
+        print("[TIMER CHANGER] Time label not found for:", tycoonName)
+        return false
+    end
+    
+    -- Change the text to "0s"
+    local oldText = timeLabel.Text
+    timeLabel.Text = "0s"
+    
+    print("[TIMER CHANGER] Successfully changed", tycoonName, "timer from", oldText, "to 0s")
+    return true
+end
+
+-- Main function to change all tycoon timers except player's
+local function changeAllTimersExceptPlayer()
+    if not playerTycoon then
+        print("[TIMER CHANGER] Player tycoon not found! Cannot proceed.")
+        return
+    end
+    
+    print("[TIMER CHANGER] Starting timer change for all tycoons except player tycoon:", playerTycoon)
+    
+    local changedCount = 0
+    local totalTycoons = 0
+    
+    -- Loop through Tycoon1 to Tycoon8
+    for i = 1, 8 do
+        local tycoonName = "Tycoon" .. i
+        totalTycoons = totalTycoons + 1
+        
+        -- Skip the player's tycoon
+        if tycoonName ~= playerTycoon then
+            local success = changeForcefieldTimer(tycoonName)
+            if success then
+                changedCount = changedCount + 1
+            end
+        else
+            print("[TIMER CHANGER] Skipping player tycoon:", tycoonName)
+        end
+    end
+    
+    print("[TIMER CHANGER] Completed! Changed", changedCount, "out of", (totalTycoons - 1), "enemy tycoons")
+end
+
+-- Continuous loop to keep changing timers every 5 seconds
+spawn(function()
+    while true do
+        if playerTycoon then
+            changeAllTimersExceptPlayer()
+        else
+            print("[TIMER CHANGER] Waiting for player tycoon to be found...")
+        end
+        wait(3) -- Change timers every 5 seconds
+    end
+end)
+
+-- One-time execution function (call this manually if needed)
+local function executeOnce()
+    if playerTycoon then
+        changeAllTimersExceptPlayer()
+    else
+        print("[TIMER CHANGER] Player tycoon not found! Please wait for it to be detected.")
+    end
+end
+
+executeOnce()
