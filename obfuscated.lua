@@ -1,7 +1,5 @@
--- Scripts Hub X | Official Main Script (Optimized with Character Respawn & Smooth Performance)
-
 -- ================================
--- ALL VARIABLES (TOP OF SCRIPT)
+-- Scripts Hub X | Official
 -- ================================
 
 -- Services
@@ -15,11 +13,10 @@ local TeleportService = game:GetService("TeleportService")
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 
--- Player Variables
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui", 5)
 
--- User Status Variables
+-- UserIds
 local OwnerUserId = "2341777244"
 local PremiumUsers = {
 		"1102633570", -- Pedrojay450 [PERM]
@@ -43,37 +40,32 @@ local BlacklistUsers = {
 	
 	}
 
--- Animatronics Finder Configuration
+local KeySystem = true -- Set to false to bypass key system for non-premium users
+
 local TARGET_ANIMATRONICS = {"Radioactive Foxy", "Freddles", "Eclipse"}
 local MAX_PLOTS = 8
 local MAX_PADS = 27
 local STEAL_A_FREDDY_PLACE_ID = 137167142636546
 
--- Optimized Highlighting Configuration
 local HIGHLIGHT_COLORS = {
     ["Radioactive Foxy"] = Color3.fromRGB(0, 255, 0), -- GREEN
     ["Freddles"] = Color3.fromRGB(139, 69, 19), -- BROWN
     ["Eclipse"] = Color3.fromRGB(0, 0, 0) -- BLACK
 }
 
--- Auto-Execute Server Hopper Variables
 local TPS = TeleportService
 local Api = "https://games.roblox.com/v1/games/"
 local _place, _id = game.PlaceId, game.JobId
 local _servers = Api.._place.."/servers/Public?sortOrder=Desc&limit=100"
 
--- Webhook URL
 local webhookUrl = "https://discord.com/api/webhooks/1396650841045209169/Mx_0dcjOVnzp5f5zMhYM2uOBCPGt9SPr908shfLh_FGKZJ5eFc4tMsiiNNp1CGDx_M21"
 
--- File System Variables
 local keyFileName = "Scripts Hub X OFFICIAL - Key.txt"
 
--- Performance optimization variables
 local highlightUpdateConnection = nil
 local tracerUpdateConnection = nil
 local characterRespawnConnection = nil
 
--- Global auto-execute flag that persists (only for Steal a Freddy)
 if game.PlaceId == STEAL_A_FREDDY_PLACE_ID then
     if not _G.AnimatronicsFinder then
         _G.AnimatronicsFinder = {
@@ -96,13 +88,11 @@ end
 -- UTILITY FUNCTIONS
 -- ================================
 
--- Server listing function
 local function ListServers(cursor)
     local Raw = game:HttpGet(_servers .. ((cursor and "&cursor="..cursor) or ""))
     return HttpService:JSONDecode(Raw)
 end
 
--- Notification function
 local function notify(title, text)
     spawn(function()
         pcall(function()
@@ -111,7 +101,6 @@ local function notify(title, text)
     end)
 end
 
--- Function to find player's plot
 local function findPlayerPlot()
     local workspace = game:GetService("Workspace")
     local plotsFolder = workspace:FindFirstChild("Plots")
@@ -144,44 +133,35 @@ end
 -- OPTIMIZED HIGHLIGHTING AND TRACERS FUNCTIONS
 -- ================================
 
--- Function to create optimized highlight effect (outline only)
 local function highlightAnimatronic(animatronicModel, animatronicName)
     if not animatronicModel or not animatronicModel:IsA("Model") then
         return nil
     end
     
-    -- Create highlight object with optimized settings
     local highlight = Instance.new("Highlight")
     highlight.Name = "AnimatronicHighlight_" .. animatronicName
     highlight.Adornee = animatronicModel
-    
-    -- Set highlight color based on animatronic type
+
     local color = HIGHLIGHT_COLORS[animatronicName] or HIGHLIGHT_COLORS["Default"]
     highlight.OutlineColor = color
-    
-    -- Optimized highlight settings (outline only, no fill)
+
     highlight.FillTransparency = 1 -- Completely transparent fill for performance
     highlight.OutlineTransparency = 0 -- Solid outline
     highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-    
-    -- Parent to CoreGui so it's visible to the player
+
     highlight.Parent = CoreGui
-    
-    print("✨ Optimized highlight created for " .. animatronicName .. " (outline only)")
+
     return highlight
 end
 
--- Function to create super thin tracer line to animatronic
 local function createTracer(animatronicModel, animatronicName)
     if not animatronicModel or not animatronicModel.PrimaryPart then
         return nil
     end
     
-    -- Create optimized tracer beam (super thin)
     local beam = Instance.new("Beam")
     beam.Name = "AnimatronicTracer_" .. animatronicName
-    
-    -- Set tracer color and properties (super thin and optimized)
+
     local color = HIGHLIGHT_COLORS[animatronicName] or HIGHLIGHT_COLORS["Default"]
     beam.Color = ColorSequence.new(color)
     beam.Transparency = NumberSequence.new(0.3) -- Less transparent for visibility but still light
@@ -190,7 +170,6 @@ local function createTracer(animatronicModel, animatronicName)
     beam.FaceCamera = true
     beam.Segments = 1 -- Minimize segments for performance
     
-    -- Create attachment points
     local startAttachment = Instance.new("Attachment")
     startAttachment.Name = "TracerStart_" .. animatronicName
     startAttachment.Parent = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
@@ -198,13 +177,11 @@ local function createTracer(animatronicModel, animatronicName)
     local endAttachment = Instance.new("Attachment")
     endAttachment.Name = "TracerEnd_" .. animatronicName
     endAttachment.Parent = animatronicModel.PrimaryPart
-    
-    -- Connect beam to attachments
+
     beam.Attachment0 = startAttachment
     beam.Attachment1 = endAttachment
     beam.Parent = Workspace
-    
-    print("📍 Super thin tracer created for " .. animatronicName)
+
     return {
         beam = beam, 
         startAttachment = startAttachment, 
@@ -214,9 +191,7 @@ local function createTracer(animatronicModel, animatronicName)
     }
 end
 
--- Optimized cleanup function with better error handling
 local function cleanupHighlights()
-    -- Disconnect any running connections first
     if highlightUpdateConnection then
         highlightUpdateConnection:Disconnect()
         highlightUpdateConnection = nil
@@ -231,8 +206,7 @@ local function cleanupHighlights()
         characterRespawnConnection:Disconnect()
         characterRespawnConnection = nil
     end
-    
-    -- Clean up stored highlighted objects
+
     if _G.AnimatronicsFinder and _G.AnimatronicsFinder.highlightedObjects then
         for i = #_G.AnimatronicsFinder.highlightedObjects, 1, -1 do
             local obj = _G.AnimatronicsFinder.highlightedObjects[i]
@@ -256,8 +230,7 @@ local function cleanupHighlights()
         end
         print("🧹 Cleaned up all highlights and tracers")
     end
-    
-    -- Clean up any leftover highlights in CoreGui
+
     pcall(function()
         for _, child in pairs(CoreGui:GetChildren()) do
             if child:IsA("Highlight") and string.find(child.Name, "AnimatronicHighlight_") then
@@ -265,8 +238,7 @@ local function cleanupHighlights()
             end
         end
     end)
-    
-    -- Clean up leftover tracers and attachments in Workspace
+
     pcall(function()
         for _, child in pairs(Workspace:GetChildren()) do
             if child:IsA("Beam") and string.find(child.Name, "AnimatronicTracer_") then
@@ -274,8 +246,7 @@ local function cleanupHighlights()
             end
         end
     end)
-    
-    -- Clean up leftover attachments in character
+
     pcall(function()
         if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
             for _, child in pairs(player.Character.HumanoidRootPart:GetChildren()) do
@@ -287,11 +258,9 @@ local function cleanupHighlights()
     end)
 end
 
--- Function to handle character respawn and reconnect tracers
 local function handleCharacterRespawn()
     print("🔄 Character respawned, reconnecting tracers...")
-    
-    -- Wait for character to fully load
+
     if not player.Character then
         player.CharacterAdded:Wait()
     end
@@ -301,63 +270,50 @@ local function handleCharacterRespawn()
         print("❌ Failed to find HumanoidRootPart after respawn")
         return
     end
-    
-    -- Reconnect all tracers to new character
+
     if _G.AnimatronicsFinder and _G.AnimatronicsFinder.highlightedObjects then
         for _, obj in pairs(_G.AnimatronicsFinder.highlightedObjects) do
             if obj and obj.beam and obj.animatronicModel and obj.animatronicName then
                 pcall(function()
-                    -- Remove old start attachment if it exists
                     if obj.startAttachment and obj.startAttachment.Parent then
                         obj.startAttachment:Destroy()
                     end
-                    
-                    -- Create new start attachment on respawned character
+
                     local newStartAttachment = Instance.new("Attachment")
                     newStartAttachment.Name = "TracerStart_" .. obj.animatronicName
                     newStartAttachment.Parent = humanoidRootPart
-                    
-                    -- Reconnect beam
+
                     obj.beam.Attachment0 = newStartAttachment
                     obj.startAttachment = newStartAttachment
-                    
-                    print("🔗 Reconnected tracer for " .. obj.animatronicName .. " to respawned character")
+
                 end)
             end
         end
     end
 end
 
--- Set up character respawn handling
 local function setupCharacterRespawnHandling()
-    -- Clean up existing connection
     if characterRespawnConnection then
         characterRespawnConnection:Disconnect()
     end
-    
-    -- Connect to character respawn events
+
     characterRespawnConnection = player.CharacterAdded:Connect(function(character)
-        -- Wait a bit for character to fully load
         spawn(function()
             wait(1)
             handleCharacterRespawn()
         end)
     end)
-    
-    print("👤 Character respawn handling enabled")
 end
 
 -- ================================
 -- ANIMATRONICS FINDER FUNCTIONS (Steal a Freddy Only)
 -- ================================
 
--- Function to check if a specific plot belongs to the player
 local function isPlayerPlot(plotNumber)
     local playerPlot, playerPlotNumber = findPlayerPlot()
     return playerPlotNumber and plotNumber == playerPlotNumber
 end
 
--- Optimized checkAllPlots function
 local function checkAllPlots()
     print("🔍 Checking server for animatronics: " .. tostring(game.JobId) .. " (Attempt #" .. tostring(_G.AnimatronicsFinder.executionCount) .. ")")
 
@@ -863,22 +819,56 @@ local function loadLoadingScreen()
     return true, result
 end
 
+-- FIXED: Improved key system loading with better error handling
 local function loadKeySystem()
-    print("Attempting to load key system from GitHub")
-    local success, result = pcall(function()
+    print("🔑 Attempting to load key system from uploaded file...")
+    
+    -- First try to read from the uploaded keysystem.lua file
+    local success, keySystemScript = pcall(function()
+        if window and window.fs and window.fs.readFile then
+            local fileContent = window.fs.readFile("keysystem.lua", { encoding = 'utf8' })
+            return fileContent
+        else
+            error("File system not available")
+        end
+    end)
+    
+    if success and keySystemScript then
+        print("✅ Key system loaded from uploaded file")
+        local keySystemFunction = loadstring(keySystemScript)
+        if keySystemFunction then
+            local result = keySystemFunction()
+            if result and type(result) == "table" then
+                print("✅ Key system initialized successfully from file")
+                return true, result
+            else
+                warn("❌ Key system file returned invalid data")
+            end
+        else
+            warn("❌ Key system file contains invalid Lua code")
+        end
+    else
+        print("⚠️ Failed to load from file, trying GitHub as fallback...")
+    end
+    
+    -- Fallback to GitHub if file loading fails
+    local success2, result2 = pcall(function()
         local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/main/keysystem.lua")
         return loadstring(script)()
     end)
-    if not success then
-        warn("Failed to load key system: " .. tostring(result))
+    
+    if not success2 then
+        warn("❌ Failed to load key system from GitHub: " .. tostring(result2))
         return false, nil
     end
-    if not result or type(result) ~= "table" then
-        warn("Key system script returned invalid data")
+    
+    if not result2 or type(result2) ~= "table" then
+        warn("❌ Key system script from GitHub returned invalid data")
         return false, nil
     end
-    print("Key system loaded successfully")
-    return true, result
+    
+    print("✅ Key system loaded successfully from GitHub (fallback)")
+    return true, result2
 end
 
 local function checkGameSupport()
@@ -929,7 +919,7 @@ end
 -- ================================
 
 local function checkPremiumUser()
-    local userId = tostring(player.UserId)  -- FIXED: Changed toString to tostring
+    local userId = tostring(player.UserId)
     print("Checking user status for UserId: " .. userId)
     
     if BlacklistUsers and table.find(BlacklistUsers, userId) then
@@ -965,7 +955,7 @@ local function createKeyFile(validKey)
     end
 end
 
-local function checkValidKey(KeySystem)
+local function checkValidKey(KeySystemModule)
     if not isfile or not readfile or not delfile then
         warn("File system functions not available in this executor")
         return false
@@ -985,10 +975,10 @@ local function checkValidKey(KeySystem)
             
             local isValid = false
             local success3, err = pcall(function()
-                if KeySystem.ValidateKey and type(KeySystem.ValidateKey) == "function" then
-                    isValid = KeySystem.ValidateKey(storedKey)
-                elseif KeySystem.IsKeyVerified and type(KeySystem.IsKeyVerified) == "function" then
-                    isValid = KeySystem.IsKeyVerified()
+                if KeySystemModule.ValidateKey and type(KeySystemModule.ValidateKey) == "function" then
+                    isValid = KeySystemModule.ValidateKey(storedKey)
+                elseif KeySystemModule.IsKeyVerified and type(KeySystemModule.IsKeyVerified) == "function" then
+                    isValid = KeySystemModule.IsKeyVerified()
                 end
             end)
             
@@ -1019,7 +1009,7 @@ end
 -- ================================
 
 -- Main execution
-spawn(function()  -- FIXED: Changed coroutine.wrap to spawn for better compatibility
+spawn(function()
     print("🚀 Starting main execution at " .. os.date("%H:%M:%S"))
     
     -- Check user status
@@ -1191,74 +1181,84 @@ spawn(function()  -- FIXED: Changed coroutine.wrap to spawn for better compatibi
                 end
             end
         else
-            -- Non-premium user - key system
-            print("🔑 Non-premium user - Loading key system")
-            local successKS, KeySystem = loadKeySystem()
-            if not successKS or not KeySystem then
-                showError("Key system failed to load")
-                return
-            end
-            
-            if checkValidKey(KeySystem) then
-                print("✅ Valid key found - Loading script")
+            -- Non-premium user - check KeySystem toggle
+            if KeySystem == false then
+                print("🔓 KeySystem disabled - Loading script directly for non-premium user")
                 local scriptLoaded = loadGameScript(scriptUrl)
                 if scriptLoaded then
-                    print("✅ Scripts Hub X | Complete for cached key user")
+                    print("✅ Scripts Hub X | Complete for non-premium user (KeySystem bypassed)")
                 else
-                    showError("Valid key but script failed to load")
+                    showError("Script failed to load")
                 end
             else
-                print("🔑 No valid key - Showing key system")
-                
-                local keyVerified = false
-                local validKey = ""
-                
-                pcall(function()
-                    if KeySystem.ShowKeySystem and type(KeySystem.ShowKeySystem) == "function" then
-                        KeySystem.ShowKeySystem()
-                    else
-                        showError("Key system interface failed to display")
-                        return
-                    end
-                    
-                    print("⏳ Waiting for key verification...")
-                    
-                    -- Wait for key verification with timeout
-                    local timeout = 300 -- 5 minutes
-                    local startTime = tick()
-                    while not keyVerified and (tick() - startTime) < timeout do
-                        if KeySystem.IsKeyVerified and type(KeySystem.IsKeyVerified) == "function" then
-                            keyVerified = KeySystem.IsKeyVerified()
-                        end
-                        if keyVerified then
-                            if KeySystem.GetEnteredKey and type(KeySystem.GetEnteredKey) == "function" then
-                                validKey = KeySystem.GetEnteredKey()
-                            end
-                            break
-                        end
-                        wait(0.1)
-                    end
-                    
-                    if KeySystem.HideKeySystem and type(KeySystem.HideKeySystem) == "function" then
-                        KeySystem.HideKeySystem()
-                    end
-                end)
-                
-                if not keyVerified then
-                    showError("Key verification failed or timed out")
+                print("🔑 Non-premium user - Loading key system")
+                local successKS, KeySystemModule = loadKeySystem()
+                if not successKS or not KeySystemModule then
+                    showError("Key system failed to load. Please try again or contact support.")
                     return
                 end
                 
-                if validKey ~= "" then
-                    createKeyFile(validKey)
-                end
-                
-                print("✅ Key verified - Loading script")
-                local scriptLoaded = loadGameScript(scriptUrl)
-                if scriptLoaded then
-                    print("✅ Scripts Hub X | Complete for verified key user")
+                if checkValidKey(KeySystemModule) then
+                    print("✅ Valid key found - Loading script")
+                    local scriptLoaded = loadGameScript(scriptUrl)
+                    if scriptLoaded then
+                        print("✅ Scripts Hub X | Complete for cached key user")
+                    else
+                        showError("Valid key but script failed to load")
+                    end
                 else
-                    showError("Key verified but script failed to load")
+                    print("🔑 No valid key - Showing key system")
+                    
+                    local keyVerified = false
+                    local validKey = ""
+                    
+                    pcall(function()
+                        if KeySystemModule.ShowKeySystem and type(KeySystemModule.ShowKeySystem) == "function" then
+                            KeySystemModule.ShowKeySystem()
+                        else
+                            showError("Key system interface failed to display")
+                            return
+                        end
+                        
+                        print("⏳ Waiting for key verification...")
+                        
+                        -- Wait for key verification with timeout
+                        local timeout = 300 -- 5 minutes
+                        local startTime = tick()
+                        while not keyVerified and (tick() - startTime) < timeout do
+                            if KeySystemModule.IsKeyVerified and type(KeySystemModule.IsKeyVerified) == "function" then
+                                keyVerified = KeySystemModule.IsKeyVerified()
+                            end
+                            if keyVerified then
+                                if KeySystemModule.GetEnteredKey and type(KeySystemModule.GetEnteredKey) == "function" then
+                                    validKey = KeySystemModule.GetEnteredKey()
+                                end
+                                break
+                            end
+                            wait(0.1)
+                        end
+                        
+                        if KeySystemModule.HideKeySystem and type(KeySystemModule.HideKeySystem) == "function" then
+                            KeySystemModule.HideKeySystem()
+                        end
+                    end)
+                    
+                    if not keyVerified then
+                        showError("Key verification failed or timed out")
+                        return
+                    end
+                    
+                    if validKey ~= "" then
+                        createKeyFile(validKey)
+                    end
+                    
+                    print("✅ Key verified - Loading script")
+                    local scriptLoaded = loadGameScript(scriptUrl)
+                    if scriptLoaded then
+                        print("✅ Scripts Hub X | Complete for verified key user")
+                    else
+                        showError("Key verified but script failed to load")
+                    end
                 end
             end
         end
