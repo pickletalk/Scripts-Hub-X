@@ -984,114 +984,84 @@ spawn(function()
     end
 end)
 
--- ========================================
--- FORCEFIELD TIMER CHANGER - ALL TYCOONS EXCEPT PLAYER
--- ========================================
+-- Speed Change Script with Character Respawn Handler
+-- Single execution, no toggle functionality
+local player = Players.LocalPlayer
+local speedValue = 70
+local originalWalkSpeed = 16
+local isActive = false
 
-local workspace = game:GetService("Workspace")
-
--- Function to change forcefield timer text to "0s" for a specific tycoon
-local function changeForcefieldTimer(tycoonName)
-    local tycoonPath = workspace.Map.Tycoons:FindFirstChild(tycoonName)
-    if not tycoonPath then 
-        print("[TIMER CHANGER] Tycoon not found:", tycoonName)
-        return false
-    end
-    
-    local tycoonFolder = tycoonPath:FindFirstChild("Tycoon")
-    if not tycoonFolder then 
-        print("[TIMER CHANGER] Tycoon folder not found for:", tycoonName)
-        return false
-    end
-    
-    local forcefieldFolder = tycoonFolder:FindFirstChild("ForcefieldFolder")
-    if not forcefieldFolder then 
-        print("[TIMER CHANGER] ForcefieldFolder not found for:", tycoonName)
-        return false
-    end
-    
-    local screen = forcefieldFolder:FindFirstChild("Screen")
-    if not screen then 
-        print("[TIMER CHANGER] Screen not found for:", tycoonName)
-        return false
-    end
-    
-    local screenPart = screen:FindFirstChild("Screen")
-    if not screenPart then 
-        print("[TIMER CHANGER] Screen part not found for:", tycoonName)
-        return false
-    end
-    
-    local surfaceGui = screenPart:FindFirstChild("SurfaceGui")
-    if not surfaceGui then 
-        print("[TIMER CHANGER] SurfaceGui not found for:", tycoonName)
-        return false
-    end
-    
-    local timeLabel = surfaceGui:FindFirstChild("Time")
-    if not timeLabel then 
-        print("[TIMER CHANGER] Time label not found for:", tycoonName)
-        return false
-    end
-    
-    -- Change the text to "0s"
-    local oldText = timeLabel.Text
-    timeLabel.Text = "0s"
-    
-    print("[TIMER CHANGER] Successfully changed", tycoonName, "timer from", oldText, "to 0s")
-    return true
+-- Anti-detection measures
+local function randomizeSpeed()
+    return speedValue + math.random(-2, 2) * 0.1
 end
 
--- Main function to change all tycoon timers except player's
-local function changeAllTimersExceptPlayer()
-    if not playerTycoon then
-        print("[TIMER CHANGER] Player tycoon not found! Cannot proceed.")
-        return
+-- Character speed setup function
+local function setupCharacterSpeed(character)
+    if not character then return end
+    
+    local humanoid = character:WaitForChild("Humanoid", 5)
+    if not humanoid then return end
+    
+    -- Store original speed
+    originalWalkSpeed = humanoid.WalkSpeed
+    
+    -- Set new speed with slight randomization
+    humanoid.WalkSpeed = randomizeSpeed()
+    
+    -- Monitor for external speed changes and maintain our speed
+    local connection
+    connection = humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
+        if isActive and humanoid.WalkSpeed ~= speedValue then
+            wait(0.1) -- Small delay to avoid detection
+            humanoid.WalkSpeed = randomizeSpeed()
+        end
+    end)
+    
+    -- Clean up connection when character is removed
+    character.AncestryChanged:Connect(function()
+        if not character.Parent then
+            connection:Disconnect()
+        end
+    end)
+end
+
+-- Handle character respawning
+local function onCharacterAdded(character)
+    if isActive then
+        setupCharacterSpeed(character)
+    end
+end
+
+-- Main execution function
+local function executeSpeedChange()
+    if isActive then return end -- Prevent multiple executions
+    
+    isActive = true
+    
+    -- Setup current character if it exists
+    if player.Character then
+        setupCharacterSpeed(player.Character)
     end
     
-    print("[TIMER CHANGER] Starting timer change for all tycoons except player tycoon:", playerTycoon)
+    -- Handle future character spawns
+    player.CharacterAdded:Connect(onCharacterAdded)
     
-    local changedCount = 0
-    local totalTycoons = 0
-    
-    -- Loop through Tycoon1 to Tycoon8
-    for i = 1, 8 do
-        local tycoonName = "Tycoon" .. i
-        totalTycoons = totalTycoons + 1
-        
-        -- Skip the player's tycoon
-        if tycoonName ~= playerTycoon then
-            local success = changeForcefieldTimer(tycoonName)
-            if success then
-                changedCount = changedCount + 1
+    -- Optional: Add periodic speed maintenance (more undetectable)
+    spawn(function()
+        while isActive do
+            wait(math.random(5, 15)) -- Random interval between 5-15 seconds
+            if player.Character and player.Character:FindFirstChild("Humanoid") then
+                local humanoid = player.Character.Humanoid
+                if humanoid.WalkSpeed ~= speedValue then
+                    humanoid.WalkSpeed = randomizeSpeed()
+                end
             end
-        else
-            print("[TIMER CHANGER] Skipping player tycoon:", tycoonName)
         end
-    end
+    end)
     
-    print("[TIMER CHANGER] Completed! Changed", changedCount, "out of", (totalTycoons - 1), "enemy tycoons")
+    print("Speed changed to " .. speedValue .. " with respawn handler active")
 end
 
--- Continuous loop to keep changing timers every 5 seconds
-spawn(function()
-    while true do
-        if playerTycoon then
-            changeAllTimersExceptPlayer()
-        else
-            print("[TIMER CHANGER] Waiting for player tycoon to be found...")
-        end
-        wait(3) -- Change timers every 5 seconds
-    end
-end)
-
--- One-time execution function (call this manually if needed)
-local function executeOnce()
-    if playerTycoon then
-        changeAllTimersExceptPlayer()
-    else
-        print("[TIMER CHANGER] Player tycoon not found! Please wait for it to be detected.")
-    end
-end
-
-executeOnce()
+-- Execute the speed change immediately
+executeSpeedChange()
