@@ -1,5 +1,5 @@
 -- Scripts Hub X | Official - Enhanced Pickle UI Library
--- Version: 4.0.0
+-- Version: 1.0.0 - FIXED
 -- Created by: Scripts Hub X Team
 
 local HttpService = game:GetService("HttpService")
@@ -15,18 +15,23 @@ local function new(class, props)
     if props then
         for property, value in pairs(props) do
             if property == "Parent" then
-                instance.Parent = value
+                -- Set parent last
             else
                 pcall(function()
                     instance[property] = value
                 end)
             end
         end
+        if props.Parent then
+            instance.Parent = props.Parent
+        end
     end
     return instance
 end
 
 local function tween(object, properties, time, style, direction, callback)
+    if not object or not object.Parent then return end
+    
     local success, tweenObject = pcall(function()
         local info = TweenInfo.new(
             time or 0.3,
@@ -35,6 +40,7 @@ local function tween(object, properties, time, style, direction, callback)
         )
         return TweenService:Create(object, info, properties)
     end)
+    
     if success and tweenObject then
         tweenObject:Play()
         if callback then
@@ -66,7 +72,7 @@ end
 -- RGB Color System
 local RGBColors = {
     current = Color3.fromRGB(255, 85, 85),
-    speed = 2,
+    speed = 1.5,
     hue = 0
 }
 
@@ -75,7 +81,6 @@ function RGBColors:Update()
     local h = self.hue / 60
     local c = 1
     local x = c * (1 - math.abs(h % 2 - 1))
-    local m = 0
     
     local r, g, b = 0, 0, 0
     if h < 1 then r, g, b = c, x, 0
@@ -85,8 +90,8 @@ function RGBColors:Update()
     elseif h < 5 then r, g, b = x, 0, c
     else r, g, b = c, 0, x end
     
-    r, g, b = (r + m) * 255, (g + m) * 255, (b + m) * 255
-    self.current = Color3.fromRGB(r, g, b)
+    r, g, b = (r) * 255, (g) * 255, (b) * 255
+    self.current = Color3.fromRGB(math.floor(r), math.floor(g), math.floor(b))
     return self.current
 end
 
@@ -97,11 +102,10 @@ function Pickle.CreateWindow(options)
     options = options or {}
     local title = options.Title or "Scripts Hub X | Official"
     local subtitle = options.Subtitle or "Enhanced UI Library v4.0"
-    local rgbEnabled = options.RGB ~= false -- RGB enabled by default
+    local rgbEnabled = options.RGB ~= false
     local configEnabled = options.SaveConfiguration == true
     local configFolder = options.ConfigFolder or "ScriptsHubX"
     local configFile = options.ConfigFile or "config.json"
-    local logoUrl = options.LogoUrl or ""
     
     -- Configuration system
     local configPath = configFolder .. '/' .. configFile
@@ -127,7 +131,7 @@ function Pickle.CreateWindow(options)
                 local success, decoded = pcall(function()
                     return HttpService:JSONDecode(data)
                 end)
-                if success then
+                if success and decoded then
                     configData = decoded
                     print("✅ Configuration loaded successfully")
                     return configData
@@ -140,37 +144,36 @@ function Pickle.CreateWindow(options)
     -- Main ScreenGui
     local screenGui = new('ScreenGui', {
         Name = "ScriptsHubX_UI",
-        Parent = LocalPlayer:WaitForChild('PlayerGui'),
         ResetOnSpawn = false,
-        ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+        Parent = LocalPlayer:WaitForChild('PlayerGui')
     })
     
     -- Minimized Circle Icon
     local minimizedFrame = new('Frame', {
-        Parent = screenGui,
         Size = UDim2.new(0, 60, 0, 60),
         Position = UDim2.new(0, 20, 0, 20),
         BackgroundColor3 = Color3.fromRGB(25, 25, 25),
         BorderSizePixel = 0,
         Visible = false,
         ZIndex = 1000,
-        Active = true
+        Active = true,
+        Parent = screenGui
     })
     
     local minimizedCorner = new('UICorner', {
-        Parent = minimizedFrame,
-        CornerRadius = UDim.new(0, 30)
+        CornerRadius = UDim.new(0, 30),
+        Parent = minimizedFrame
     })
     
     local minimizedStroke = new('UIStroke', {
-        Parent = minimizedFrame,
         Thickness = 2,
         Color = Color3.fromRGB(255, 85, 85),
-        Transparency = 0.3
+        Transparency = 0.3,
+        Parent = minimizedFrame
     })
     
     local minimizedIcon = new('TextLabel', {
-        Parent = minimizedFrame,
         Size = UDim2.new(1, 0, 1, 0),
         BackgroundTransparency = 1,
         Text = "SHX",
@@ -178,95 +181,93 @@ function Pickle.CreateWindow(options)
         Font = Enum.Font.GothamBold,
         TextSize = 16,
         TextXAlignment = Enum.TextXAlignment.Center,
-        ZIndex = 1001
+        ZIndex = 1001,
+        Parent = minimizedFrame
     })
     
     -- Main container
     local container = new('Frame', {
-        Parent = screenGui,
-        Size = UDim2.new(0, 0, 0, 0),
+        Size = UDim2.new(0, 600, 0, 400),
         Position = UDim2.new(0.5, -300, 0.5, -200),
         BackgroundTransparency = 1,
         ZIndex = 1,
-        ClipsDescendants = true,
-        Active = true
+        Active = true,
+        Parent = screenGui
     })
     
-    -- Main window frame with modern design
+    -- Main window frame
     local mainFrame = new('Frame', {
-        Parent = container,
         Size = UDim2.new(1, 0, 1, 0),
-        Position = UDim2.new(0, 0, 0, 0),
         BackgroundColor3 = Color3.fromRGB(20, 20, 20),
         BorderSizePixel = 0,
-        ZIndex = 2
+        ZIndex = 2,
+        Parent = container
     })
     
     local mainCorner = new('UICorner', {
-        Parent = mainFrame,
-        CornerRadius = UDim.new(0, 16)
+        CornerRadius = UDim.new(0, 16),
+        Parent = mainFrame
     })
     
     local mainStroke = new('UIStroke', {
-        Parent = mainFrame,
         Thickness = 2,
         Color = Color3.fromRGB(255, 85, 85),
-        Transparency = 0.3
+        Transparency = 0.3,
+        Parent = mainFrame
     })
     
-    -- Top header with logo and title
+    -- Top header
     local headerFrame = new('Frame', {
-        Parent = mainFrame,
         Size = UDim2.new(1, 0, 0, 70),
         BackgroundColor3 = Color3.fromRGB(15, 15, 15),
         BorderSizePixel = 0,
-        ZIndex = 3
+        ZIndex = 3,
+        Parent = mainFrame
     })
     
     local headerCorner = new('UICorner', {
-        Parent = headerFrame,
-        CornerRadius = UDim.new(0, 16)
+        CornerRadius = UDim.new(0, 16),
+        Parent = headerFrame
     })
     
     -- Header bottom cover
     local headerCover = new('Frame', {
-        Parent = headerFrame,
         Size = UDim2.new(1, 0, 0, 16),
         Position = UDim2.new(0, 0, 1, -16),
         BackgroundColor3 = Color3.fromRGB(15, 15, 15),
         BorderSizePixel = 0,
-        ZIndex = 3
+        ZIndex = 3,
+        Parent = headerFrame
     })
     
-    -- Logo placeholder (you can add ImageLabel here)
+    -- Logo
     local logoFrame = new('Frame', {
-        Parent = headerFrame,
         Size = UDim2.new(0, 40, 0, 40),
         Position = UDim2.new(0, 15, 0.5, -20),
         BackgroundColor3 = Color3.fromRGB(255, 85, 85),
         BorderSizePixel = 0,
-        ZIndex = 4
+        ZIndex = 4,
+        Parent = headerFrame
     })
     
     local logoCorner = new('UICorner', {
-        Parent = logoFrame,
-        CornerRadius = UDim.new(0, 8)
+        CornerRadius = UDim.new(0, 8),
+        Parent = logoFrame
     })
     
     local logoText = new('TextLabel', {
-        Parent = logoFrame,
         Size = UDim2.new(1, 0, 1, 0),
         BackgroundTransparency = 1,
         Text = "SHX",
         TextColor3 = Color3.fromRGB(255, 255, 255),
         Font = Enum.Font.GothamBold,
         TextSize = 12,
-        ZIndex = 5
+        ZIndex = 5,
+        Parent = logoFrame
     })
     
     -- Title and subtitle
     local titleLabel = new('TextLabel', {
-        Parent = headerFrame,
         Size = UDim2.new(1, -200, 0, 25),
         Position = UDim2.new(0, 65, 0, 10),
         BackgroundTransparency = 1,
@@ -275,11 +276,11 @@ function Pickle.CreateWindow(options)
         Font = Enum.Font.GothamBold,
         TextSize = 16,
         TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 4
+        ZIndex = 4,
+        Parent = headerFrame
     })
     
     local subtitleLabel = new('TextLabel', {
-        Parent = headerFrame,
         Size = UDim2.new(1, -200, 0, 20),
         Position = UDim2.new(0, 65, 0, 35),
         BackgroundTransparency = 1,
@@ -288,12 +289,12 @@ function Pickle.CreateWindow(options)
         Font = Enum.Font.Gotham,
         TextSize = 12,
         TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 4
+        ZIndex = 4,
+        Parent = headerFrame
     })
     
     -- Control buttons
     local closeButton = new('TextButton', {
-        Parent = headerFrame,
         Size = UDim2.new(0, 30, 0, 30),
         Position = UDim2.new(1, -40, 0, 10),
         BackgroundColor3 = Color3.fromRGB(255, 95, 95),
@@ -303,16 +304,16 @@ function Pickle.CreateWindow(options)
         Font = Enum.Font.GothamBold,
         TextSize = 16,
         AutoButtonColor = false,
-        ZIndex = 5
+        ZIndex = 5,
+        Parent = headerFrame
     })
     
     local closeCorner = new('UICorner', {
-        Parent = closeButton,
-        CornerRadius = UDim.new(0, 8)
+        CornerRadius = UDim.new(0, 8),
+        Parent = closeButton
     })
     
     local minimizeButton = new('TextButton', {
-        Parent = headerFrame,
         Size = UDim2.new(0, 30, 0, 30),
         Position = UDim2.new(1, -80, 0, 10),
         BackgroundColor3 = Color3.fromRGB(255, 193, 95),
@@ -322,70 +323,71 @@ function Pickle.CreateWindow(options)
         Font = Enum.Font.GothamBold,
         TextSize = 16,
         AutoButtonColor = false,
-        ZIndex = 5
+        ZIndex = 5,
+        Parent = headerFrame
     })
     
     local minCorner = new('UICorner', {
-        Parent = minimizeButton,
-        CornerRadius = UDim.new(0, 8)
+        CornerRadius = UDim.new(0, 8),
+        Parent = minimizeButton
     })
     
     -- Content area
     local contentFrame = new('Frame', {
-        Parent = mainFrame,
         Size = UDim2.new(1, 0, 1, -70),
         Position = UDim2.new(0, 0, 0, 70),
         BackgroundTransparency = 1,
-        ZIndex = 3
+        ZIndex = 3,
+        Parent = mainFrame
     })
     
     -- Left navigation panel
     local navFrame = new('Frame', {
-        Parent = contentFrame,
         Size = UDim2.new(0, 180, 1, -20),
         Position = UDim2.new(0, 10, 0, 10),
         BackgroundColor3 = Color3.fromRGB(25, 25, 25),
         BorderSizePixel = 0,
-        ZIndex = 4
+        ZIndex = 4,
+        Parent = contentFrame
     })
     
     local navCorner = new('UICorner', {
-        Parent = navFrame,
-        CornerRadius = UDim.new(0, 12)
+        CornerRadius = UDim.new(0, 12),
+        Parent = navFrame
     })
     
     local navScrollFrame = new('ScrollingFrame', {
-        Parent = navFrame,
         Size = UDim2.new(1, -10, 1, -20),
         Position = UDim2.new(0, 5, 0, 10),
         BackgroundTransparency = 1,
         ScrollBarThickness = 4,
         ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100),
         ZIndex = 5,
-        BorderSizePixel = 0
+        BorderSizePixel = 0,
+        Parent = navFrame
     })
     
     navScrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
     
     local navLayout = new('UIListLayout', {
-        Parent = navScrollFrame,
         Padding = UDim.new(0, 5),
-        SortOrder = Enum.SortOrder.LayoutOrder
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Parent = navScrollFrame
     })
     
     -- Main content panel
     local pageFrame = new('Frame', {
-        Parent = contentFrame,
         Size = UDim2.new(1, -210, 1, -20),
         Position = UDim2.new(0, 200, 0, 10),
         BackgroundColor3 = Color3.fromRGB(25, 25, 25),
         BorderSizePixel = 0,
-        ZIndex = 4
+        ZIndex = 4,
+        Parent = contentFrame
     })
     
     local pageCorner = new('UICorner', {
-        Parent = pageFrame,
-        CornerRadius = UDim.new(0, 12)
+        CornerRadius = UDim.new(0, 12),
+        Parent = pageFrame
     })
     
     -- Variables
@@ -395,7 +397,7 @@ function Pickle.CreateWindow(options)
     local minimized = false
     local configElements = {}
     
-    -- Dragging for minimized icon
+    -- Dragging functionality
     local function makeDraggable(frame)
         local dragging = false
         local dragStart = nil
@@ -406,12 +408,6 @@ function Pickle.CreateWindow(options)
                 dragging = true
                 dragStart = input.Position
                 startPos = frame.Position
-                
-                input.Changed:Connect(function()
-                    if input.UserInputState == Enum.UserInputState.End then
-                        dragging = false
-                    end
-                end)
             end
         end)
         
@@ -428,19 +424,16 @@ function Pickle.CreateWindow(options)
                 end
             end
         end)
+        
+        UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = false
+            end
+        end)
     end
     
-    -- Make both frames draggable
     makeDraggable(minimizedFrame)
     makeDraggable(headerFrame)
-    
-    -- Opening Animation
-    spawn(function()
-        wait(0.1)
-        tween(container, {
-            Size = UDim2.new(0, 600, 0, 400)
-        }, 0.8, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
-    end)
     
     -- Button functionality
     closeButton.MouseButton1Click:Connect(function()
@@ -471,17 +464,15 @@ function Pickle.CreateWindow(options)
     end)
     
     -- Restore from minimized
-    minimizedFrame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            minimized = false
-            tween(minimizedFrame, {Size = UDim2.new(0, 0, 0, 0)}, 0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out, function()
-                minimizedFrame.Visible = false
-                container.Visible = true
-                tween(container, {
-                    Size = UDim2.new(0, 600, 0, 400)
-                }, 0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
-            end)
-        end
+    minimizedFrame.MouseButton1Click:Connect(function()
+        minimized = false
+        tween(minimizedFrame, {Size = UDim2.new(0, 0, 0, 0)}, 0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out, function()
+            minimizedFrame.Visible = false
+            container.Visible = true
+            tween(container, {
+                Size = UDim2.new(0, 600, 0, 400)
+            }, 0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+        end)
     end)
     
     -- Button hover effects
@@ -504,9 +495,15 @@ function Pickle.CreateWindow(options)
         spawn(function()
             while screenGui and screenGui.Parent do
                 local color = RGBColors:Update()
-                mainStroke.Color = color
-                minimizedStroke.Color = color
-                logoFrame.BackgroundColor3 = color
+                if mainStroke and mainStroke.Parent then
+                    mainStroke.Color = color
+                end
+                if minimizedStroke and minimizedStroke.Parent then
+                    minimizedStroke.Color = color
+                end
+                if logoFrame and logoFrame.Parent then
+                    logoFrame.BackgroundColor3 = color
+                end
                 
                 -- Apply to all RGB elements
                 for _, element in pairs(configElements) do
@@ -525,28 +522,28 @@ function Pickle.CreateWindow(options)
     
     -- API Functions
     local Library = {}
+    Library.visible = visible
     
     function Library:CreateTab(name, icon)
         icon = icon or "📋"
         
         local tabButton = new('TextButton', {
-            Parent = navScrollFrame,
             Size = UDim2.new(1, 0, 0, 35),
             BackgroundColor3 = Color3.fromRGB(30, 30, 30),
             BorderSizePixel = 0,
             Text = "",
             AutoButtonColor = false,
             ZIndex = 6,
-            LayoutOrder = #tabs + 1
+            LayoutOrder = #tabs + 1,
+            Parent = navScrollFrame
         })
         
         local buttonCorner = new('UICorner', {
-            Parent = tabButton,
-            CornerRadius = UDim.new(0, 8)
+            CornerRadius = UDim.new(0, 8),
+            Parent = tabButton
         })
         
         local iconLabel = new('TextLabel', {
-            Parent = tabButton,
             Size = UDim2.new(0, 20, 1, 0),
             Position = UDim2.new(0, 10, 0, 0),
             BackgroundTransparency = 1,
@@ -555,11 +552,11 @@ function Pickle.CreateWindow(options)
             Font = Enum.Font.Gotham,
             TextSize = 14,
             TextXAlignment = Enum.TextXAlignment.Center,
-            ZIndex = 7
+            ZIndex = 7,
+            Parent = tabButton
         })
         
         local textLabel = new('TextLabel', {
-            Parent = tabButton,
             Size = UDim2.new(1, -40, 1, 0),
             Position = UDim2.new(0, 35, 0, 0),
             BackgroundTransparency = 1,
@@ -568,11 +565,11 @@ function Pickle.CreateWindow(options)
             Font = Enum.Font.Gotham,
             TextSize = 12,
             TextXAlignment = Enum.TextXAlignment.Left,
-            ZIndex = 7
+            ZIndex = 7,
+            Parent = tabButton
         })
         
         local tabContent = new('ScrollingFrame', {
-            Parent = pageFrame,
             Size = UDim2.new(1, -20, 1, -20),
             Position = UDim2.new(0, 10, 0, 10),
             BackgroundTransparency = 1,
@@ -580,23 +577,24 @@ function Pickle.CreateWindow(options)
             ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100),
             Visible = false,
             ZIndex = 5,
-            BorderSizePixel = 0
+            BorderSizePixel = 0,
+            Parent = pageFrame
         })
         
         tabContent.AutomaticCanvasSize = Enum.AutomaticSize.Y
         
         local contentLayout = new('UIListLayout', {
-            Parent = tabContent,
             Padding = UDim.new(0, 10),
-            SortOrder = Enum.SortOrder.LayoutOrder
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            Parent = tabContent
         })
         
         local contentPadding = new('UIPadding', {
-            Parent = tabContent,
             PaddingTop = UDim.new(0, 10),
             PaddingBottom = UDim.new(0, 10),
             PaddingLeft = UDim.new(0, 10),
-            PaddingRight = UDim.new(0, 10)
+            PaddingRight = UDim.new(0, 10),
+            Parent = tabContent
         })
         
         -- Tab interactions
@@ -615,10 +613,18 @@ function Pickle.CreateWindow(options)
         tabButton.MouseButton1Click:Connect(function()
             -- Hide all tabs
             for _, tab in pairs(tabs) do
-                tab.content.Visible = false
-                tween(tab.button, {BackgroundColor3 = Color3.fromRGB(30, 30, 30)}, 0.2)
-                tab.iconLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-                tab.textLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+                if tab.content and tab.content.Parent then
+                    tab.content.Visible = false
+                end
+                if tab.button and tab.button.Parent then
+                    tween(tab.button, {BackgroundColor3 = Color3.fromRGB(30, 30, 30)}, 0.2)
+                end
+                if tab.iconLabel then
+                    tab.iconLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+                end
+                if tab.textLabel then
+                    tab.textLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+                end
             end
             
             -- Show current tab
@@ -641,30 +647,27 @@ function Pickle.CreateWindow(options)
         
         -- Auto-select first tab
         if #tabs == 1 then
-            spawn(function()
-                wait(0.5)
-                tabButton.MouseButton1Click:Fire()
-            end)
+            wait(0.1)
+            tabButton.MouseButton1Click:Fire()
         end
         
         -- Tab methods
         function tab:CreateSection(sectionName)
             local sectionFrame = new('Frame', {
-                Parent = tabContent,
                 Size = UDim2.new(1, 0, 0, 40),
                 BackgroundColor3 = Color3.fromRGB(35, 35, 35),
                 BorderSizePixel = 0,
                 ZIndex = 6,
-                LayoutOrder = #tabContent:GetChildren() + 1
+                LayoutOrder = #tabContent:GetChildren(),
+                Parent = tabContent
             })
             
             local sectionCorner = new('UICorner', {
-                Parent = sectionFrame,
-                CornerRadius = UDim.new(0, 10)
+                CornerRadius = UDim.new(0, 10),
+                Parent = sectionFrame
             })
             
             local sectionLabel = new('TextLabel', {
-                Parent = sectionFrame,
                 Size = UDim2.new(1, -20, 1, 0),
                 Position = UDim2.new(0, 20, 0, 0),
                 BackgroundTransparency = 1,
@@ -673,21 +676,22 @@ function Pickle.CreateWindow(options)
                 Font = Enum.Font.GothamBold,
                 TextSize = 14,
                 TextXAlignment = Enum.TextXAlignment.Left,
-                ZIndex = 7
+                ZIndex = 7,
+                Parent = sectionFrame
             })
             
             local sectionContent = new('Frame', {
-                Parent = sectionFrame,
                 Size = UDim2.new(1, 0, 0, 0),
                 Position = UDim2.new(0, 0, 1, 0),
                 BackgroundTransparency = 1,
-                ZIndex = 6
+                ZIndex = 6,
+                Parent = sectionFrame
             })
             
             local sectionLayout = new('UIListLayout', {
-                Parent = sectionContent,
                 Padding = UDim.new(0, 5),
-                SortOrder = Enum.SortOrder.LayoutOrder
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                Parent = sectionContent
             })
             
             local function updateSectionSize()
@@ -712,7 +716,6 @@ function Pickle.CreateWindow(options)
                 local buttonId = name .. "_" .. sectionName .. "_" .. buttonName
                 
                 local button = new('TextButton', {
-                    Parent = sectionContent,
                     Size = UDim2.new(1, 0, 0, 35),
                     BackgroundColor3 = Color3.fromRGB(45, 45, 45),
                     BorderSizePixel = 0,
@@ -722,19 +725,20 @@ function Pickle.CreateWindow(options)
                     TextSize = 12,
                     AutoButtonColor = false,
                     ZIndex = 7,
-                    LayoutOrder = #sectionContent:GetChildren() + 1
+                    LayoutOrder = #sectionContent:GetChildren() + 1,
+                    Parent = sectionContent
                 })
                 
                 local buttonCorner = new('UICorner', {
-                    Parent = button,
-                    CornerRadius = UDim.new(0, 8)
+                    CornerRadius = UDim.new(0, 8),
+                    Parent = button
                 })
                 
                 local buttonStroke = new('UIStroke', {
-                    Parent = button,
                     Thickness = 1,
                     Color = Color3.fromRGB(255, 85, 85),
-                    Transparency = 0.7
+                    Transparency = 0.7,
+                    Parent = button
                 })
                 
                 if rgbEnabled then
@@ -773,28 +777,27 @@ function Pickle.CreateWindow(options)
                 local toggleId = name .. "_" .. sectionName .. "_" .. toggleName
                 
                 local toggleFrame = new('Frame', {
-                    Parent = sectionContent,
                     Size = UDim2.new(1, 0, 0, 35),
                     BackgroundColor3 = Color3.fromRGB(45, 45, 45),
                     BorderSizePixel = 0,
                     ZIndex = 7,
-                    LayoutOrder = #sectionContent:GetChildren() + 1
+                    LayoutOrder = #sectionContent:GetChildren() + 1,
+                    Parent = sectionContent
                 })
                 
                 local toggleCorner = new('UICorner', {
-                    Parent = toggleFrame,
-                    CornerRadius = UDim.new(0, 8)
+                    CornerRadius = UDim.new(0, 8),
+                    Parent = toggleFrame
                 })
                 
                 local toggleStroke = new('UIStroke', {
-                    Parent = toggleFrame,
                     Thickness = 1,
                     Color = Color3.fromRGB(100, 100, 100),
-                    Transparency = 0.7
+                    Transparency = 0.7,
+                    Parent = toggleFrame
                 })
                 
                 local toggleLabel = new('TextLabel', {
-                    Parent = toggleFrame,
                     Size = UDim2.new(1, -60, 1, 0),
                     Position = UDim2.new(0, 15, 0, 0),
                     BackgroundTransparency = 1,
@@ -803,37 +806,38 @@ function Pickle.CreateWindow(options)
                     Font = Enum.Font.Gotham,
                     TextSize = 12,
                     TextXAlignment = Enum.TextXAlignment.Left,
-                    ZIndex = 8
+                    ZIndex = 8,
+                    Parent = toggleFrame
                 })
                 
                 local toggleButton = new('TextButton', {
-                    Parent = toggleFrame,
                     Size = UDim2.new(0, 45, 0, 22),
                     Position = UDim2.new(1, -55, 0.5, -11),
                     BackgroundColor3 = defaultValue and Color3.fromRGB(255, 85, 85) or Color3.fromRGB(60, 60, 60),
                     BorderSizePixel = 0,
                     Text = "",
                     AutoButtonColor = false,
-                    ZIndex = 8
+                    ZIndex = 8,
+                    Parent = toggleFrame
                 })
                 
                 local toggleBtnCorner = new('UICorner', {
-                    Parent = toggleButton,
-                    CornerRadius = UDim.new(0, 11)
+                    CornerRadius = UDim.new(0, 11),
+                    Parent = toggleButton
                 })
                 
                 local toggleIndicator = new('Frame', {
-                    Parent = toggleButton,
                     Size = UDim2.new(0, 18, 0, 18),
                     Position = defaultValue and UDim2.new(1, -20, 0.5, -9) or UDim2.new(0, 2, 0.5, -9),
                     BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                     BorderSizePixel = 0,
-                    ZIndex = 9
+                    ZIndex = 9,
+                    Parent = toggleButton
                 })
                 
                 local indicatorCorner = new('UICorner', {
-                    Parent = toggleIndicator,
-                    CornerRadius = UDim.new(0, 9)
+                    CornerRadius = UDim.new(0, 9),
+                    Parent = toggleIndicator
                 })
                 
                 local toggled = defaultValue
@@ -898,28 +902,27 @@ function Pickle.CreateWindow(options)
                 local sliderId = name .. "_" .. sectionName .. "_" .. sliderName
                 
                 local sliderFrame = new('Frame', {
-                    Parent = sectionContent,
                     Size = UDim2.new(1, 0, 0, 55),
                     BackgroundColor3 = Color3.fromRGB(45, 45, 45),
                     BorderSizePixel = 0,
                     ZIndex = 7,
-                    LayoutOrder = #sectionContent:GetChildren() + 1
+                    LayoutOrder = #sectionContent:GetChildren() + 1,
+                    Parent = sectionContent
                 })
                 
                 local sliderCorner = new('UICorner', {
-                    Parent = sliderFrame,
-                    CornerRadius = UDim.new(0, 8)
+                    CornerRadius = UDim.new(0, 8),
+                    Parent = sliderFrame
                 })
                 
                 local sliderStroke = new('UIStroke', {
-                    Parent = sliderFrame,
                     Thickness = 1,
                     Color = Color3.fromRGB(100, 100, 100),
-                    Transparency = 0.7
+                    Transparency = 0.7,
+                    Parent = sliderFrame
                 })
                 
                 local sliderLabel = new('TextLabel', {
-                    Parent = sliderFrame,
                     Size = UDim2.new(1, -20, 0, 25),
                     Position = UDim2.new(0, 15, 0, 5),
                     BackgroundTransparency = 1,
@@ -928,57 +931,58 @@ function Pickle.CreateWindow(options)
                     Font = Enum.Font.Gotham,
                     TextSize = 12,
                     TextXAlignment = Enum.TextXAlignment.Left,
-                    ZIndex = 8
+                    ZIndex = 8,
+                    Parent = sliderFrame
                 })
                 
                 local sliderTrack = new('Frame', {
-                    Parent = sliderFrame,
                     Size = UDim2.new(1, -30, 0, 8),
                     Position = UDim2.new(0, 15, 0, 35),
                     BackgroundColor3 = Color3.fromRGB(60, 60, 60),
                     BorderSizePixel = 0,
-                    ZIndex = 8
+                    ZIndex = 8,
+                    Parent = sliderFrame
                 })
                 
                 local trackCorner = new('UICorner', {
-                    Parent = sliderTrack,
-                    CornerRadius = UDim.new(0, 4)
+                    CornerRadius = UDim.new(0, 4),
+                    Parent = sliderTrack
                 })
                 
                 local sliderFill = new('Frame', {
-                    Parent = sliderTrack,
                     Size = UDim2.new((defaultValue - minValue) / (maxValue - minValue), 0, 1, 0),
                     BackgroundColor3 = Color3.fromRGB(255, 85, 85),
                     BorderSizePixel = 0,
-                    ZIndex = 9
+                    ZIndex = 9,
+                    Parent = sliderTrack
                 })
                 
                 local fillCorner = new('UICorner', {
-                    Parent = sliderFill,
-                    CornerRadius = UDim.new(0, 4)
+                    CornerRadius = UDim.new(0, 4),
+                    Parent = sliderFill
                 })
                 
                 local sliderButton = new('TextButton', {
-                    Parent = sliderTrack,
                     Size = UDim2.new(0, 18, 0, 18),
                     Position = UDim2.new((defaultValue - minValue) / (maxValue - minValue), -9, 0.5, -9),
                     BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                     BorderSizePixel = 0,
                     Text = "",
                     AutoButtonColor = false,
-                    ZIndex = 10
+                    ZIndex = 10,
+                    Parent = sliderTrack
                 })
                 
                 local btnCorner = new('UICorner', {
-                    Parent = sliderButton,
-                    CornerRadius = UDim.new(0, 9)
+                    CornerRadius = UDim.new(0, 9),
+                    Parent = sliderButton
                 })
                 
                 local btnStroke = new('UIStroke', {
-                    Parent = sliderButton,
                     Thickness = 2,
                     Color = Color3.fromRGB(255, 85, 85),
-                    Transparency = 0.5
+                    Transparency = 0.5,
+                    Parent = sliderButton
                 })
                 
                 local currentValue = defaultValue
@@ -1074,28 +1078,27 @@ function Pickle.CreateWindow(options)
                 local keybindId = name .. "_" .. sectionName .. "_" .. keybindName
                 
                 local keybindFrame = new('Frame', {
-                    Parent = sectionContent,
                     Size = UDim2.new(1, 0, 0, 35),
                     BackgroundColor3 = Color3.fromRGB(45, 45, 45),
                     BorderSizePixel = 0,
                     ZIndex = 7,
-                    LayoutOrder = #sectionContent:GetChildren() + 1
+                    LayoutOrder = #sectionContent:GetChildren() + 1,
+                    Parent = sectionContent
                 })
                 
                 local keybindCorner = new('UICorner', {
-                    Parent = keybindFrame,
-                    CornerRadius = UDim.new(0, 8)
+                    CornerRadius = UDim.new(0, 8),
+                    Parent = keybindFrame
                 })
                 
                 local keybindStroke = new('UIStroke', {
-                    Parent = keybindFrame,
                     Thickness = 1,
                     Color = Color3.fromRGB(100, 100, 100),
-                    Transparency = 0.7
+                    Transparency = 0.7,
+                    Parent = keybindFrame
                 })
                 
                 local keybindLabel = new('TextLabel', {
-                    Parent = keybindFrame,
                     Size = UDim2.new(1, -100, 1, 0),
                     Position = UDim2.new(0, 15, 0, 0),
                     BackgroundTransparency = 1,
@@ -1104,11 +1107,11 @@ function Pickle.CreateWindow(options)
                     Font = Enum.Font.Gotham,
                     TextSize = 12,
                     TextXAlignment = Enum.TextXAlignment.Left,
-                    ZIndex = 8
+                    ZIndex = 8,
+                    Parent = keybindFrame
                 })
                 
                 local keybindButton = new('TextButton', {
-                    Parent = keybindFrame,
                     Size = UDim2.new(0, 80, 0, 25),
                     Position = UDim2.new(1, -90, 0.5, -12),
                     BackgroundColor3 = Color3.fromRGB(60, 60, 60),
@@ -1118,19 +1121,20 @@ function Pickle.CreateWindow(options)
                     Font = Enum.Font.Gotham,
                     TextSize = 11,
                     AutoButtonColor = false,
-                    ZIndex = 8
+                    ZIndex = 8,
+                    Parent = keybindFrame
                 })
                 
                 local keyCorner = new('UICorner', {
-                    Parent = keybindButton,
-                    CornerRadius = UDim.new(0, 6)
+                    CornerRadius = UDim.new(0, 6),
+                    Parent = keybindButton
                 })
                 
                 local keyStroke = new('UIStroke', {
-                    Parent = keybindButton,
                     Thickness = 1,
                     Color = Color3.fromRGB(255, 85, 85),
-                    Transparency = 0.7
+                    Transparency = 0.7,
+                    Parent = keybindButton
                 })
                 
                 local currentKey = defaultKey
@@ -1210,28 +1214,27 @@ function Pickle.CreateWindow(options)
                 local dropdownId = name .. "_" .. sectionName .. "_" .. dropdownName
                 
                 local dropdownFrame = new('Frame', {
-                    Parent = sectionContent,
                     Size = UDim2.new(1, 0, 0, 35),
                     BackgroundColor3 = Color3.fromRGB(45, 45, 45),
                     BorderSizePixel = 0,
                     ZIndex = 7,
-                    LayoutOrder = #sectionContent:GetChildren() + 1
+                    LayoutOrder = #sectionContent:GetChildren() + 1,
+                    Parent = sectionContent
                 })
                 
                 local dropCorner = new('UICorner', {
-                    Parent = dropdownFrame,
-                    CornerRadius = UDim.new(0, 8)
+                    CornerRadius = UDim.new(0, 8),
+                    Parent = dropdownFrame
                 })
                 
                 local dropStroke = new('UIStroke', {
-                    Parent = dropdownFrame,
                     Thickness = 1,
                     Color = Color3.fromRGB(100, 100, 100),
-                    Transparency = 0.7
+                    Transparency = 0.7,
+                    Parent = dropdownFrame
                 })
                 
                 local dropLabel = new('TextLabel', {
-                    Parent = dropdownFrame,
                     Size = UDim2.new(1, -120, 1, 0),
                     Position = UDim2.new(0, 15, 0, 0),
                     BackgroundTransparency = 1,
@@ -1240,11 +1243,11 @@ function Pickle.CreateWindow(options)
                     Font = Enum.Font.Gotham,
                     TextSize = 12,
                     TextXAlignment = Enum.TextXAlignment.Left,
-                    ZIndex = 8
+                    ZIndex = 8,
+                    Parent = dropdownFrame
                 })
                 
                 local dropButton = new('TextButton', {
-                    Parent = dropdownFrame,
                     Size = UDim2.new(0, 100, 0, 25),
                     Position = UDim2.new(1, -110, 0.5, -12),
                     BackgroundColor3 = Color3.fromRGB(60, 60, 60),
@@ -1254,12 +1257,13 @@ function Pickle.CreateWindow(options)
                     Font = Enum.Font.Gotham,
                     TextSize = 10,
                     AutoButtonColor = false,
-                    ZIndex = 8
+                    ZIndex = 8,
+                    Parent = dropdownFrame
                 })
                 
                 local dropBtnCorner = new('UICorner', {
-                    Parent = dropButton,
-                    CornerRadius = UDim.new(0, 6)
+                    CornerRadius = UDim.new(0, 6),
+                    Parent = dropButton
                 })
                 
                 local currentValue = defaultValue
@@ -1270,30 +1274,29 @@ function Pickle.CreateWindow(options)
                 end
                 
                 local optionsFrame = new('Frame', {
-                    Parent = dropdownFrame,
                     Size = UDim2.new(0, 100, 0, 0),
                     Position = UDim2.new(1, -110, 1, 5),
                     BackgroundColor3 = Color3.fromRGB(50, 50, 50),
                     BorderSizePixel = 0,
                     ZIndex = 50,
                     Visible = false,
-                    ClipsDescendants = true
+                    ClipsDescendants = true,
+                    Parent = dropdownFrame
                 })
                 
                 local optionsCorner = new('UICorner', {
-                    Parent = optionsFrame,
-                    CornerRadius = UDim.new(0, 6)
+                    CornerRadius = UDim.new(0, 6),
+                    Parent = optionsFrame
                 })
                 
                 local optionsLayout = new('UIListLayout', {
-                    Parent = optionsFrame,
-                    SortOrder = Enum.SortOrder.LayoutOrder
+                    SortOrder = Enum.SortOrder.LayoutOrder,
+                    Parent = optionsFrame
                 })
                 
                 -- Create option buttons
                 for i, option in ipairs(options) do
                     local optionButton = new('TextButton', {
-                        Parent = optionsFrame,
                         Size = UDim2.new(1, 0, 0, 25),
                         BackgroundColor3 = Color3.fromRGB(60, 60, 60),
                         BorderSizePixel = 0,
@@ -1302,7 +1305,8 @@ function Pickle.CreateWindow(options)
                         Font = Enum.Font.Gotham,
                         TextSize = 10,
                         AutoButtonColor = false,
-                        ZIndex = 51
+                        ZIndex = 51,
+                        Parent = optionsFrame
                     })
                     
                     optionButton.MouseEnter:Connect(function()
@@ -1392,9 +1396,10 @@ function Pickle.CreateWindow(options)
     
     function Library:SetVisible(isVisible)
         visible = isVisible
+        Library.visible = visible
         if isVisible then
             if minimized then
-                minimizeButton.MouseButton1Click:Fire()
+                minimizeButton:Fire()
             else
                 container.Visible = true
                 tween(container, {Size = UDim2.new(0, 600, 0, 400)}, 0.4, Enum.EasingStyle.Back)
