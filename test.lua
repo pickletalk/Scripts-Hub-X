@@ -1,7 +1,7 @@
 -- Scripts Hub X | Official - Enhanced UI Test Script - FIXED
 -- Load the Enhanced Pickle UI Library
 
-local Pickle = loadstring(game:HttpGet("https://raw.githubusercontent.com/YourRepo/Scripts-Hub-X/main/PickleLibrary.lua"))()
+local Pickle = loadstring(game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/PickleLibrary.lua"))()
 
 -- Create the main window with enhanced features
 local Window = Pickle.CreateWindow({
