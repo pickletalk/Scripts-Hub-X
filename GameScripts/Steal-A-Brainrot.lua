@@ -1,5 +1,5 @@
 -- ========================================
--- PLATFORM MAKER SCRIPT
+-- SHADOW HEIST TELEPORTER SCRIPT
 -- ========================================
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -10,19 +10,18 @@ local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 local rootPart = character:WaitForChild("HumanoidRootPart")
 
--- Platform variables
-local platformEnabled = false
+-- Heist variables
+local isHeistInProgress = false
 local currentPlatform = nil
-local platformUpdateConnection = nil
 
 -- ========================================
--- PLATFORM MAKER UI
+-- SHADOW HEIST UI
 -- ========================================
 local playerGui = player:WaitForChild("PlayerGui")
 
 -- Create ScreenGui
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "PlatformMakerUI"
+screenGui.Name = "ShadowHeistUI"
 screenGui.Parent = playerGui
 screenGui.ResetOnSpawn = false
 
@@ -57,7 +56,7 @@ titleText.Name = "TitleText"
 titleText.Size = UDim2.new(1, -30, 1, 0)
 titleText.Position = UDim2.new(0, 5, 0, 0)
 titleText.BackgroundTransparency = 1
-titleText.Text = "🔷 PLATFORM MAKER 🔷"
+titleText.Text = "💰 Shadow Heist 💰"
 titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleText.TextScaled = true
 titleText.Font = Enum.Font.GothamBold
@@ -79,28 +78,28 @@ local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 4)
 closeCorner.Parent = closeButton
 
-local toggleButton = Instance.new("TextButton")
-toggleButton.Name = "ToggleButton"
-toggleButton.Size = UDim2.new(0, 220, 0, 35)
-toggleButton.Position = UDim2.new(0, 15, 0, 45)
-toggleButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-toggleButton.Text = "🔷 ENABLE PLATFORM 🔷"
-toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-toggleButton.TextScaled = true
-toggleButton.Font = Enum.Font.GothamBold
-toggleButton.BorderSizePixel = 0
-toggleButton.Parent = mainFrame
+local stealButton = Instance.new("TextButton")
+stealButton.Name = "StealButton"
+stealButton.Size = UDim2.new(0, 220, 0, 35)
+stealButton.Position = UDim2.new(0, 15, 0, 45)
+stealButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+stealButton.Text = "💰 STEAL 💰"
+stealButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+stealButton.TextScaled = true
+stealButton.Font = Enum.Font.GothamBold
+stealButton.BorderSizePixel = 0
+stealButton.Parent = mainFrame
 
-local toggleCorner = Instance.new("UICorner")
-toggleCorner.CornerRadius = UDim.new(0, 6)
-toggleCorner.Parent = toggleButton
+local stealCorner = Instance.new("UICorner")
+stealCorner.CornerRadius = UDim.new(0, 6)
+stealCorner.Parent = stealButton
 
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Name = "StatusLabel"
 statusLabel.Size = UDim2.new(1, -20, 0, 25)
 statusLabel.Position = UDim2.new(0, 10, 0, 90)
 statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "Platform: OFF"
+statusLabel.Text = "by PickleTalk"
 statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 statusLabel.TextScaled = true
 statusLabel.Font = Enum.Font.Gotham
@@ -140,11 +139,52 @@ titleBar.InputChanged:Connect(function(input)
 end)
 
 -- ========================================
+-- PLOT FINDING FUNCTIONS
+-- ========================================
+local function findPlayerPlot()
+    local plotsFolder = workspace:FindFirstChild("Plots")
+    if not plotsFolder then
+        statusLabel.Text = "Plots folder not found!"
+        wait(1.5)
+        statusLabel.Text = "by PickleTalk"
+        return nil
+    end
+    
+    local playerDisplayName = player.DisplayName
+    local targetPlotName = playerDisplayName .. "'s Base"
+    
+    -- Search through all plot folders
+    for _, plotFolder in pairs(plotsFolder:GetChildren()) do
+        if plotFolder:IsA("Folder") then
+            local plotSign = plotFolder:FindFirstChild("PlotSign")
+            if plotSign then
+                local surfaceGui = plotSign:FindFirstChild("SurfaceGui")
+                if surfaceGui then
+                    local frame = surfaceGui:FindFirstChild("Frame")
+                    if frame then
+                        local textLabel = frame:FindFirstChild("TextLabel")
+                        if textLabel and textLabel.Text == targetPlotName then
+                            statusLabel.Text = "Found player plot!"
+                            return plotFolder
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    statusLabel.Text = "Player plot not found!"
+    wait(1.5)
+    statusLabel.Text = "by PickleTalk"
+    return nil
+end
+
+-- ========================================
 -- PLATFORM FUNCTIONS
 -- ========================================
-local function createPlatform()
+local function createPlatform(position)
     local platform = Instance.new("Part")
-    platform.Name = "PlayerPlatform"
+    platform.Name = "HeistPlatform"
     platform.Size = Vector3.new(6, 0.5, 6) -- 6x0.5x6 studs
     platform.Material = Enum.Material.Neon
     platform.BrickColor = BrickColor.new("Bright blue") -- Blue color
@@ -153,6 +193,7 @@ local function createPlatform()
     platform.Shape = Enum.PartType.Block
     platform.TopSurface = Enum.SurfaceType.Smooth
     platform.BottomSurface = Enum.SurfaceType.Smooth
+    platform.Position = position
     platform.Parent = workspace
     
     -- Add some visual effects
@@ -165,78 +206,124 @@ local function createPlatform()
     return platform
 end
 
-local function updatePlatformPosition()
-    if not platformEnabled or not currentPlatform or not player.Character then
-        return
+-- ========================================
+-- HEIST EXECUTION FUNCTIONS
+-- ========================================
+local function executeHeist()
+    if isHeistInProgress then
+        return -- Prevent double execution
     end
     
-    local character = player.Character
-    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    isHeistInProgress = true
+    stealButton.Text = "💰 STEALING... 💰"
+    stealButton.BackgroundColor3 = Color3.fromRGB(150, 100, 0)
     
-    if humanoidRootPart then
-        -- Position platform 4 studs below the player
-        local playerPosition = humanoidRootPart.Position
-        local platformPosition = Vector3.new(playerPosition.X, playerPosition.Y - 2, playerPosition.Z)
+    local success, error = pcall(function()
+        -- Step 1: Find player plot
+        local playerPlot = findPlayerPlot()
+        if not playerPlot then
+            error("Player plot not found")
+        end
         
-        currentPlatform.Position = platformPosition
+        -- Step 2: Check for Map.Carpet
+        local map = workspace:FindFirstChild("Map")
+        if not map then
+            error("Map not found")
+        end
+        
+        local carpet = map:FindFirstChild("Carpet")
+        if not carpet then
+            error("Carpet not found")
+        end
+        
+        -- Step 3: Check for DeliveryHitbox
+        local deliveryHitbox = playerPlot:FindFirstChild("DeliveryHitbox")
+        if not deliveryHitbox then
+            error("DeliveryHitbox not found")
+        end
+        
+        -- Step 4: Get player character
+        local character = player.Character
+        if not character then
+            error("Character not found")
+        end
+        
+        local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+        if not humanoidRootPart then
+            error("HumanoidRootPart not found")
+        end
+        
+        -- Step 5: Create platform below player and teleport to carpet area
+        local platformPosition = humanoidRootPart.Position + Vector3.new(0, -3, 0)
+        currentPlatform = createPlatform(platformPosition)
+        
+        wait(0.5) -- Brief pause for platform to appear
+        
+        -- Step 6: Teleport to 20 studs above carpet
+        local carpetPosition = carpet.Position
+        local aboveCarpetPosition = carpetPosition + Vector3.new(0, 20, 0)
+        
+        humanoidRootPart.CFrame = CFrame.new(aboveCarpetPosition)
+        
+        -- Move platform to match player position
+        currentPlatform.Position = aboveCarpetPosition + Vector3.new(0, -3, 0)
+        
+        wait(0.5) -- Wait at carpet location
+        
+        -- Step 7: Teleport to DeliveryHitbox
+        local deliveryPosition = deliveryHitbox.Position + Vector3.new(0, 5, 0) -- 5 studs above delivery
+        humanoidRootPart.CFrame = CFrame.new(deliveryPosition)
+        
+        wait(0.5)
+        
+        -- Step 8: Clean up platform
+        if currentPlatform then
+            currentPlatform:Destroy()
+            currentPlatform = nil
+        end
+        
+        -- Step 9: Success
+        statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+        
+        -- Flash button green for success
+        stealButton.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
+        stealButton.Text = "💰 STEAL COMPLETE! 💰"
+        
+        wait(1.5)
+        
+        -- Reset button
+        stealButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        stealButton.Text = "💰 STEAL 💰"
+        statusLabel.Text = "by PickleTalk"
+        statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+        
+    end)
+    
+    if not success then
+        -- Error handling
+        statusLabel.Text = "Heist failed: " .. tostring(error)
+        statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+        
+        -- Clean up platform on error
+        if currentPlatform then
+            currentPlatform:Destroy()
+            currentPlatform = nil
+        end
+        
+        -- Flash button red for failure
+        stealButton.BackgroundColor3 = Color3.fromRGB(150, 30, 30)
+        stealButton.Text = "💰 HEIST FAILED! 💰"
+        
+        wait(2)
+        
+        -- Reset button
+        stealButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        stealButton.Text = "💰 STEAL 💰"
+        statusLabel.Text = "Ready to steal"
+        statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
-end
-
-local function enablePlatform()
-    if platformEnabled then return end
     
-    platformEnabled = true
-    
-    -- Create the platform
-    currentPlatform = createPlatform()
-    
-    -- Start the update loop
-    platformUpdateConnection = RunService.Heartbeat:Connect(updatePlatformPosition)
-    
-    -- Update initial position
-    updatePlatformPosition()
-    
-    -- Update UI
-    toggleButton.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
-    toggleButton.Text = "🔷 DISABLE PLATFORM 🔷"
-    statusLabel.Text = "Platform: ON"
-    statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-    
-    print("Platform Maker: ENABLED")
-end
-
-local function disablePlatform()
-    if not platformEnabled then return end
-    
-    platformEnabled = false
-    
-    -- Disconnect the update loop
-    if platformUpdateConnection then
-        platformUpdateConnection:Disconnect()
-        platformUpdateConnection = nil
-    end
-    
-    -- Remove the platform
-    if currentPlatform then
-        currentPlatform:Destroy()
-        currentPlatform = nil
-    end
-    
-    -- Update UI
-    toggleButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    toggleButton.Text = "🔷 ENABLE PLATFORM 🔷"
-    statusLabel.Text = "Platform: OFF"
-    statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-    
-    print("Platform Maker: DISABLED")
-end
-
-local function togglePlatform()
-    if platformEnabled then
-        disablePlatform()
-    else
-        enablePlatform()
-    end
+    isHeistInProgress = false
 end
 
 -- ========================================
@@ -247,19 +334,18 @@ local function onCharacterAdded(newCharacter)
     humanoid = character:WaitForChild("Humanoid")
     rootPart = character:WaitForChild("HumanoidRootPart")
     
-    -- If platform was enabled, recreate it for the new character
-    if platformEnabled then
-        task.wait(1) -- Wait for character to fully load
-        
-        -- Remove old platform if it exists
-        if currentPlatform then
-            currentPlatform:Destroy()
-        end
-        
-        -- Create new platform
-        currentPlatform = createPlatform()
-        updatePlatformPosition()
+    -- Clean up any existing platform
+    if currentPlatform then
+        currentPlatform:Destroy()
+        currentPlatform = nil
     end
+    
+    -- Reset heist state
+    isHeistInProgress = false
+    stealButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    stealButton.Text = "💰 STEAL 💰"
+    statusLabel.Text = "by PickleTalk"
+    statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 end
 
 -- Connect character respawn handler
@@ -268,24 +354,27 @@ player.CharacterAdded:Connect(onCharacterAdded)
 -- ========================================
 -- UI BUTTON CONNECTIONS
 -- ========================================
-toggleButton.MouseButton1Click:Connect(function()
-    -- Add button click animation
-    local originalSize = toggleButton.Size
-    local clickTween = TweenService:Create(toggleButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 210, 0, 33)})
-    local releaseTween = TweenService:Create(toggleButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = originalSize})
-    
-    clickTween:Play()
-    clickTween.Completed:Connect(function()
-        releaseTween:Play()
-    end)
-    
-    togglePlatform()
+stealButton.MouseButton1Click:Connect(function()
+    if not isHeistInProgress then
+        -- Add button click animation
+        local originalSize = stealButton.Size
+        local clickTween = TweenService:Create(stealButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 210, 0, 33)})
+        local releaseTween = TweenService:Create(stealButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = originalSize})
+        
+        clickTween:Play()
+        clickTween.Completed:Connect(function()
+            releaseTween:Play()
+        end)
+        
+        executeHeist()
+    end
 end)
 
 closeButton.MouseButton1Click:Connect(function()
-    -- Disable platform when closing
-    if platformEnabled then
-        disablePlatform()
+    -- Clean up platform when closing
+    if currentPlatform then
+        currentPlatform:Destroy()
+        currentPlatform = nil
     end
     screenGui:Destroy()
 end)
@@ -295,40 +384,27 @@ end)
 -- ========================================
 local function addHoverEffect(button, hoverColor, originalColor)
     button.MouseEnter:Connect(function()
-        if button == toggleButton then
-            -- Different hover color based on state
-            if platformEnabled then
-                button.BackgroundColor3 = Color3.fromRGB(50, 180, 80)
-            else
-                button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-            end
-        else
+        if not isHeistInProgress then
             button.BackgroundColor3 = hoverColor
         end
     end)
     
     button.MouseLeave:Connect(function()
-        if button == toggleButton then
-            -- Restore color based on state
-            if platformEnabled then
-                button.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
-            else
-                button.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-            end
-        else
+        if not isHeistInProgress then
             button.BackgroundColor3 = originalColor
         end
     end)
 end
 
 addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
-addHoverEffect(toggleButton, Color3.fromRGB(30, 30, 30), Color3.fromRGB(0, 0, 0))
+addHoverEffect(stealButton, Color3.fromRGB(30, 30, 30), Color3.fromRGB(0, 0, 0))
 
 -- ========================================
 -- CLEANUP ON SCRIPT END
 -- ========================================
 game:BindToClose(function()
-    if platformEnabled then
-        disablePlatform()
+    if currentPlatform then
+        currentPlatform:Destroy()
+        currentPlatform = nil
     end
 end)
