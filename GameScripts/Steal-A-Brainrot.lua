@@ -282,9 +282,6 @@ local function executeHeist()
             currentPlatform = nil
         end
         
-        -- Step 9: Success
-        statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-        
         -- Flash button green for success
         stealButton.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
         stealButton.Text = "💰 STEAL COMPLETE! 💰"
@@ -301,7 +298,7 @@ local function executeHeist()
     
     if not success then
         -- Error handling
-        statusLabel.Text = "Heist failed: " .. tostring(error)
+        statusLabel.Text = "Steal failed: " .. tostring(error)
         statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
         
         -- Clean up platform on error
@@ -312,14 +309,14 @@ local function executeHeist()
         
         -- Flash button red for failure
         stealButton.BackgroundColor3 = Color3.fromRGB(150, 30, 30)
-        stealButton.Text = "💰 HEIST FAILED! 💰"
+        stealButton.Text = "💰 STEAL FAILED! 💰"
         
-        wait(2)
+        wait(3)
         
         -- Reset button
         stealButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
         stealButton.Text = "💰 STEAL 💰"
-        statusLabel.Text = "Ready to steal"
+        statusLabel.Text = "by PickleTalk"
         statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
     
