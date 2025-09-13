@@ -1,5 +1,5 @@
 -- ========================================
--- PLATFORM MAKER SCRIPT
+-- ELEVATOR PLATFORM SCRIPT
 -- ========================================
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -14,15 +14,19 @@ local rootPart = character:WaitForChild("HumanoidRootPart")
 local platformEnabled = false
 local currentPlatform = nil
 local platformUpdateConnection = nil
+local elevatorActive = false
+local startingYPosition = nil
+local targetYPosition = nil
+local ELEVATOR_HEIGHT = 20 -- 20 studs above starting position
 
 -- ========================================
--- PLATFORM MAKER UI
+-- ELEVATOR PLATFORM UI
 -- ========================================
 local playerGui = player:WaitForChild("PlayerGui")
 
 -- Create ScreenGui
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "PlatformMakerUI"
+screenGui.Name = "ElevatorPlatformUI"
 screenGui.Parent = playerGui
 screenGui.ResetOnSpawn = false
 
@@ -30,7 +34,7 @@ screenGui.ResetOnSpawn = false
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
 mainFrame.Size = UDim2.new(0, 250, 0, 120)
-mainFrame.Position = UDim2.new(1, -260, 0, 140) -- Position below the teleporter UI
+mainFrame.Position = UDim2.new(1, -260, 0, 140)
 mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 mainFrame.BorderSizePixel = 0
 mainFrame.Parent = screenGui
@@ -57,7 +61,7 @@ titleText.Name = "TitleText"
 titleText.Size = UDim2.new(1, -30, 1, 0)
 titleText.Position = UDim2.new(0, 5, 0, 0)
 titleText.BackgroundTransparency = 1
-titleText.Text = "🔷 PLATFORM MAKER 🔷"
+titleText.Text = "🔷 ELEVATOR PLATFORM 🔷"
 titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleText.TextScaled = true
 titleText.Font = Enum.Font.GothamBold
@@ -84,7 +88,7 @@ toggleButton.Name = "ToggleButton"
 toggleButton.Size = UDim2.new(0, 220, 0, 35)
 toggleButton.Position = UDim2.new(0, 15, 0, 45)
 toggleButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-toggleButton.Text = "🔷 ENABLE PLATFORM 🔷"
+toggleButton.Text = "🔷 START ELEVATOR 🔷"
 toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 toggleButton.TextScaled = true
 toggleButton.Font = Enum.Font.GothamBold
@@ -100,7 +104,7 @@ statusLabel.Name = "StatusLabel"
 statusLabel.Size = UDim2.new(1, -20, 0, 25)
 statusLabel.Position = UDim2.new(0, 10, 0, 90)
 statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "Platform: OFF"
+statusLabel.Text = "Elevator: OFF"
 statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 statusLabel.TextScaled = true
 statusLabel.Font = Enum.Font.Gotham
@@ -140,22 +144,22 @@ titleBar.InputChanged:Connect(function(input)
 end)
 
 -- ========================================
--- PLATFORM FUNCTIONS
+-- ELEVATOR PLATFORM FUNCTIONS
 -- ========================================
 local function createPlatform()
     local platform = Instance.new("Part")
-    platform.Name = "PlayerPlatform"
+    platform.Name = "ElevatorPlatform"
     platform.Size = Vector3.new(6, 0.5, 6) -- 6x0.5x6 studs
     platform.Material = Enum.Material.Neon
-    platform.BrickColor = BrickColor.new("Bright blue") -- Blue color
+    platform.BrickColor = BrickColor.new("Bright blue")
     platform.Anchored = true
-    platform.CanCollide = true -- Player cannot pass through
+    platform.CanCollide = true -- Player can stand on it but cannot pass through
     platform.Shape = Enum.PartType.Block
     platform.TopSurface = Enum.SurfaceType.Smooth
     platform.BottomSurface = Enum.SurfaceType.Smooth
     platform.Parent = workspace
     
-    -- Add some visual effects
+    -- Add visual effects
     local pointLight = Instance.new("PointLight")
     pointLight.Color = Color3.fromRGB(0, 162, 255)
     pointLight.Brightness = 1
@@ -174,11 +178,57 @@ local function updatePlatformPosition()
     local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
     
     if humanoidRootPart then
-        -- Position platform 4 studs below the player
         local playerPosition = humanoidRootPart.Position
-        local platformPosition = Vector3.new(playerPosition.X, playerPosition.Y - 4, playerPosition.Z)
         
-        currentPlatform.Position = platformPosition
+        if elevatorActive then
+            -- Elevator mode: Platform stays at fixed height, but follows player's X and Z
+            local platformPosition = Vector3.new(playerPosition.X, targetYPosition, playerPosition.Z)
+            currentPlatform.Position = platformPosition
+        else
+            -- Normal mode: Platform follows player at foot level
+            local platformPosition = Vector3.new(playerPosition.X, playerPosition.Y - 3, playerPosition.Z)
+            currentPlatform.Position = platformPosition
+        end
+    end
+end
+
+local function startElevator()
+    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+        return
+    end
+    
+    -- Set starting position
+    startingYPosition = player.Character.HumanoidRootPart.Position.Y - 3
+    targetYPosition = startingYPosition + ELEVATOR_HEIGHT
+    
+    elevatorActive = true
+    
+    -- Create tween to move platform up
+    if currentPlatform then
+        local startPos = currentPlatform.Position
+        local endPos = Vector3.new(startPos.X, targetYPosition, startPos.Z)
+        
+        local tweenInfo = TweenInfo.new(
+            3, -- Duration: 3 seconds to go up 20 studs
+            Enum.EasingStyle.Quad,
+            Enum.EasingDirection.InOut,
+            0, -- No repeat
+            false, -- Don't reverse
+            0 -- No delay
+        )
+        
+        local tween = TweenService:Create(currentPlatform, tweenInfo, {Position = endPos})
+        tween:Play()
+        
+        -- Update UI during elevator movement
+        statusLabel.Text = "Elevator: RISING..."
+        statusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+        
+        tween.Completed:Connect(function()
+            statusLabel.Text = "Elevator: AT TOP"
+            statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+            print("Elevator: Reached maximum height of 20 studs")
+        end)
     end
 end
 
@@ -186,29 +236,35 @@ local function enablePlatform()
     if platformEnabled then return end
     
     platformEnabled = true
+    elevatorActive = false
     
     -- Create the platform
     currentPlatform = createPlatform()
     
-    -- Start the update loop
+    -- Start the update loop (this keeps the platform locked to player's feet)
     platformUpdateConnection = RunService.Heartbeat:Connect(updatePlatformPosition)
     
     -- Update initial position
     updatePlatformPosition()
     
+    -- Start the elevator automatically
+    task.wait(0.5) -- Brief delay to ensure platform is positioned
+    startElevator()
+    
     -- Update UI
     toggleButton.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
-    toggleButton.Text = "🔷 DISABLE PLATFORM 🔷"
-    statusLabel.Text = "Platform: ON"
-    statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+    toggleButton.Text = "🔷 STOP ELEVATOR 🔷"
+    statusLabel.Text = "Elevator: STARTING..."
+    statusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
     
-    print("Platform Maker: ENABLED")
+    print("Elevator Platform: ENABLED - Rising to 20 studs")
 end
 
 local function disablePlatform()
     if not platformEnabled then return end
     
     platformEnabled = false
+    elevatorActive = false
     
     -- Disconnect the update loop
     if platformUpdateConnection then
@@ -222,13 +278,17 @@ local function disablePlatform()
         currentPlatform = nil
     end
     
+    -- Reset position tracking
+    startingYPosition = nil
+    targetYPosition = nil
+    
     -- Update UI
     toggleButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    toggleButton.Text = "🔷 ENABLE PLATFORM 🔷"
-    statusLabel.Text = "Platform: OFF"
+    toggleButton.Text = "🔷 START ELEVATOR 🔷"
+    statusLabel.Text = "Elevator: OFF"
     statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
     
-    print("Platform Maker: DISABLED")
+    print("Elevator Platform: DISABLED")
 end
 
 local function togglePlatform()
@@ -256,9 +316,16 @@ local function onCharacterAdded(newCharacter)
             currentPlatform:Destroy()
         end
         
-        -- Create new platform
+        -- Reset elevator state
+        elevatorActive = false
+        
+        -- Create new platform and restart elevator
         currentPlatform = createPlatform()
         updatePlatformPosition()
+        
+        -- Restart elevator
+        task.wait(0.5)
+        startElevator()
     end
 end
 
