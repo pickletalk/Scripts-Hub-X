@@ -139,95 +139,111 @@ titleBar.InputChanged:Connect(function(input)
 end)
 
 -- ========================================
--- PLOT FINDING FUNCTIONS
+-- SPAWN POINT FINDING FUNCTION
 -- ========================================
-local function findPlayerPlot()
-    local plotsFolder = workspace:FindFirstChild("Plots")
-    if not plotsFolder then
-        statusLabel.Text = "Plots folder not found!"
-        wait(1.5)
-        statusLabel.Text = "by PickleTalk"
-        return nil
+local function findPlayerSpawnPoint()
+    -- Look for the player's spawn point in workspace
+    local spawns = workspace:FindFirstChild("SpawnPoints")
+    if not spawns then
+        -- Try alternative spawn locations
+        spawns = workspace:FindFirstChild("Spawns")
+        if not spawns then
+            -- Look directly in workspace for spawn parts
+            for _, obj in pairs(workspace:GetChildren()) do
+                if obj.Name:lower():find("spawn") and obj:IsA("Part") then
+                    return obj
+                end
+            end
+            return nil
+        end
     end
     
-    local playerDisplayName = player.DisplayName
-    local targetPlotName = playerDisplayName .. "'s Base"
-    
-    statusLabel.Text = "Searching for plot..."
-    
-    -- Search through all UUID-named plot folders
-    for _, plotFolder in pairs(plotsFolder:GetChildren()) do
-        if plotFolder:IsA("Folder") then
-            -- Look for PlotSign inside the UUID folder
-            local plotSign = plotFolder:FindFirstChild("PlotSign")
-            if plotSign then
-                local surfaceGui = plotSign:FindFirstChild("SurfaceGui")
-                if surfaceGui then
-                    local frame = surfaceGui:FindFirstChild("Frame")
-                    if frame then
-                        local textLabel = frame:FindFirstChild("TextLabel")
-                        if textLabel and textLabel.Text == targetPlotName then
-                            statusLabel.Text = "Found plot: " .. plotFolder.Name
-                            wait(1.5)
-                            statusLabel.Text = "by PickleTalk"
-                            return plotFolder
-                        end
-                    end
-                end
+    -- Find player-specific spawn point
+    local playerName = player.Name
+    for _, spawn in pairs(spawns:GetChildren()) do
+        if spawn:IsA("Part") or spawn:IsA("SpawnLocation") then
+            if spawn.Name:find(playerName) or spawn:GetAttribute("Owner") == playerName then
+                return spawn
             end
         end
     end
     
-    statusLabel.Text = "Player plot not found!"
-    wait(1.5)
-    statusLabel.Text = "by PickleTalk"
+    -- If no player-specific spawn found, use the first available spawn
+    for _, spawn in pairs(spawns:GetChildren()) do
+        if spawn:IsA("Part") or spawn:IsA("SpawnLocation") then
+            return spawn
+        end
+    end
+    
+    -- Last resort: look for any spawn in workspace
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("SpawnLocation") then
+            return obj
+        end
+    end
+    
     return nil
 end
 
 -- ========================================
 -- PLATFORM FUNCTIONS
 -- ========================================
-local function createPlatform(position)
+local function createInvisiblePlatform(position)
     local platform = Instance.new("Part")
     platform.Name = "HeistPlatform"
     platform.Size = Vector3.new(6, 0.5, 6) -- 6x0.5x6 studs
     platform.Material = Enum.Material.ForceField
-    platform.BrickColor = BrickColor.new("Bright blue")
+    platform.Transparency = 1 -- Make it invisible
     platform.Anchored = true
-    platform.CanCollide = true -- Player cannot pass through
+    platform.CanCollide = true -- Player cannot pass through but can stand on it
     platform.Shape = Enum.PartType.Block
     platform.TopSurface = Enum.SurfaceType.Smooth
     platform.BottomSurface = Enum.SurfaceType.Smooth
     platform.Position = position
-    platform.Transparency = 0.5 -- Make it mostly invisible but still visible
     platform.Parent = workspace
     
     return platform
 end
 
-local function movePlatformToTarget(platform, targetPosition, speed)
-    if not platform or not platform.Parent then
-        return
-    end
+local function pushPlayerWithPlatform(targetPosition, duration)
+    local character = player.Character
+    if not character then return false end
     
-    local startPosition = platform.Position
-    local direction = (targetPosition - startPosition).Unit
-    local distance = (targetPosition - startPosition).Magnitude
-    local duration = distance / (speed or 50) -- Default speed of 50 studs per second
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return false end
     
-    local tweenInfo = TweenInfo.new(
-        duration,
-        Enum.EasingStyle.Quad,
-        Enum.EasingDirection.InOut,
-        0,
-        false,
-        0
-    )
+    -- Create invisible platform below player
+    local platformPosition = humanoidRootPart.Position + Vector3.new(0, -3, 0)
+    currentPlatform = createInvisiblePlatform(platformPosition)
     
-    local tween = TweenService:Create(platform, tweenInfo, {Position = targetPosition})
-    tween:Play()
+    -- Calculate direction and distance
+    local startPos = humanoidRootPart.Position
+    local direction = (targetPosition - startPos).Unit
+    local distance = (targetPosition - startPos).Magnitude
     
-    return tween
+    -- Create a fast pushing motion by moving the platform
+    local pushSpeed = distance / (duration or 0.5) -- Speed calculation
+    local startTime = tick()
+    
+    local connection
+    connection = RunService.Heartbeat:Connect(function()
+        local elapsed = tick() - startTime
+        local progress = elapsed / (duration or 0.5)
+        
+        if progress >= 1 or not currentPlatform or not currentPlatform.Parent then
+            connection:Disconnect()
+            return
+        end
+        
+        -- Move platform smoothly towards target
+        local currentPos = startPos:lerp(targetPosition, progress)
+        currentPlatform.Position = currentPos + Vector3.new(0, -3, 0)
+        
+        -- Push player along with platform
+        humanoidRootPart.CFrame = CFrame.new(currentPos)
+    end)
+    
+    return true
 end
 
 -- ========================================
@@ -243,10 +259,10 @@ local function executeHeist()
     stealButton.BackgroundColor3 = Color3.fromRGB(150, 100, 0)
     
     local success, error = pcall(function()
-        -- Step 1: Find player plot
-        local playerPlot = findPlayerPlot()
-        if not playerPlot then
-            error("Player plot not found")
+        -- Step 1: Find player spawn point
+        local playerSpawn = findPlayerSpawnPoint()
+        if not playerSpawn then
+            error("Player spawn point not found")
         end
         
         -- Step 2: Check for Map.Carpet
@@ -260,13 +276,9 @@ local function executeHeist()
             error("Carpet not found")
         end
         
-        -- Step 3: Check for DeliveryHitbox
-        local deliveryHitbox = playerPlot:FindFirstChild("DeliveryHitbox")
-        if not deliveryHitbox then
-            error("DeliveryHitbox not found")
-        end
+        statusLabel.Text = "Found carpet!"
         
-        -- Step 4: Get player character
+        -- Step 3: Get player character
         local character = player.Character
         if not character then
             error("Character not found")
@@ -277,39 +289,28 @@ local function executeHeist()
             error("HumanoidRootPart not found")
         end
         
-        -- Step 5: Create platform below player
-        local platformPosition = humanoidRootPart.Position + Vector3.new(0, -3, 0)
-        currentPlatform = createPlatform(platformPosition)
-        
-        wait(0.3)
-        
-        -- Step 6: Calculate carpet target position
+        -- Step 4: Push to carpet area (20 studs above)
         local carpetPosition = carpet.Position
         local aboveCarpetPosition = carpetPosition + Vector3.new(0, 20, 0)
-        local carpetPlatformPosition = aboveCarpetPosition + Vector3.new(0, -3, 0)
         
-        -- Move platform towards carpet (this will push the player)
-        local tween1 = movePlatformToTarget(currentPlatform, carpetPlatformPosition, 80)
-        if tween1 then
-            tween1.Completed:Wait()
+        local pushSuccess = pushPlayerWithPlatform(aboveCarpetPosition, 0.8)
+        if not pushSuccess then
+            error("Failed to push to carpet")
         end
         
-        wait(0.5)
+        wait(1) -- Wait for push to complete
         
+        -- Step 5: Push to player spawn point
+        local spawnPosition = playerSpawn.Position + Vector3.new(0, 5, 0) -- 5 studs above spawn
         
-        -- Step 7: Calculate delivery target position
-        local deliveryPosition = deliveryHitbox.Position + Vector3.new(0, 5, 0)
-        local deliveryPlatformPosition = deliveryPosition + Vector3.new(0, -3, 0)
-        
-        -- Move platform towards delivery (this will push the player)
-        local tween2 = movePlatformToTarget(currentPlatform, deliveryPlatformPosition, 80)
-        if tween2 then
-            tween2.Completed:Wait()
+        pushSuccess = pushPlayerWithPlatform(spawnPosition, 0.8)
+        if not pushSuccess then
+            error("Failed to push to spawn")
         end
         
-        wait(0.5)
+        wait(1) -- Wait for push to complete
         
-        -- Step 8: Clean up platform
+        -- Step 6: Clean up platform
         if currentPlatform then
             currentPlatform:Destroy()
             currentPlatform = nil
@@ -318,10 +319,8 @@ local function executeHeist()
         -- Flash button green for success
         stealButton.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
         stealButton.Text = "💰 STEAL COMPLETE! 💰"
-        statusLabel.Text = "Heist successful!"
-        statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
         
-        wait(2)
+        wait(1.5)
         
         -- Reset button
         stealButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
