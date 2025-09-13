@@ -1,11 +1,12 @@
 -- ========================================
--- PLATFORM ELEVATOR SCRIPT
+-- PLATFORM ELEVATOR + ESP SCRIPT (FIXED)
 -- ========================================
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
+local LocalPlayer = Players.LocalPlayer -- Added this reference that was missing
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 local rootPart = character:WaitForChild("HumanoidRootPart")
@@ -22,6 +23,12 @@ local elevationTween = nil
 local ELEVATION_HEIGHT = 80 -- studs
 local ELEVATION_TIME = 6.5 -- seconds
 
+-- ESP variables
+local plotDisplays = {}
+local playerBaseName = LocalPlayer.DisplayName .. "'s Base"
+local playerBaseTimeWarning = false
+local alertGui = nil
+
 -- ========================================
 -- PLATFORM UI
 -- ========================================
@@ -37,7 +44,7 @@ screenGui.ResetOnSpawn = false
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
 mainFrame.Size = UDim2.new(0, 250, 0, 120)
-mainFrame.Position = UDim2.new(1, -260, 0, 140) -- Position below the teleporter UI
+mainFrame.Position = UDim2.new(1, -260, 0, 140)
 mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 mainFrame.BorderSizePixel = 0
 mainFrame.Parent = screenGui
@@ -64,7 +71,7 @@ titleText.Name = "TitleText"
 titleText.Size = UDim2.new(1, -30, 1, 0)
 titleText.Position = UDim2.new(0, 5, 0, 0)
 titleText.BackgroundTransparency = 1
-titleText.Text = "🔷 by PickleTalk 🔷"
+titleText.Text = "🔷 Platform + ESP 🔷"
 titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleText.TextScaled = true
 titleText.Font = Enum.Font.GothamBold
@@ -107,7 +114,7 @@ statusLabel.Name = "StatusLabel"
 statusLabel.Size = UDim2.new(1, -20, 0, 25)
 statusLabel.Position = UDim2.new(0, 10, 0, 90)
 statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "Platform: OFF"
+statusLabel.Text = "Platform: OFF | ESP: ON"
 statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 statusLabel.TextScaled = true
 statusLabel.Font = Enum.Font.Gotham
@@ -152,17 +159,16 @@ end)
 local function createPlatform()
     local platform = Instance.new("Part")
     platform.Name = "PlayerPlatform"
-    platform.Size = Vector3.new(200, 2, 200) -- 6x0.5x6 studs
+    platform.Size = Vector3.new(200, 2, 200)
     platform.Material = Enum.Material.Neon
-    platform.BrickColor = BrickColor.new("Bright blue") -- Blue color
+    platform.BrickColor = BrickColor.new("Bright blue")
     platform.Anchored = true
-    platform.CanCollide = true -- Player cannot pass through
+    platform.CanCollide = true
     platform.Shape = Enum.PartType.Block
     platform.TopSurface = Enum.SurfaceType.Smooth
     platform.BottomSurface = Enum.SurfaceType.Smooth
     platform.Parent = workspace
     
-    -- Add some visual effects
     local pointLight = Instance.new("PointLight")
     pointLight.Color = Color3.fromRGB(0, 162, 255)
     pointLight.Brightness = 1
@@ -181,10 +187,8 @@ local function updatePlatformPosition()
     local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
     
     if humanoidRootPart then
-        -- Position platform 4 studs below the player (only X and Z, keep current Y)
         local playerPosition = humanoidRootPart.Position
         local platformPosition = Vector3.new(playerPosition.X, currentPlatform.Position.Y, playerPosition.Z)
-        
         currentPlatform.Position = platformPosition
     end
 end
@@ -201,15 +205,12 @@ local function startElevation()
     
     isElevating = true
     
-    -- Set starting position
     local playerPosition = humanoidRootPart.Position
-    elevationStartY = playerPosition.Y - 9 -- 10 studs below player
+    elevationStartY = playerPosition.Y - 9
     local targetY = elevationStartY + ELEVATION_HEIGHT
     
-    -- Set initial platform position
     currentPlatform.Position = Vector3.new(playerPosition.X, elevationStartY, playerPosition.Z)
     
-    -- Create elevation tween
     local tweenInfo = TweenInfo.new(
         ELEVATION_TIME,
         Enum.EasingStyle.Quad,
@@ -223,40 +224,32 @@ local function startElevation()
         Position = Vector3.new(currentPlatform.Position.X, targetY, currentPlatform.Position.Z)
     })
     
-    -- Update status
-    statusLabel.Text = "Platform: ELEVATING"
+    statusLabel.Text = "Platform: ELEVATING | ESP: ON"
     statusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
     
-    -- Start tween
     elevationTween:Play()
     
-    -- Handle completion
     elevationTween.Completed:Connect(function()
         isElevating = false
-        statusLabel.Text = "Platform: ELEVATED!"
+        statusLabel.Text = "Platform: ELEVATED! | ESP: ON"
         statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-        print("Platform: Elevation complete - 40 studs reached!")
+        print("Platform: Elevation complete!")
     end)
     
-    print("Platform: Starting elevation - 40 studs in 1.5 seconds")
+    print("Platform: Starting elevation")
 end
 
 local function enablePlatform()
     if platformEnabled then return end
     
     platformEnabled = true
-    
-    -- Create the platform
     currentPlatform = createPlatform()
     
-    -- Start elevation immediately
-    task.wait(0.1) -- Small delay to ensure platform is created
+    task.wait(0.1)
     startElevation()
     
-    -- Start the update loop (for X and Z positioning only)
     platformUpdateConnection = RunService.Heartbeat:Connect(updatePlatformPosition)
     
-    -- Update UI
     toggleButton.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
     toggleButton.Text = "🔷 DISABLE PLATFORM 🔷"
     
@@ -269,31 +262,26 @@ local function disablePlatform()
     platformEnabled = false
     isElevating = false
     
-    -- Stop any ongoing elevation
     if elevationTween then
         elevationTween:Cancel()
         elevationTween = nil
     end
     
-    -- Disconnect the update loop
     if platformUpdateConnection then
         platformUpdateConnection:Disconnect()
         platformUpdateConnection = nil
     end
     
-    -- Remove the platform
     if currentPlatform then
         currentPlatform:Destroy()
         currentPlatform = nil
     end
     
-    -- Reset variables
     elevationStartY = nil
     
-    -- Update UI
     toggleButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     toggleButton.Text = "🔷 ENABLE PLATFORM 🔷"
-    statusLabel.Text = "Platform: OFF"
+    statusLabel.Text = "Platform: OFF | ESP: ON"
     statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
     
     print("Platform: DISABLED")
@@ -308,117 +296,12 @@ local function togglePlatform()
 end
 
 -- ========================================
--- CHARACTER HANDLING
+-- ESP FUNCTIONS
 -- ========================================
-local function onCharacterAdded(newCharacter)
-    character = newCharacter
-    humanoid = character:WaitForChild("Humanoid")
-    rootPart = character:WaitForChild("HumanoidRootPart")
-    
-    -- If platform was enabled, recreate it for the new character
-    if platformEnabled then
-        task.wait(1) -- Wait for character to fully load
-        
-        -- Stop any ongoing elevation
-        if elevationTween then
-            elevationTween:Cancel()
-        end
-        isElevating = false
-        
-        -- Remove old platform if it exists
-        if currentPlatform then
-            currentPlatform:Destroy()
-        end
-        
-        -- Create new platform and start elevation
-        currentPlatform = createPlatform()
-        task.wait(0.1)
-        startElevation()
-    end
-end
 
--- Connect character respawn handler
-player.CharacterAdded:Connect(onCharacterAdded)
-
--- ========================================
--- UI BUTTON CONNECTIONS
--- ========================================
-toggleButton.MouseButton1Click:Connect(function()
-    -- Add button click animation
-    local originalSize = toggleButton.Size
-    local clickTween = TweenService:Create(toggleButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 210, 0, 33)})
-    local releaseTween = TweenService:Create(toggleButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = originalSize})
-    
-    clickTween:Play()
-    clickTween.Completed:Connect(function()
-        releaseTween:Play()
-    end)
-    
-    togglePlatform()
-end)
-
-closeButton.MouseButton1Click:Connect(function()
-    -- Disable platform when closing
-    if platformEnabled then
-        disablePlatform()
-    end
-    screenGui:Destroy()
-end)
-
--- ========================================
--- HOVER EFFECTS
--- ========================================
-local function addHoverEffect(button, hoverColor, originalColor)
-    button.MouseEnter:Connect(function()
-        if button == toggleButton then
-            -- Different hover color based on state
-            if platformEnabled then
-                button.BackgroundColor3 = Color3.fromRGB(50, 180, 80)
-            else
-                button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-            end
-        else
-            button.BackgroundColor3 = hoverColor
-        end
-    end)
-    
-    button.MouseLeave:Connect(function()
-        if button == toggleButton then
-            -- Restore color based on state
-            if platformEnabled then
-                button.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
-            else
-                button.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-            end
-        else
-            button.BackgroundColor3 = originalColor
-        end
-    end)
-end
-
-addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
-addHoverEffect(toggleButton, Color3.fromRGB(30, 30, 30), Color3.fromRGB(0, 0, 0))
-
--- ========================================
--- CLEANUP ON SCRIPT END
--- ========================================
-game:BindToClose(function()
-    if platformEnabled then
-        disablePlatform()
-    end
-end)
-
--- Table to store plot displays for updating
-local plotDisplays = {}
-
--- Variables for player's base tracking
-local playerBaseName = LocalPlayer.DisplayName .. "'s Base"
-local playerBaseTimeWarning = false
-local alertGui = nil
-
--- Function to create alert GUI
+-- Function to create alert GUI for base time warning
 local function createAlertGui()
-    if alertGui then return end -- Already exists
+    if alertGui then return end
     
     local screenGui = Instance.new("ScreenGui")
     screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
@@ -429,7 +312,7 @@ local function createAlertGui()
     frame.Parent = screenGui
     frame.Size = UDim2.new(0, 300, 0, 80)
     frame.Position = UDim2.new(0.5, -150, 0.1, 0)
-    frame.BackgroundColor3 = Color3.fromRGB(255, 0, 0) -- Red background
+    frame.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
     frame.BorderSizePixel = 0
     
     local corner = Instance.new("UICorner")
@@ -448,8 +331,7 @@ local function createAlertGui()
     textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
     textLabel.Font = Enum.Font.SourceSansBold
     
-    -- Pulsing animation
-    local tween = game:GetService("TweenService"):Create(
+    local tween = TweenService:Create(
         frame,
         TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
         {BackgroundColor3 = Color3.fromRGB(150, 0, 0)}
@@ -463,14 +345,11 @@ local function createAlertGui()
     }
 end
 
--- Function to update alert GUI with countdown
 local function updateAlertGui(timeText)
     if not alertGui then return end
-    
     alertGui.textLabel.Text = "⚠️ BASE EXPIRING: " .. timeText .. " ⚠️"
 end
 
--- Function to remove alert GUI
 local function removeAlertGui()
     if alertGui then
         if alertGui.tween then
@@ -482,23 +361,19 @@ local function removeAlertGui()
     end
 end
 
--- Function to parse time text and return seconds
 local function parseTimeToSeconds(timeText)
     if not timeText or timeText == "" then return nil end
     
-    -- Handle different time formats
     local minutes, seconds = timeText:match("(%d+):(%d+)")
     if minutes and seconds then
         return tonumber(minutes) * 60 + tonumber(seconds)
     end
     
-    -- Handle seconds only format
     local secondsOnly = timeText:match("(%d+)s")
     if secondsOnly then
         return tonumber(secondsOnly)
     end
     
-    -- Handle minutes only format
     local minutesOnly = timeText:match("(%d+)m")
     if minutesOnly then
         return tonumber(minutesOnly) * 60
@@ -507,52 +382,78 @@ local function parseTimeToSeconds(timeText)
     return nil
 end
 
--- Function to create display name for a player
 local function createPlayerDisplay(player)
-    if player == LocalPlayer then return end -- Ignore self
+    if player == LocalPlayer then return end
     
-    local character = player.Character or player.CharacterAdded:Wait()
-    if not character then return end
+    -- Wait for character with timeout
+    local character = player.Character
+    if not character then
+        player.CharacterAdded:Connect(function(char)
+            character = char
+            task.wait(0.5) -- Give time for character to load
+            local head = character:FindFirstChild("Head")
+            if head then
+                createPlayerESP(player, head)
+            end
+        end)
+        return
+    end
     
-    -- Wait for head
-    local head = character:WaitForChild("Head", 5)
-    if not head then return end
+    local head = character:FindFirstChild("Head")
+    if head then
+        createPlayerESP(player, head)
+    else
+        character.ChildAdded:Connect(function(child)
+            if child.Name == "Head" then
+                createPlayerESP(player, child)
+            end
+        end)
+    end
+end
+
+function createPlayerESP(player, head)
+    -- Remove existing ESP if present
+    local existingGui = head:FindFirstChild("PlayerESP")
+    if existingGui then
+        existingGui:Destroy()
+    end
     
-    -- Create GUI for display name
     local billboardGui = Instance.new("BillboardGui")
+    billboardGui.Name = "PlayerESP"
     billboardGui.Parent = head
-    billboardGui.Size = UDim2.new(0, 80, 0, 25)
+    billboardGui.Size = UDim2.new(0, 100, 0, 30)
     billboardGui.StudsOffset = Vector3.new(0, 2, 0)
-    billboardGui.AlwaysOnTop = true -- See through walls
+    billboardGui.AlwaysOnTop = true
     
     local textLabel = Instance.new("TextLabel")
     textLabel.Parent = billboardGui
     textLabel.Size = UDim2.new(1, 0, 1, 0)
     textLabel.BackgroundTransparency = 1
     textLabel.Text = player.DisplayName
-    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255) -- White text
+    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     textLabel.TextScaled = true
     textLabel.TextStrokeTransparency = 0.3
     textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
     textLabel.Font = Enum.Font.SourceSansBold
 end
 
--- Function to create/update plot display
 local function createOrUpdatePlotDisplay(plot)
+    if not plot or not plot.Parent then return end
+    
     local plotName = plot.Name
     
-    -- Check plot sign text
+    -- Get plot sign text
     local plotSignText = ""
-    if plot:FindFirstChild("PlotSign") and 
-       plot.PlotSign:FindFirstChild("SurfaceGui") and 
-       plot.PlotSign.SurfaceGui:FindFirstChild("Frame") and 
-       plot.PlotSign.SurfaceGui.Frame:FindFirstChild("TextLabel") then
-        plotSignText = plot.PlotSign.SurfaceGui.Frame.TextLabel.Text
+    local signPath = plot:FindFirstChild("PlotSign")
+    if signPath and signPath:FindFirstChild("SurfaceGui") then
+        local surfaceGui = signPath.SurfaceGui
+        if surfaceGui:FindFirstChild("Frame") and surfaceGui.Frame:FindFirstChild("TextLabel") then
+            plotSignText = surfaceGui.Frame.TextLabel.Text
+        end
     end
     
-    -- Ignore "Empty's Base"
-    if plotSignText == "Empty Base" or plotSignText == "" then
-        -- Remove existing display if it exists
+    -- Skip empty bases
+    if plotSignText == "Empty Base" or plotSignText == "" or plotSignText == "Empty's Base" then
         if plotDisplays[plotName] and plotDisplays[plotName].gui then
             plotDisplays[plotName].gui:Destroy()
             plotDisplays[plotName] = nil
@@ -560,36 +461,34 @@ local function createOrUpdatePlotDisplay(plot)
         return
     end
     
-    -- Check remaining time text
+    -- Get remaining time
     local plotTimeText = ""
-    if plot:FindFirstChild("Purchases") and 
-       plot.Purchases:FindFirstChild("PlotBlock") and 
-       plot.Purchases.PlotBlock:FindFirstChild("Main") and 
-       plot.Purchases.PlotBlock.Main:FindFirstChild("BillboardGui") and 
-       plot.Purchases.PlotBlock.Main.BillboardGui:FindFirstChild("RemainingTime") then
-        plotTimeText = plot.Purchases.PlotBlock.Main.BillboardGui.RemainingTime.Text
+    local purchasesPath = plot:FindFirstChild("Purchases")
+    if purchasesPath and purchasesPath:FindFirstChild("PlotBlock") then
+        local plotBlock = purchasesPath.PlotBlock
+        if plotBlock:FindFirstChild("Main") and plotBlock.Main:FindFirstChild("BillboardGui") then
+            local billboardGui = plotBlock.Main.BillboardGui
+            if billboardGui:FindFirstChild("RemainingTime") then
+                plotTimeText = billboardGui.RemainingTime.Text
+            end
+        end
     end
     
-    -- Check if this is the player's base and handle time warning
+    -- Handle player base time warning
     if plotSignText == playerBaseName then
         local remainingSeconds = parseTimeToSeconds(plotTimeText)
         
         if remainingSeconds and remainingSeconds <= 10 and remainingSeconds > 0 then
-            -- Show warning if not already showing
             if not playerBaseTimeWarning then
                 createAlertGui()
                 playerBaseTimeWarning = true
             end
-            
-            -- Update alert with current time
             updateAlertGui(plotTimeText)
         elseif remainingSeconds and remainingSeconds > 10 then
-            -- Remove warning if time goes above 10 seconds
             if playerBaseTimeWarning then
                 removeAlertGui()
             end
         elseif not remainingSeconds or remainingSeconds <= 0 then
-            -- Base expired or time format not recognized
             if playerBaseTimeWarning then
                 removeAlertGui()
             end
@@ -597,16 +496,33 @@ local function createOrUpdatePlotDisplay(plot)
     end
     
     -- Find display part
-    local displayPart = plot:FindFirstChild("PlotSign") or plot:FindFirstChildOfClass("Part") or plot:FindFirstChildOfClass("MeshPart")
+    local displayPart = plot:FindFirstChild("PlotSign")
+    if not displayPart then
+        -- Try to find any part in the plot
+        for _, child in pairs(plot:GetChildren()) do
+            if child:IsA("Part") or child:IsA("MeshPart") then
+                displayPart = child
+                break
+            end
+        end
+    end
+    
     if not displayPart then return end
     
-    -- Create new display if doesn't exist
+    -- Create or update display
     if not plotDisplays[plotName] then
+        -- Remove any existing billboard first
+        local existingBillboard = displayPart:FindFirstChild("PlotESP")
+        if existingBillboard then
+            existingBillboard:Destroy()
+        end
+        
         local billboardGui = Instance.new("BillboardGui")
+        billboardGui.Name = "PlotESP"
         billboardGui.Parent = displayPart
-        billboardGui.Size = UDim2.new(0, 150, 0, 50)
+        billboardGui.Size = UDim2.new(0, 150, 0, 60)
         billboardGui.StudsOffset = Vector3.new(0, 8, 0)
-        billboardGui.AlwaysOnTop = true -- See through walls
+        billboardGui.AlwaysOnTop = true
         
         local frame = Instance.new("Frame")
         frame.Parent = billboardGui
@@ -619,33 +535,30 @@ local function createOrUpdatePlotDisplay(plot)
         corner.Parent = frame
         corner.CornerRadius = UDim.new(0, 4)
         
-        -- Plot sign text label
         local signLabel = Instance.new("TextLabel")
         signLabel.Parent = frame
         signLabel.Size = UDim2.new(1, -4, 0.6, 0)
         signLabel.Position = UDim2.new(0, 2, 0, 2)
         signLabel.BackgroundTransparency = 1
         signLabel.Text = plotSignText
-        signLabel.TextColor3 = Color3.fromRGB(0, 255, 0) -- Green text
+        signLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
         signLabel.TextScaled = true
         signLabel.TextStrokeTransparency = 0.3
         signLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
         signLabel.Font = Enum.Font.SourceSansBold
         
-        -- Remaining time label
         local timeLabel = Instance.new("TextLabel")
         timeLabel.Parent = frame
         timeLabel.Size = UDim2.new(1, -4, 0.4, 0)
         timeLabel.Position = UDim2.new(0, 2, 0.6, 0)
         timeLabel.BackgroundTransparency = 1
         timeLabel.Text = plotTimeText
-        timeLabel.TextColor3 = Color3.fromRGB(255, 255, 0) -- Yellow for time
+        timeLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
         timeLabel.TextScaled = true
         timeLabel.TextStrokeTransparency = 0.3
         timeLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
         timeLabel.Font = Enum.Font.SourceSans
         
-        -- Store references
         plotDisplays[plotName] = {
             gui = billboardGui,
             signLabel = signLabel,
@@ -663,81 +576,177 @@ local function createOrUpdatePlotDisplay(plot)
     end
 end
 
--- Function to update all plots
 local function updateAllPlots()
     local plots = workspace:FindFirstChild("Plots")
-    if plots then
-        for _, plot in pairs(plots:GetChildren()) do
-            if plot:IsA("Model") or plot:IsA("Folder") then
+    if not plots then return end
+    
+    for _, plot in pairs(plots:GetChildren()) do
+        if plot:IsA("Model") or plot:IsA("Folder") then
+            pcall(function() -- Wrap in pcall to prevent errors
                 createOrUpdatePlotDisplay(plot)
-            end
+            end)
         end
-        
-        -- Clean up displays for plots that no longer exist
-        for plotName, display in pairs(plotDisplays) do
-            if not plots:FindFirstChild(plotName) then
-                if display.gui then
-                    display.gui:Destroy()
-                end
-                plotDisplays[plotName] = nil
+    end
+    
+    -- Clean up displays for removed plots
+    for plotName, display in pairs(plotDisplays) do
+        if not plots:FindFirstChild(plotName) then
+            if display.gui then
+                display.gui:Destroy()
             end
+            plotDisplays[plotName] = nil
         end
     end
 end
 
--- Apply display to all current players
-for _, player in pairs(Players:GetPlayers()) do
-    if player ~= LocalPlayer then
-        if player.Character then
-            createPlayerDisplay(player)
+-- ========================================
+-- CHARACTER HANDLING
+-- ========================================
+local function onCharacterAdded(newCharacter)
+    character = newCharacter
+    humanoid = character:WaitForChild("Humanoid")
+    rootPart = character:WaitForChild("HumanoidRootPart")
+    
+    if platformEnabled then
+        task.wait(1)
+        
+        if elevationTween then
+            elevationTween:Cancel()
         end
-        -- Handle character respawning for existing players
-        player.CharacterAdded:Connect(function()
-            createPlayerDisplay(player)
+        isElevating = false
+        
+        if currentPlatform then
+            currentPlatform:Destroy()
+        end
+        
+        currentPlatform = createPlatform()
+        task.wait(0.1)
+        startElevation()
+    end
+end
+
+player.CharacterAdded:Connect(onCharacterAdded)
+
+-- ========================================
+-- INITIALIZE ESP
+-- ========================================
+
+-- Setup player ESP for existing players
+for _, playerObj in pairs(Players:GetPlayers()) do
+    if playerObj ~= LocalPlayer then
+        createPlayerDisplay(playerObj)
+        playerObj.CharacterAdded:Connect(function()
+            task.wait(0.5)
+            createPlayerDisplay(playerObj)
         end)
     end
 end
 
--- Apply display to new players joining
-Players.PlayerAdded:Connect(function(player)
-    -- Handle initial character spawn and respawns for new players
-    player.CharacterAdded:Connect(function()
-        createPlayerDisplay(player)
-    end)
-    
-    -- If player already has character when they join
-    if player.Character then
-        createPlayerDisplay(player)
+-- Setup player ESP for new players
+Players.PlayerAdded:Connect(function(playerObj)
+    if playerObj ~= LocalPlayer then
+        createPlayerDisplay(playerObj)
+        playerObj.CharacterAdded:Connect(function()
+            task.wait(0.5)
+            createPlayerDisplay(playerObj)
+        end)
     end
 end)
 
--- Initial plot scan
+-- Initialize plot ESP
 updateAllPlots()
 
--- Loop to update plots every 0.1 seconds for real-time base monitoring
-spawn(function()
-    while true do
-        wait(0.1)
-        updateAllPlots()
-    end
-end)
-
--- Monitor for new plots being added immediately
+-- Monitor for new plots
 local plots = workspace:FindFirstChild("Plots")
 if plots then
     plots.ChildAdded:Connect(function(child)
         if child:IsA("Model") or child:IsA("Folder") then
-            wait(0.5) -- Small delay for plot to load
+            task.wait(0.5)
             createOrUpdatePlotDisplay(child)
         end
     end)
 end
 
--- Clean up alert GUI when player leaves (good practice)
-game.Players.PlayerRemoving:Connect(function(player)
-    if player == LocalPlayer then
+-- Update plots continuously
+task.spawn(function()
+    while true do
+        task.wait(0.5) -- Increased interval to reduce lag
+        pcall(updateAllPlots)
+    end
+end)
+
+-- ========================================
+-- UI BUTTON CONNECTIONS
+-- ========================================
+toggleButton.MouseButton1Click:Connect(function()
+    local originalSize = toggleButton.Size
+    local clickTween = TweenService:Create(toggleButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 210, 0, 33)})
+    local releaseTween = TweenService:Create(toggleButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = originalSize})
+    
+    clickTween:Play()
+    clickTween.Completed:Connect(function()
+        releaseTween:Play()
+    end)
+    
+    togglePlatform()
+end)
+
+closeButton.MouseButton1Click:Connect(function()
+    if platformEnabled then
+        disablePlatform()
+    end
+    if alertGui then
+        removeAlertGui()
+    end
+    screenGui:Destroy()
+end)
+
+-- ========================================
+-- HOVER EFFECTS
+-- ========================================
+local function addHoverEffect(button, hoverColor, originalColor)
+    button.MouseEnter:Connect(function()
+        if button == toggleButton then
+            if platformEnabled then
+                button.BackgroundColor3 = Color3.fromRGB(50, 180, 80)
+            else
+                button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+            end
+        else
+            button.BackgroundColor3 = hoverColor
+        end
+    end)
+    
+    button.MouseLeave:Connect(function()
+        if button == toggleButton then
+            if platformEnabled then
+                button.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
+            else
+                button.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+            end
+        else
+            button.BackgroundColor3 = originalColor
+        end
+    end)
+end
+
+addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
+addHoverEffect(toggleButton, Color3.fromRGB(30, 30, 30), Color3.fromRGB(0, 0, 0))
+
+-- ========================================
+-- CLEANUP
+-- ========================================
+game:BindToClose(function()
+    if platformEnabled then
+        disablePlatform()
+    end
+    if alertGui then
         removeAlertGui()
     end
 end)
 
-print("Enhanced display activated with base timer alert! Monitoring '" .. playerBaseName .. "' for time warnings.")
+Players.PlayerRemoving:Connect(function(playerObj)
+    if playerObj == LocalPlayer then
+        removeAlertGui()
+    end
+end)
