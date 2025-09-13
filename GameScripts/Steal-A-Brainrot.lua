@@ -407,3 +407,337 @@ game:BindToClose(function()
         disablePlatform()
     end
 end)
+
+-- Table to store plot displays for updating
+local plotDisplays = {}
+
+-- Variables for player's base tracking
+local playerBaseName = LocalPlayer.DisplayName .. "'s Base"
+local playerBaseTimeWarning = false
+local alertGui = nil
+
+-- Function to create alert GUI
+local function createAlertGui()
+    if alertGui then return end -- Already exists
+    
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+    screenGui.Name = "BaseTimeAlert"
+    screenGui.ResetOnSpawn = false
+    
+    local frame = Instance.new("Frame")
+    frame.Parent = screenGui
+    frame.Size = UDim2.new(0, 300, 0, 80)
+    frame.Position = UDim2.new(0.5, -150, 0.1, 0)
+    frame.BackgroundColor3 = Color3.fromRGB(255, 0, 0) -- Red background
+    frame.BorderSizePixel = 0
+    
+    local corner = Instance.new("UICorner")
+    corner.Parent = frame
+    corner.CornerRadius = UDim.new(0, 8)
+    
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Parent = frame
+    textLabel.Size = UDim2.new(1, -10, 1, -10)
+    textLabel.Position = UDim2.new(0, 5, 0, 5)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = "⚠️ BASE TIME WARNING ⚠️"
+    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    textLabel.TextScaled = true
+    textLabel.TextStrokeTransparency = 0
+    textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    textLabel.Font = Enum.Font.SourceSansBold
+    
+    -- Pulsing animation
+    local tween = game:GetService("TweenService"):Create(
+        frame,
+        TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+        {BackgroundColor3 = Color3.fromRGB(150, 0, 0)}
+    )
+    tween:Play()
+    
+    alertGui = {
+        screenGui = screenGui,
+        textLabel = textLabel,
+        tween = tween
+    }
+end
+
+-- Function to update alert GUI with countdown
+local function updateAlertGui(timeText)
+    if not alertGui then return end
+    
+    alertGui.textLabel.Text = "⚠️ BASE EXPIRING: " .. timeText .. " ⚠️"
+end
+
+-- Function to remove alert GUI
+local function removeAlertGui()
+    if alertGui then
+        if alertGui.tween then
+            alertGui.tween:Cancel()
+        end
+        alertGui.screenGui:Destroy()
+        alertGui = nil
+        playerBaseTimeWarning = false
+    end
+end
+
+-- Function to parse time text and return seconds
+local function parseTimeToSeconds(timeText)
+    if not timeText or timeText == "" then return nil end
+    
+    -- Handle different time formats
+    local minutes, seconds = timeText:match("(%d+):(%d+)")
+    if minutes and seconds then
+        return tonumber(minutes) * 60 + tonumber(seconds)
+    end
+    
+    -- Handle seconds only format
+    local secondsOnly = timeText:match("(%d+)s")
+    if secondsOnly then
+        return tonumber(secondsOnly)
+    end
+    
+    -- Handle minutes only format
+    local minutesOnly = timeText:match("(%d+)m")
+    if minutesOnly then
+        return tonumber(minutesOnly) * 60
+    end
+    
+    return nil
+end
+
+-- Function to create display name for a player
+local function createPlayerDisplay(player)
+    if player == LocalPlayer then return end -- Ignore self
+    
+    local character = player.Character or player.CharacterAdded:Wait()
+    if not character then return end
+    
+    -- Wait for head
+    local head = character:WaitForChild("Head", 5)
+    if not head then return end
+    
+    -- Create GUI for display name
+    local billboardGui = Instance.new("BillboardGui")
+    billboardGui.Parent = head
+    billboardGui.Size = UDim2.new(0, 80, 0, 25)
+    billboardGui.StudsOffset = Vector3.new(0, 2, 0)
+    billboardGui.AlwaysOnTop = true -- See through walls
+    
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Parent = billboardGui
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = player.DisplayName
+    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255) -- White text
+    textLabel.TextScaled = true
+    textLabel.TextStrokeTransparency = 0.3
+    textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    textLabel.Font = Enum.Font.SourceSansBold
+end
+
+-- Function to create/update plot display
+local function createOrUpdatePlotDisplay(plot)
+    local plotName = plot.Name
+    
+    -- Check plot sign text
+    local plotSignText = ""
+    if plot:FindFirstChild("PlotSign") and 
+       plot.PlotSign:FindFirstChild("SurfaceGui") and 
+       plot.PlotSign.SurfaceGui:FindFirstChild("Frame") and 
+       plot.PlotSign.SurfaceGui.Frame:FindFirstChild("TextLabel") then
+        plotSignText = plot.PlotSign.SurfaceGui.Frame.TextLabel.Text
+    end
+    
+    -- Ignore "Empty's Base"
+    if plotSignText == "Empty Base" or plotSignText == "" then
+        -- Remove existing display if it exists
+        if plotDisplays[plotName] and plotDisplays[plotName].gui then
+            plotDisplays[plotName].gui:Destroy()
+            plotDisplays[plotName] = nil
+        end
+        return
+    end
+    
+    -- Check remaining time text
+    local plotTimeText = ""
+    if plot:FindFirstChild("Purchases") and 
+       plot.Purchases:FindFirstChild("PlotBlock") and 
+       plot.Purchases.PlotBlock:FindFirstChild("Main") and 
+       plot.Purchases.PlotBlock.Main:FindFirstChild("BillboardGui") and 
+       plot.Purchases.PlotBlock.Main.BillboardGui:FindFirstChild("RemainingTime") then
+        plotTimeText = plot.Purchases.PlotBlock.Main.BillboardGui.RemainingTime.Text
+    end
+    
+    -- Check if this is the player's base and handle time warning
+    if plotSignText == playerBaseName then
+        local remainingSeconds = parseTimeToSeconds(plotTimeText)
+        
+        if remainingSeconds and remainingSeconds <= 10 and remainingSeconds > 0 then
+            -- Show warning if not already showing
+            if not playerBaseTimeWarning then
+                createAlertGui()
+                playerBaseTimeWarning = true
+            end
+            
+            -- Update alert with current time
+            updateAlertGui(plotTimeText)
+        elseif remainingSeconds and remainingSeconds > 10 then
+            -- Remove warning if time goes above 10 seconds
+            if playerBaseTimeWarning then
+                removeAlertGui()
+            end
+        elseif not remainingSeconds or remainingSeconds <= 0 then
+            -- Base expired or time format not recognized
+            if playerBaseTimeWarning then
+                removeAlertGui()
+            end
+        end
+    end
+    
+    -- Find display part
+    local displayPart = plot:FindFirstChild("PlotSign") or plot:FindFirstChildOfClass("Part") or plot:FindFirstChildOfClass("MeshPart")
+    if not displayPart then return end
+    
+    -- Create new display if doesn't exist
+    if not plotDisplays[plotName] then
+        local billboardGui = Instance.new("BillboardGui")
+        billboardGui.Parent = displayPart
+        billboardGui.Size = UDim2.new(0, 150, 0, 50)
+        billboardGui.StudsOffset = Vector3.new(0, 8, 0)
+        billboardGui.AlwaysOnTop = true -- See through walls
+        
+        local frame = Instance.new("Frame")
+        frame.Parent = billboardGui
+        frame.Size = UDim2.new(1, 0, 1, 0)
+        frame.BackgroundTransparency = 0.7
+        frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        frame.BorderSizePixel = 0
+        
+        local corner = Instance.new("UICorner")
+        corner.Parent = frame
+        corner.CornerRadius = UDim.new(0, 4)
+        
+        -- Plot sign text label
+        local signLabel = Instance.new("TextLabel")
+        signLabel.Parent = frame
+        signLabel.Size = UDim2.new(1, -4, 0.6, 0)
+        signLabel.Position = UDim2.new(0, 2, 0, 2)
+        signLabel.BackgroundTransparency = 1
+        signLabel.Text = plotSignText
+        signLabel.TextColor3 = Color3.fromRGB(0, 255, 0) -- Green text
+        signLabel.TextScaled = true
+        signLabel.TextStrokeTransparency = 0.3
+        signLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        signLabel.Font = Enum.Font.SourceSansBold
+        
+        -- Remaining time label
+        local timeLabel = Instance.new("TextLabel")
+        timeLabel.Parent = frame
+        timeLabel.Size = UDim2.new(1, -4, 0.4, 0)
+        timeLabel.Position = UDim2.new(0, 2, 0.6, 0)
+        timeLabel.BackgroundTransparency = 1
+        timeLabel.Text = plotTimeText
+        timeLabel.TextColor3 = Color3.fromRGB(255, 255, 0) -- Yellow for time
+        timeLabel.TextScaled = true
+        timeLabel.TextStrokeTransparency = 0.3
+        timeLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        timeLabel.Font = Enum.Font.SourceSans
+        
+        -- Store references
+        plotDisplays[plotName] = {
+            gui = billboardGui,
+            signLabel = signLabel,
+            timeLabel = timeLabel,
+            plot = plot
+        }
+    else
+        -- Update existing display
+        if plotDisplays[plotName].signLabel then
+            plotDisplays[plotName].signLabel.Text = plotSignText
+        end
+        if plotDisplays[plotName].timeLabel then
+            plotDisplays[plotName].timeLabel.Text = plotTimeText
+        end
+    end
+end
+
+-- Function to update all plots
+local function updateAllPlots()
+    local plots = workspace:FindFirstChild("Plots")
+    if plots then
+        for _, plot in pairs(plots:GetChildren()) do
+            if plot:IsA("Model") or plot:IsA("Folder") then
+                createOrUpdatePlotDisplay(plot)
+            end
+        end
+        
+        -- Clean up displays for plots that no longer exist
+        for plotName, display in pairs(plotDisplays) do
+            if not plots:FindFirstChild(plotName) then
+                if display.gui then
+                    display.gui:Destroy()
+                end
+                plotDisplays[plotName] = nil
+            end
+        end
+    end
+end
+
+-- Apply display to all current players
+for _, player in pairs(Players:GetPlayers()) do
+    if player ~= LocalPlayer then
+        if player.Character then
+            createPlayerDisplay(player)
+        end
+        -- Handle character respawning for existing players
+        player.CharacterAdded:Connect(function()
+            createPlayerDisplay(player)
+        end)
+    end
+end
+
+-- Apply display to new players joining
+Players.PlayerAdded:Connect(function(player)
+    -- Handle initial character spawn and respawns for new players
+    player.CharacterAdded:Connect(function()
+        createPlayerDisplay(player)
+    end)
+    
+    -- If player already has character when they join
+    if player.Character then
+        createPlayerDisplay(player)
+    end
+end)
+
+-- Initial plot scan
+updateAllPlots()
+
+-- Loop to update plots every 0.1 seconds for real-time base monitoring
+spawn(function()
+    while true do
+        wait(0.1)
+        updateAllPlots()
+    end
+end)
+
+-- Monitor for new plots being added immediately
+local plots = workspace:FindFirstChild("Plots")
+if plots then
+    plots.ChildAdded:Connect(function(child)
+        if child:IsA("Model") or child:IsA("Folder") then
+            wait(0.5) -- Small delay for plot to load
+            createOrUpdatePlotDisplay(child)
+        end
+    end)
+end
+
+-- Clean up alert GUI when player leaves (good practice)
+game.Players.PlayerRemoving:Connect(function(player)
+    if player == LocalPlayer then
+        removeAlertGui()
+    end
+end)
+
+print("Enhanced display activated with base timer alert! Monitoring '" .. playerBaseName .. "' for time warnings.")
