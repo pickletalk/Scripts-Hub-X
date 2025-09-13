@@ -21,7 +21,7 @@ local elevationTween = nil
 
 -- Elevation settings
 local ELEVATION_HEIGHT = 70 -- studs
-local ELEVATION_TIME = 7 -- seconds
+local ELEVATION_TIME = 7.5 -- seconds
 
 -- ESP variables
 local plotDisplays = {}
