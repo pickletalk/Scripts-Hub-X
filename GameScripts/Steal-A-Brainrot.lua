@@ -276,8 +276,6 @@ local function executeHeist()
             error("Carpet not found")
         end
         
-        statusLabel.Text = "Found carpet!"
-        
         -- Step 3: Get player character
         local character = player.Character
         if not character then
@@ -325,8 +323,7 @@ local function executeHeist()
         -- Reset button
         stealButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
         stealButton.Text = "💰 STEAL 💰"
-        statusLabel.Text = "by PickleTalk"
-        statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+        -- Keep status text as "by PickleTalk"
         
     end)
     
