@@ -152,7 +152,7 @@ end)
 local function createPlatform()
     local platform = Instance.new("Part")
     platform.Name = "PlayerPlatform"
-    platform.Size = Vector3.new(40, 0.39, 40) -- 6x0.5x6 studs
+    platform.Size = Vector3.new(60, 2, 60) -- 6x0.5x6 studs
     platform.Material = Enum.Material.Neon
     platform.BrickColor = BrickColor.new("Bright blue") -- Blue color
     platform.Anchored = true
@@ -203,7 +203,7 @@ local function startElevation()
     
     -- Set starting position
     local playerPosition = humanoidRootPart.Position
-    elevationStartY = playerPosition.Y - 10 -- 10 studs below player
+    elevationStartY = playerPosition.Y - 9 -- 10 studs below player
     local targetY = elevationStartY + ELEVATION_HEIGHT
     
     -- Set initial platform position
