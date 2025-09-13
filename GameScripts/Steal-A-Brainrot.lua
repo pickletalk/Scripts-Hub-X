@@ -15,6 +15,7 @@ local isHeistInProgress = false
 local currentPlatform = nil
 local playerSpawnPoint = nil
 local spawnPointCaptured = false
+local weldConstraint = nil
 
 -- ========================================
 -- SHADOW HEIST UI
@@ -144,18 +145,21 @@ end)
 -- SPAWN POINT CAPTURE FUNCTIONS
 -- ========================================
 local function captureSpawnPoint()
-    
     -- Reset player to capture spawn point
     local humanoid = character:FindFirstChild("Humanoid")
     if humanoid then
         humanoid.Health = 0 -- Kill player to respawn
         
         -- Wait for respawn and capture position
-        player.CharacterAdded:Connect(function(newChar)
+        local connection
+        connection = player.CharacterAdded:Connect(function(newChar)
+            connection:Disconnect() -- Only capture once
             wait(1) -- Wait for character to fully spawn
+            character = newChar
             local newRootPart = newChar:WaitForChild("HumanoidRootPart")
             playerSpawnPoint = newRootPart.Position
             spawnPointCaptured = true
+            print("Spawn point captured at:", playerSpawnPoint)
         end)
     end
 end
@@ -167,8 +171,8 @@ local function createPlatform(position)
     local platform = Instance.new("Part")
     platform.Name = "HeistPlatform"
     platform.Size = Vector3.new(8, 1, 8) -- Larger and thicker platform
-    platform.Material = Enum.Material.ForceField
-    platform.BrickColor = BrickColor.new("Bright blue") -- Blue color
+    platform.Material = Enum.Material.Plastic
+    platform.Color = Color3.fromRGB(0, 162, 255) -- Blue color
     platform.Anchored = true
     platform.CanCollide = true -- Player cannot pass through
     platform.Shape = Enum.PartType.Block
@@ -178,25 +182,33 @@ local function createPlatform(position)
     platform.Parent = workspace
     platform.Transparency = 0 -- Fully visible
     
-    -- Add visual effects to make it more visible
-    local pointLight = Instance.new("PointLight")
-    pointLight.Color = Color3.fromRGB(0, 162, 255)
-    pointLight.Brightness = 2
-    pointLight.Range = 15
-    pointLight.Parent = platform
-    
-    -- Add particle effects
-    local attachment = Instance.new("Attachment")
-    attachment.Parent = platform
-    
-    local sparkles = Instance.new("Sparkles")
-    sparkles.Parent = platform
-    sparkles.SparkleColor = Color3.fromRGB(0, 162, 255)
-    
     return platform
 end
 
-local function pushPlayerWithPlatform(targetPosition, duration)
+local function anchorPlayerToPlatform(platform)
+    local character = player.Character
+    if not character then return end
+    
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
+    
+    -- Remove any existing weld
+    if weldConstraint then
+        weldConstraint:Destroy()
+    end
+    
+    -- Create weld constraint to anchor player to platform
+    weldConstraint = Instance.new("WeldConstraint")
+    weldConstraint.Part0 = platform
+    weldConstraint.Part1 = humanoidRootPart
+    weldConstraint.Parent = platform
+    
+    -- Position player on top of platform
+    local platformTop = platform.Position + Vector3.new(0, platform.Size.Y/2 + 2.5, 0)
+    humanoidRootPart.CFrame = CFrame.new(platformTop)
+end
+
+local function movePlatformWithPlayer(targetPosition, duration)
     local character = player.Character
     if not character then return end
     
@@ -210,29 +222,23 @@ local function pushPlayerWithPlatform(targetPosition, duration)
     end
     currentPlatform = createPlatform(platformPosition)
     
-    -- Calculate movement
-    local startPos = humanoidRootPart.Position
-    local endPos = targetPosition
+    -- Anchor player to platform
+    anchorPlayerToPlatform(currentPlatform)
     
-    -- Tween both player and platform together
-    local playerTweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut)
+    -- Calculate target platform position (keeping player above it)
+    local targetPlatformPosition = targetPosition + Vector3.new(0, -4, 0)
+    
+    -- Tween only the platform (player will move with it due to weld)
     local platformTweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut)
     
-    -- Create tweens
-    local playerTween = TweenService:Create(humanoidRootPart, playerTweenInfo, {
-        CFrame = CFrame.new(endPos)
-    })
-    
     local platformTween = TweenService:Create(currentPlatform, platformTweenInfo, {
-        Position = endPos + Vector3.new(0, -4, 0)
+        Position = targetPlatformPosition
     })
     
-    -- Play tweens simultaneously
-    playerTween:Play()
+    -- Play tween
     platformTween:Play()
     
-    -- Return a promise-like object
-    return playerTween
+    return platformTween
 end
 
 -- ========================================
@@ -243,18 +249,28 @@ local function executeHeist()
         return -- Prevent double execution
     end
     
-    -- Check if spawn point is captured
-    if not spawnPointCaptured then
-        captureSpawnPoint()
-        return
-    end
-    
     isHeistInProgress = true
     stealButton.Text = "💰 STEALING... 💰"
     stealButton.BackgroundColor3 = Color3.fromRGB(150, 100, 0)
     
     local success, error = pcall(function()
-        -- Step 1: Check for Map.Carpet
+        -- Step 1: Capture spawn point if not already captured
+        if not spawnPointCaptured then
+            captureSpawnPoint()
+            
+            -- Wait for spawn point to be captured
+            local timeout = 0
+            while not spawnPointCaptured and timeout < 100 do
+                wait(0.1)
+                timeout = timeout + 1
+            end
+            
+            if not spawnPointCaptured then
+                error("Failed to capture spawn point")
+            end
+        end
+        
+        -- Step 2: Check for Map.Carpet
         local map = workspace:FindFirstChild("Map")
         if not map then
             error("Map not found")
@@ -265,7 +281,7 @@ local function executeHeist()
             error("Carpet not found")
         end
         
-        -- Step 2: Get player character
+        -- Step 3: Get player character
         local character = player.Character
         if not character then
             error("Character not found")
@@ -276,27 +292,28 @@ local function executeHeist()
             error("HumanoidRootPart not found")
         end
         
-        -- Step 3: Push to carpet area (20 studs above)
-        statusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
-        
+        -- Step 4: Move to carpet area (20 studs above)
         local carpetPosition = carpet.Position
         local aboveCarpetPosition = carpetPosition + Vector3.new(0, 20, 0)
         
-        local tween1 = pushPlayerWithPlatform(aboveCarpetPosition, 1.5)
+        local tween1 = movePlatformWithPlayer(aboveCarpetPosition, 1.5)
         
         tween1.Completed:Connect(function()
             wait(0.5) -- Brief pause at carpet
             
-            -- Step 4: Push to player spawn point
-            statusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
-            
+            -- Step 5: Move to player spawn point
             local spawnPosition = playerSpawnPoint + Vector3.new(0, 3, 0) -- Slightly above spawn
-            local tween2 = pushPlayerWithPlatform(spawnPosition, 1.5)
+            local tween2 = movePlatformWithPlayer(spawnPosition, 1.5)
             
             tween2.Completed:Connect(function()
                 wait(0.5)
                 
-                -- Clean up platform
+                -- Clean up weld and platform
+                if weldConstraint then
+                    weldConstraint:Destroy()
+                    weldConstraint = nil
+                end
+                
                 if currentPlatform then
                     currentPlatform:Destroy()
                     currentPlatform = nil
@@ -305,7 +322,6 @@ local function executeHeist()
                 -- Flash button green for success
                 stealButton.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
                 stealButton.Text = "💰 STEAL COMPLETE! 💰"
-                statusLabel.Text = "Heist successful!"
                 statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
                 
                 wait(1.5)
@@ -326,7 +342,12 @@ local function executeHeist()
         statusLabel.Text = "Steal failed: " .. tostring(error)
         statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
         
-        -- Clean up platform on error
+        -- Clean up weld and platform on error
+        if weldConstraint then
+            weldConstraint:Destroy()
+            weldConstraint = nil
+        end
+        
         if currentPlatform then
             currentPlatform:Destroy()
             currentPlatform = nil
@@ -356,7 +377,12 @@ local function onCharacterAdded(newCharacter)
     humanoid = character:WaitForChild("Humanoid")
     rootPart = character:WaitForChild("HumanoidRootPart")
     
-    -- Clean up any existing platform
+    -- Clean up any existing platform and weld
+    if weldConstraint then
+        weldConstraint:Destroy()
+        weldConstraint = nil
+    end
+    
     if currentPlatform then
         currentPlatform:Destroy()
         currentPlatform = nil
@@ -393,7 +419,12 @@ stealButton.MouseButton1Click:Connect(function()
 end)
 
 closeButton.MouseButton1Click:Connect(function()
-    -- Clean up platform when closing
+    -- Clean up platform and weld when closing
+    if weldConstraint then
+        weldConstraint:Destroy()
+        weldConstraint = nil
+    end
+    
     if currentPlatform then
         currentPlatform:Destroy()
         currentPlatform = nil
@@ -425,6 +456,11 @@ addHoverEffect(stealButton, Color3.fromRGB(30, 30, 30), Color3.fromRGB(0, 0, 0))
 -- CLEANUP ON SCRIPT END
 -- ========================================
 game:BindToClose(function()
+    if weldConstraint then
+        weldConstraint:Destroy()
+        weldConstraint = nil
+    end
+    
     if currentPlatform then
         currentPlatform:Destroy()
         currentPlatform = nil
