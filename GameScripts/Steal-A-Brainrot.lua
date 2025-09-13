@@ -1,5 +1,5 @@
 -- ========================================
--- SHADOW HEIST TELEPORTER SCRIPT
+-- PLATFORM MAKER SCRIPT
 -- ========================================
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -10,21 +10,19 @@ local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 local rootPart = character:WaitForChild("HumanoidRootPart")
 
--- Heist variables
-local isHeistInProgress = false
+-- Platform variables
+local platformEnabled = false
 local currentPlatform = nil
-local playerSpawnPoint = nil
-local spawnPointCaptured = false
-local weldConstraint = nil
+local platformUpdateConnection = nil
 
 -- ========================================
--- SHADOW HEIST UI
+-- PLATFORM MAKER UI
 -- ========================================
 local playerGui = player:WaitForChild("PlayerGui")
 
 -- Create ScreenGui
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "ShadowHeistUI"
+screenGui.Name = "PlatformMakerUI"
 screenGui.Parent = playerGui
 screenGui.ResetOnSpawn = false
 
@@ -59,7 +57,7 @@ titleText.Name = "TitleText"
 titleText.Size = UDim2.new(1, -30, 1, 0)
 titleText.Position = UDim2.new(0, 5, 0, 0)
 titleText.BackgroundTransparency = 1
-titleText.Text = "💰 Shadow Heist 💰"
+titleText.Text = "🔷 PLATFORM MAKER 🔷"
 titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleText.TextScaled = true
 titleText.Font = Enum.Font.GothamBold
@@ -81,28 +79,28 @@ local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 4)
 closeCorner.Parent = closeButton
 
-local stealButton = Instance.new("TextButton")
-stealButton.Name = "StealButton"
-stealButton.Size = UDim2.new(0, 220, 0, 35)
-stealButton.Position = UDim2.new(0, 15, 0, 45)
-stealButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-stealButton.Text = "💰 STEAL 💰"
-stealButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-stealButton.TextScaled = true
-stealButton.Font = Enum.Font.GothamBold
-stealButton.BorderSizePixel = 0
-stealButton.Parent = mainFrame
+local toggleButton = Instance.new("TextButton")
+toggleButton.Name = "ToggleButton"
+toggleButton.Size = UDim2.new(0, 220, 0, 35)
+toggleButton.Position = UDim2.new(0, 15, 0, 45)
+toggleButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+toggleButton.Text = "🔷 ENABLE PLATFORM 🔷"
+toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleButton.TextScaled = true
+toggleButton.Font = Enum.Font.GothamBold
+toggleButton.BorderSizePixel = 0
+toggleButton.Parent = mainFrame
 
-local stealCorner = Instance.new("UICorner")
-stealCorner.CornerRadius = UDim.new(0, 6)
-stealCorner.Parent = stealButton
+local toggleCorner = Instance.new("UICorner")
+toggleCorner.CornerRadius = UDim.new(0, 6)
+toggleCorner.Parent = toggleButton
 
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Name = "StatusLabel"
 statusLabel.Size = UDim2.new(1, -20, 0, 25)
 statusLabel.Position = UDim2.new(0, 10, 0, 90)
 statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "by PickleTalk"
+statusLabel.Text = "Platform: OFF"
 statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 statusLabel.TextScaled = true
 statusLabel.Font = Enum.Font.Gotham
@@ -142,230 +140,102 @@ titleBar.InputChanged:Connect(function(input)
 end)
 
 -- ========================================
--- SPAWN POINT CAPTURE FUNCTIONS
--- ========================================
-local function captureSpawnPoint()
-    -- Reset player to capture spawn point
-    local humanoid = character:FindFirstChild("Humanoid")
-    if humanoid then
-        humanoid.Health = 0 -- Kill player to respawn
-        
-        -- Wait for respawn and capture position
-        local connection
-        connection = player.CharacterAdded:Connect(function(newChar)
-            connection:Disconnect() -- Only capture once
-            wait(1) -- Wait for character to fully spawn
-            character = newChar
-            local newRootPart = newChar:WaitForChild("HumanoidRootPart")
-            playerSpawnPoint = newRootPart.Position
-            spawnPointCaptured = true
-            print("Spawn point captured at:", playerSpawnPoint)
-        end)
-    end
-end
-
--- ========================================
 -- PLATFORM FUNCTIONS
 -- ========================================
-local function createPlatform(position)
+local function createPlatform()
     local platform = Instance.new("Part")
-    platform.Name = "HeistPlatform"
-    platform.Size = Vector3.new(8, 1, 8) -- Larger and thicker platform
-    platform.Material = Enum.Material.Plastic
-    platform.Color = Color3.fromRGB(0, 162, 255) -- Blue color
+    platform.Name = "PlayerPlatform"
+    platform.Size = Vector3.new(6, 0.5, 6) -- 6x0.5x6 studs
+    platform.Material = Enum.Material.Neon
+    platform.BrickColor = BrickColor.new("Bright blue") -- Blue color
     platform.Anchored = true
     platform.CanCollide = true -- Player cannot pass through
     platform.Shape = Enum.PartType.Block
     platform.TopSurface = Enum.SurfaceType.Smooth
     platform.BottomSurface = Enum.SurfaceType.Smooth
-    platform.Position = position
     platform.Parent = workspace
-    platform.Transparency = 0 -- Fully visible
+    
+    -- Add some visual effects
+    local pointLight = Instance.new("PointLight")
+    pointLight.Color = Color3.fromRGB(0, 162, 255)
+    pointLight.Brightness = 1
+    pointLight.Range = 10
+    pointLight.Parent = platform
     
     return platform
 end
 
-local function anchorPlayerToPlatform(platform)
-    local character = player.Character
-    if not character then return end
-    
-    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-    if not humanoidRootPart then return end
-    
-    -- Remove any existing weld
-    if weldConstraint then
-        weldConstraint:Destroy()
+local function updatePlatformPosition()
+    if not platformEnabled or not currentPlatform or not player.Character then
+        return
     end
     
-    -- Create weld constraint to anchor player to platform
-    weldConstraint = Instance.new("WeldConstraint")
-    weldConstraint.Part0 = platform
-    weldConstraint.Part1 = humanoidRootPart
-    weldConstraint.Parent = platform
+    local character = player.Character
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
     
-    -- Position player on top of platform
-    local platformTop = platform.Position + Vector3.new(0, platform.Size.Y/2 + 2.5, 0)
-    humanoidRootPart.CFrame = CFrame.new(platformTop)
+    if humanoidRootPart then
+        -- Position platform 4 studs below the player
+        local playerPosition = humanoidRootPart.Position
+        local platformPosition = Vector3.new(playerPosition.X, playerPosition.Y - 4, playerPosition.Z)
+        
+        currentPlatform.Position = platformPosition
+    end
 end
 
-local function movePlatformWithPlayer(targetPosition, duration)
-    local character = player.Character
-    if not character then return end
+local function enablePlatform()
+    if platformEnabled then return end
     
-    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-    if not humanoidRootPart then return end
+    platformEnabled = true
     
-    -- Create platform below player
-    local platformPosition = humanoidRootPart.Position + Vector3.new(0, -4, 0)
+    -- Create the platform
+    currentPlatform = createPlatform()
+    
+    -- Start the update loop
+    platformUpdateConnection = RunService.Heartbeat:Connect(updatePlatformPosition)
+    
+    -- Update initial position
+    updatePlatformPosition()
+    
+    -- Update UI
+    toggleButton.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
+    toggleButton.Text = "🔷 DISABLE PLATFORM 🔷"
+    statusLabel.Text = "Platform: ON"
+    statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+    
+    print("Platform Maker: ENABLED")
+end
+
+local function disablePlatform()
+    if not platformEnabled then return end
+    
+    platformEnabled = false
+    
+    -- Disconnect the update loop
+    if platformUpdateConnection then
+        platformUpdateConnection:Disconnect()
+        platformUpdateConnection = nil
+    end
+    
+    -- Remove the platform
     if currentPlatform then
         currentPlatform:Destroy()
+        currentPlatform = nil
     end
-    currentPlatform = createPlatform(platformPosition)
     
-    -- Anchor player to platform
-    anchorPlayerToPlatform(currentPlatform)
+    -- Update UI
+    toggleButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    toggleButton.Text = "🔷 ENABLE PLATFORM 🔷"
+    statusLabel.Text = "Platform: OFF"
+    statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
     
-    -- Calculate target platform position (keeping player above it)
-    local targetPlatformPosition = targetPosition + Vector3.new(0, -4, 0)
-    
-    -- Tween only the platform (player will move with it due to weld)
-    local platformTweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut)
-    
-    local platformTween = TweenService:Create(currentPlatform, platformTweenInfo, {
-        Position = targetPlatformPosition
-    })
-    
-    -- Play tween
-    platformTween:Play()
-    
-    return platformTween
+    print("Platform Maker: DISABLED")
 end
 
--- ========================================
--- HEIST EXECUTION FUNCTIONS
--- ========================================
-local function executeHeist()
-    if isHeistInProgress then
-        return -- Prevent double execution
-    end
-    
-    isHeistInProgress = true
-    stealButton.Text = "💰 STEALING... 💰"
-    stealButton.BackgroundColor3 = Color3.fromRGB(150, 100, 0)
-    
-    local success, error = pcall(function()
-        -- Step 1: Capture spawn point if not already captured
-        if not spawnPointCaptured then
-            captureSpawnPoint()
-            
-            -- Wait for spawn point to be captured
-            local timeout = 0
-            while not spawnPointCaptured and timeout < 100 do
-                wait(0.1)
-                timeout = timeout + 1
-            end
-            
-            if not spawnPointCaptured then
-                error("Failed to capture spawn point")
-            end
-        end
-        
-        -- Step 2: Check for Map.Carpet
-        local map = workspace:FindFirstChild("Map")
-        if not map then
-            error("Map not found")
-        end
-        
-        local carpet = map:FindFirstChild("Carpet")
-        if not carpet then
-            error("Carpet not found")
-        end
-        
-        -- Step 3: Get player character
-        local character = player.Character
-        if not character then
-            error("Character not found")
-        end
-        
-        local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-        if not humanoidRootPart then
-            error("HumanoidRootPart not found")
-        end
-        
-        -- Step 4: Move to carpet area (20 studs above)
-        local carpetPosition = carpet.Position
-        local aboveCarpetPosition = carpetPosition + Vector3.new(0, 20, 0)
-        
-        local tween1 = movePlatformWithPlayer(aboveCarpetPosition, 1.5)
-        
-        tween1.Completed:Connect(function()
-            wait(0.5) -- Brief pause at carpet
-            
-            -- Step 5: Move to player spawn point
-            local spawnPosition = playerSpawnPoint + Vector3.new(0, 3, 0) -- Slightly above spawn
-            local tween2 = movePlatformWithPlayer(spawnPosition, 1.5)
-            
-            tween2.Completed:Connect(function()
-                wait(0.5)
-                
-                -- Clean up weld and platform
-                if weldConstraint then
-                    weldConstraint:Destroy()
-                    weldConstraint = nil
-                end
-                
-                if currentPlatform then
-                    currentPlatform:Destroy()
-                    currentPlatform = nil
-                end
-                
-                -- Flash button green for success
-                stealButton.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
-                stealButton.Text = "💰 STEAL COMPLETE! 💰"
-                statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-                
-                wait(1.5)
-                
-                -- Reset button
-                stealButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-                stealButton.Text = "💰 STEAL 💰"
-                statusLabel.Text = "by PickleTalk"
-                statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-                
-                isHeistInProgress = false
-            end)
-        end)
-    end)
-    
-    if not success then
-        -- Error handling
-        statusLabel.Text = "Steal failed: " .. tostring(error)
-        statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
-        
-        -- Clean up weld and platform on error
-        if weldConstraint then
-            weldConstraint:Destroy()
-            weldConstraint = nil
-        end
-        
-        if currentPlatform then
-            currentPlatform:Destroy()
-            currentPlatform = nil
-        end
-        
-        -- Flash button red for failure
-        stealButton.BackgroundColor3 = Color3.fromRGB(150, 30, 30)
-        stealButton.Text = "💰 STEAL FAILED! 💰"
-        
-        wait(3)
-        
-        -- Reset button
-        stealButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        stealButton.Text = "💰 STEAL 💰"
-        statusLabel.Text = "by PickleTalk"
-        statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-        
-        isHeistInProgress = false
+local function togglePlatform()
+    if platformEnabled then
+        disablePlatform()
+    else
+        enablePlatform()
     end
 end
 
@@ -377,23 +247,19 @@ local function onCharacterAdded(newCharacter)
     humanoid = character:WaitForChild("Humanoid")
     rootPart = character:WaitForChild("HumanoidRootPart")
     
-    -- Clean up any existing platform and weld
-    if weldConstraint then
-        weldConstraint:Destroy()
-        weldConstraint = nil
+    -- If platform was enabled, recreate it for the new character
+    if platformEnabled then
+        task.wait(1) -- Wait for character to fully load
+        
+        -- Remove old platform if it exists
+        if currentPlatform then
+            currentPlatform:Destroy()
+        end
+        
+        -- Create new platform
+        currentPlatform = createPlatform()
+        updatePlatformPosition()
     end
-    
-    if currentPlatform then
-        currentPlatform:Destroy()
-        currentPlatform = nil
-    end
-    
-    -- Reset heist state
-    isHeistInProgress = false
-    stealButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    stealButton.Text = "💰 STEAL 💰"
-    statusLabel.Text = "by PickleTalk"
-    statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 end
 
 -- Connect character respawn handler
@@ -402,32 +268,24 @@ player.CharacterAdded:Connect(onCharacterAdded)
 -- ========================================
 -- UI BUTTON CONNECTIONS
 -- ========================================
-stealButton.MouseButton1Click:Connect(function()
-    if not isHeistInProgress then
-        -- Add button click animation
-        local originalSize = stealButton.Size
-        local clickTween = TweenService:Create(stealButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 210, 0, 33)})
-        local releaseTween = TweenService:Create(stealButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = originalSize})
-        
-        clickTween:Play()
-        clickTween.Completed:Connect(function()
-            releaseTween:Play()
-        end)
-        
-        executeHeist()
-    end
+toggleButton.MouseButton1Click:Connect(function()
+    -- Add button click animation
+    local originalSize = toggleButton.Size
+    local clickTween = TweenService:Create(toggleButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 210, 0, 33)})
+    local releaseTween = TweenService:Create(toggleButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = originalSize})
+    
+    clickTween:Play()
+    clickTween.Completed:Connect(function()
+        releaseTween:Play()
+    end)
+    
+    togglePlatform()
 end)
 
 closeButton.MouseButton1Click:Connect(function()
-    -- Clean up platform and weld when closing
-    if weldConstraint then
-        weldConstraint:Destroy()
-        weldConstraint = nil
-    end
-    
-    if currentPlatform then
-        currentPlatform:Destroy()
-        currentPlatform = nil
+    -- Disable platform when closing
+    if platformEnabled then
+        disablePlatform()
     end
     screenGui:Destroy()
 end)
@@ -437,32 +295,40 @@ end)
 -- ========================================
 local function addHoverEffect(button, hoverColor, originalColor)
     button.MouseEnter:Connect(function()
-        if not isHeistInProgress then
+        if button == toggleButton then
+            -- Different hover color based on state
+            if platformEnabled then
+                button.BackgroundColor3 = Color3.fromRGB(50, 180, 80)
+            else
+                button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+            end
+        else
             button.BackgroundColor3 = hoverColor
         end
     end)
     
     button.MouseLeave:Connect(function()
-        if not isHeistInProgress then
+        if button == toggleButton then
+            -- Restore color based on state
+            if platformEnabled then
+                button.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
+            else
+                button.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+            end
+        else
             button.BackgroundColor3 = originalColor
         end
     end)
 end
 
 addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
-addHoverEffect(stealButton, Color3.fromRGB(30, 30, 30), Color3.fromRGB(0, 0, 0))
+addHoverEffect(toggleButton, Color3.fromRGB(30, 30, 30), Color3.fromRGB(0, 0, 0))
 
 -- ========================================
 -- CLEANUP ON SCRIPT END
 -- ========================================
 game:BindToClose(function()
-    if weldConstraint then
-        weldConstraint:Destroy()
-        weldConstraint = nil
-    end
-    
-    if currentPlatform then
-        currentPlatform:Destroy()
-        currentPlatform = nil
+    if platformEnabled then
+        disablePlatform()
     end
 end)
