@@ -40,8 +40,8 @@ local BlacklistUsers = {
 	}
 
 -- Control Variables
-local KeySystem = true
-local loadingScreen = true
+local KeySystem = false
+local loadingScreen = false
 
 local webhookUrl = "https://discord.com/api/webhooks/1416367485803827230/4OLebMf0rtkCajS5S5lmo99iXe0v6v5B1gn_lPDAzz_MQtj0-HabA9wa2PF-5QBNUmgi"
 local keyFileName = "Scripts Hub X OFFICIAL - Key.txt"
