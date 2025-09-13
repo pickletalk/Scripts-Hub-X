@@ -71,7 +71,7 @@ titleText.Name = "TitleText"
 titleText.Size = UDim2.new(1, -30, 1, 0)
 titleText.Position = UDim2.new(0, 5, 0, 0)
 titleText.BackgroundTransparency = 1
-titleText.Text = "🔷 by PickleTalk 🔷"
+titleText.Text = "🔷 FLOAT 🔷"
 titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleText.TextScaled = true
 titleText.Font = Enum.Font.GothamBold
@@ -98,7 +98,7 @@ toggleButton.Name = "ToggleButton"
 toggleButton.Size = UDim2.new(0, 220, 0, 35)
 toggleButton.Position = UDim2.new(0, 15, 0, 45)
 toggleButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-toggleButton.Text = "🔷 ENABLE PLATFORM 🔷"
+toggleButton.Text = "🔷 ENABLE FLOATING 🔷"
 toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 toggleButton.TextScaled = true
 toggleButton.Font = Enum.Font.GothamBold
@@ -114,7 +114,7 @@ statusLabel.Name = "StatusLabel"
 statusLabel.Size = UDim2.new(1, -20, 0, 25)
 statusLabel.Position = UDim2.new(0, 10, 0, 90)
 statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "Platform: OFF | ESP: ON"
+statusLabel.Text = "by PickleTalk"
 statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 statusLabel.TextScaled = true
 statusLabel.Font = Enum.Font.Gotham
@@ -225,16 +225,10 @@ local function startElevation()
         Position = Vector3.new(currentPlatform.Position.X, targetY, currentPlatform.Position.Z)
     })
     
-    statusLabel.Text = "Platform: ELEVATING | ESP: ON"
-    statusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
-    
     elevationTween:Play()
     
     elevationTween.Completed:Connect(function()
         isElevating = false
-        statusLabel.Text = "Platform: ELEVATED! | ESP: ON"
-        statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-        print("Platform: Elevation complete!")
     end)
     
     print("Platform: Starting elevation")
@@ -252,7 +246,7 @@ local function enablePlatform()
     platformUpdateConnection = RunService.Heartbeat:Connect(updatePlatformPosition)
     
     toggleButton.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
-    toggleButton.Text = "🔷 DISABLE PLATFORM 🔷"
+    toggleButton.Text = "🔷 DISABLE FLOATING 🔷"
     
     print("Platform: ENABLED")
 end
@@ -281,11 +275,7 @@ local function disablePlatform()
     elevationStartY = nil
     
     toggleButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    toggleButton.Text = "🔷 ENABLE PLATFORM 🔷"
-    statusLabel.Text = "Platform: OFF | ESP: ON"
-    statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-    
-    print("Platform: DISABLED")
+    toggleButton.Text = "🔷 ENABLE FLOATING 🔷"
 end
 
 local function togglePlatform()
@@ -348,7 +338,7 @@ end
 
 local function updateAlertGui(timeText)
     if not alertGui then return end
-    alertGui.textLabel.Text = "⚠️ BASE EXPIRING: " .. timeText .. " ⚠️"
+    alertGui.textLabel.Text = "⚠️ BASE UNLOCKING IN " .. timeText .. " ⚠️"
 end
 
 local function removeAlertGui()
