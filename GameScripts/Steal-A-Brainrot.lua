@@ -159,7 +159,7 @@ end)
 local function createPlatform()
     local platform = Instance.new("Part")
     platform.Name = "PlayerPlatform"
-    platform.Size = Vector3.new(200, 2, 200)
+    platform.Size = Vector3.new(300, 2.5, 300)
     platform.Material = Enum.Material.Neon
     platform.BrickColor = BrickColor.new("Bright blue")
     platform.Anchored = true
