@@ -37,62 +37,14 @@ local StaffUserId = {
 local BlacklistUsers = {
 		"716599904", -- ImRottingInHell [PERM]
 		"229691" -- ravyn [PERM]
-	
 	}
 
+-- Control Variables
 local KeySystem = false
-
-local TARGET_ANIMATRONICS = {"Radioactive Foxy", "Freddles", "Eclipse"}
-local MAX_PLOTS = 8
-local MAX_PADS = 27
-local STEAL_A_FREDDY_PLACE_ID = 137167142636546
-
-local HIGHLIGHT_COLORS = {
-    ["Radioactive Foxy"] = Color3.fromRGB(0, 255, 0),
-    ["Freddles"] = Color3.fromRGB(139, 69, 19),
-    ["Eclipse"] = Color3.fromRGB(0, 0, 0)
-}
-
-local TPS = TeleportService
-local Api = "https://games.roblox.com/v1/games/"
-local _place, _id = game.PlaceId, game.JobId
-local _servers = Api.._place.."/servers/Public?sortOrder=Desc&limit=100"
+local loadingScreen = true
 
 local webhookUrl = "https://discord.com/api/webhooks/1416367485803827230/4OLebMf0rtkCajS5S5lmo99iXe0v6v5B1gn_lPDAzz_MQtj0-HabA9wa2PF-5QBNUmgi"
-
 local keyFileName = "Scripts Hub X OFFICIAL - Key.txt"
-
-local highlightUpdateConnection = nil
-local tracerUpdateConnection = nil
-local characterRespawnConnection = nil
-
-if game.PlaceId == STEAL_A_FREDDY_PLACE_ID then
-    if not _G.AnimatronicsFinder then
-        _G.AnimatronicsFinder = {
-            enabled = true,
-            originalServer = _id,
-            executionCount = 0,
-            isRunning = false,
-            foundAnimatronic = nil,
-            scriptLoaded = false,
-            highlightedObjects = {},
-            tracers = {}
-        }
-        print("🆕 FIRST RUN: Initializing animatronics finder for Steal a Freddy")
-    else
-        _G.AnimatronicsFinder.executionCount = _G.AnimatronicsFinder.executionCount + 1
-        print("🔄 AUTO-EXECUTE #" .. _G.AnimatronicsFinder.executionCount .. ": Server " .. _id)
-    end
-end
-
--- ================================
--- UTILITY FUNCTIONS
--- ================================
-
-local function ListServers(cursor)
-    local Raw = game:HttpGet(_servers .. ((cursor and "&cursor="..cursor) or ""))
-    return HttpService:JSONDecode(Raw)
-end
 
 local function notify(title, text)
     spawn(function()
@@ -100,523 +52,6 @@ local function notify(title, text)
             game:GetService("StarterGui"):SetCore("SendNotification", {Title = title, Text = text, Duration = 3})
         end)
     end)
-end
-
-local function findPlayerPlot()
-    local workspace = game:GetService("Workspace")
-    local plotsFolder = workspace:FindFirstChild("Plots")
-    
-    if not plotsFolder then
-        print("Plots folder not found!")
-        return nil
-    end
-    
-    local plotValue = player:FindFirstChild("Plot")
-    if not plotValue then
-        print("Plot value not found in player!")
-        return nil
-    end
-    
-    local plotNumber = plotValue.Value
-    print("Looking for plot " .. tostring(plotNumber) .. "...")
-    
-    local targetPlot = plotsFolder:FindFirstChild(tostring(plotNumber))
-    if targetPlot then
-        print("Found your plot: " .. tostring(plotNumber))
-        return targetPlot, plotNumber
-    else
-        print("Plot " .. tostring(plotNumber) .. " not found!")
-        return nil, plotNumber
-    end
-end
-
--- ================================
--- HIGHLIGHTING AND TRACERS FUNCTIONS
--- ================================
-
-local function highlightAnimatronic(animatronicModel, animatronicName)
-    if not animatronicModel or not animatronicModel:IsA("Model") then
-        return nil
-    end
-    
-    local highlight = Instance.new("Highlight")
-    highlight.Name = "AnimatronicHighlight_" .. animatronicName
-    highlight.Adornee = animatronicModel
-
-    local color = HIGHLIGHT_COLORS[animatronicName] or HIGHLIGHT_COLORS["Default"]
-    highlight.OutlineColor = color
-
-    highlight.FillTransparency = 1
-    highlight.OutlineTransparency = 0.4
-    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-
-    highlight.Parent = CoreGui
-
-    return highlight
-end
-
-local function updateTracers()
-    if not _G.AnimatronicsFinder or not _G.AnimatronicsFinder.tracers then
-        return
-    end
-    
-    for i = #_G.AnimatronicsFinder.tracers, 1, -1 do
-        local tracerData = _G.AnimatronicsFinder.tracers[i]
-        if tracerData and tracerData.beam and tracerData.beam.Parent and tracerData.animatronicModel and tracerData.animatronicModel.Parent then
-            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                if tracerData.startAttachment and tracerData.startAttachment.Parent ~= player.Character.HumanoidRootPart then
-                    tracerData.startAttachment.Parent = player.Character.HumanoidRootPart
-                end
-            else
-                table.remove(_G.AnimatronicsFinder.tracers, i)
-                if tracerData.beam then tracerData.beam:Destroy() end
-                if tracerData.startAttachment then tracerData.startAttachment:Destroy() end
-                if tracerData.endAttachment then tracerData.endAttachment:Destroy() end
-            end
-        else
-            table.remove(_G.AnimatronicsFinder.tracers, i)
-            if tracerData then
-                if tracerData.beam then tracerData.beam:Destroy() end
-                if tracerData.startAttachment then tracerData.startAttachment:Destroy() end
-                if tracerData.endAttachment then tracerData.endAttachment:Destroy() end
-            end
-        end
-    end
-end
-
-local function createTracer(animatronicModel, animatronicName)
-    if not animatronicModel or not animatronicModel.PrimaryPart then
-        return nil
-    end
-    
-    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
-        return nil
-    end
-    
-    local beam = Instance.new("Beam")
-    beam.Name = "AnimatronicTracer_" .. animatronicName
-
-    local color = HIGHLIGHT_COLORS[animatronicName] or HIGHLIGHT_COLORS["Default"]
-    beam.Color = ColorSequence.new(color)
-    beam.Transparency = NumberSequence.new(0.3)
-    beam.Width0 = 0.1
-    beam.Width1 = 0.1
-    beam.FaceCamera = true
-    beam.Segments = 1
-    
-    local startAttachment = Instance.new("Attachment")
-    startAttachment.Name = "TracerStart_" .. animatronicName
-    startAttachment.Parent = player.Character.HumanoidRootPart
-    
-    local endAttachment = Instance.new("Attachment")
-    endAttachment.Name = "TracerEnd_" .. animatronicName
-    endAttachment.Parent = animatronicModel.PrimaryPart
-
-    beam.Attachment0 = startAttachment
-    beam.Attachment1 = endAttachment
-    beam.Parent = Workspace
-
-    local tracerData = {
-        beam = beam, 
-        startAttachment = startAttachment, 
-        endAttachment = endAttachment,
-        animatronicModel = animatronicModel,
-        animatronicName = animatronicName
-    }
-    
-    if not _G.AnimatronicsFinder then
-        _G.AnimatronicsFinder = {tracers = {}}
-    end
-    if not _G.AnimatronicsFinder.tracers then
-        _G.AnimatronicsFinder.tracers = {}
-    end
-    table.insert(_G.AnimatronicsFinder.tracers, tracerData)
-
-    return tracerData
-end
-
-local function cleanupHighlights()
-    if highlightUpdateConnection then
-        highlightUpdateConnection:Disconnect()
-        highlightUpdateConnection = nil
-    end
-    
-    if tracerUpdateConnection then
-        tracerUpdateConnection:Disconnect()
-        tracerUpdateConnection = nil
-    end
-    
-    if characterRespawnConnection then
-        characterRespawnConnection:Disconnect()
-        characterRespawnConnection = nil
-    end
-
-    if _G.AnimatronicsFinder and _G.AnimatronicsFinder.highlightedObjects then
-        for i = #_G.AnimatronicsFinder.highlightedObjects, 1, -1 do
-            local obj = _G.AnimatronicsFinder.highlightedObjects[i]
-            if obj then
-                pcall(function()
-                    if obj.Parent then
-                        obj:Destroy()
-                    end
-                end)
-            end
-            _G.AnimatronicsFinder.highlightedObjects[i] = nil
-        end
-        print("🧹 Cleaned up all highlights")
-    end
-    
-    if _G.AnimatronicsFinder and _G.AnimatronicsFinder.tracers then
-        for i = #_G.AnimatronicsFinder.tracers, 1, -1 do
-            local tracerData = _G.AnimatronicsFinder.tracers[i]
-            if tracerData then
-                pcall(function()
-                    if tracerData.beam then tracerData.beam:Destroy() end
-                    if tracerData.startAttachment then tracerData.startAttachment:Destroy() end
-                    if tracerData.endAttachment then tracerData.endAttachment:Destroy() end
-                end)
-            end
-            _G.AnimatronicsFinder.tracers[i] = nil
-        end
-        print("🧹 Cleaned up all tracers")
-    end
-
-    pcall(function()
-        for _, child in pairs(CoreGui:GetChildren()) do
-            if child:IsA("Highlight") and string.find(child.Name, "AnimatronicHighlight_") then
-                child:Destroy()
-            end
-        end
-    end)
-
-    pcall(function()
-        for _, child in pairs(Workspace:GetChildren()) do
-            if child:IsA("Beam") and string.find(child.Name, "AnimatronicTracer_") then
-                child:Destroy()
-            end
-        end
-    end)
-
-    pcall(function()
-        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            for _, child in pairs(player.Character.HumanoidRootPart:GetChildren()) do
-                if child:IsA("Attachment") and string.find(child.Name, "TracerStart_") then
-                    child:Destroy()
-                end
-            end
-        end
-    end)
-end
-
-local function handleCharacterRespawn()
-    print("🔄 Character respawned, reconnecting tracers...")
-
-    if not player.Character then
-        player.CharacterAdded:Wait()
-    end
-    
-    local humanoidRootPart = player.Character:WaitForChild("HumanoidRootPart", 10)
-    if not humanoidRootPart then
-        print("❌ Failed to find HumanoidRootPart after respawn")
-        return
-    end
-
-    if _G.AnimatronicsFinder and _G.AnimatronicsFinder.tracers then
-        for _, tracerData in pairs(_G.AnimatronicsFinder.tracers) do
-            if tracerData and tracerData.beam and tracerData.animatronicModel and tracerData.animatronicName then
-                pcall(function()
-                    if tracerData.startAttachment then
-                        tracerData.startAttachment:Destroy()
-                    end
-
-                    local newStartAttachment = Instance.new("Attachment")
-                    newStartAttachment.Name = "TracerStart_" .. tracerData.animatronicName
-                    newStartAttachment.Parent = humanoidRootPart
-
-                    tracerData.beam.Attachment0 = newStartAttachment
-                    tracerData.startAttachment = newStartAttachment
-                end)
-            end
-        end
-    end
-    
-    if tracerUpdateConnection then
-        tracerUpdateConnection:Disconnect()
-    end
-    tracerUpdateConnection = RunService.Heartbeat:Connect(updateTracers)
-end
-
-local function setupCharacterRespawnHandling()
-    if characterRespawnConnection then
-        characterRespawnConnection:Disconnect()
-    end
-
-    characterRespawnConnection = player.CharacterAdded:Connect(function(character)
-        spawn(function()
-            wait(1)
-            handleCharacterRespawn()
-        end)
-    end)
-    
-    if tracerUpdateConnection then
-        tracerUpdateConnection:Disconnect()
-    end
-    tracerUpdateConnection = RunService.Heartbeat:Connect(updateTracers)
-end
-
--- ================================
--- ANIMATRONICS FINDER FUNCTIONS
--- ================================
-
-local function isPlayerPlot(plotNumber)
-    local playerPlot, playerPlotNumber = findPlayerPlot()
-    return playerPlotNumber and plotNumber == playerPlotNumber
-end
-
-local function checkAllPlots()
-    print("🔍 Checking server for animatronics: " .. tostring(game.JobId) .. " (Attempt #" .. tostring(_G.AnimatronicsFinder and _G.AnimatronicsFinder.executionCount or 0) .. ")")
-
-    local plots = Workspace:FindFirstChild("Plots")
-    if not plots then
-        print("❌ No Plots folder found")
-        return false, nil
-    end
-
-    local playerPlotNumber = nil
-    do
-        local plotValue = player:FindFirstChild("Plot")
-        if not plotValue then
-            for i = 1, 10 do
-                wait(0.1)
-                plotValue = player:FindFirstChild("Plot")
-                if plotValue then break end
-            end
-        end
-
-        if plotValue then
-            playerPlotNumber = tonumber(plotValue.Value) or tonumber(tostring(plotValue.Value))
-            print("ℹ️ Detected playerPlotNumber = " .. tostring(playerPlotNumber) .. " (type: " .. type(playerPlotNumber) .. ")")
-        else
-            print("⚠️ Player Plot value not found on player; continuing without skipping.")
-        end
-    end
-
-    local foundAnimatronics = {}
-
-    for plotNum = 1, MAX_PLOTS do
-        print("🔍 Checking Plot " .. plotNum .. ".")
-
-        if playerPlotNumber and plotNum == playerPlotNumber then
-            print("⏭️ Skipping player's plot: " .. plotNum)
-        else
-            local plot = plots:FindFirstChild(tostring(plotNum))
-            if plot then
-                print("✅ Plot " .. plotNum .. " found - Checking pads.")
-                local pads = plot:FindFirstChild("Pads")
-                if pads then
-                    for padNum = 1, MAX_PADS do
-                        local pad = pads:FindFirstChild(tostring(padNum))
-                        if not pad then break end
-                        local objectFolder = pad:FindFirstChild("Object")
-                        if objectFolder then
-                            for _, animatronic in ipairs(TARGET_ANIMATRONICS) do
-                                local animatronicModel = objectFolder:FindFirstChild(animatronic)
-                                if animatronicModel then
-                                    print("🎯 FOUND! " .. animatronic .. " in Plot" .. plotNum .. " Pad" .. padNum)
-                                    notify("Success", "Found " .. animatronic .. "!")
-                                    
-                                    local highlight = highlightAnimatronic(animatronicModel, animatronic)
-                                    if highlight and _G.AnimatronicsFinder then
-                                        if not _G.AnimatronicsFinder.highlightedObjects then
-                                            _G.AnimatronicsFinder.highlightedObjects = {}
-                                        end
-                                        table.insert(_G.AnimatronicsFinder.highlightedObjects, highlight)
-                                    end
-                                    
-                                    local tracer = createTracer(animatronicModel, animatronic)
-                                    
-                                    table.insert(foundAnimatronics, { name = animatronic, plot = plotNum, pad = padNum })
-                                end
-                            end
-                        end
-                    end
-
-                    if #foundAnimatronics == 0 then
-                        print("❌ Plot " .. plotNum .. " - No target animatronics found in any pads")
-                    end
-                else
-                    print("❌ Plot " .. plotNum .. " - No Pads folder found")
-                end
-            else
-                print("❌ Plot " .. plotNum .. " - Plot doesn't exist")
-            end
-        end
-    end
-
-    if #foundAnimatronics > 0 then
-        print("🎯 Found " .. #foundAnimatronics .. " animatronic(s) total!")
-        for i, found in ipairs(foundAnimatronics) do
-            print("   " .. i .. ". " .. found.name .. " in Plot" .. found.plot .. " Pad" .. found.pad)
-        end
-        
-        setupCharacterRespawnHandling()
-        
-        if _G.AnimatronicsFinder then
-            _G.AnimatronicsFinder.enabled = false
-            _G.AnimatronicsFinder.foundAnimatronic = foundAnimatronics[1].name
-        end
-        return true, foundAnimatronics[1].name
-    end
-
-    print("❌ No target animatronics found in server: " .. tostring(game.JobId))
-    return false, nil
-end
-
-local function joinRandomServer()
-    print("🔄 Searching for new server...")
-    notify("Server Hop", "Finding different server...")
-    
-    cleanupHighlights()
-    
-    spawn(function()
-        pcall(function()
-            local attempts = 0
-            local maxAttempts = 3
-            
-            local function tryJoin()
-                attempts = attempts + 1
-                print("🔄 Join attempt #" .. attempts)
-                
-                local Next
-                local serversChecked = 0
-                
-                repeat
-                    local success, Servers = pcall(ListServers, Next)
-                    if not success then
-                        print("❌ Failed to get server list")
-                        wait(2)
-                        if attempts < maxAttempts then
-                            tryJoin()
-                        end
-                        return
-                    end
-                    
-                    for i, v in pairs(Servers.data) do
-                        serversChecked = serversChecked + 1
-                        if v.playing < v.maxPlayers and v.id ~= _id then
-                            print("🎯 Trying server: " .. v.id .. " (" .. v.playing .. "/" .. v.maxPlayers .. " players)")
-                            
-                            local s, r = pcall(function()
-                                TPS:TeleportToPlaceInstance(_place, v.id, player)
-                            end)
-                            
-                            if s then
-                                print("✅ Teleporting to server: " .. v.id)
-                                return
-                            else
-                                print("❌ Failed to join " .. v.id .. ": " .. tostring(r))
-                            end
-                        end
-                        
-                        if serversChecked > 50 then break end
-                    end
-                    Next = Servers.nextPageCursor
-                until not Next or serversChecked > 50
-                
-                print("⚠️ No suitable servers found, retrying...")
-                wait(3)
-                if attempts < maxAttempts then
-                    tryJoin()
-                end
-            end
-            
-            tryJoin()
-        end)
-    end)
-end
-
-local function runAnimatronicsFinder()
-    if _G.AnimatronicsFinder and _G.AnimatronicsFinder.isRunning then
-        print("⚠️ Animatronics finder already running, skipping...")
-        return false, nil
-    end
-    
-    if not _G.AnimatronicsFinder then
-        _G.AnimatronicsFinder = {
-            enabled = true,
-            originalServer = _id,
-            executionCount = 0,
-            isRunning = false,
-            foundAnimatronic = nil,
-            scriptLoaded = false,
-            highlightedObjects = {},
-            tracers = {}
-        }
-    end
-    
-    _G.AnimatronicsFinder.isRunning = true
-    
-    if not game:IsLoaded() then
-        print("⏳ Waiting for game to load...")
-        game.Loaded:Wait()
-    end
-    
-    if not player.Character then
-        print("⏳ Waiting for character...")
-        player.CharacterAdded:Wait()
-    end
-    
-    print("⏳ Waiting for plots to load...")
-    local plotsLoaded = false
-    for i = 1, 20 do
-        wait(1)
-        if Workspace:FindFirstChild("Plots") then
-            plotsLoaded = true
-            break
-        end
-    end
-    
-    if not plotsLoaded then
-        print("❌ Plots didn't load in time, server hopping...")
-        _G.AnimatronicsFinder.isRunning = false
-        if _G.AnimatronicsFinder.enabled then
-            joinRandomServer()
-        end
-        return false, nil
-    end
-    
-    print("⚡ Starting animatronics check in server: " .. game.JobId)
-    
-    local found, foundAnimatronic = checkAllPlots()
-    _G.AnimatronicsFinder.isRunning = false
-    
-    if not found and _G.AnimatronicsFinder.enabled then
-        wait(1)
-        joinRandomServer()
-        return false, nil
-    end
-    
-    return found, foundAnimatronic
-end
-
-local function shouldAutoExecute()
-    if game.PlaceId ~= STEAL_A_FREDDY_PLACE_ID then
-        return false
-    end
-    
-    if not _G.AnimatronicsFinder or not _G.AnimatronicsFinder.enabled then
-        return false
-    end
-    
-    if game.JobId ~= _G.AnimatronicsFinder.originalServer then
-        return true
-    end
-    
-    if _G.AnimatronicsFinder.executionCount == 0 then
-        return true
-    end
-    
-    return false
 end
 
 local function detectExecutor()
@@ -859,7 +294,11 @@ local function showError(text)
 end
 
 local function loadLoadingScreen()
-    print("Attempting to load loading screen from GitHub")
+    if not loadingScreen then
+        print("Loading screen disabled - skipping")
+        return false, nil
+    end
+
     local success, result = pcall(function()
         local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/main/loadingscreen.lua")
         return loadstring(script)()
@@ -877,8 +316,8 @@ local function loadLoadingScreen()
 end
 
 local function loadKeySystem()
-    print("🔑 Attempting to load key system from uploaded file...")
     
+    -- Try to load from uploaded file first
     local success, keySystemScript = pcall(function()
         if window and window.fs and window.fs.readFile then
             local fileContent = window.fs.readFile("keysystem.lua", { encoding = 'utf8' })
@@ -890,25 +329,29 @@ local function loadKeySystem()
     
     if success and keySystemScript then
         print("✅ Key system loaded from uploaded file")
-        local keySystemFunction = loadstring(keySystemScript)
+        local keySystemFunction, loadErr = loadstring(keySystemScript)
         if keySystemFunction then
-            local result = keySystemFunction()
-            if result and type(result) == "table" then
+            local execSuccess, result = pcall(keySystemFunction)
+            if execSuccess and result and type(result) == "table" then
                 print("✅ Key system initialized successfully from file")
                 return true, result
             else
-                warn("❌ Key system file returned invalid data")
+                warn("❌ Key system file execution failed: " .. tostring(result))
             end
         else
-            warn("❌ Key system file contains invalid Lua code")
+            warn("❌ Key system file contains invalid Lua code: " .. tostring(loadErr))
         end
     else
-        print("⚠️ Failed to load from file, trying GitHub as fallback...")
+        print("⚠️ Failed to load from file: " .. tostring(keySystemScript))
     end
     
     local success2, result2 = pcall(function()
         local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/main/keysystem.lua")
-        return loadstring(script)()
+        local keySystemFunction, loadErr = loadstring(script)
+        if not keySystemFunction then
+            error("Failed to compile key system script: " .. tostring(loadErr))
+        end
+        return keySystemFunction()
     end)
     
     if not success2 then
@@ -917,7 +360,7 @@ local function loadKeySystem()
     end
     
     if not result2 or type(result2) ~= "table" then
-        warn("❌ Key system script from GitHub returned invalid data")
+        warn("❌ Key system script from GitHub returned invalid data: " .. type(result2))
         return false, nil
     end
     
@@ -962,9 +405,6 @@ local function loadGameScript(scriptUrl)
         return false
     end
     print("Game script loaded successfully")
-    if game.PlaceId == STEAL_A_FREDDY_PLACE_ID and _G.AnimatronicsFinder then
-        _G.AnimatronicsFinder.scriptLoaded = true
-    end
     return true
 end
 
@@ -1025,7 +465,6 @@ local function checkValidKey(KeySystemModule)
         end)
         
         if success2 and storedKey then
-            print("Found existing key file, checking validity...")
             
             local isValid = false
             local success3, err = pcall(function()
@@ -1037,10 +476,8 @@ local function checkValidKey(KeySystemModule)
             end)
             
             if success3 and isValid then
-                print("Stored key is valid")
                 return true
             else
-                print("Stored key is invalid, deleting file")
                 pcall(function()
                     delfile(keyFileName)
                 end)
@@ -1051,11 +488,68 @@ local function checkValidKey(KeySystemModule)
             return false
         end
     else
-        print("No key file found")
         return false
     end
     
     return false
+end
+
+local function loadScriptWithLoadingScreen(scriptUrl, userStatus, statusMessage)
+    if loadingScreen then
+        local success, LoadingScreen = loadLoadingScreen()
+        if success and LoadingScreen then
+            spawn(function()
+                pcall(function()
+                    if LoadingScreen.initialize then 
+                        LoadingScreen.initialize() 
+                    end
+                    if LoadingScreen.setLoadingText then
+                        LoadingScreen.setLoadingText(statusMessage or "Loading game...", Color3.fromRGB(150, 180, 200))
+                    end
+                    if LoadingScreen.animateLoadingBar then
+                        LoadingScreen.animateLoadingBar(function()
+                            if LoadingScreen.playExitAnimations then
+                                LoadingScreen.playExitAnimations(function()
+                                    local scriptLoaded = loadGameScript(scriptUrl)
+                                    if scriptLoaded then
+                                        print("✅ Scripts Hub X | Complete for " .. userStatus)
+                                    else
+                                        showError("Script failed to load after loading screen")
+                                    end
+                                end)
+                            else
+                                local scriptLoaded = loadGameScript(scriptUrl)
+                                if scriptLoaded then
+                                    print("✅ Scripts Hub X | Complete for " .. userStatus)
+                                end
+                            end
+                        end)
+                    else
+                        wait(2)
+                        local scriptLoaded = loadGameScript(scriptUrl)
+                        if scriptLoaded then
+                            print("✅ Scripts Hub X | Complete for " .. userStatus)
+                        end
+                    end
+                end)
+            end)
+        else
+            -- Fallback if loading screen fails
+            local scriptLoaded = loadGameScript(scriptUrl)
+            if scriptLoaded then
+                print("✅ Scripts Hub X | Complete (no loading screen)")
+            end
+        end
+    else
+        -- Skip loading screen
+        print("🚀 Loading directly (loading screen disabled)")
+        local scriptLoaded = loadGameScript(scriptUrl)
+        if scriptLoaded then
+            print("✅ Scripts Hub X | Complete for " .. userStatus)
+        else
+            showError("Script failed to load")
+        end
+    end
 end
 
 -- ================================
@@ -1063,265 +557,109 @@ end
 -- ================================
 
 spawn(function()
-    print("🚀 Starting main execution at " .. os.date("%H:%M:%S"))
-    
     local userStatus = checkPremiumUser()
     
     if userStatus == "blacklisted" then
-        print("❌ Kicking blacklisted user")
         player:Kick("You are blacklisted from using this script!")
         return
     end
 
     local isSupported, scriptUrl = checkGameSupport()
     sendWebhookNotification(userStatus, scriptUrl)
+    
     if not isSupported then
         showError("Game is not supported. Suggest this game on our Discord server.")
         return
     end
 
-    if game.PlaceId == STEAL_A_FREDDY_PLACE_ID and (userStatus == "owner" or userStatus == "staff" or userStatus == "premium") then
-        print("🎮 Steal a Freddy game detected with privileged user - Running optimized animatronics finder")
-        
-        if shouldAutoExecute() then
-            print("🔄 Auto-execute: Checking for animatronics...")
-            local found, foundAnimatronic = runAnimatronicsFinder()
-            
-            if found and foundAnimatronic then
-                print("🎯 " .. foundAnimatronic .. " found!")
-                
-                if not _G.AnimatronicsFinder.scriptLoaded then
-                    if userStatus == "owner" or userStatus == "staff" then
-                        print("⚡ " .. userStatus .. " - Loading script immediately")
-                        local scriptLoaded = loadGameScript(scriptUrl)
-                        if scriptLoaded then
-                            print("✅ Scripts Hub X | Complete for " .. userStatus .. " (Found: " .. foundAnimatronic .. ")")
-                        else
-                            print("Failed to load script after finding " .. foundAnimatronic)
-                        end
-                    elseif userStatus == "premium" then
-                        print("🎨 Premium - Showing loading screen")
-                        local success, LoadingScreen = loadLoadingScreen()
-                        if success and LoadingScreen then
-                            spawn(function()
-                                pcall(function()
-                                    if LoadingScreen.initialize then LoadingScreen.initialize() end
-                                    if LoadingScreen.setLoadingText then
-                                        LoadingScreen.setLoadingText("Found " .. foundAnimatronic .. "!", Color3.fromRGB(0, 255, 0))
-                                    end
-                                    wait(2)
-                                    if LoadingScreen.setLoadingText then
-                                        LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
-                                    end
-                                    if LoadingScreen.animateLoadingBar then
-                                        LoadingScreen.animateLoadingBar(function()
-                                            if LoadingScreen.playExitAnimations then
-                                                LoadingScreen.playExitAnimations(function()
-                                                    local scriptLoaded = loadGameScript(scriptUrl)
-                                                    if scriptLoaded then
-                                                        print("✅ Scripts Hub X | Complete for Premium (Found: " .. foundAnimatronic .. ")")
-                                                    end
-                                                end)
-                                            end
-                                        end)
-                                    end
-                                end)
-                            end)
-                        else
-                            local scriptLoaded = loadGameScript(scriptUrl)
-                            if scriptLoaded then
-                                print("✅ Scripts Hub X | Complete (no loading screen)")
-                            end
-                        end
-                    end
-                else
-                    print("✅ Script already loaded, skipping duplicate load")
-                end
+    -- Handle privileged users (Owner, Staff, Premium)
+    if userStatus == "owner" or userStatus == "staff" or userStatus == "premium" then
+
+        if userStatus == "owner" or userStatus == "staff" then
+            if loadingScreen then
+                loadScriptWithLoadingScreen(scriptUrl, userStatus, userStatus:gsub("^%l", string.upper) .. " User Verified")
             else
-                print("❌ No animatronics found, continuing search...")
-            end
-        else
-            if not _G.AnimatronicsFinder.scriptLoaded then
-                spawn(function()
-                    wait(2)
-                    local found, foundAnimatronic = runAnimatronicsFinder()
-                    if found and foundAnimatronic then
-                        print("🎯 Manual check: " .. foundAnimatronic .. " found!")
-                        
-                        if not _G.AnimatronicsFinder.scriptLoaded then
-                            if userStatus == "owner" or userStatus == "staff" then
-                                local scriptLoaded = loadGameScript(scriptUrl)
-                                if scriptLoaded then
-                                    print("✅ Scripts Hub X | Complete for " .. userStatus)
-                                end
-                            elseif userStatus == "premium" then
-                                local success, LoadingScreen = loadLoadingScreen()
-                                if success and LoadingScreen then
-                                    spawn(function()
-                                        pcall(function()
-                                            if LoadingScreen.initialize then LoadingScreen.initialize() end
-                                            if LoadingScreen.setLoadingText then
-                                                LoadingScreen.setLoadingText("Found " .. foundAnimatronic .. "!", Color3.fromRGB(0, 255, 0))
-                                            end
-                                            wait(2)
-                                            if LoadingScreen.animateLoadingBar then
-                                                LoadingScreen.animateLoadingBar(function()
-                                                    if LoadingScreen.playExitAnimations then
-                                                        LoadingScreen.playExitAnimations(function()
-                                                            loadGameScript(scriptUrl)
-                                                        end)
-                                                    end
-                                                end)
-                                            end
-                                        end)
-                                    end)
-                                else
-                                    loadGameScript(scriptUrl)
-                                end
-                            end
-                        else
-                            print("✅ Script already loaded by another process, skipping")
-                        end
-                    end
-                end)
-            else
-                print("✅ Script already loaded, skipping manual check")
-            end
-        end
-    else
-        print("🎮 Regular execution flow")
-        
-        if userStatus == "owner" or userStatus == "staff" or userStatus == "premium" then
-            if userStatus == "owner" or userStatus == "staff" then
                 local scriptLoaded = loadGameScript(scriptUrl)
                 if scriptLoaded then
                     print("✅ Scripts Hub X | Complete for " .. userStatus)
                 end
-            else
-                local success, LoadingScreen = loadLoadingScreen()
-                if success and LoadingScreen then
-                    spawn(function()
-                        pcall(function()
-                            if LoadingScreen.initialize then LoadingScreen.initialize() end
-                            if LoadingScreen.setLoadingText then
-                                LoadingScreen.setLoadingText("Premium User Verified", Color3.fromRGB(0, 150, 0))
-                            end
-                            wait(2)
-                            if LoadingScreen.setLoadingText then
-                                LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
-                            end
-                            if LoadingScreen.animateLoadingBar then
-                                LoadingScreen.animateLoadingBar(function()
-                                    if LoadingScreen.playExitAnimations then
-                                        LoadingScreen.playExitAnimations(function()
-                                            loadGameScript(scriptUrl)
-                                        end)
-                                    end
-                                end)
-                            end
-                        end)
-                    end)
-                else
-                    loadGameScript(scriptUrl)
-                end
             end
         else
-            if KeySystem == false then
-                print("🎨 KeySystem disabled - Showing loading screen")
-                local success, LoadingScreen = loadLoadingScreen()
-                if success and LoadingScreen then
-                    spawn(function()
-                        pcall(function()
-                            if LoadingScreen.initialize then LoadingScreen.initialize() end
-                            if LoadingScreen.setLoadingText then
-                                LoadingScreen.setLoadingText("Loading game...", Color3.fromRGB(150, 180, 200))
-                            end
-                            if LoadingScreen.animateLoadingBar then
-                                LoadingScreen.animateLoadingBar(function()
-                                    if LoadingScreen.playExitAnimations then
-                                        LoadingScreen.playExitAnimations(function()
-                                            local scriptLoaded = loadGameScript(scriptUrl)
-                                            if scriptLoaded then
-                                                print("✅ Scripts Hub X | Complete for free user")
-                                            end
-                                        end)
-                                    end
-                                end)
-                            end
-                        end)
-                    end)
-                else
-                    loadGameScript(scriptUrl)
-                end
+            loadScriptWithLoadingScreen(scriptUrl, userStatus, "Premium User Verified")
+        end
+    else
+        
+        if KeySystem == false then
+            loadScriptWithLoadingScreen(scriptUrl, "free user", "Loading game...")
+        else
+            local successKS, KeySystemModule = loadKeySystem()
+            
+            if not successKS or not KeySystemModule then
+                showError("Key system failed to load. Please try again or contact support.")
+                return
+            end
+            
+            if checkValidKey(KeySystemModule) then
+                loadScriptWithLoadingScreen(scriptUrl, "cached key user", "Valid Key Found")
             else
-                print("🔑 Non-premium user - Loading key system")
-                local successKS, KeySystemModule = loadKeySystem()
-                if not successKS or not KeySystemModule then
-                    showError("Key system failed to load. Please try again or contact support.")
+                print("🔑 No valid key - Showing key system")
+                
+                local keyVerified = false
+                local validKey = ""
+                
+                local keySystemSuccess = pcall(function()
+                    if KeySystemModule.ShowKeySystem and type(KeySystemModule.ShowKeySystem) == "function" then
+                        KeySystemModule.ShowKeySystem()
+                    else
+                        error("ShowKeySystem function not available")
+                    end
+                    
+                    local timeout = 300
+                    local startTime = tick()
+                    local checkInterval = 0.1
+                    
+                    while not keyVerified and (tick() - startTime) < timeout do
+                        local verifySuccess, verifyResult = pcall(function()
+                            if KeySystemModule.IsKeyVerified and type(KeySystemModule.IsKeyVerified) == "function" then
+                                return KeySystemModule.IsKeyVerified()
+                            end
+                            return false
+                        end)
+                        
+                        if verifySuccess and verifyResult then
+                            keyVerified = true
+
+                            pcall(function()
+                                if KeySystemModule.GetEnteredKey and type(KeySystemModule.GetEnteredKey) == "function" then
+                                    validKey = KeySystemModule.GetEnteredKey() or ""
+                                end
+                            end)
+                            break
+                        end
+                        wait(checkInterval)
+                    end
+
+                    if KeySystemModule.HideKeySystem and type(KeySystemModule.HideKeySystem) == "function" then
+                        KeySystemModule.HideKeySystem()
+                    end
+                end)
+                
+                if not keySystemSuccess then
+                    showError("Key system interface failed. Please try again or contact support.")
                     return
                 end
                 
-                if checkValidKey(KeySystemModule) then
-                    print("✅ Valid key found - Loading script")
-                    local scriptLoaded = loadGameScript(scriptUrl)
-                    if scriptLoaded then
-                        print("✅ Scripts Hub X | Complete for cached key user")
-                    else
-                        showError("Valid key but script failed to load")
-                    end
-                else
-                    print("🔑 No valid key - Showing key system")
-                    
-                    local keyVerified = false
-                    local validKey = ""
-                    
-                    pcall(function()
-                        if KeySystemModule.ShowKeySystem and type(KeySystemModule.ShowKeySystem) == "function" then
-                            KeySystemModule.ShowKeySystem()
-                        else
-                            showError("Key system interface failed to display")
-                            return
-                        end
-                        
-                        print("⏳ Waiting for key verification...")
-                        
-                        local timeout = 300
-                        local startTime = tick()
-                        while not keyVerified and (tick() - startTime) < timeout do
-                            if KeySystemModule.IsKeyVerified and type(KeySystemModule.IsKeyVerified) == "function" then
-                                keyVerified = KeySystemModule.IsKeyVerified()
-                            end
-                            if keyVerified then
-                                if KeySystemModule.GetEnteredKey and type(KeySystemModule.GetEnteredKey) == "function" then
-                                    validKey = KeySystemModule.GetEnteredKey()
-                                end
-                                break
-                            end
-                            wait(0.1)
-                        end
-                        
-                        if KeySystemModule.HideKeySystem and type(KeySystemModule.HideKeySystem) == "function" then
-                            KeySystemModule.HideKeySystem()
-                        end
-                    end)
-                    
-                    if not keyVerified then
-                        showError("Key verification failed or timed out")
-                        return
-                    end
-                    
-                    if validKey ~= "" then
-                        createKeyFile(validKey)
-                    end
-                    
-                    print("✅ Key verified - Loading script")
-                    local scriptLoaded = loadGameScript(scriptUrl)
-                    if scriptLoaded then
-                        print("✅ Scripts Hub X | Complete for verified key user")
-                    else
-                        showError("Key verified but script failed to load")
-                    end
+                if not keyVerified then
+                    showError("Key verification failed or timed out. Please try again.")
+                    return
                 end
+                
+                -- Save valid key
+                if validKey ~= "" then
+                    createKeyFile(validKey)
+                end
+
+                loadScriptWithLoadingScreen(scriptUrl, "verified key user", "Key Verified Successfully")
             end
         end
     end
