@@ -225,9 +225,9 @@ local function startElevator()
         statusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
         
         tween.Completed:Connect(function()
-            statusLabel.Text = "Elevator: AT TOP"
+            statusLabel.Text = "Elevator: AT TOP (5 studs below player)"
             statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-            print("Elevator: Reached maximum height of 20 studs")
+            print("Elevator: Reached maximum height - Platform now 5 studs below player")
         end)
     end
 end
