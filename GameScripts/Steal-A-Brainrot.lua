@@ -20,7 +20,7 @@ local elevationTween = nil
 
 -- Elevation settings
 local ELEVATION_HEIGHT = 80 -- studs
-local ELEVATION_TIME = 5.5 -- seconds
+local ELEVATION_TIME = 6.5 -- seconds
 
 -- ========================================
 -- PLATFORM UI
@@ -152,7 +152,7 @@ end)
 local function createPlatform()
     local platform = Instance.new("Part")
     platform.Name = "PlayerPlatform"
-    platform.Size = Vector3.new(6, 0.5, 6) -- 6x0.5x6 studs
+    platform.Size = Vector3.new(8, 0.7, 8) -- 6x0.5x6 studs
     platform.Material = Enum.Material.Neon
     platform.BrickColor = BrickColor.new("Bright blue") -- Blue color
     platform.Anchored = true
