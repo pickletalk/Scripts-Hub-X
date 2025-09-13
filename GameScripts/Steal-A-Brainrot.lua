@@ -14,13 +14,12 @@ local rootPart = character:WaitForChild("HumanoidRootPart")
 local platformEnabled = false
 local currentPlatform = nil
 local platformUpdateConnection = nil
-local elevatorActive = false
-local startingYPosition = nil
-local targetYPosition = nil
-local ELEVATOR_HEIGHT = 20 -- 20 studs above starting position
+local isElevating = false
+local targetHeight = 20 -- 20 studs above player
+local elevationComplete = false
 
 -- ========================================
--- ELEVATOR PLATFORM UI
+-- PLATFORM MAKER UI
 -- ========================================
 local playerGui = player:WaitForChild("PlayerGui")
 
@@ -144,7 +143,7 @@ titleBar.InputChanged:Connect(function(input)
 end)
 
 -- ========================================
--- ELEVATOR PLATFORM FUNCTIONS
+-- PLATFORM FUNCTIONS
 -- ========================================
 local function createPlatform()
     local platform = Instance.new("Part")
@@ -153,7 +152,7 @@ local function createPlatform()
     platform.Material = Enum.Material.Neon
     platform.BrickColor = BrickColor.new("Bright blue")
     platform.Anchored = true
-    platform.CanCollide = true -- Player can stand on it but cannot pass through
+    platform.CanCollide = true -- Solid platform that player can walk on
     platform.Shape = Enum.PartType.Block
     platform.TopSurface = Enum.SurfaceType.Smooth
     platform.BottomSurface = Enum.SurfaceType.Smooth
@@ -180,54 +179,65 @@ local function updatePlatformPosition()
     if humanoidRootPart then
         local playerPosition = humanoidRootPart.Position
         
-        if elevatorActive then
-            -- Elevator mode: Platform stays at fixed height, but follows player's X and Z
-            local platformPosition = Vector3.new(playerPosition.X, targetYPosition, playerPosition.Z)
-            currentPlatform.Position = platformPosition
-        else
-            -- Normal mode: Platform follows player at foot level
-            local platformPosition = Vector3.new(playerPosition.X, playerPosition.Y - 3, playerPosition.Z)
+        if elevationComplete then
+            -- Platform stays 20 studs above player's feet, following horizontally
+            local platformPosition = Vector3.new(
+                playerPosition.X, 
+                playerPosition.Y + targetHeight - 3, -- Adjust for player height
+                playerPosition.Z
+            )
             currentPlatform.Position = platformPosition
         end
     end
 end
 
-local function startElevator()
-    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
-        return
-    end
+local function startElevation()
+    if not currentPlatform or not player.Character then return end
     
-    -- Set starting position
-    startingYPosition = player.Character.HumanoidRootPart.Position.Y - 3
-    targetYPosition = startingYPosition + ELEVATOR_HEIGHT
+    local character = player.Character
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
     
-    elevatorActive = true
-    
-    -- Create tween to move platform up
-    if currentPlatform then
-        local startPos = currentPlatform.Position
-        local endPos = Vector3.new(startPos.X, targetYPosition, startPos.Z)
+    if humanoidRootPart then
+        isElevating = true
+        elevationComplete = false
         
-        local tweenInfo = TweenInfo.new(
-            3, -- Duration: 3 seconds to go up 20 studs
-            Enum.EasingStyle.Quad,
-            Enum.EasingDirection.InOut,
-            0, -- No repeat
-            false, -- Don't reverse
-            0 -- No delay
+        -- Starting position (at player's feet)
+        local startPosition = Vector3.new(
+            humanoidRootPart.Position.X,
+            humanoidRootPart.Position.Y - 3,
+            humanoidRootPart.Position.Z
         )
         
-        local tween = TweenService:Create(currentPlatform, tweenInfo, {Position = endPos})
-        tween:Play()
+        -- Target position (20 studs above)
+        local targetPosition = Vector3.new(
+            humanoidRootPart.Position.X,
+            humanoidRootPart.Position.Y + targetHeight - 3,
+            humanoidRootPart.Position.Z
+        )
         
-        -- Update UI during elevator movement
-        statusLabel.Text = "Elevator: RISING..."
+        currentPlatform.Position = startPosition
+        
+        -- Create tween to elevate the platform
+        local elevationTween = TweenService:Create(
+            currentPlatform,
+            TweenInfo.new(3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {Position = targetPosition}
+        )
+        
+        -- Update status
+        statusLabel.Text = "Elevator: RISING"
         statusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
         
-        tween.Completed:Connect(function()
-            statusLabel.Text = "Elevator: AT TOP (5 studs below player)"
+        elevationTween:Play()
+        
+        elevationTween.Completed:Connect(function()
+            isElevating = false
+            elevationComplete = true
+            
+            statusLabel.Text = "Elevator: ACTIVE (Following)"
             statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-            print("Elevator: Reached maximum height - Platform now 5 studs below player")
+            
+            print("Elevator Platform: Elevation complete - Now following player")
         end)
     end
 end
@@ -236,35 +246,31 @@ local function enablePlatform()
     if platformEnabled then return end
     
     platformEnabled = true
-    elevatorActive = false
+    elevationComplete = false
+    isElevating = false
     
     -- Create the platform
     currentPlatform = createPlatform()
     
-    -- Start the update loop (this keeps the platform locked to player's feet)
+    -- Start the update loop
     platformUpdateConnection = RunService.Heartbeat:Connect(updatePlatformPosition)
     
-    -- Update initial position
-    updatePlatformPosition()
-    
-    -- Start the elevator automatically
-    task.wait(0.5) -- Brief delay to ensure platform is positioned
-    startElevator()
+    -- Start elevation process
+    startElevation()
     
     -- Update UI
     toggleButton.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
     toggleButton.Text = "🔷 STOP ELEVATOR 🔷"
-    statusLabel.Text = "Elevator: STARTING..."
-    statusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
     
-    print("Elevator Platform: ENABLED - Rising to 20 studs")
+    print("Elevator Platform: ENABLED - Starting elevation")
 end
 
 local function disablePlatform()
     if not platformEnabled then return end
     
     platformEnabled = false
-    elevatorActive = false
+    isElevating = false
+    elevationComplete = false
     
     -- Disconnect the update loop
     if platformUpdateConnection then
@@ -277,10 +283,6 @@ local function disablePlatform()
         currentPlatform:Destroy()
         currentPlatform = nil
     end
-    
-    -- Reset position tracking
-    startingYPosition = nil
-    targetYPosition = nil
     
     -- Update UI
     toggleButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -311,21 +313,18 @@ local function onCharacterAdded(newCharacter)
     if platformEnabled then
         task.wait(1) -- Wait for character to fully load
         
+        -- Reset elevation state
+        elevationComplete = false
+        isElevating = false
+        
         -- Remove old platform if it exists
         if currentPlatform then
             currentPlatform:Destroy()
         end
         
-        -- Reset elevator state
-        elevatorActive = false
-        
-        -- Create new platform and restart elevator
+        -- Create new platform and start elevation
         currentPlatform = createPlatform()
-        updatePlatformPosition()
-        
-        -- Restart elevator
-        task.wait(0.5)
-        startElevator()
+        startElevation()
     end
 end
 
