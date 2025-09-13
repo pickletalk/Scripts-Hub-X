@@ -20,8 +20,8 @@ local isElevating = false
 local elevationTween = nil
 
 -- Elevation settings
-local ELEVATION_HEIGHT = 80 -- studs
-local ELEVATION_TIME = 6.5 -- seconds
+local ELEVATION_HEIGHT = 70 -- studs
+local ELEVATION_TIME = 7 -- seconds
 
 -- ESP variables
 local plotDisplays = {}
@@ -71,7 +71,7 @@ titleText.Name = "TitleText"
 titleText.Size = UDim2.new(1, -30, 1, 0)
 titleText.Position = UDim2.new(0, 5, 0, 0)
 titleText.BackgroundTransparency = 1
-titleText.Text = "🔷 Platform + ESP 🔷"
+titleText.Text = "🔷 by PickleTalk 🔷"
 titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleText.TextScaled = true
 titleText.Font = Enum.Font.GothamBold
@@ -168,6 +168,7 @@ local function createPlatform()
     platform.TopSurface = Enum.SurfaceType.Smooth
     platform.BottomSurface = Enum.SurfaceType.Smooth
     platform.Parent = workspace
+    platform.Transparency = 1
     
     local pointLight = Instance.new("PointLight")
     pointLight.Color = Color3.fromRGB(0, 162, 255)
