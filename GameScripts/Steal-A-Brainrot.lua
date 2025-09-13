@@ -207,7 +207,7 @@ local function startElevation()
     isElevating = true
     
     local playerPosition = humanoidRootPart.Position
-    elevationStartY = playerPosition.Y - 9
+    elevationStartY = playerPosition.Y - 8
     local targetY = elevationStartY + ELEVATION_HEIGHT
     
     currentPlatform.Position = Vector3.new(playerPosition.X, elevationStartY, playerPosition.Z)
