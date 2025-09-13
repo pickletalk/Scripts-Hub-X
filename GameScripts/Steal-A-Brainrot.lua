@@ -1,5 +1,5 @@
 -- ========================================
--- ELEVATOR PLATFORM SCRIPT
+-- PLATFORM ELEVATOR SCRIPT
 -- ========================================
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -14,18 +14,22 @@ local rootPart = character:WaitForChild("HumanoidRootPart")
 local platformEnabled = false
 local currentPlatform = nil
 local platformUpdateConnection = nil
+local elevationStartY = nil
 local isElevating = false
-local targetHeight = 20 -- 20 studs above player
-local elevationComplete = false
+local elevationTween = nil
+
+-- Elevation settings
+local ELEVATION_HEIGHT = 40 -- studs
+local ELEVATION_TIME = 1.5 -- seconds
 
 -- ========================================
--- PLATFORM MAKER UI
+-- PLATFORM UI
 -- ========================================
 local playerGui = player:WaitForChild("PlayerGui")
 
 -- Create ScreenGui
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "ElevatorPlatformUI"
+screenGui.Name = "PlatformUI"
 screenGui.Parent = playerGui
 screenGui.ResetOnSpawn = false
 
@@ -33,7 +37,7 @@ screenGui.ResetOnSpawn = false
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
 mainFrame.Size = UDim2.new(0, 250, 0, 120)
-mainFrame.Position = UDim2.new(1, -260, 0, 140)
+mainFrame.Position = UDim2.new(1, -260, 0, 140) -- Position below the teleporter UI
 mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 mainFrame.BorderSizePixel = 0
 mainFrame.Parent = screenGui
@@ -60,7 +64,7 @@ titleText.Name = "TitleText"
 titleText.Size = UDim2.new(1, -30, 1, 0)
 titleText.Position = UDim2.new(0, 5, 0, 0)
 titleText.BackgroundTransparency = 1
-titleText.Text = "🔷 ELEVATOR PLATFORM 🔷"
+titleText.Text = "🔷 by PickleTalk 🔷"
 titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleText.TextScaled = true
 titleText.Font = Enum.Font.GothamBold
@@ -87,7 +91,7 @@ toggleButton.Name = "ToggleButton"
 toggleButton.Size = UDim2.new(0, 220, 0, 35)
 toggleButton.Position = UDim2.new(0, 15, 0, 45)
 toggleButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-toggleButton.Text = "🔷 START ELEVATOR 🔷"
+toggleButton.Text = "🔷 ENABLE PLATFORM 🔷"
 toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 toggleButton.TextScaled = true
 toggleButton.Font = Enum.Font.GothamBold
@@ -103,7 +107,7 @@ statusLabel.Name = "StatusLabel"
 statusLabel.Size = UDim2.new(1, -20, 0, 25)
 statusLabel.Position = UDim2.new(0, 10, 0, 90)
 statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "Elevator: OFF"
+statusLabel.Text = "Platform: OFF"
 statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 statusLabel.TextScaled = true
 statusLabel.Font = Enum.Font.Gotham
@@ -147,18 +151,18 @@ end)
 -- ========================================
 local function createPlatform()
     local platform = Instance.new("Part")
-    platform.Name = "ElevatorPlatform"
+    platform.Name = "PlayerPlatform"
     platform.Size = Vector3.new(6, 0.5, 6) -- 6x0.5x6 studs
     platform.Material = Enum.Material.Neon
-    platform.BrickColor = BrickColor.new("Bright blue")
+    platform.BrickColor = BrickColor.new("Bright blue") -- Blue color
     platform.Anchored = true
-    platform.CanCollide = true -- Solid platform that player can walk on
+    platform.CanCollide = true -- Player cannot pass through
     platform.Shape = Enum.PartType.Block
     platform.TopSurface = Enum.SurfaceType.Smooth
     platform.BottomSurface = Enum.SurfaceType.Smooth
     platform.Parent = workspace
     
-    -- Add visual effects
+    -- Add some visual effects
     local pointLight = Instance.new("PointLight")
     pointLight.Color = Color3.fromRGB(0, 162, 255)
     pointLight.Brightness = 1
@@ -169,7 +173,7 @@ local function createPlatform()
 end
 
 local function updatePlatformPosition()
-    if not platformEnabled or not currentPlatform or not player.Character then
+    if not platformEnabled or not currentPlatform or not player.Character or isElevating then
         return
     end
     
@@ -177,92 +181,86 @@ local function updatePlatformPosition()
     local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
     
     if humanoidRootPart then
+        -- Position platform 4 studs below the player (only X and Z, keep current Y)
         local playerPosition = humanoidRootPart.Position
+        local platformPosition = Vector3.new(playerPosition.X, currentPlatform.Position.Y, playerPosition.Z)
         
-        if elevationComplete then
-            -- Platform stays 20 studs above player's feet, following horizontally
-            local platformPosition = Vector3.new(
-                playerPosition.X, 
-                playerPosition.Y + targetHeight - 3, -- Adjust for player height
-                playerPosition.Z
-            )
-            currentPlatform.Position = platformPosition
-        end
+        currentPlatform.Position = platformPosition
     end
 end
 
 local function startElevation()
-    if not currentPlatform or not player.Character then return end
+    if not currentPlatform or not player.Character or isElevating then
+        return
+    end
     
     local character = player.Character
     local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
     
-    if humanoidRootPart then
-        isElevating = true
-        elevationComplete = false
-        
-        -- Starting position (at player's feet)
-        local startPosition = Vector3.new(
-            humanoidRootPart.Position.X,
-            humanoidRootPart.Position.Y - 3,
-            humanoidRootPart.Position.Z
-        )
-        
-        -- Target position (20 studs above)
-        local targetPosition = Vector3.new(
-            humanoidRootPart.Position.X,
-            humanoidRootPart.Position.Y + targetHeight - 3,
-            humanoidRootPart.Position.Z
-        )
-        
-        currentPlatform.Position = startPosition
-        
-        -- Create tween to elevate the platform
-        local elevationTween = TweenService:Create(
-            currentPlatform,
-            TweenInfo.new(3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {Position = targetPosition}
-        )
-        
-        -- Update status
-        statusLabel.Text = "Elevator: RISING"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
-        
-        elevationTween:Play()
-        
-        elevationTween.Completed:Connect(function()
-            isElevating = false
-            elevationComplete = true
-            
-            statusLabel.Text = "Elevator: ACTIVE (Following)"
-            statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-            
-            print("Elevator Platform: Elevation complete - Now following player")
-        end)
-    end
+    if not humanoidRootPart then return end
+    
+    isElevating = true
+    
+    -- Set starting position
+    local playerPosition = humanoidRootPart.Position
+    elevationStartY = playerPosition.Y - 5 -- 4 studs below player
+    local targetY = elevationStartY + ELEVATION_HEIGHT
+    
+    -- Set initial platform position
+    currentPlatform.Position = Vector3.new(playerPosition.X, elevationStartY, playerPosition.Z)
+    
+    -- Create elevation tween
+    local tweenInfo = TweenInfo.new(
+        ELEVATION_TIME,
+        Enum.EasingStyle.Quad,
+        Enum.EasingDirection.Out,
+        0,
+        false,
+        0
+    )
+    
+    elevationTween = TweenService:Create(currentPlatform, tweenInfo, {
+        Position = Vector3.new(currentPlatform.Position.X, targetY, currentPlatform.Position.Z)
+    })
+    
+    -- Update status
+    statusLabel.Text = "Platform: ELEVATING"
+    statusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+    
+    -- Start tween
+    elevationTween:Play()
+    
+    -- Handle completion
+    elevationTween.Completed:Connect(function()
+        isElevating = false
+        statusLabel.Text = "Platform: ELEVATED!"
+        statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+        print("Platform: Elevation complete - 40 studs reached!")
+    end)
+    
+    print("Platform: Starting elevation - 40 studs in 1.5 seconds")
 end
 
 local function enablePlatform()
     if platformEnabled then return end
     
     platformEnabled = true
-    elevationComplete = false
-    isElevating = false
     
     -- Create the platform
     currentPlatform = createPlatform()
     
-    -- Start the update loop
-    platformUpdateConnection = RunService.Heartbeat:Connect(updatePlatformPosition)
-    
-    -- Start elevation process
+    -- Start elevation immediately
+    task.wait(0.1) -- Small delay to ensure platform is created
     startElevation()
+    
+    -- Start the update loop (for X and Z positioning only)
+    platformUpdateConnection = RunService.Heartbeat:Connect(updatePlatformPosition)
     
     -- Update UI
     toggleButton.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
-    toggleButton.Text = "🔷 STOP ELEVATOR 🔷"
+    toggleButton.Text = "🔷 DISABLE PLATFORM 🔷"
     
-    print("Elevator Platform: ENABLED - Starting elevation")
+    print("Platform: ENABLED")
 end
 
 local function disablePlatform()
@@ -270,7 +268,12 @@ local function disablePlatform()
     
     platformEnabled = false
     isElevating = false
-    elevationComplete = false
+    
+    -- Stop any ongoing elevation
+    if elevationTween then
+        elevationTween:Cancel()
+        elevationTween = nil
+    end
     
     -- Disconnect the update loop
     if platformUpdateConnection then
@@ -284,13 +287,16 @@ local function disablePlatform()
         currentPlatform = nil
     end
     
+    -- Reset variables
+    elevationStartY = nil
+    
     -- Update UI
     toggleButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    toggleButton.Text = "🔷 START ELEVATOR 🔷"
-    statusLabel.Text = "Elevator: OFF"
+    toggleButton.Text = "🔷 ENABLE PLATFORM 🔷"
+    statusLabel.Text = "Platform: OFF"
     statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
     
-    print("Elevator Platform: DISABLED")
+    print("Platform: DISABLED")
 end
 
 local function togglePlatform()
@@ -313,11 +319,11 @@ local function onCharacterAdded(newCharacter)
     if platformEnabled then
         task.wait(1) -- Wait for character to fully load
         
-        -- Reset elevation state
-        elevationComplete = false
+        -- Stop any ongoing elevation
+        if elevationTween then
+            elevationTween:Cancel()
+        end
         isElevating = false
-        startTime = nil
-        initialPlayerY = nil
         
         -- Remove old platform if it exists
         if currentPlatform then
@@ -326,6 +332,7 @@ local function onCharacterAdded(newCharacter)
         
         -- Create new platform and start elevation
         currentPlatform = createPlatform()
+        task.wait(0.1)
         startElevation()
     end
 end
