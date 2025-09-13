@@ -19,8 +19,8 @@ local isElevating = false
 local elevationTween = nil
 
 -- Elevation settings
-local ELEVATION_HEIGHT = 70 -- studs
-local ELEVATION_TIME = 1 -- seconds
+local ELEVATION_HEIGHT = 80 -- studs
+local ELEVATION_TIME = 2.5 -- seconds
 
 -- ========================================
 -- PLATFORM UI
