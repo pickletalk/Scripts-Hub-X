@@ -153,9 +153,12 @@ local function findPlayerPlot()
     local playerDisplayName = player.DisplayName
     local targetPlotName = playerDisplayName .. "'s Base"
     
-    -- Search through all plot folders
+    statusLabel.Text = "Searching for plot..."
+    
+    -- Search through all UUID-named plot folders
     for _, plotFolder in pairs(plotsFolder:GetChildren()) do
         if plotFolder:IsA("Folder") then
+            -- Look for PlotSign inside the UUID folder
             local plotSign = plotFolder:FindFirstChild("PlotSign")
             if plotSign then
                 local surfaceGui = plotSign:FindFirstChild("SurfaceGui")
@@ -164,7 +167,9 @@ local function findPlayerPlot()
                     if frame then
                         local textLabel = frame:FindFirstChild("TextLabel")
                         if textLabel and textLabel.Text == targetPlotName then
-                            statusLabel.Text = "Found player plot!"
+                            statusLabel.Text = "Found plot: " .. plotFolder.Name
+                            wait(1.5)
+                            statusLabel.Text = "by PickleTalk"
                             return plotFolder
                         end
                     end
@@ -186,24 +191,43 @@ local function createPlatform(position)
     local platform = Instance.new("Part")
     platform.Name = "HeistPlatform"
     platform.Size = Vector3.new(6, 0.5, 6) -- 6x0.5x6 studs
-    platform.Material = Enum.Material.Neon
-    platform.BrickColor = BrickColor.new("Bright blue") -- Blue color
+    platform.Material = Enum.Material.ForceField
+    platform.BrickColor = BrickColor.new("Bright blue")
     platform.Anchored = true
     platform.CanCollide = true -- Player cannot pass through
     platform.Shape = Enum.PartType.Block
     platform.TopSurface = Enum.SurfaceType.Smooth
     platform.BottomSurface = Enum.SurfaceType.Smooth
     platform.Position = position
+    platform.Transparency = 0.5 -- Make it mostly invisible but still visible
     platform.Parent = workspace
     
-    -- Add some visual effects
-    local pointLight = Instance.new("PointLight")
-    pointLight.Color = Color3.fromRGB(0, 162, 255)
-    pointLight.Brightness = 1
-    pointLight.Range = 10
-    pointLight.Parent = platform
-    
     return platform
+end
+
+local function movePlatformToTarget(platform, targetPosition, speed)
+    if not platform or not platform.Parent then
+        return
+    end
+    
+    local startPosition = platform.Position
+    local direction = (targetPosition - startPosition).Unit
+    local distance = (targetPosition - startPosition).Magnitude
+    local duration = distance / (speed or 50) -- Default speed of 50 studs per second
+    
+    local tweenInfo = TweenInfo.new(
+        duration,
+        Enum.EasingStyle.Quad,
+        Enum.EasingDirection.InOut,
+        0,
+        false,
+        0
+    )
+    
+    local tween = TweenService:Create(platform, tweenInfo, {Position = targetPosition})
+    tween:Play()
+    
+    return tween
 end
 
 -- ========================================
@@ -253,26 +277,35 @@ local function executeHeist()
             error("HumanoidRootPart not found")
         end
         
-        -- Step 5: Create platform below player and teleport to carpet area
+        -- Step 5: Create platform below player
         local platformPosition = humanoidRootPart.Position + Vector3.new(0, -3, 0)
         currentPlatform = createPlatform(platformPosition)
         
-        wait(0.5) -- Brief pause for platform to appear
+        wait(0.3)
         
-        -- Step 6: Teleport to 20 studs above carpet
+        -- Step 6: Calculate carpet target position
         local carpetPosition = carpet.Position
         local aboveCarpetPosition = carpetPosition + Vector3.new(0, 20, 0)
+        local carpetPlatformPosition = aboveCarpetPosition + Vector3.new(0, -3, 0)
         
-        humanoidRootPart.CFrame = CFrame.new(aboveCarpetPosition)
+        -- Move platform towards carpet (this will push the player)
+        local tween1 = movePlatformToTarget(currentPlatform, carpetPlatformPosition, 80)
+        if tween1 then
+            tween1.Completed:Wait()
+        end
         
-        -- Move platform to match player position
-        currentPlatform.Position = aboveCarpetPosition + Vector3.new(0, -3, 0)
+        wait(0.5)
         
-        wait(0.5) -- Wait at carpet location
         
-        -- Step 7: Teleport to DeliveryHitbox
-        local deliveryPosition = deliveryHitbox.Position + Vector3.new(0, 5, 0) -- 5 studs above delivery
-        humanoidRootPart.CFrame = CFrame.new(deliveryPosition)
+        -- Step 7: Calculate delivery target position
+        local deliveryPosition = deliveryHitbox.Position + Vector3.new(0, 5, 0)
+        local deliveryPlatformPosition = deliveryPosition + Vector3.new(0, -3, 0)
+        
+        -- Move platform towards delivery (this will push the player)
+        local tween2 = movePlatformToTarget(currentPlatform, deliveryPlatformPosition, 80)
+        if tween2 then
+            tween2.Completed:Wait()
+        end
         
         wait(0.5)
         
@@ -285,8 +318,10 @@ local function executeHeist()
         -- Flash button green for success
         stealButton.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
         stealButton.Text = "💰 STEAL COMPLETE! 💰"
+        statusLabel.Text = "Heist successful!"
+        statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
         
-        wait(1.5)
+        wait(2)
         
         -- Reset button
         stealButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
