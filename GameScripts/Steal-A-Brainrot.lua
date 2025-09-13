@@ -20,7 +20,7 @@ local elevationTween = nil
 
 -- Elevation settings
 local ELEVATION_HEIGHT = 80 -- studs
-local ELEVATION_TIME = 3.5 -- seconds
+local ELEVATION_TIME = 4 -- seconds
 
 -- ========================================
 -- PLATFORM UI
@@ -203,7 +203,7 @@ local function startElevation()
     
     -- Set starting position
     local playerPosition = humanoidRootPart.Position
-    elevationStartY = playerPosition.Y - 6 -- 4 studs below player
+    elevationStartY = playerPosition.Y - 8 -- 4 studs below player
     local targetY = elevationStartY + ELEVATION_HEIGHT
     
     -- Set initial platform position
