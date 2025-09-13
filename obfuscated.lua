@@ -40,7 +40,7 @@ local BlacklistUsers = {
 	}
 
 -- Control Variables
-local KeySystem = false
+local KeySystem = true
 local loadingScreen = true
 
 local webhookUrl = "https://discord.com/api/webhooks/1416367485803827230/4OLebMf0rtkCajS5S5lmo99iXe0v6v5B1gn_lPDAzz_MQtj0-HabA9wa2PF-5QBNUmgi"
