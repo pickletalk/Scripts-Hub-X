@@ -15,7 +15,7 @@ local platformEnabled = false
 local currentPlatform = nil
 local platformUpdateConnection = nil
 local isElevating = false
-local targetHeight = 20 -- 20 studs above player
+local targetHeight = 35 -- 35 studs above player
 local elevationComplete = false
 
 -- ========================================
@@ -183,7 +183,7 @@ local function updatePlatformPosition()
             -- Platform stays 20 studs above player's feet, following horizontally
             local platformPosition = Vector3.new(
                 playerPosition.X, 
-                playerPosition.Y + targetHeight - 3, -- Adjust for player height
+                playerPosition.Y + targetHeight - 5, -- Adjust for player height
                 playerPosition.Z
             )
             currentPlatform.Position = platformPosition
@@ -234,7 +234,6 @@ local function startElevation()
             isElevating = false
             elevationComplete = true
             
-            statusLabel.Text = "Elevator: ACTIVE (Following)"
             statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
             
             print("Elevator Platform: Elevation complete - Now following player")
@@ -316,6 +315,8 @@ local function onCharacterAdded(newCharacter)
         -- Reset elevation state
         elevationComplete = false
         isElevating = false
+        startTime = nil
+        initialPlayerY = nil
         
         -- Remove old platform if it exists
         if currentPlatform then
