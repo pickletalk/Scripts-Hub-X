@@ -21,7 +21,7 @@ local elevationTween = nil
 
 -- Elevation settings
 local ELEVATION_HEIGHT = 70 -- studs
-local ELEVATION_TIME = 7.5 -- seconds
+local ELEVATION_TIME = 8 -- seconds
 
 -- ESP variables
 local plotDisplays = {}
@@ -207,7 +207,7 @@ local function startElevation()
     isElevating = true
     
     local playerPosition = humanoidRootPart.Position
-    elevationStartY = playerPosition.Y - 7
+    elevationStartY = playerPosition.Y - 6
     local targetY = elevationStartY + ELEVATION_HEIGHT
     
     currentPlatform.Position = Vector3.new(playerPosition.X, elevationStartY, playerPosition.Z)
