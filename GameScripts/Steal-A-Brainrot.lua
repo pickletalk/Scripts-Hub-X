@@ -1,12 +1,12 @@
 -- ========================================
--- PLATFORM ELEVATOR + ESP SCRIPT (FIXED)
+-- PLATFORM UNDER FEET + ESP SCRIPT
 -- ========================================
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
-local LocalPlayer = Players.LocalPlayer -- Added this reference that was missing
+local LocalPlayer = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 local rootPart = character:WaitForChild("HumanoidRootPart")
@@ -15,13 +15,7 @@ local rootPart = character:WaitForChild("HumanoidRootPart")
 local platformEnabled = false
 local currentPlatform = nil
 local platformUpdateConnection = nil
-local elevationStartY = nil
-local isElevating = false
-local elevationTween = nil
-
--- Elevation settings
-local ELEVATION_HEIGHT = 70 -- studs
-local ELEVATION_TIME = 8 -- seconds
+local PLATFORM_OFFSET = 3 -- Distance below player's feet (in studs)
 
 -- ESP variables
 local plotDisplays = {}
@@ -159,7 +153,7 @@ end)
 local function createPlatform()
     local platform = Instance.new("Part")
     platform.Name = "PlayerPlatform"
-    platform.Size = Vector3.new(300, 2.5, 300)
+    platform.Size = Vector3.new(8, 0.5, 8) -- Smaller platform that fits under player
     platform.Material = Enum.Material.Neon
     platform.BrickColor = BrickColor.new("Bright blue")
     platform.Anchored = true
@@ -168,7 +162,7 @@ local function createPlatform()
     platform.TopSurface = Enum.SurfaceType.Smooth
     platform.BottomSurface = Enum.SurfaceType.Smooth
     platform.Parent = workspace
-    platform.Transparency = 1
+    platform.Transparency = 0.3 -- Slightly visible so player can see it
     
     local pointLight = Instance.new("PointLight")
     pointLight.Color = Color3.fromRGB(0, 162, 255)
@@ -180,7 +174,7 @@ local function createPlatform()
 end
 
 local function updatePlatformPosition()
-    if not platformEnabled or not currentPlatform or not player.Character or isElevating then
+    if not platformEnabled or not currentPlatform or not player.Character then
         return
     end
     
@@ -189,49 +183,14 @@ local function updatePlatformPosition()
     
     if humanoidRootPart then
         local playerPosition = humanoidRootPart.Position
-        local platformPosition = Vector3.new(playerPosition.X, currentPlatform.Position.Y, playerPosition.Z)
+        -- Position platform directly under player's feet
+        local platformPosition = Vector3.new(
+            playerPosition.X, 
+            playerPosition.Y - PLATFORM_OFFSET, 
+            playerPosition.Z
+        )
         currentPlatform.Position = platformPosition
     end
-end
-
-local function startElevation()
-    if not currentPlatform or not player.Character or isElevating then
-        return
-    end
-    
-    local character = player.Character
-    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-    
-    if not humanoidRootPart then return end
-    
-    isElevating = true
-    
-    local playerPosition = humanoidRootPart.Position
-    elevationStartY = playerPosition.Y - 6
-    local targetY = elevationStartY + ELEVATION_HEIGHT
-    
-    currentPlatform.Position = Vector3.new(playerPosition.X, elevationStartY, playerPosition.Z)
-    
-    local tweenInfo = TweenInfo.new(
-        ELEVATION_TIME,
-        Enum.EasingStyle.Quad,
-        Enum.EasingDirection.Out,
-        0,
-        false,
-        0
-    )
-    
-    elevationTween = TweenService:Create(currentPlatform, tweenInfo, {
-        Position = Vector3.new(currentPlatform.Position.X, targetY, currentPlatform.Position.Z)
-    })
-    
-    elevationTween:Play()
-    
-    elevationTween.Completed:Connect(function()
-        isElevating = false
-    end)
-    
-    print("Platform: Starting elevation")
 end
 
 local function enablePlatform()
@@ -240,27 +199,22 @@ local function enablePlatform()
     platformEnabled = true
     currentPlatform = createPlatform()
     
-    task.wait(0.1)
-    startElevation()
-    
+    -- Start updating platform position immediately
     platformUpdateConnection = RunService.Heartbeat:Connect(updatePlatformPosition)
+    
+    -- Update platform position once immediately
+    updatePlatformPosition()
     
     toggleButton.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
     toggleButton.Text = "🔷 DISABLE FLOATING 🔷"
     
-    print("Platform: ENABLED")
+    print("Platform: ENABLED - Platform will follow under your feet")
 end
 
 local function disablePlatform()
     if not platformEnabled then return end
     
     platformEnabled = false
-    isElevating = false
-    
-    if elevationTween then
-        elevationTween:Cancel()
-        elevationTween = nil
-    end
     
     if platformUpdateConnection then
         platformUpdateConnection:Disconnect()
@@ -272,10 +226,10 @@ local function disablePlatform()
         currentPlatform = nil
     end
     
-    elevationStartY = nil
-    
     toggleButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     toggleButton.Text = "🔷 ENABLE FLOATING 🔷"
+    
+    print("Platform: DISABLED")
 end
 
 local function togglePlatform()
@@ -598,21 +552,16 @@ local function onCharacterAdded(newCharacter)
     humanoid = character:WaitForChild("Humanoid")
     rootPart = character:WaitForChild("HumanoidRootPart")
     
+    -- If platform was enabled, recreate it for the new character
     if platformEnabled then
-        task.wait(1)
-        
-        if elevationTween then
-            elevationTween:Cancel()
-        end
-        isElevating = false
+        task.wait(1) -- Wait for character to fully load
         
         if currentPlatform then
             currentPlatform:Destroy()
         end
         
         currentPlatform = createPlatform()
-        task.wait(0.1)
-        startElevation()
+        updatePlatformPosition() -- Position it immediately
     end
 end
 
