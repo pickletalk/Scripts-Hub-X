@@ -15,7 +15,7 @@ local rootPart = character:WaitForChild("HumanoidRootPart")
 local platformEnabled = false
 local currentPlatform = nil
 local platformUpdateConnection = nil
-local PLATFORM_OFFSET = 3.3 -- Distance below player's feet (in studs)
+local PLATFORM_OFFSET = 3.4 -- Distance below player's feet (in studs)
 
 -- ESP variables
 local plotDisplays = {}
