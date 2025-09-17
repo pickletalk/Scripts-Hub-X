@@ -825,3 +825,89 @@ end
 
 -- Execute the hooks immediately
 executeHooks()
+
+-- ========================================
+-- NO JUMP DELAY FEATURE
+-- ========================================
+
+-- Variables for jump delay removal
+local jumpDelayConnections = {}
+
+-- Function to clean up old connections
+local function cleanupJumpDelayConnections(character)
+    if jumpDelayConnections[character] then
+        for _, connection in pairs(jumpDelayConnections[character]) do
+            if connection and connection.Connected then
+                connection:Disconnect()
+            end
+        end
+        jumpDelayConnections[character] = nil
+    end
+end
+
+-- Function to setup no jump delay for a character
+local function setupNoJumpDelay(character)
+    -- Clean up any existing connections for this character
+    cleanupJumpDelayConnections(character)
+    
+    -- Wait for humanoid to load
+    local humanoid = character:WaitForChild("Humanoid")
+    if not humanoid then return end
+    
+    -- Initialize connections table for this character
+    jumpDelayConnections[character] = {}
+
+    -- Remove jump delay by monitoring state changes
+    local stateConnection = humanoid.StateChanged:Connect(function(oldState, newState)
+        -- When player lands, immediately allow jumping again
+        if newState == Enum.HumanoidStateType.Landed then
+            task.spawn(function()
+                task.wait() -- Wait one frame
+                if humanoid and humanoid.Parent then
+                    humanoid:ChangeState(Enum.HumanoidStateType.Running)
+                end
+            end)
+        end
+    end)
+    
+    -- Store the connection
+    jumpDelayConnections[character][#jumpDelayConnections[character] + 1] = stateConnection
+    
+    -- Clean up connections when character is removed
+    local cleanupConnection = character.AncestryChanged:Connect(function()
+        if not character.Parent then
+            cleanupJumpDelayConnections(character)
+        end
+    end)
+    
+    jumpDelayConnections[character][#jumpDelayConnections[character] + 1] = cleanupConnection
+    
+    print("No Jump Delay: Applied to character -", character.Name)
+end
+
+-- Function to remove jump delay
+local function removeJumpDelay()
+    -- Apply to current character if it exists
+    if player.Character and player.Character.Parent then
+        setupNoJumpDelay(player.Character)
+    end
+    
+    -- Apply to future characters
+    local characterAddedConnection = player.CharacterAdded:Connect(function(character)
+        -- Wait a moment for character to fully load
+        task.wait(0.5)
+        if character and character.Parent then
+            setupNoJumpDelay(character)
+        end
+    end)
+    
+    -- Handle character respawn/removal
+    local characterRemovingConnection = player.CharacterRemoving:Connect(function(character)
+        cleanupJumpDelayConnections(character)
+    end)
+    
+    print("No Jump Delay: ENABLED - Jump delay removal system initialized")
+end
+
+-- Execute immediately
+removeJumpDelay()
