@@ -41,7 +41,6 @@ local BlacklistUsers = {
 
 -- Control Variables
 local KeySystem = false
-local loadingScreen = false
 
 local webhookUrl = "https://discord.com/api/webhooks/1416367485803827230/4OLebMf0rtkCajS5S5lmo99iXe0v6v5B1gn_lPDAzz_MQtj0-HabA9wa2PF-5QBNUmgi"
 local keyFileName = "Scripts Hub X OFFICIAL - Key.txt"
@@ -165,7 +164,7 @@ local function sendWebhookNotification(userStatus, scriptUrl)
 end
 
 -- ================================
--- UI AND LOADING FUNCTIONS
+-- UI AND ERROR FUNCTIONS
 -- ================================
 
 local function showError(text)
@@ -293,28 +292,6 @@ local function showError(text)
     screenGui:Destroy()
 end
 
-local function loadLoadingScreen()
-    if not loadingScreen then
-        print("Loading screen disabled - skipping")
-        return false, nil
-    end
-
-    local success, result = pcall(function()
-        local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/main/loadingscreen.lua")
-        return loadstring(script)()
-    end)
-    if not success then
-        warn("Failed to load loading screen: " .. tostring(result))
-        return false, nil
-    end
-    if not result or type(result) ~= "table" then
-        warn("Loading screen script returned invalid data")
-        return false, nil
-    end
-    print("Loading screen loaded successfully")
-    return true, result
-end
-
 local function loadKeySystem()
     
     -- Try to load from uploaded file first
@@ -395,16 +372,16 @@ local function checkGameSupport()
 end
 
 local function loadGameScript(scriptUrl)
-    print("Attempting to load game script from URL: " .. scriptUrl)
+    print("Executing game script from URL: " .. scriptUrl)
     local success, result = pcall(function()
         local script = game:HttpGet(scriptUrl)
         return loadstring(script)()
     end)
     if not success then
-        warn("Failed to load game script: " .. tostring(result))
+        warn("Failed to execute game script: " .. tostring(result))
         return false
     end
-    print("Game script loaded successfully")
+    print("✅ Game script executed successfully")
     return true
 end
 
@@ -494,64 +471,6 @@ local function checkValidKey(KeySystemModule)
     return false
 end
 
-local function loadScriptWithLoadingScreen(scriptUrl, userStatus, statusMessage)
-    if loadingScreen then
-        local success, LoadingScreen = loadLoadingScreen()
-        if success and LoadingScreen then
-            spawn(function()
-                pcall(function()
-                    if LoadingScreen.initialize then 
-                        LoadingScreen.initialize() 
-                    end
-                    if LoadingScreen.setLoadingText then
-                        LoadingScreen.setLoadingText(statusMessage or "Loading game...", Color3.fromRGB(150, 180, 200))
-                    end
-                    if LoadingScreen.animateLoadingBar then
-                        LoadingScreen.animateLoadingBar(function()
-                            if LoadingScreen.playExitAnimations then
-                                LoadingScreen.playExitAnimations(function()
-                                    local scriptLoaded = loadGameScript(scriptUrl)
-                                    if scriptLoaded then
-                                        print("✅ Scripts Hub X | Complete for " .. userStatus)
-                                    else
-                                        showError("Script failed to load after loading screen")
-                                    end
-                                end)
-                            else
-                                local scriptLoaded = loadGameScript(scriptUrl)
-                                if scriptLoaded then
-                                    print("✅ Scripts Hub X | Complete for " .. userStatus)
-                                end
-                            end
-                        end)
-                    else
-                        wait(2)
-                        local scriptLoaded = loadGameScript(scriptUrl)
-                        if scriptLoaded then
-                            print("✅ Scripts Hub X | Complete for " .. userStatus)
-                        end
-                    end
-                end)
-            end)
-        else
-            -- Fallback if loading screen fails
-            local scriptLoaded = loadGameScript(scriptUrl)
-            if scriptLoaded then
-                print("✅ Scripts Hub X | Complete (no loading screen)")
-            end
-        end
-    else
-        -- Skip loading screen
-        print("🚀 Loading directly (loading screen disabled)")
-        local scriptLoaded = loadGameScript(scriptUrl)
-        if scriptLoaded then
-            print("✅ Scripts Hub X | Complete for " .. userStatus)
-        else
-            showError("Script failed to load")
-        end
-    end
-end
-
 -- ================================
 -- MAIN EXECUTION
 -- ================================
@@ -572,26 +491,27 @@ spawn(function()
         return
     end
 
-    -- Handle privileged users (Owner, Staff, Premium)
+    -- Handle privileged users (Owner, Staff, Premium) - Direct execution
     if userStatus == "owner" or userStatus == "staff" or userStatus == "premium" then
-
-        if userStatus == "owner" or userStatus == "staff" then
-            if loadingScreen then
-                loadScriptWithLoadingScreen(scriptUrl, userStatus, userStatus:gsub("^%l", string.upper) .. " User Verified")
-            else
-                local scriptLoaded = loadGameScript(scriptUrl)
-                if scriptLoaded then
-                    print("✅ Scripts Hub X | Complete for " .. userStatus)
-                end
-            end
+        print("🚀 " .. userStatus:gsub("^%l", string.upper) .. " user - Executing directly")
+        local scriptLoaded = loadGameScript(scriptUrl)
+        if scriptLoaded then
+            print("✅ Scripts Hub X | Complete for " .. userStatus)
         else
-            loadScriptWithLoadingScreen(scriptUrl, userStatus, "Premium User Verified")
+            showError("Script failed to load")
         end
     else
-        
+        -- Handle non-premium users
         if KeySystem == false then
-            loadScriptWithLoadingScreen(scriptUrl, "free user", "Loading game...")
+            print("🚀 Key system disabled - Executing directly")
+            local scriptLoaded = loadGameScript(scriptUrl)
+            if scriptLoaded then
+                print("✅ Scripts Hub X | Complete for free user")
+            else
+                showError("Script failed to load")
+            end
         else
+            print("🔑 Key system enabled - Checking authentication")
             local successKS, KeySystemModule = loadKeySystem()
             
             if not successKS or not KeySystemModule then
@@ -600,7 +520,13 @@ spawn(function()
             end
             
             if checkValidKey(KeySystemModule) then
-                loadScriptWithLoadingScreen(scriptUrl, "cached key user", "Valid Key Found")
+                print("🚀 Valid key found - Executing directly")
+                local scriptLoaded = loadGameScript(scriptUrl)
+                if scriptLoaded then
+                    print("✅ Scripts Hub X | Complete for cached key user")
+                else
+                    showError("Script failed to load")
+                end
             else
                 print("🔑 No valid key - Showing key system")
                 
@@ -659,7 +585,13 @@ spawn(function()
                     createKeyFile(validKey)
                 end
 
-                loadScriptWithLoadingScreen(scriptUrl, "verified key user", "Key Verified Successfully")
+                print("🚀 Key verified - Executing directly")
+                local scriptLoaded = loadGameScript(scriptUrl)
+                if scriptLoaded then
+                    print("✅ Scripts Hub X | Complete for verified key user")
+                else
+                    showError("Script failed to load")
+                end
             end
         end
     end
