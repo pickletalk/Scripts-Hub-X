@@ -918,10 +918,38 @@ removeJumpDelay()
 
 -- ESP Target Paths (Add more paths here as needed)
 local espTargetPaths = {
-    game:GetService("ReplicatedStorage").Models.Animals["Noobini Pizzanini"]
-    -- Add more paths like this:
-    -- game:GetService("ReplicatedStorage").Models.Animals["Another Animal"],
-    -- game:GetService("ReplicatedStorage").Models.Items["Some Item"]
+    game:GetService("ReplicatedStorage").Models.Animals["Noobini Pizzanini"],
+    game:GetService("ReplicatedStorage").Models.Animals["Los Tralaleritos"],
+    game:GetService("ReplicatedStorage").Models.Animals["Las Tralaleritas"],
+    game:GetService("ReplicatedStorage").Models.Animals["Graipuss Medussi"],
+    game:GetService("ReplicatedStorage").Models.Animals["La Grande Combinasion"],
+    game:GetService("ReplicatedStorage").Models.Animals["Nuclearo Dinossauro"],
+    game:GetService("ReplicatedStorage").Models.Animals["Garama and Madundung"],
+    game:GetService("ReplicatedStorage").Models.Animals["Pot Hotspot"],
+    game:GetService("ReplicatedStorage").Models.Animals["Las Vaquitas Saturnitas"],
+    game:GetService("ReplicatedStorage").Models.Animals["Chicleteira Bicicleteira"],
+    game:GetService("ReplicatedStorage").Models.Animals["Dragon Cannelloni"],
+    game:GetService("ReplicatedStorage").Models.Animals["Los Combinasionas"],
+    game:GetService("ReplicatedStorage").Models.Animals["Karkerkar Kurkur"],
+    game:GetService("ReplicatedStorage").Models.Animals["Los Hotspotsitos"],
+    game:GetService("ReplicatedStorage").Models.Animals["Esok Sekolah"],
+    game:GetService("ReplicatedStorage").Models.Animals["Blackhole Goat"],
+    game:GetService("ReplicatedStorage").Models.Animals["Dul Dul Dul"],
+    game:GetService("ReplicatedStorage").Models.Animals["Tortuginni Dragonfruitini"],
+    game:GetService("ReplicatedStorage").Models.Animals["Chimpanzini Spiderini"],
+    game:GetService("ReplicatedStorage").Models.Animals["Los Matteos"],
+    game:GetService("ReplicatedStorage").Models.Animals["Nooo My Hotspot"],
+    game:GetService("ReplicatedStorage").Models.Animals["Sammyini Spyderini"],
+    game:GetService("ReplicatedStorage").Models.Animals["La Supreme Combinasion"],
+    game:GetService("ReplicatedStorage").Models.Animals["Ketupat Kepat"],
+    game:GetService("ReplicatedStorage").Models.Animals["Los Orcalitos"],
+    game:GetService("ReplicatedStorage").Models.Animals["Urubini Flamenguini"],
+    game:GetService("ReplicatedStorage").Models.Animals["Tralalita Tralala"],
+    game:GetService("ReplicatedStorage").Models.Animals["Orcalero Orcala"],
+    game:GetService("ReplicatedStorage").Models.Animals["Bulbito Bandito Traktorito"],
+    game:GetService("ReplicatedStorage").Models.Animals["Piccione Macchina"],
+    game:GetService("ReplicatedStorage").Models.Animals["Trippi Troppi Troppa Trippa"],
+    game:GetService("ReplicatedStorage").Models.Animals["Los Tungtungtungcitos"]
 }
 
 -- Variables for animal ESP
