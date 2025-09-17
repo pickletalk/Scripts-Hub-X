@@ -913,44 +913,50 @@ end
 removeJumpDelay()
 
 -- ========================================
--- ANIMAL ESP FEATURE
+-- ANIMAL ESP FEATURE (FIXED)
 -- ========================================
 
--- ESP Target Paths (Add more paths here as needed)
-local espTargetPaths = {
-    game:GetService("ReplicatedStorage").Models.Animals["Noobini Pizzanini"],
-    game:GetService("ReplicatedStorage").Models.Animals["Los Tralaleritos"],
-    game:GetService("ReplicatedStorage").Models.Animals["Las Tralaleritas"],
-    game:GetService("ReplicatedStorage").Models.Animals["Graipuss Medussi"],
-    game:GetService("ReplicatedStorage").Models.Animals["La Grande Combinasion"],
-    game:GetService("ReplicatedStorage").Models.Animals["Nuclearo Dinossauro"],
-    game:GetService("ReplicatedStorage").Models.Animals["Garama and Madundung"],
-    game:GetService("ReplicatedStorage").Models.Animals["Pot Hotspot"],
-    game:GetService("ReplicatedStorage").Models.Animals["Las Vaquitas Saturnitas"],
-    game:GetService("ReplicatedStorage").Models.Animals["Chicleteira Bicicleteira"],
-    game:GetService("ReplicatedStorage").Models.Animals["Dragon Cannelloni"],
-    game:GetService("ReplicatedStorage").Models.Animals["Los Combinasionas"],
-    game:GetService("ReplicatedStorage").Models.Animals["Karkerkar Kurkur"],
-    game:GetService("ReplicatedStorage").Models.Animals["Los Hotspotsitos"],
-    game:GetService("ReplicatedStorage").Models.Animals["Esok Sekolah"],
-    game:GetService("ReplicatedStorage").Models.Animals["Blackhole Goat"],
-    game:GetService("ReplicatedStorage").Models.Animals["Dul Dul Dul"],
-    game:GetService("ReplicatedStorage").Models.Animals["Tortuginni Dragonfruitini"],
-    game:GetService("ReplicatedStorage").Models.Animals["Chimpanzini Spiderini"],
-    game:GetService("ReplicatedStorage").Models.Animals["Los Matteos"],
-    game:GetService("ReplicatedStorage").Models.Animals["Nooo My Hotspot"],
-    game:GetService("ReplicatedStorage").Models.Animals["Sammyini Spyderini"],
-    game:GetService("ReplicatedStorage").Models.Animals["La Supreme Combinasion"],
-    game:GetService("ReplicatedStorage").Models.Animals["Ketupat Kepat"],
-    game:GetService("ReplicatedStorage").Models.Animals["Los Orcalitos"],
-    game:GetService("ReplicatedStorage").Models.Animals["Urubini Flamenguini"],
-    game:GetService("ReplicatedStorage").Models.Animals["Tralalita Tralala"],
-    game:GetService("ReplicatedStorage").Models.Animals["Orcalero Orcala"],
-    game:GetService("ReplicatedStorage").Models.Animals["Bulbito Bandito Traktorito"],
-    game:GetService("ReplicatedStorage").Models.Animals["Piccione Macchina"],
-    game:GetService("ReplicatedStorage").Models.Animals["Trippi Troppi Troppa Trippa"],
-    game:GetService("ReplicatedStorage").Models.Animals["Los Tungtungtungcitos"]
+-- Target animal names (just the names, not full paths)
+local espTargetNames = {
+    "Noobini Pizzanini",
+    "Los Tralaleritos",
+    "Las Tralaleritas",
+    "Graipuss Medussi",
+    "La Grande Combinasion",
+    "Nuclearo Dinossauro",
+    "Garama and Madundung",
+    "Pot Hotspot",
+    "Las Vaquitas Saturnitas",
+    "Chicleteira Bicicleteira",
+    "Dragon Cannelloni",
+    "Los Combinasionas",
+    "Karkerkar Kurkur",
+    "Los Hotspotsitos",
+    "Esok Sekolah",
+    "Blackhole Goat",
+    "Dul Dul Dul",
+    "Tortuginni Dragonfruitini",
+    "Chimpanzini Spiderini",
+    "Los Matteos",
+    "Nooo My Hotspot",
+    "Sammyini Spyderini",
+    "La Supreme Combinasion",
+    "Ketupat Kepat",
+    "Los Orcalitos",
+    "Urubini Flamenguini",
+    "Tralalita Tralala",
+    "Orcalero Orcala",
+    "Bulbito Bandito Traktorito",
+    "Piccione Macchina",
+    "Trippi Troppi Troppa Trippa",
+    "Los Tungtungtungcitos"
 }
+
+-- Convert to lookup table for faster searching
+local espTargetLookup = {}
+for _, name in pairs(espTargetNames) do
+    espTargetLookup[name] = true
+end
 
 -- Variables for animal ESP
 local animalESPDisplays = {}
@@ -988,38 +994,33 @@ end
 
 -- Function to scan workspace for target objects
 local function scanForTargetObjects()
-    for _, targetPath in pairs(espTargetPaths) do
-        if targetPath and targetPath.Parent then
-            local targetName = targetPath.Name
+    -- Search in workspace for target animals
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") and espTargetLookup[obj.Name] then
+            local objId = tostring(obj)
             
-            -- Search in workspace for instances of this object
-            for _, obj in pairs(workspace:GetDescendants()) do
-                if obj.Name == targetName and obj:IsA("Model") then
-                    local objId = tostring(obj)
-                    
-                    -- Check if we already have ESP for this object
-                    if not animalESPDisplays[objId] then
-                        -- Find the main part of the model for ESP attachment
-                        local primaryPart = obj.PrimaryPart
-                        if not primaryPart then
-                            -- Try to find any part in the model
-                            for _, child in pairs(obj:GetChildren()) do
-                                if child:IsA("Part") or child:IsA("MeshPart") then
-                                    primaryPart = child
-                                    break
-                                end
-                            end
-                        end
-                        
-                        if primaryPart then
-                            local espGui = createAnimalESP(primaryPart, targetName)
-                            animalESPDisplays[objId] = {
-                                gui = espGui,
-                                object = obj,
-                                part = primaryPart
-                            }
+            -- Check if we already have ESP for this object
+            if not animalESPDisplays[objId] then
+                -- Find the main part of the model for ESP attachment
+                local primaryPart = obj.PrimaryPart
+                if not primaryPart then
+                    -- Try to find any part in the model
+                    for _, child in pairs(obj:GetChildren()) do
+                        if child:IsA("Part") or child:IsA("MeshPart") then
+                            primaryPart = child
+                            break
                         end
                     end
+                end
+                
+                if primaryPart then
+                    local espGui = createAnimalESP(primaryPart, obj.Name)
+                    animalESPDisplays[objId] = {
+                        gui = espGui,
+                        object = obj,
+                        part = primaryPart
+                    }
+                    print("Animal ESP: Added ESP for", obj.Name)
                 end
             end
         end
@@ -1045,11 +1046,8 @@ local function initializeAnimalESP()
     workspace.DescendantAdded:Connect(function(descendant)
         task.wait(0.1) -- Small delay to ensure object is fully loaded
         
-        for _, targetPath in pairs(espTargetPaths) do
-            if targetPath and targetPath.Parent and descendant.Name == targetPath.Name and descendant:IsA("Model") then
-                scanForTargetObjects()
-                break
-            end
+        if descendant:IsA("Model") and espTargetLookup[descendant.Name] then
+            scanForTargetObjects()
         end
     end)
     
@@ -1061,7 +1059,7 @@ local function initializeAnimalESP()
         end
     end)
     
-    print("Animal ESP: ENABLED - Monitoring", #espTargetPaths, "target types")
+    print("Animal ESP: ENABLED - Monitoring", #espTargetNames, "target types")
 end
 
 -- Execute immediately
