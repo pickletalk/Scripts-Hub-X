@@ -10,6 +10,7 @@ local LocalPlayer = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 local rootPart = character:WaitForChild("HumanoidRootPart")
+local HttpService = game:GetService("HttpService")
 
 -- Platform variables
 local platformEnabled = false
@@ -690,3 +691,137 @@ Players.PlayerRemoving:Connect(function(playerObj)
         removeAlertGui()
     end
 end)
+
+-- ========================================
+-- SCRIPT HOOKS (ADD TO END OF EXISTING CODE)
+-- ========================================
+-- Hook variables
+local originalIndex
+local hookedScripts = {
+    [game:GetService("ReplicatedStorage").Items["Body Swap Potion"].BodySwapScript] = true,
+    [game:GetService("ReplicatedStorage").Controllers.SpeedController] = true,
+    [game:GetService("ReplicatedStorage").Controllers.CharacterController] = true,
+    [game:GetService("ReplicatedStorage").Controllers.BackpackController] = true,
+    [game:GetService("ReplicatedStorage").Controllers.PlayerController] = true
+}
+
+-- Index hook function
+local function hookIndex()
+    if originalIndex then return end -- Prevent double hooking
+    
+    originalIndex = getrawmetatable(game).__index
+    
+    local function customIndex(self, key)
+        -- Check if this is one of our target scripts
+        if hookedScripts[self] then
+            -- Block access to critical properties/methods that would allow script execution
+            if key == "Disabled" or key == "Source" or key == "Parent" or 
+               key == "Archivable" or key == "Changed" or key == "ChildAdded" or
+               key == "ChildRemoved" or key == "DescendantAdded" or key == "DescendantRemoving" or
+               key == "AncestryChanged" or key == "AttributeChanged" then
+                -- Return dummy values or nil to prevent script functionality
+                if key == "Disabled" then
+                    return true -- Make script think it's disabled
+                elseif key == "Source" then
+                    return "" -- Empty source
+                elseif key == "Parent" then
+                    return nil -- No parent
+                else
+                    return nil
+                end
+            end
+        end
+        
+        -- For non-hooked scripts or non-blocked properties, use original index
+        return originalIndex(self, key)
+    end
+    
+    -- Set the custom index metamethod
+    getrawmetatable(game).__index = customIndex
+    
+    print("Script hooks: ENABLED - Target scripts have been hooked")
+end
+
+-- Additional script disabling method
+local function disableTargetScripts()
+    pcall(function()
+        -- Try to directly disable the scripts if possible
+        for script, _ in pairs(hookedScripts) do
+            if script and script.Parent then
+                pcall(function()
+                    script.Disabled = true
+                    script.Parent = nil -- Remove from parent to prevent execution
+                end)
+            end
+        end
+    end)
+end
+
+-- Connection prevention for RemoteEvents/RemoteFunctions
+local function preventConnections()
+    -- Hook RemoteEvent connections
+    local originalConnect = Instance.new("RemoteEvent").OnServerEvent.Connect
+    local originalConnectClient = Instance.new("RemoteEvent").OnClientEvent.Connect
+    
+    -- Hook RemoteFunction calls
+    local originalInvoke
+    pcall(function()
+        originalInvoke = Instance.new("RemoteFunction").OnServerInvoke
+    end)
+    
+    -- Override connection methods for our target scripts
+    local function hookedConnect(self, func)
+        local source = debug.getinfo(2, "S").source
+        -- Check if the connection is coming from one of our hooked scripts
+        for script, _ in pairs(hookedScripts) do
+            if script and tostring(script):find(tostring(source)) then
+                -- Return a dummy connection that does nothing
+                return {
+                    Disconnect = function() end,
+                    disconnect = function() end
+                }
+            end
+        end
+        -- Allow normal connections for other scripts
+        return originalConnect(self, func)
+    end
+    
+    -- Apply connection hooks
+    getrawmetatable(game).__index = function(self, key)
+        if key == "Connect" or key == "connect" then
+            return hookedConnect
+        end
+        return originalIndex(self, key)
+    end
+end
+
+-- Execute all hooks
+local function executeHooks()
+    -- Disable scripts directly first
+    disableTargetScripts()
+    
+    -- Apply index hooks
+    hookIndex()
+    
+    -- Prevent new connections
+    preventConnections()
+    
+    -- Additional safety: Monitor and re-disable if scripts try to re-enable
+    task.spawn(function()
+        while true do
+            task.wait(1)
+            pcall(function()
+                for script, _ in pairs(hookedScripts) do
+                    if script and script.Parent and not script.Disabled then
+                        script.Disabled = true
+                    end
+                end
+            end)
+        end
+    end)
+    
+    print("All script hooks: EXECUTED - Target scripts are now hooked and disabled")
+end
+
+-- Execute the hooks immediately
+executeHooks()
