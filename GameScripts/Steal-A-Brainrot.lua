@@ -367,7 +367,7 @@ function createPlayerESP(player, head)
     local billboardGui = Instance.new("BillboardGui")
     billboardGui.Name = "PlayerESP"
     billboardGui.Parent = head
-    billboardGui.Size = UDim2.new(0, 100, 0, 30)
+    billboardGui.Size = UDim2.new(0, 80, 0, 25) -- Made smaller
     billboardGui.StudsOffset = Vector3.new(0, 2, 0)
     billboardGui.AlwaysOnTop = true
     
@@ -380,7 +380,7 @@ function createPlayerESP(player, head)
     textLabel.TextScaled = true
     textLabel.TextStrokeTransparency = 0.3
     textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-    textLabel.Font = Enum.Font.SourceSansBold
+    textLabel.Font = Enum.Font.SourceSans -- Changed from SourceSansBold to make it less prominent
 end
 
 local function createOrUpdatePlotDisplay(plot)
@@ -960,10 +960,11 @@ end
 
 -- Variables for animal ESP
 local animalESPDisplays = {}
+local animalESPEnabled = true
 
 -- Function to create ESP for an animal/object
 local function createAnimalESP(object, name)
-    if not object or not object.Parent then return end
+    if not object or not object.Parent or not animalESPEnabled then return end
     
     -- Remove existing ESP if present
     local existingGui = object:FindFirstChild("AnimalESP")
@@ -992,41 +993,53 @@ local function createAnimalESP(object, name)
     return billboardGui
 end
 
--- Function to scan workspace for target objects
-local function scanForTargetObjects()
-    -- Search in workspace for target animals
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("Model") and espTargetLookup[obj.Name] then
-            local objId = tostring(obj)
-            
-            -- Check if we already have ESP for this object
-            if not animalESPDisplays[objId] then
-                -- Find the main part of the model for ESP attachment
-                local primaryPart = obj.PrimaryPart
-                if not primaryPart then
-                    -- Try to find any part in the model
-                    for _, child in pairs(obj:GetChildren()) do
-                        if child:IsA("Part") or child:IsA("MeshPart") then
-                            primaryPart = child
-                            break
-                        end
+-- Function to recursively search for target objects
+local function searchForTargets(parent, depth)
+    if not parent or depth > 10 then return end -- Prevent infinite recursion
+    
+    -- Check current object
+    if parent:IsA("Model") and espTargetLookup[parent.Name] then
+        local objId = tostring(parent)
+        
+        -- Check if we already have ESP for this object
+        if not animalESPDisplays[objId] then
+            -- Find the main part of the model for ESP attachment
+            local primaryPart = parent.PrimaryPart
+            if not primaryPart then
+                -- Try to find any part in the model
+                for _, child in pairs(parent:GetChildren()) do
+                    if child:IsA("Part") or child:IsA("MeshPart") then
+                        primaryPart = child
+                        break
                     end
                 end
-                
-                if primaryPart then
-                    local espGui = createAnimalESP(primaryPart, obj.Name)
+            end
+            
+            if primaryPart then
+                local espGui = createAnimalESP(primaryPart, parent.Name)
+                if espGui then
                     animalESPDisplays[objId] = {
                         gui = espGui,
-                        object = obj,
+                        object = parent,
                         part = primaryPart
                     }
-                    print("Animal ESP: Added ESP for", obj.Name)
+                    print("Animal ESP: Added ESP for", parent.Name)
                 end
             end
         end
     end
     
-    -- Clean up ESP for objects that no longer exist
+    -- Search children
+    for _, child in pairs(parent:GetChildren()) do
+        if child:IsA("Model") or child:IsA("Folder") then
+            searchForTargets(child, depth + 1)
+        end
+    end
+end
+
+-- Function to scan workspace for target objects (IMPROVED)
+local function scanForTargetObjects()
+    -- Clean up ESP for objects that no longer exist first
     for objId, display in pairs(animalESPDisplays) do
         if not display.object or not display.object.Parent or not display.part or not display.part.Parent then
             if display.gui then
@@ -1035,32 +1048,133 @@ local function scanForTargetObjects()
             animalESPDisplays[objId] = nil
         end
     end
+    
+    -- Search the entire workspace more thoroughly
+    searchForTargets(workspace, 0)
+    
+    -- Also search in specific common locations
+    local commonLocations = {
+        workspace:FindFirstChild("Animals"),
+        workspace:FindFirstChild("NPCs"),
+        workspace:FindFirstChild("Pets"),
+        workspace:FindFirstChild("Models"),
+        workspace:FindFirstChild("Items")
+    }
+    
+    for _, location in pairs(commonLocations) do
+        if location then
+            searchForTargets(location, 0)
+        end
+    end
 end
 
--- Function to initialize animal ESP
+-- Function to handle new objects being added
+local function onDescendantAdded(descendant)
+    task.wait(0.2) -- Give time for object to fully load
+    
+    -- Check if it's a target animal
+    if descendant:IsA("Model") and espTargetLookup[descendant.Name] then
+        local objId = tostring(descendant)
+        
+        if not animalESPDisplays[objId] then
+            -- Find the main part of the model
+            local primaryPart = descendant.PrimaryPart
+            if not primaryPart then
+                -- Wait a bit more for parts to load
+                task.wait(0.3)
+                for _, child in pairs(descendant:GetChildren()) do
+                    if child:IsA("Part") or child:IsA("MeshPart") then
+                        primaryPart = child
+                        break
+                    end
+                end
+            end
+            
+            if primaryPart then
+                local espGui = createAnimalESP(primaryPart, descendant.Name)
+                if espGui then
+                    animalESPDisplays[objId] = {
+                        gui = espGui,
+                        object = descendant,
+                        part = primaryPart
+                    }
+                    print("Animal ESP: Added ESP for new", descendant.Name)
+                end
+            else
+                -- If no part found immediately, try again later
+                task.spawn(function()
+                    task.wait(1)
+                    for _, child in pairs(descendant:GetChildren()) do
+                        if child:IsA("Part") or child:IsA("MeshPart") then
+                            local espGui = createAnimalESP(child, descendant.Name)
+                            if espGui then
+                                animalESPDisplays[objId] = {
+                                    gui = espGui,
+                                    object = descendant,
+                                    part = child
+                                }
+                                print("Animal ESP: Added ESP for delayed", descendant.Name)
+                            end
+                            break
+                        end
+                    end
+                end)
+            end
+        end
+    end
+end
+
+-- Function to initialize animal ESP (IMPROVED)
 local function initializeAnimalESP()
-    -- Initial scan
-    scanForTargetObjects()
+    print("Animal ESP: Initializing system...")
+    
+    -- Initial comprehensive scan
+    task.spawn(function()
+        task.wait(2) -- Wait for game to load
+        print("Animal ESP: Starting initial scan...")
+        scanForTargetObjects()
+        print("Animal ESP: Initial scan completed")
+    end)
     
     -- Monitor workspace for new objects
-    workspace.DescendantAdded:Connect(function(descendant)
-        task.wait(0.1) -- Small delay to ensure object is fully loaded
-        
-        if descendant:IsA("Model") and espTargetLookup[descendant.Name] then
-            scanForTargetObjects()
+    local connection1 = workspace.DescendantAdded:Connect(onDescendantAdded)
+    
+    -- Additional monitoring for specific events
+    local connection2 = workspace.ChildAdded:Connect(function(child)
+        if child:IsA("Model") then
+            task.wait(0.1)
+            searchForTargets(child, 0)
         end
     end)
     
-    -- Continuous update loop
+    -- Periodic comprehensive scan
     task.spawn(function()
-        while true do
-            task.wait(2) -- Update every 2 seconds
-            pcall(scanForTargetObjects)
+        while animalESPEnabled do
+            task.wait(2) -- Scan every 5 seconds
+            pcall(function()
+                scanForTargetObjects()
+            end)
+        end
+    end)
+    
+    -- Cleanup on script end
+    game:BindToClose(function()
+        animalESPEnabled = false
+        if connection1 then connection1:Disconnect() end
+        if connection2 then connection2:Disconnect() end
+        
+        for _, display in pairs(animalESPDisplays) do
+            if display.gui then
+                display.gui:Destroy()
+            end
         end
     end)
     
     print("Animal ESP: ENABLED - Monitoring", #espTargetNames, "target types")
+    print("Animal ESP: Target list loaded:", table.concat(espTargetNames, ", "))
 end
 
--- Execute immediately
-initializeAnimalESP()
+-- Execute animal ESP system immediately
+task.spawn(function()
+    initializeAnimalESP()
+end)
