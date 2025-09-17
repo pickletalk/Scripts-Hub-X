@@ -162,7 +162,7 @@ local function createPlatform()
     platform.TopSurface = Enum.SurfaceType.Smooth
     platform.BottomSurface = Enum.SurfaceType.Smooth
     platform.Parent = workspace
-    platform.Transparency = 0.3 -- Slightly visible so player can see it
+    platform.Transparency = 1 -- Slightly visible so player can see it
     
     local pointLight = Instance.new("PointLight")
     pointLight.Color = Color3.fromRGB(0, 162, 255)
