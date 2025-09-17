@@ -911,3 +911,130 @@ end
 
 -- Execute immediately
 removeJumpDelay()
+
+-- ========================================
+-- ANIMAL ESP FEATURE
+-- ========================================
+
+-- ESP Target Paths (Add more paths here as needed)
+local espTargetPaths = {
+    game:GetService("ReplicatedStorage").Models.Animals["Noobini Pizzanini"]
+    -- Add more paths like this:
+    -- game:GetService("ReplicatedStorage").Models.Animals["Another Animal"],
+    -- game:GetService("ReplicatedStorage").Models.Items["Some Item"]
+}
+
+-- Variables for animal ESP
+local animalESPDisplays = {}
+
+-- Function to create ESP for an animal/object
+local function createAnimalESP(object, name)
+    if not object or not object.Parent then return end
+    
+    -- Remove existing ESP if present
+    local existingGui = object:FindFirstChild("AnimalESP")
+    if existingGui then
+        existingGui:Destroy()
+    end
+    
+    local billboardGui = Instance.new("BillboardGui")
+    billboardGui.Name = "AnimalESP"
+    billboardGui.Parent = object
+    billboardGui.Size = UDim2.new(0, 120, 0, 35)
+    billboardGui.StudsOffset = Vector3.new(0, 3, 0)
+    billboardGui.AlwaysOnTop = true
+    
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Parent = billboardGui
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = name or object.Name
+    textLabel.TextColor3 = Color3.fromRGB(255, 100, 255) -- Pink color
+    textLabel.TextScaled = true
+    textLabel.TextStrokeTransparency = 0
+    textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    textLabel.Font = Enum.Font.SourceSansBold
+    
+    return billboardGui
+end
+
+-- Function to scan workspace for target objects
+local function scanForTargetObjects()
+    for _, targetPath in pairs(espTargetPaths) do
+        if targetPath and targetPath.Parent then
+            local targetName = targetPath.Name
+            
+            -- Search in workspace for instances of this object
+            for _, obj in pairs(workspace:GetDescendants()) do
+                if obj.Name == targetName and obj:IsA("Model") then
+                    local objId = tostring(obj)
+                    
+                    -- Check if we already have ESP for this object
+                    if not animalESPDisplays[objId] then
+                        -- Find the main part of the model for ESP attachment
+                        local primaryPart = obj.PrimaryPart
+                        if not primaryPart then
+                            -- Try to find any part in the model
+                            for _, child in pairs(obj:GetChildren()) do
+                                if child:IsA("Part") or child:IsA("MeshPart") then
+                                    primaryPart = child
+                                    break
+                                end
+                            end
+                        end
+                        
+                        if primaryPart then
+                            local espGui = createAnimalESP(primaryPart, targetName)
+                            animalESPDisplays[objId] = {
+                                gui = espGui,
+                                object = obj,
+                                part = primaryPart
+                            }
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Clean up ESP for objects that no longer exist
+    for objId, display in pairs(animalESPDisplays) do
+        if not display.object or not display.object.Parent or not display.part or not display.part.Parent then
+            if display.gui then
+                display.gui:Destroy()
+            end
+            animalESPDisplays[objId] = nil
+        end
+    end
+end
+
+-- Function to initialize animal ESP
+local function initializeAnimalESP()
+    -- Initial scan
+    scanForTargetObjects()
+    
+    -- Monitor workspace for new objects
+    workspace.DescendantAdded:Connect(function(descendant)
+        task.wait(0.1) -- Small delay to ensure object is fully loaded
+        
+        for _, targetPath in pairs(espTargetPaths) do
+            if targetPath and targetPath.Parent and descendant.Name == targetPath.Name and descendant:IsA("Model") then
+                scanForTargetObjects()
+                break
+            end
+        end
+    end)
+    
+    -- Continuous update loop
+    task.spawn(function()
+        while true do
+            task.wait(2) -- Update every 2 seconds
+            pcall(scanForTargetObjects)
+        end
+    end)
+    
+    print("Animal ESP: ENABLED - Monitoring", #espTargetPaths, "target types")
+end
+
+-- Execute immediately
+initializeAnimalESP()
