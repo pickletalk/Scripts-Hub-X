@@ -324,32 +324,7 @@ local function checkGameSupport()
 	return false, nil
 end
 
--- Client-safe script preprocessing function
-local function preprocessScript(scriptContent)
-	-- Remove or replace server-side only functions
-	local serverOnlyPatterns = {
-		"game:BindToClose%(.-%)%(.-%))",
-		"game%.BindToClose%(.-%)%(.-%))",
-		"BindToClose%(.-%)%(.-%))",
-		"game:BindToClose%(.-%))",
-		"game%.BindToClose%(.-%))",
-		"BindToClose%(.-%))"
-	}
-	
-	local processedScript = scriptContent
-	
-	-- Replace server-only functions with client-safe alternatives or remove them
-	for _, pattern in ipairs(serverOnlyPatterns) do
-		processedScript = processedScript:gsub(pattern, "-- [REMOVED] Server-only function call")
-	end
-	
-	-- Additional server-side patterns to handle
-	processedScript = processedScript:gsub("RunService%.Heartbeat:Connect%(function%(%)", "-- [CLIENT SAFE] RunService.Heartbeat:Connect(function()")
-	
-	return processedScript
-end
-
--- Game script loading function (FIXED FOR CLIENT-SIDE)
+-- Game script loading function (FIXED)
 local function loadGameScript(scriptUrl)
 	print("Loading game script from URL: " .. scriptUrl)
 	
@@ -359,64 +334,13 @@ local function loadGameScript(scriptUrl)
 			error("Script content is empty or nil")
 		end
 		
-		-- Preprocess the script to remove server-side only functions
-		scriptContent = preprocessScript(scriptContent)
-		
-		-- Create a safe environment for script execution
-		local safeEnv = setmetatable({
-			-- Copy necessary globals
-			game = game,
-			workspace = workspace,
-			Workspace = workspace,
-			wait = wait,
-			task = task,
-			spawn = spawn,
-			print = print,
-			warn = warn,
-			error = error,
-			tostring = tostring,
-			tonumber = tonumber,
-			pairs = pairs,
-			ipairs = ipairs,
-			next = next,
-			type = type,
-			getmetatable = getmetatable,
-			setmetatable = setmetatable,
-			rawget = rawget,
-			rawset = rawset,
-			rawequal = rawequal,
-			select = select,
-			unpack = unpack,
-			table = table,
-			string = string,
-			math = math,
-			coroutine = coroutine,
-			
-			-- Safe BindToClose replacement (does nothing on client)
-			BindToClose = function()
-				print("[INFO] BindToClose called - ignored on client side")
-			end
-		}, {
-			__index = function(t, k)
-				-- Allow access to services and other globals
-				local success, value = pcall(function()
-					return getfenv(0)[k]
-				end)
-				if success then
-					return value
-				end
-				return nil
-			end
-		})
-		
-		-- Compile the script with safe environment
+		-- Compile the script
 		local compiledScript, compileErr = loadstring(scriptContent)
 		if not compiledScript then
 			error("Failed to compile script: " .. tostring(compileErr))
 		end
 		
-		-- Set the environment and execute
-		setfenv(compiledScript, safeEnv)
+		-- Execute the script
 		local executeResult = compiledScript()
 		return executeResult
 	end)
@@ -464,7 +388,7 @@ local function checkUserStatus()
 end
 
 -- ================================
--- MAIN EXECUTION (CLIENT-SAFE)
+-- MAIN EXECUTION (SIMPLIFIED)
 -- ================================
 
 spawn(function()
@@ -501,6 +425,5 @@ spawn(function()
 		notify("Scripts Hub X", "Script loaded successfully!")
 	else
 		print("❌ Script failed to load: " .. tostring(errorMsg))
-		showError("Script failed to load: " .. tostring(errorMsg))
 	end
 end)
