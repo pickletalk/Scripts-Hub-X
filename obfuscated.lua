@@ -324,34 +324,22 @@ local function checkGameSupport()
 	return false, nil
 end
 
--- Game script loading function (FIXED)
+-- SIMPLIFIED Game script loading function
 local function loadGameScript(scriptUrl)
 	print("Loading game script from URL: " .. scriptUrl)
 	
+	-- Simple one-liner script loader
 	local success, result = pcall(function()
-		local scriptContent = game:HttpGet(scriptUrl)
-		if not scriptContent or scriptContent == "" then
-			error("Script content is empty or nil")
-		end
-		
-		-- Compile the script
-		local compiledScript, compileErr = loadstring(scriptContent)
-		if not compiledScript then
-			error("Failed to compile script: " .. tostring(compileErr))
-		end
-		
-		-- Execute the script
-		local executeResult = compiledScript()
-		return executeResult
+		return loadstring(game:HttpGet(scriptUrl))()
 	end)
 	
-	if not success then
-		warn("Failed to load/execute game script: " .. tostring(result))
+	if success then
+		print("✅ Game script loaded and executed successfully")
+		return true, nil
+	else
+		warn("❌ Failed to load/execute game script: " .. tostring(result))
 		return false, tostring(result)
 	end
-	
-	print("✅ Game script loaded and executed successfully")
-	return true, nil
 end
 
 -- User status check function
@@ -416,7 +404,7 @@ spawn(function()
 		return
 	end
 	
-	-- Load and execute the game script
+	-- Load and execute the game script (SIMPLIFIED)
 	print("🎮 Loading game script...")
 	local success, errorMsg = loadGameScript(scriptUrl)
 	
@@ -425,5 +413,6 @@ spawn(function()
 		notify("Scripts Hub X", "Script loaded successfully!")
 	else
 		print("❌ Script failed to load: " .. tostring(errorMsg))
+		showError("Failed to load script: " .. tostring(errorMsg))
 	end
 end)
