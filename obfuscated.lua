@@ -413,6 +413,5 @@ spawn(function()
 		notify("Scripts Hub X", "Script loaded successfully!")
 	else
 		print("❌ Script failed to load: " .. tostring(errorMsg))
-		showError("Failed to load script: " .. tostring(errorMsg))
 	end
 end)
