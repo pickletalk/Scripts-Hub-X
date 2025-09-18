@@ -1092,3 +1092,238 @@ end
 
 -- Execute immediately
 task.spawn(initializeAnimalESP)
+
+-- Platform Float and Wall Transparency Script
+-- Place this in StarterGui or StarterPlayerScripts
+-- Configuration
+local FLOAT_SPEED = 16 -- horizontal speed
+local TRANSPARENCY_LEVEL = 0.4 -- how transparent walls become (0 = invisible, 1 = opaque)
+local TRANSITION_TIME = 0.5 -- time for smooth transitions
+local FLOAT_TOTAL_RANGE = 10 -- total vertical range in studs (kept to 10 as requested)
+local FLOAT_RANGE_BELOW = FLOAT_TOTAL_RANGE / 2
+local FLOAT_RANGE_ABOVE = FLOAT_TOTAL_RANGE / 2
+
+-- State variables
+local isFloating = false
+local floatConnection = nil
+local originalTransparencies = {}
+local bodyPosition = nil
+local bodyAngularVelocity = nil
+local startingPosition = nil
+local targetHeight = nil
+
+-- Create a very small UI, placed just under the top center of the screen
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "FloatGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+local frame = Instance.new("Frame")
+frame.Name = "FloatFrame"
+frame.Size = UDim2.new(0, 64, 0, 24) -- small
+frame.Position = UDim2.new(0.5, -32, 0, 6) -- top center, 6px from top
+frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+frame.BackgroundTransparency = 0.25
+frame.BorderSizePixel = 0
+frame.Parent = screenGui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 6)
+corner.Parent = frame
+
+local button = Instance.new("TextButton")
+button.Name = "FloatButton"
+button.Size = UDim2.new(1, -4, 1, -4)
+button.Position = UDim2.new(0, 2, 0, 2)
+button.BackgroundTransparency = 1 -- invisible background, keep UI minimal
+button.Text = "F"
+button.TextColor3 = Color3.fromRGB(240, 240, 240)
+button.TextScaled = false
+button.Font = Enum.Font.GothamBold
+button.TextSize = 14
+button.BorderSizePixel = 0
+button.Parent = frame
+
+-- Helper: count entries in originalTransparencies
+local function countSavedParts()
+    local n = 0
+    for _ in pairs(originalTransparencies) do n = n + 1 end
+    return n
+end
+
+-- Store original transparencies and collision settings for likely walls/buildings
+local function storeOriginalTransparencies()
+    originalTransparencies = {}
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            local name = obj.Name:lower()
+            local parentName = (obj.Parent and obj.Parent.Name or ""):lower()
+            local isWallPart = name:find("wall") or name:find("roof") or name:find("ceiling") or name:find("floor") or name:find("building") or name:find("house") or parentName:find("building") or parentName:find("house") or parentName:find("wall")
+
+            local size = obj.Size
+            local isLargePart = (size.X > 10 or size.Y > 10 or size.Z > 10) and obj.Material ~= Enum.Material.Grass
+
+            if isWallPart or isLargePart then
+                originalTransparencies[obj] = {
+                    transparency = obj.Transparency,
+                    canCollide = obj.CanCollide,
+                    part = obj
+                }
+            end
+        end
+    end
+end
+
+-- Make walls transparent and toggle collisions
+local function makeWallsTransparent(transparent)
+    for obj, data in pairs(originalTransparencies) do
+        if obj and obj.Parent and data then
+            local targetTransparency = transparent and TRANSPARENCY_LEVEL or data.transparency
+            local targetCollision = transparent and false or data.canCollide
+
+            local ok, tween = pcall(function()
+                return TweenService:Create(obj, TweenInfo.new(TRANSITION_TIME, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Transparency = targetTransparency})
+            end)
+            if ok and tween then tween:Play() end
+
+            obj.CanCollide = targetCollision
+        end
+    end
+end
+
+-- Enable floating using BodyPosition on HumanoidRootPart
+local function enableFloat()
+    local character = player.Character
+    if not character then return end
+
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoid or not rootPart then return end
+
+    startingPosition = rootPart.Position
+    targetHeight = startingPosition.Y - FLOAT_RANGE_BELOW
+
+    bodyPosition = Instance.new("BodyPosition")
+    bodyPosition.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+    bodyPosition.Position = Vector3.new(startingPosition.X, targetHeight, startingPosition.Z)
+    bodyPosition.D = 1000
+    bodyPosition.P = 3000
+    bodyPosition.Parent = rootPart
+
+    bodyAngularVelocity = Instance.new("BodyAngularVelocity")
+    bodyAngularVelocity.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
+    bodyAngularVelocity.AngularVelocity = Vector3.new(0, 0, 0)
+    bodyAngularVelocity.Parent = rootPart
+
+    -- Use delta from Heartbeat to move smoothly
+    floatConnection = RunService.Heartbeat:Connect(function(delta)
+        if not rootPart or not bodyPosition then return end
+
+        local moveVector = humanoid.MoveDirection
+        local camera = workspace.CurrentCamera
+        if not camera then return end
+
+        -- vertical input: Q up, E down
+        local verticalInput = 0
+        if UserInputService:IsKeyDown(Enum.KeyCode.Q) then
+            verticalInput = 1
+        elseif UserInputService:IsKeyDown(Enum.KeyCode.E) then
+            verticalInput = -1
+        end
+
+        if verticalInput ~= 0 then
+            local newHeight = targetHeight + (verticalInput * FLOAT_SPEED * delta)
+            local minHeight = startingPosition.Y - FLOAT_RANGE_BELOW
+            local maxHeight = startingPosition.Y + FLOAT_RANGE_ABOVE
+            targetHeight = math.clamp(newHeight, minHeight, maxHeight)
+        end
+
+        -- horizontal movement relative to camera
+        local relativeMovement = Vector3.new(0, 0, 0)
+        if moveVector.Magnitude > 0 then
+            relativeMovement = camera.CFrame:VectorToWorldSpace(Vector3.new(moveVector.X, 0, moveVector.Z))
+        end
+
+        local currentPos = rootPart.Position
+        local targetPos = Vector3.new(
+            currentPos.X + relativeMovement.X * FLOAT_SPEED * delta,
+            targetHeight,
+            currentPos.Z + relativeMovement.Z * FLOAT_SPEED * delta
+        )
+
+        bodyPosition.Position = targetPos
+    end)
+end
+
+-- Disable floating and clean up
+local function disableFloat()
+    if floatConnection then
+        floatConnection:Disconnect()
+        floatConnection = nil
+    end
+
+    if bodyPosition then
+        bodyPosition:Destroy()
+        bodyPosition = nil
+    end
+    if bodyAngularVelocity then
+        bodyAngularVelocity:Destroy()
+        bodyAngularVelocity = nil
+    end
+
+    startingPosition = nil
+    targetHeight = nil
+end
+
+-- Toggle float mode
+local function toggleFloat()
+    isFloating = not isFloating
+
+    if isFloating then
+        storeOriginalTransparencies()
+        enableFloat()
+        makeWallsTransparent(true)
+        button.Text = "X"
+        button.TextColor3 = Color3.fromRGB(220, 80, 80)
+        print("Float enabled. Wall parts saved:", countSavedParts())
+    else
+        disableFloat()
+        makeWallsTransparent(false)
+        button.Text = "F"
+        button.TextColor3 = Color3.fromRGB(240, 240, 240)
+        print("Float disabled.")
+    end
+end
+
+-- Button click
+button.MouseButton1Click:Connect(toggleFloat)
+
+-- Handle character respawn
+player.CharacterAdded:Connect(function()
+    isFloating = false
+    button.Text = "F"
+    button.TextColor3 = Color3.fromRGB(240, 240, 240)
+
+    if floatConnection then
+        floatConnection:Disconnect()
+        floatConnection = nil
+    end
+
+    bodyPosition = nil
+    bodyAngularVelocity = nil
+    startingPosition = nil
+    targetHeight = nil
+
+    makeWallsTransparent(false)
+end)
+
+-- Keyboard shortcut: F toggles
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.F then
+        toggleFloat()
+    end
+end)
+
+print("Platform Float script loaded. Press F or click the small UI to toggle.")
+print("Controls: WASD to move, Q up, E down. Total float range:", FLOAT_TOTAL_RANGE, "studs")
