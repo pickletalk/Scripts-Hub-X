@@ -367,7 +367,7 @@ function createPlayerESP(player, head)
     local billboardGui = Instance.new("BillboardGui")
     billboardGui.Name = "PlayerESP"
     billboardGui.Parent = head
-    billboardGui.Size = UDim2.new(0, 100, 0, 45) -- Made smaller
+    billboardGui.Size = UDim2.new(0, 90, 0, 33) -- Made smaller
     billboardGui.StudsOffset = Vector3.new(0, 2, 0)
     billboardGui.AlwaysOnTop = true
     
