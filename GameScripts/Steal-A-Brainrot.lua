@@ -913,14 +913,14 @@ end
 removeJumpDelay()
 
 -- ========================================
--- ANIMAL ESP FEATURE (COMPLETELY REWRITTEN & FIXED)
+-- ANIMAL ESP FEATURE (FIXED)
 -- ========================================
 
--- Target animal names
+-- Target animal names (just the names, not full paths)
 local espTargetNames = {
     "Noobini Pizzanini",
-    "Los Tralaleritos", 
-    "Las Tralaleritas",
+    "Los Tralaleritos",
+    "Las Tralaleritas", 
     "Graipuss Medussi",
     "La Grande Combinasion",
     "Nuclearo Dinossauro",
@@ -960,211 +960,135 @@ end
 
 -- Variables for animal ESP
 local animalESPDisplays = {}
-local animalESPConnections = {}
+local animalESPEnabled = true
 
--- Function to create ESP for an animal
-local function createAnimalESP(animalModel)
-    if not animalModel or not animalModel.Parent then return end
-    
-    -- Find the best part to attach ESP to
-    local targetPart = animalModel.PrimaryPart
-    if not targetPart then
-        -- Look for specific part names first
-        for _, partName in pairs({"Head", "Torso", "HumanoidRootPart", "UpperTorso"}) do
-            local part = animalModel:FindFirstChild(partName)
-            if part and part:IsA("BasePart") then
-                targetPart = part
-                break
-            end
-        end
-        
-        -- If still no target part, find any BasePart
-        if not targetPart then
-            for _, child in pairs(animalModel:GetChildren()) do
-                if child:IsA("BasePart") then
-                    targetPart = child
-                    break
-                end
-            end
-        end
-    end
-    
-    if not targetPart then
-        print("Animal ESP: No suitable part found for", animalModel.Name)
-        return
-    end
+-- Function to create ESP for an animal/object
+local function createAnimalESP(object, name)
+    if not object or not object.Parent or not animalESPEnabled then return end
     
     -- Remove existing ESP if present
-    local existingGui = targetPart:FindFirstChild("AnimalESP")
-    if existingGui then
-        existingGui:Destroy()
+    for _, child in pairs(object:GetChildren()) do
+        if child.Name == "AnimalESP" then
+            child:Destroy()
+        end
     end
     
-    -- Create the billboard GUI
     local billboardGui = Instance.new("BillboardGui")
     billboardGui.Name = "AnimalESP"
-    billboardGui.Parent = targetPart
+    billboardGui.Parent = object
     billboardGui.Size = UDim2.new(0, 120, 0, 35)
-    billboardGui.StudsOffset = Vector3.new(0, 3, 0)
+    billboardGui.StudsOffset = Vector3.new(0, 5, 0)
     billboardGui.AlwaysOnTop = true
     
-    -- Create background frame for better visibility
-    local frame = Instance.new("Frame")
-    frame.Parent = billboardGui
-    frame.Size = UDim2.new(1, 0, 1, 0)
-    frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    frame.BackgroundTransparency = 0.3
-    frame.BorderSizePixel = 0
-    
-    local frameCorner = Instance.new("UICorner")
-    frameCorner.Parent = frame
-    frameCorner.CornerRadius = UDim.new(0, 4)
-    
-    -- Create text label
     local textLabel = Instance.new("TextLabel")
-    textLabel.Parent = frame
-    textLabel.Size = UDim2.new(1, -4, 1, -4)
-    textLabel.Position = UDim2.new(0, 2, 0, 2)
+    textLabel.Parent = billboardGui
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
     textLabel.BackgroundTransparency = 1
-    textLabel.Text = animalModel.Name
-    textLabel.TextColor3 = Color3.fromRGB(255, 100, 255) -- Bright magenta
+    textLabel.Text = name
+    textLabel.TextColor3 = Color3.fromRGB(255, 100, 255) -- Pink color
     textLabel.TextScaled = true
     textLabel.TextStrokeTransparency = 0
     textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
     textLabel.Font = Enum.Font.SourceSansBold
     
-    -- Store the ESP data
-    local animalId = tostring(animalModel)
-    animalESPDisplays[animalId] = {
-        gui = billboardGui,
-        model = animalModel,
-        part = targetPart
-    }
-    
-    print("Animal ESP: Created for", animalModel.Name, "on part", targetPart.Name)
     return billboardGui
 end
 
--- Function to remove ESP for a specific animal
-local function removeAnimalESP(animalModel)
-    local animalId = tostring(animalModel)
-    local espData = animalESPDisplays[animalId]
+-- Function to scan ALL descendants for target animals
+local function scanForTargetAnimals()
+    local found = 0
     
-    if espData then
-        if espData.gui and espData.gui.Parent then
-            espData.gui:Destroy()
-        end
-        animalESPDisplays[animalId] = nil
-        print("Animal ESP: Removed for", animalModel.Name)
-    end
-end
-
--- Function to handle when an animal is added
-local function onAnimalAdded(animalModel)
-    if not animalModel:IsA("Model") then return end
-    if not espTargetLookup[animalModel.Name] then return end
-    
-    -- Wait a bit for the model to fully load
-    task.wait(0.1)
-    
-    -- Double check the model still exists and has the right name
-    if not animalModel.Parent or not espTargetLookup[animalModel.Name] then return end
-    
-    -- Create ESP
-    createAnimalESP(animalModel)
-    
-    -- Monitor for when this animal is removed
-    local removedConnection = animalModel.AncestryChanged:Connect(function()
-        if not animalModel.Parent then
-            removeAnimalESP(animalModel)
-            if animalESPConnections[animalModel] then
-                animalESPConnections[animalModel]:Disconnect()
-                animalESPConnections[animalModel] = nil
-            end
-        end
-    end)
-    
-    animalESPConnections[animalModel] = removedConnection
-end
-
--- Function to scan existing animals in workspace
-local function scanExistingAnimals()
-    print("Animal ESP: Scanning workspace for existing animals...")
-    
-    local function scanContainer(container)
-        for _, child in pairs(container:GetChildren()) do
-            if child:IsA("Model") and espTargetLookup[child.Name] then
-                local animalId = tostring(child)
-                if not animalESPDisplays[animalId] then
-                    onAnimalAdded(child)
+    for _, descendant in pairs(workspace:GetDescendants()) do
+        if descendant:IsA("Model") and espTargetLookup[descendant.Name] then
+            local objId = tostring(descendant)
+            
+            if not animalESPDisplays[objId] then
+                -- Try to find the best part for ESP
+                local targetPart = descendant:FindFirstChild("HumanoidRootPart") or 
+                                 descendant:FindFirstChild("Torso") or 
+                                 descendant:FindFirstChild("Head") or
+                                 descendant:FindFirstChildOfClass("Part") or
+                                 descendant:FindFirstChildOfClass("MeshPart")
+                
+                if targetPart then
+                    local espGui = createAnimalESP(targetPart, descendant.Name)
+                    if espGui then
+                        animalESPDisplays[objId] = {
+                            gui = espGui,
+                            object = descendant,
+                            part = targetPart
+                        }
+                        found = found + 1
+                        print("✅ Animal ESP: Found", descendant.Name, "at", targetPart:GetFullName())
+                    end
                 end
-            elseif child:IsA("Folder") or child:IsA("Model") then
-                -- Recursively scan folders and models
-                scanContainer(child)
             end
         end
     end
     
-    scanContainer(workspace)
-    print("Animal ESP: Initial scan completed")
-end
-
--- Function to setup workspace monitoring
-local function setupWorkspaceMonitoring()
-    -- Monitor all descendants being added to workspace
-    local descendantAddedConnection = workspace.DescendantAdded:Connect(function(descendant)
-        if descendant:IsA("Model") and espTargetLookup[descendant.Name] then
-            task.spawn(function()
-                onAnimalAdded(descendant)
-            end)
-        end
-    end)
-    
-    -- Clean up when descendants are removed (backup cleanup)
-    local descendantRemovingConnection = workspace.DescendantRemoving:Connect(function(descendant)
-        if descendant:IsA("Model") and espTargetLookup[descendant.Name] then
-            removeAnimalESP(descendant)
-            if animalESPConnections[descendant] then
-                animalESPConnections[descendant]:Disconnect()
-                animalESPConnections[descendant] = nil
+    -- Clean up dead references
+    for objId, display in pairs(animalESPDisplays) do
+        if not display.object or not display.object.Parent or not display.part or not display.part.Parent then
+            if display.gui then
+                display.gui:Destroy()
             end
+            animalESPDisplays[objId] = nil
         end
-    end)
+    end
     
-    print("Animal ESP: Workspace monitoring setup complete")
-    return {descendantAddedConnection, descendantRemovingConnection}
+    if found > 0 then
+        print("🔍 Animal ESP: Scan complete - Found", found, "new animals")
+    end
 end
 
--- Initialize the animal ESP system
+-- Function to initialize animal ESP
 local function initializeAnimalESP()
-    print("Animal ESP: Initializing system...")
+    print("🚀 Animal ESP: Starting system...")
     
-    -- First scan for existing animals
-    scanExistingAnimals()
+    -- Wait for workspace to load
+    task.wait(3)
     
-    -- Then setup monitoring for new animals
-    local monitoringConnections = setupWorkspaceMonitoring()
+    -- Do initial scan
+    scanForTargetAnimals()
     
-    -- Periodic cleanup and rescan (every 30 seconds)
-    task.spawn(function()
-        while true do
-            task.wait(30)
+    -- Monitor for new descendants
+    workspace.DescendantAdded:Connect(function(descendant)
+        if descendant:IsA("Model") and espTargetLookup[descendant.Name] then
+            task.wait(0.5) -- Wait for model to fully load
             
-            -- Clean up any broken ESP displays
-            for animalId, espData in pairs(animalESPDisplays) do
-                if not espData.model or not espData.model.Parent or not espData.gui or not espData.gui.Parent then
-                    animalESPDisplays[animalId] = nil
+            local objId = tostring(descendant)
+            if not animalESPDisplays[objId] then
+                local targetPart = descendant:FindFirstChild("HumanoidRootPart") or 
+                                 descendant:FindFirstChild("Torso") or 
+                                 descendant:FindFirstChild("Head") or
+                                 descendant:FindFirstChildOfClass("Part") or
+                                 descendant:FindFirstChildOfClass("MeshPart")
+                
+                if targetPart then
+                    local espGui = createAnimalESP(targetPart, descendant.Name)
+                    if espGui then
+                        animalESPDisplays[objId] = {
+                            gui = espGui,
+                            object = descendant,
+                            part = targetPart
+                        }
+                        print("✅ Animal ESP: New animal detected -", descendant.Name)
+                    end
                 end
             end
-            
-            -- Rescan periodically to catch anything we might have missed
-            scanExistingAnimals()
         end
     end)
     
-    print("Animal ESP: System fully initialized -", #espTargetNames, "target animals")
-    print("Animal ESP: Currently tracking", #animalESPDisplays, "animals")
+    -- Periodic re-scan every 10 seconds
+    task.spawn(function()
+        while animalESPEnabled do
+            task.wait(3)
+            pcall(scanForTargetAnimals)
+        end
+    end)
+    
+    print("✅ Animal ESP: System initialized - Monitoring", #espTargetNames, "animal types")
 end
 
--- Start the animal ESP system
-initializeAnimalESP()
+-- Execute immediately
+task.spawn(initializeAnimalESP)
