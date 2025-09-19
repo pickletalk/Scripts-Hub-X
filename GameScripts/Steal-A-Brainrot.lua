@@ -280,33 +280,52 @@ local function storeOriginalTransparencies()
             originalTransparencies[obj] = obj.Transparency
         end
     end
-    print("Stored transparency for " .. table.getn(originalTransparencies) .. " parts") -- Debug line
+    print("Stored transparency for " .. table.getn(originalTransparencies) .. " parts")
+end
+
+local function forcePlayerCollision()
+    if player.Character then
+        for _, part in pairs(player.Character:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = true
+            end
+        end
+    end
 end
 
 local function makeWallsTransparent(transparent)
     local count = 0
-    for obj, originalTransparency in pairs(originalTransparencies) do
+    for obj, data in pairs(originalTransparencies) do
         if obj and obj.Parent then
             if transparent then
                 obj.Transparency = TRANSPARENCY_LEVEL
-                obj.CanCollide = false -- This allows camera to pass through
+                obj.CanCollide = false
                 count = count + 1
             else
-                obj.Transparency = originalTransparency
-                obj.CanCollide = true -- Restore collision
+                obj.Transparency = data.transparency or 0
+                obj.CanCollide = true
             end
         end
     end
+
+    forcePlayerCollision()
+    
     print((transparent and "Made transparent: " or "Restored: ") .. count .. " parts")
 end
+
+local playerCollisionConnection = nil
 
 local function enableWallTransparency()
     if wallTransparencyEnabled then return end
     
-    print("Enabling wall transparency...") -- Debug line
+    print("Enabling wall transparency...")
     wallTransparencyEnabled = true
     storeOriginalTransparencies()
     makeWallsTransparent(true)
+    
+    playerCollisionConnection = RunService.Heartbeat:Connect(function()
+        forcePlayerCollision()
+    end)
     
     wallButton.BackgroundColor3 = Color3.fromRGB(150, 50, 0)
     wallButton.Text = "🔷 DISABLE WALLS 🔷"
@@ -318,10 +337,15 @@ end
 local function disableWallTransparency()
     if not wallTransparencyEnabled then return end
     
-    print("Disabling wall transparency...") -- Debug line
+    print("Disabling wall transparency...")
     wallTransparencyEnabled = false
     makeWallsTransparent(false)
     originalTransparencies = {}
+    
+    if playerCollisionConnection then
+        playerCollisionConnection:Disconnect()
+        playerCollisionConnection = nil
+    end
     
     wallButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     wallButton.Text = "🔷 WALL TRANSPARENT 🔷"
