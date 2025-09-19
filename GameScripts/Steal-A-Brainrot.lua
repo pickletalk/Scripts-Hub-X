@@ -273,23 +273,38 @@ local function disablePlatform()
     statusLabel.Text = "Float: OFF | Walls: " .. wallStatus
 end
 
+-- Replace the storeOriginalTransparencies function
 local function storeOriginalTransparencies()
     originalTransparencies = {}
     for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") then
+        if obj:IsA("BasePart") and obj.Parent ~= player.Character then
             local name = obj.Name:lower()
             local parent = obj.Parent and obj.Parent.Name:lower() or ""
+            local grandparent = obj.Parent and obj.Parent.Parent and obj.Parent.Parent.Name:lower() or ""
+            
+            -- Better wall detection
             local isWallPart = name:find("wall") or name:find("roof") or name:find("ceiling") or 
                               name:find("floor") or name:find("building") or name:find("house") or
-                              parent:find("building") or parent:find("house") or parent:find("wall")
+                              name:find("door") or name:find("window") or
+                              parent:find("building") or parent:find("house") or parent:find("wall") or
+                              grandparent:find("building") or grandparent:find("house")
             
+            -- Check for large structural parts
             local size = obj.Size
-            local isLargePart = (size.X > 10 or size.Y > 10 or size.Z > 10) and obj.Material ~= Enum.Material.Grass
+            local isLargePart = (size.X > 8 or size.Y > 8 or size.Z > 8) and 
+                               obj.Material ~= Enum.Material.Grass and
+                               obj.Material ~= Enum.Material.Ground and
+                               obj.Shape ~= Enum.PartType.Ball
             
-            if isWallPart or isLargePart then
+            -- Exclude player platforms and small decorative items
+            local isExcluded = name:find("platform") or name:find("spawn") or 
+                              obj.Size.X < 1 or obj.Size.Y < 1 or obj.Size.Z < 1
+            
+            if (isWallPart or isLargePart) and not isExcluded then
                 originalTransparencies[obj] = {
                     transparency = obj.Transparency,
                     canCollide = obj.CanCollide,
+                    castShadow = obj.CastShadow,
                     part = obj
                 }
             end
@@ -300,16 +315,34 @@ end
 local function makeWallsTransparent(transparent)
     for obj, data in pairs(originalTransparencies) do
         if obj and obj.Parent and data then
-            local targetTransparency = transparent and TRANSPARENCY_LEVEL or data.transparency
-            local targetCollision = transparent and false or data.canCollide
-            
-            local tween = TweenService:Create(obj, 
-                TweenInfo.new(TRANSITION_TIME, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                {Transparency = targetTransparency}
-            )
-            tween:Play()
-            
-            obj.CanCollide = targetCollision
+            if transparent then
+                obj.Transparency = 1
+                obj.CanCollide = false
+                obj.CastShadow = false
+                
+                for _, child in pairs(obj:GetChildren()) do
+                    if child:IsA("Decal") or child:IsA("Texture") or child:IsA("SurfaceGui") then
+                        child.Transparency = 1
+                    end
+                end
+            else
+                local tween = TweenService:Create(obj, 
+                    TweenInfo.new(TRANSITION_TIME, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                    {
+                        Transparency = data.transparency,
+                        CastShadow = data.castShadow
+                    }
+                )
+                tween:Play()
+                
+                obj.CanCollide = data.canCollide
+                
+                for _, child in pairs(obj:GetChildren()) do
+                    if child:IsA("Decal") or child:IsA("Texture") or child:IsA("SurfaceGui") then
+                        child.Transparency = 0
+                    end
+                end
+            end
         end
     end
 end
