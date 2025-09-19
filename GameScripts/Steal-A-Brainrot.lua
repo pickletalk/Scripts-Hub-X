@@ -326,16 +326,10 @@ local function makeWallsTransparent(transparent)
                     end
                 end
             else
-                local tween = TweenService:Create(obj, 
-                    TweenInfo.new(TRANSITION_TIME, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                    {
-                        Transparency = data.transparency,
-                        CastShadow = data.castShadow
-                    }
-                )
-                tween:Play()
-                
+                -- Direct assignment instead of tween for more reliable restoration
+                obj.Transparency = data.transparency
                 obj.CanCollide = data.canCollide
+                obj.CastShadow = data.castShadow
                 
                 for _, child in pairs(obj:GetChildren()) do
                     if child:IsA("Decal") or child:IsA("Texture") or child:IsA("SurfaceGui") then
@@ -366,6 +360,9 @@ local function disableWallTransparency()
     
     wallTransparencyEnabled = false
     makeWallsTransparent(false)
+    
+    -- Clear the stored transparencies to force refresh on next enable
+    originalTransparencies = {}
     
     wallButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     wallButton.Text = "🔷 WALL TRANSPARENT 🔷"
