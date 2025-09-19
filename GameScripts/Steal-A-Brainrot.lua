@@ -288,12 +288,10 @@ local function makeWallsTransparent(transparent)
     for obj, originalTransparency in pairs(originalTransparencies) do
         if obj and obj.Parent then
             if transparent then
-                obj.Transparency = TRANSPARENCY_LEVEL -- Use 0.9 instead of 1 for better visibility
-                obj.CanCollide = false
+                obj.Transparency = TRANSPARENCY_LEVEL
                 count = count + 1
             else
                 obj.Transparency = originalTransparency
-                obj.CanCollide = true
             end
         end
     end
