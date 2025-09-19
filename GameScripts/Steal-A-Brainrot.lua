@@ -20,7 +20,7 @@ local PLATFORM_OFFSET = 3.563
 local wallTransparencyEnabled = false
 local originalTransparencies = {}
 local TRANSPARENCY_LEVEL = 0.5
-local TRANSITION_TIME = 0.5
+local playerCollisionConnection = nil
 
 -- ESP variables
 local plotDisplays = {}
@@ -276,44 +276,35 @@ end
 local function storeOriginalTransparencies()
     originalTransparencies = {}
     for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") and obj.Name == "structure base home" and obj.Parent ~= player.Character then
-            originalTransparencies[obj] = obj.Transparency
-        end
-    end
-    print("Stored transparency for " .. table.getn(originalTransparencies) .. " parts")
-end
-
-local function forcePlayerCollision()
-    if player.Character then
-        for _, part in pairs(player.Character:GetChildren()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = true
+        if obj:IsA("BasePart") and obj.Parent ~= player.Character and obj.Name ~= "PlayerPlatform" then
+            local name = obj.Name:lower()
+            if name == "structure base home" then
+                originalTransparencies[obj] = {
+                    transparency = obj.Transparency,
+                    canCollide = obj.CanCollide
+                }
             end
         end
     end
+    print("Stored transparency for " .. #originalTransparencies .. " parts")
 end
 
 local function makeWallsTransparent(transparent)
     local count = 0
     for obj, data in pairs(originalTransparencies) do
-        if obj and obj.Parent then
+        if obj and obj.Parent and data then
             if transparent then
                 obj.Transparency = TRANSPARENCY_LEVEL
                 obj.CanCollide = false
                 count = count + 1
             else
-                obj.Transparency = data.transparency or 0
-                obj.CanCollide = true
+                obj.Transparency = data.transparency
+                obj.CanCollide = data.canCollide
             end
         end
     end
-
-    forcePlayerCollision()
-    
     print((transparent and "Made transparent: " or "Restored: ") .. count .. " parts")
 end
-
-local playerCollisionConnection = nil
 
 local function enableWallTransparency()
     if wallTransparencyEnabled then return end
@@ -322,10 +313,6 @@ local function enableWallTransparency()
     wallTransparencyEnabled = true
     storeOriginalTransparencies()
     makeWallsTransparent(true)
-    
-    playerCollisionConnection = RunService.Heartbeat:Connect(function()
-        forcePlayerCollision()
-    end)
     
     wallButton.BackgroundColor3 = Color3.fromRGB(150, 50, 0)
     wallButton.Text = "🔷 DISABLE WALLS 🔷"
@@ -339,25 +326,8 @@ local function disableWallTransparency()
     
     print("Disabling wall transparency...")
     wallTransparencyEnabled = false
-    
-    -- Manually restore all structure/base/home objects
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") and obj.Parent ~= player.Character then
-            local name = obj.Name:lower()
-            if name == "structure base home" then
-                obj.Transparency = 0  -- Set back to solid
-                obj.CanCollide = true -- Restore collision
-            end
-        end
-    end
-    
-    -- Stop continuous player collision enforcement
-    if playerCollisionConnection then
-        playerCollisionConnection:Disconnect()
-        playerCollisionConnection = nil
-    end
-    
-    -- Clear the stored data
+    makeWallsTransparent(false)
+
     originalTransparencies = {}
     
     wallButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
