@@ -273,77 +273,49 @@ local function disablePlatform()
     statusLabel.Text = "Float: OFF | Walls: " .. wallStatus
 end
 
--- Replace the storeOriginalTransparencies function
 local function storeOriginalTransparencies()
     originalTransparencies = {}
     for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") and obj.Parent ~= player.Character then
-            local name = obj.Name:lower()
-            local parent = obj.Parent and obj.Parent.Name:lower() or ""
-            local grandparent = obj.Parent and obj.Parent.Parent and obj.Parent.Parent.Name:lower() or ""
-            
-            -- Better wall detection
-            local isWallPart = name:find("wall") or name:find("roof") or name:find("ceiling") or 
-                              name:find("floor") or name:find("building") or name:find("house") or
-                              name:find("door") or name:find("window") or
-                              parent:find("building") or parent:find("house") or parent:find("wall") or
-                              grandparent:find("building") or grandparent:find("house")
-            
-            -- Check for large structural parts
+        if obj:IsA("BasePart") and obj.Parent ~= player.Character and obj.Name ~= "PlayerPlatform" then
+            -- More aggressive detection - include almost all parts except very small ones
             local size = obj.Size
-            local isLargePart = (size.X > 8 or size.Y > 8 or size.Z > 8) and 
-                               obj.Material ~= Enum.Material.Grass and
-                               obj.Material ~= Enum.Material.Ground and
-                               obj.Shape ~= Enum.PartType.Ball
+            local isValidSize = size.X > 0.5 and size.Y > 0.5 and size.Z > 0.5
             
-            -- Exclude player platforms and small decorative items
-            local isExcluded = name:find("platform") or name:find("spawn") or 
-                              obj.Size.X < 1 or obj.Size.Y < 1 or obj.Size.Z < 1
+            -- Exclude certain materials that shouldn't be made transparent
+            local excludedMaterials = {
+                [Enum.Material.Neon] = true,
+                [Enum.Material.ForceField] = true
+            }
             
-            if (isWallPart or isLargePart) and not isExcluded then
-                originalTransparencies[obj] = {
-                    transparency = obj.Transparency,
-                    canCollide = obj.CanCollide,
-                    castShadow = obj.CastShadow,
-                    part = obj
-                }
+            if isValidSize and not excludedMaterials[obj.Material] then
+                originalTransparencies[obj] = obj.Transparency
             end
         end
     end
+    print("Stored transparency for " .. #originalTransparencies .. " parts") -- Debug line
 end
 
 local function makeWallsTransparent(transparent)
-    for obj, data in pairs(originalTransparencies) do
-        if obj and obj.Parent and data then
+    local count = 0
+    for obj, originalTransparency in pairs(originalTransparencies) do
+        if obj and obj.Parent then
             if transparent then
-                obj.Transparency = 1
+                obj.Transparency = 0.9 -- Use 0.9 instead of 1 for better visibility
                 obj.CanCollide = false
-                obj.CastShadow = false
-                
-                for _, child in pairs(obj:GetChildren()) do
-                    if child:IsA("Decal") or child:IsA("Texture") or child:IsA("SurfaceGui") then
-                        child.Transparency = 1
-                    end
-                end
+                count = count + 1
             else
-                -- Direct assignment instead of tween for more reliable restoration
-                obj.Transparency = data.transparency
-                obj.CanCollide = data.canCollide
-                obj.CastShadow = data.castShadow
-                
-                for _, child in pairs(obj:GetChildren()) do
-                    if child:IsA("Decal") or child:IsA("Texture") or child:IsA("SurfaceGui") then
-                        child.Transparency = 0
-                    end
-                end
+                obj.Transparency = originalTransparency
+                obj.CanCollide = true
             end
         end
     end
+    print((transparent and "Made transparent: " or "Restored: ") .. count .. " parts") -- Debug line
 end
 
 local function enableWallTransparency()
     if wallTransparencyEnabled then return end
     
+    print("Enabling wall transparency...") -- Debug line
     wallTransparencyEnabled = true
     storeOriginalTransparencies()
     makeWallsTransparent(true)
@@ -358,10 +330,9 @@ end
 local function disableWallTransparency()
     if not wallTransparencyEnabled then return end
     
+    print("Disabling wall transparency...") -- Debug line
     wallTransparencyEnabled = false
     makeWallsTransparent(false)
-    
-    -- Clear the stored transparencies to force refresh on next enable
     originalTransparencies = {}
     
     wallButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
