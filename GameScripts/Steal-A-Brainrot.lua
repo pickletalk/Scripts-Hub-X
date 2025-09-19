@@ -289,13 +289,15 @@ local function makeWallsTransparent(transparent)
         if obj and obj.Parent then
             if transparent then
                 obj.Transparency = TRANSPARENCY_LEVEL
+                obj.CanCollide = false -- This allows camera to pass through
                 count = count + 1
             else
                 obj.Transparency = originalTransparency
+                obj.CanCollide = true -- Restore collision
             end
         end
     end
-    print((transparent and "Made transparent: " or "Restored: ") .. count .. " parts") -- Debug line
+    print((transparent and "Made transparent: " or "Restored: ") .. count .. " parts")
 end
 
 local function enableWallTransparency()
