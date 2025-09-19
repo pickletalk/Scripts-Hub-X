@@ -19,7 +19,7 @@ local PLATFORM_OFFSET = 3.563
 -- Wall transparency variables
 local wallTransparencyEnabled = false
 local originalTransparencies = {}
-local TRANSPARENCY_LEVEL = 0.4
+local TRANSPARENCY_LEVEL = 0.5
 local TRANSITION_TIME = 0.5
 
 -- ESP variables
@@ -276,7 +276,7 @@ end
 local function storeOriginalTransparencies()
     originalTransparencies = {}
     for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") and obj.Name == "Part" and obj.Parent ~= player.Character then
+        if obj:IsA("BasePart") and obj.Name == "structure base home" and obj.Parent ~= player.Character then
             originalTransparencies[obj] = obj.Transparency
         end
     end
@@ -288,7 +288,7 @@ local function makeWallsTransparent(transparent)
     for obj, originalTransparency in pairs(originalTransparencies) do
         if obj and obj.Parent then
             if transparent then
-                obj.Transparency = 0.9 -- Use 0.9 instead of 1 for better visibility
+                obj.Transparency = TRANSPARENCY_LEVEL -- Use 0.9 instead of 1 for better visibility
                 obj.CanCollide = false
                 count = count + 1
             else
