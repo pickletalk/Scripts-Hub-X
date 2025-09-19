@@ -339,13 +339,26 @@ local function disableWallTransparency()
     
     print("Disabling wall transparency...")
     wallTransparencyEnabled = false
-    makeWallsTransparent(false)
-    originalTransparencies = {}
     
+    -- Manually restore all structure/base/home objects
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and obj.Parent ~= player.Character then
+            local name = obj.Name:lower()
+            if name == "structure base home" then
+                obj.Transparency = 0  -- Set back to solid
+                obj.CanCollide = true -- Restore collision
+            end
+        end
+    end
+    
+    -- Stop continuous player collision enforcement
     if playerCollisionConnection then
         playerCollisionConnection:Disconnect()
         playerCollisionConnection = nil
     end
+    
+    -- Clear the stored data
+    originalTransparencies = {}
     
     wallButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     wallButton.Text = "🔷 WALL TRANSPARENT 🔷"
