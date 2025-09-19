@@ -276,23 +276,11 @@ end
 local function storeOriginalTransparencies()
     originalTransparencies = {}
     for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") and obj.Parent ~= player.Character and obj.Name ~= "PlayerPlatform" then
-            -- More aggressive detection - include almost all parts except very small ones
-            local size = obj.Size
-            local isValidSize = size.X > 0.5 and size.Y > 0.5 and size.Z > 0.5
-            
-            -- Exclude certain materials that shouldn't be made transparent
-            local excludedMaterials = {
-                [Enum.Material.Neon] = true,
-                [Enum.Material.ForceField] = true
-            }
-            
-            if isValidSize and not excludedMaterials[obj.Material] then
-                originalTransparencies[obj] = obj.Transparency
-            end
+        if obj:IsA("BasePart") and obj.Name == "Part" and obj.Parent ~= player.Character then
+            originalTransparencies[obj] = obj.Transparency
         end
     end
-    print("Stored transparency for " .. #originalTransparencies .. " parts") -- Debug line
+    print("Stored transparency for " .. table.getn(originalTransparencies) .. " parts") -- Debug line
 end
 
 local function makeWallsTransparent(transparent)
