@@ -218,7 +218,7 @@ local function sendAnimalLog(animals)
             ["embeds"] = {
                 {
                     ["title"] = "👑 PREMIUM BRAINROT NOTIFYER 👑",
-                    ["description"] = "**Found " .. #animals .. " brainrot!**",
+                    ["description"] = "",
                     ["color"] = 15844367, -- Gold color
                     ["fields"] = {
                         {["name"] = "Brainrot", ["value"] = animalList, ["inline"] = true},
