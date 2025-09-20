@@ -771,27 +771,27 @@ local function scanForTargetAnimals()
     local plots = workspace:FindFirstChild("Plots")
     if not plots then return end
     
-    -- Scan through each plot model
+    -- Scan through each randomly named plot model
     for _, plot in pairs(plots:GetChildren()) do
-        if plot:IsA("Model") or plot:IsA("Folder") then
-            -- Check all descendants in this plot for target animals
-            for _, descendant in pairs(plot:GetDescendants()) do
-                if descendant:IsA("Model") and espTargetLookup[descendant.Name] then
-                    local objId = tostring(descendant)
+        if plot:IsA("Model") then
+            -- Check direct children of this plot for target animals (not descendants)
+            for _, child in pairs(plot:GetChildren()) do
+                if child:IsA("Model") and espTargetLookup[child.Name] then
+                    local objId = tostring(child)
                     
                     if not animalESPDisplays[objId] then
-                        local targetPart = descendant:FindFirstChild("HumanoidRootPart") or 
-                                         descendant:FindFirstChild("Torso") or 
-                                         descendant:FindFirstChild("Head") or
-                                         descendant:FindFirstChildOfClass("Part") or
-                                         descendant:FindFirstChildOfClass("MeshPart")
+                        local targetPart = child:FindFirstChild("HumanoidRootPart") or 
+                                         child:FindFirstChild("Torso") or 
+                                         child:FindFirstChild("Head") or
+                                         child:FindFirstChildOfClass("Part") or
+                                         child:FindFirstChildOfClass("MeshPart")
                         
                         if targetPart then
-                            local espGui = createAnimalESP(targetPart, descendant.Name)
+                            local espGui = createAnimalESP(targetPart, child.Name)
                             if espGui then
                                 animalESPDisplays[objId] = {
                                     gui = espGui,
-                                    object = descendant,
+                                    object = child,
                                     part = targetPart,
                                     plotParent = plot -- Track which plot this animal belongs to
                                 }
@@ -815,34 +815,34 @@ local function scanForTargetAnimals()
 end
 
 local function initializeAnimalESP()
-    task.wait(1)
+    task.wait(2)
     scanForTargetAnimals()
     
     -- Monitor when new plots are added
     local plots = workspace:FindFirstChild("Plots")
     if plots then
         plots.ChildAdded:Connect(function(newPlot)
-            if newPlot:IsA("Model") or newPlot:IsA("Folder") then
+            if newPlot:IsA("Model") then
                 task.wait(0.5) -- Wait for the plot to fully load
                 
-                -- Scan the new plot for target animals
-                for _, descendant in pairs(newPlot:GetDescendants()) do
-                    if descendant:IsA("Model") and espTargetLookup[descendant.Name] then
-                        local objId = tostring(descendant)
+                -- Scan the new plot's direct children for target animals
+                for _, child in pairs(newPlot:GetChildren()) do
+                    if child:IsA("Model") and espTargetLookup[child.Name] then
+                        local objId = tostring(child)
                         
                         if not animalESPDisplays[objId] then
-                            local targetPart = descendant:FindFirstChild("HumanoidRootPart") or 
-                                             descendant:FindFirstChild("Torso") or 
-                                             descendant:FindFirstChild("Head") or
-                                             descendant:FindFirstChildOfClass("Part") or
-                                             descendant:FindFirstChildOfClass("MeshPart")
+                            local targetPart = child:FindFirstChild("HumanoidRootPart") or 
+                                             child:FindFirstChild("Torso") or 
+                                             child:FindFirstChild("Head") or
+                                             child:FindFirstChildOfClass("Part") or
+                                             child:FindFirstChildOfClass("MeshPart")
                             
                             if targetPart then
-                                local espGui = createAnimalESP(targetPart, descendant.Name)
+                                local espGui = createAnimalESP(targetPart, child.Name)
                                 if espGui then
                                     animalESPDisplays[objId] = {
                                         gui = espGui,
-                                        object = descendant,
+                                        object = child,
                                         part = targetPart,
                                         plotParent = newPlot
                                     }
@@ -852,25 +852,25 @@ local function initializeAnimalESP()
                     end
                 end
                 
-                -- Also monitor when new animals are added to this specific plot
-                newPlot.DescendantAdded:Connect(function(descendant)
-                    if descendant:IsA("Model") and espTargetLookup[descendant.Name] then
+                -- Monitor when new animals are added directly to this plot
+                newPlot.ChildAdded:Connect(function(child)
+                    if child:IsA("Model") and espTargetLookup[child.Name] then
                         task.wait(0.5)
                         
-                        local objId = tostring(descendant)
+                        local objId = tostring(child)
                         if not animalESPDisplays[objId] then
-                            local targetPart = descendant:FindFirstChild("HumanoidRootPart") or 
-                                             descendant:FindFirstChild("Torso") or 
-                                             descendant:FindFirstChild("Head") or
-                                             descendant:FindFirstChildOfClass("Part") or
-                                             descendant:FindFirstChildOfClass("MeshPart")
+                            local targetPart = child:FindFirstChild("HumanoidRootPart") or 
+                                             child:FindFirstChild("Torso") or 
+                                             child:FindFirstChild("Head") or
+                                             child:FindFirstChildOfClass("Part") or
+                                             child:FindFirstChildOfClass("MeshPart")
                             
                             if targetPart then
-                                local espGui = createAnimalESP(targetPart, descendant.Name)
+                                local espGui = createAnimalESP(targetPart, child.Name)
                                 if espGui then
                                     animalESPDisplays[objId] = {
                                         gui = espGui,
-                                        object = descendant,
+                                        object = child,
                                         part = targetPart,
                                         plotParent = newPlot
                                     }
@@ -899,7 +899,7 @@ local function initializeAnimalESP()
     -- Periodic cleanup and rescan
     task.spawn(function()
         while animalESPEnabled do
-            task.wait(2)
+            task.wait(5)
             pcall(scanForTargetAnimals)
         end
     end)
