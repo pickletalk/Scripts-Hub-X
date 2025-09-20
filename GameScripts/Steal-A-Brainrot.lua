@@ -356,8 +356,20 @@ local function updateComboPlatformPosition()
 end
 
 local function forcePlayerHeadCollision()
-    if player.Character and player.Character:FindFirstChild("Head") then
-        player.Character.Head.CanCollide = true
+    if player.Character then
+        local head = player.Character:FindFirstChild("Head")
+        if head then
+            head.CanCollide = true
+        end
+        -- Also ensure other body parts maintain collision
+        local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
+        if humanoidRootPart then
+            humanoidRootPart.CanCollide = true
+        end
+        local torso = player.Character:FindFirstChild("Torso") or player.Character:FindFirstChild("UpperTorso")
+        if torso then
+            torso.CanCollide = true
+        end
     end
 end
 
@@ -376,10 +388,13 @@ local function enableWallTransparency()
     comboPlatformUpdateConnection = RunService.Heartbeat:Connect(updateComboPlatformPosition)
     updateComboPlatformPosition()
     
-    -- Force player head collision
+    -- Force player collision more aggressively
     comboPlayerCollisionConnection = RunService.Heartbeat:Connect(function()
         forcePlayerHeadCollision()
     end)
+    
+    -- Also set initial collision state
+    forcePlayerHeadCollision()
     
     wallButton.BackgroundColor3 = Color3.fromRGB(150, 50, 0)
     wallButton.Text = "🔷 DISABLE WALLS 🔷"
@@ -413,6 +428,14 @@ local function disableWallTransparency()
     if comboPlayerCollisionConnection then
         comboPlayerCollisionConnection:Disconnect()
         comboPlayerCollisionConnection = nil
+    end
+    
+    -- Restore normal player collision state
+    if player.Character then
+        local head = player.Character:FindFirstChild("Head")
+        if head then
+            head.CanCollide = false -- Default Roblox state for head
+        end
     end
     
     wallButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
