@@ -768,42 +768,7 @@ end
 -- Replace the existing animal ESP functions with these modified versions
 
 local function scanForTargetAnimals()
-    local plots = workspace:FindFirstChild("Plots")
-    if not plots then return end
-    
-    -- Scan through each randomly named plot model
-    for _, plot in pairs(plots:GetChildren()) do
-        if plot:IsA("Model") then
-            -- Check direct children of this plot for target animals (not descendants)
-            for _, child in pairs(plot:GetChildren()) do
-                if child:IsA("Model") and espTargetLookup[child.Name] then
-                    local objId = tostring(child)
-                    
-                    if not animalESPDisplays[objId] then
-                        local targetPart = child:FindFirstChild("HumanoidRootPart") or 
-                                         child:FindFirstChild("Torso") or 
-                                         child:FindFirstChild("Head") or
-                                         child:FindFirstChildOfClass("Part") or
-                                         child:FindFirstChildOfClass("MeshPart")
-                        
-                        if targetPart then
-                            local espGui = createAnimalESP(targetPart, child.Name)
-                            if espGui then
-                                animalESPDisplays[objId] = {
-                                    gui = espGui,
-                                    object = child,
-                                    part = targetPart,
-                                    plotParent = plot -- Track which plot this animal belongs to
-                                }
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
-    
-    -- Clean up ESP displays for animals that no longer exist
+    -- Clear existing displays that no longer exist
     for objId, display in pairs(animalESPDisplays) do
         if not display.object or not display.object.Parent or not display.part or not display.part.Parent then
             if display.gui then
@@ -812,13 +777,82 @@ local function scanForTargetAnimals()
             animalESPDisplays[objId] = nil
         end
     end
+    
+    -- Scan workspace.Plots folder
+    local plots = workspace:FindFirstChild("Plots")
+    if plots then
+        -- Check each randomly named plot model
+        for _, plot in pairs(plots:GetChildren()) do
+            if plot:IsA("Model") then
+                -- Check direct children of this plot for target animals
+                for _, child in pairs(plot:GetChildren()) do
+                    if child:IsA("Model") and espTargetLookup[child.Name] then
+                        local objId = tostring(child)
+                        
+                        if not animalESPDisplays[objId] then
+                            local targetPart = child:FindFirstChild("VfxInstance") or 
+                                             child:FindFirstChild("RootPart") or 
+                                             child:FindFirstChild("FakeRootPart") or
+                                             child:FindFirstChildOfClass("Part") or
+                                             child:FindFirstChildOfClass("MeshPart")
+                            
+                            if targetPart then
+                                local espGui = createAnimalESP(targetPart, child.Name)
+                                if espGui then
+                                    animalESPDisplays[objId] = {
+                                        gui = espGui,
+                                        object = child,
+                                        part = targetPart,
+                                        plotParent = plot,
+                                        source = "Plots"
+                                    }
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Scan workspace.RenderedMovingAnimals folder
+    local renderedAnimals = workspace:FindFirstChild("RenderedMovingAnimals")
+    if renderedAnimals then
+        -- Check direct children for target animals
+        for _, child in pairs(renderedAnimals:GetChildren()) do
+            if child:IsA("Model") and espTargetLookup[child.Name] then
+                local objId = tostring(child)
+                
+                if not animalESPDisplays[objId] then
+                    local targetPart = child:FindFirstChild("VfxInstance") or 
+                                     child:FindFirstChild("RootPart") or 
+                                     child:FindFirstChild("FakeRootPart") or
+                                     child:FindFirstChildOfClass("Part") or
+                                     child:FindFirstChildOfClass("MeshPart")
+                    
+                    if targetPart then
+                        local espGui = createAnimalESP(targetPart, child.Name)
+                        if espGui then
+                            animalESPDisplays[objId] = {
+                                gui = espGui,
+                                object = child,
+                                part = targetPart,
+                                plotParent = renderedAnimals,
+                                source = "RenderedMovingAnimals"
+                            }
+                        end
+                    end
+                end
+            end
+        end
+    end
 end
 
 local function initializeAnimalESP()
     task.wait(2)
     scanForTargetAnimals()
     
-    -- Monitor when new plots are added
+    -- Monitor workspace.Plots for new plots
     local plots = workspace:FindFirstChild("Plots")
     if plots then
         plots.ChildAdded:Connect(function(newPlot)
@@ -831,9 +865,9 @@ local function initializeAnimalESP()
                         local objId = tostring(child)
                         
                         if not animalESPDisplays[objId] then
-                            local targetPart = child:FindFirstChild("HumanoidRootPart") or 
-                                             child:FindFirstChild("Torso") or 
-                                             child:FindFirstChild("Head") or
+                            local targetPart = child:FindFirstChild("VfxInstance") or 
+                                             child:FindFirstChild("RootPart") or 
+                                             child:FindFirstChild("FakeRootPart") or
                                              child:FindFirstChildOfClass("Part") or
                                              child:FindFirstChildOfClass("MeshPart")
                             
@@ -844,7 +878,8 @@ local function initializeAnimalESP()
                                         gui = espGui,
                                         object = child,
                                         part = targetPart,
-                                        plotParent = newPlot
+                                        plotParent = newPlot,
+                                        source = "Plots"
                                     }
                                 end
                             end
@@ -859,9 +894,9 @@ local function initializeAnimalESP()
                         
                         local objId = tostring(child)
                         if not animalESPDisplays[objId] then
-                            local targetPart = child:FindFirstChild("HumanoidRootPart") or 
-                                             child:FindFirstChild("Torso") or 
-                                             child:FindFirstChild("Head") or
+                            local targetPart = child:FindFirstChild("VfxInstance") or 
+                                             child:FindFirstChild("RootPart") or 
+                                             child:FindFirstChild("FakeRootPart") or
                                              child:FindFirstChildOfClass("Part") or
                                              child:FindFirstChildOfClass("MeshPart")
                             
@@ -872,7 +907,8 @@ local function initializeAnimalESP()
                                         gui = espGui,
                                         object = child,
                                         part = targetPart,
-                                        plotParent = newPlot
+                                        plotParent = newPlot,
+                                        source = "Plots"
                                     }
                                 end
                             end
@@ -886,7 +922,7 @@ local function initializeAnimalESP()
         plots.ChildRemoved:Connect(function(removedPlot)
             -- Clean up ESP displays for animals that were in the removed plot
             for objId, display in pairs(animalESPDisplays) do
-                if display.plotParent == removedPlot then
+                if display.plotParent == removedPlot and display.source == "Plots" then
                     if display.gui then
                         display.gui:Destroy()
                     end
@@ -895,6 +931,113 @@ local function initializeAnimalESP()
             end
         end)
     end
+    
+    -- Monitor workspace.RenderedMovingAnimals for new animals
+    local renderedAnimals = workspace:FindFirstChild("RenderedMovingAnimals")
+    if renderedAnimals then
+        renderedAnimals.ChildAdded:Connect(function(child)
+            if child:IsA("Model") and espTargetLookup[child.Name] then
+                task.wait(0.5)
+                
+                local objId = tostring(child)
+                if not animalESPDisplays[objId] then
+                    local targetPart = child:FindFirstChild("HumanoidRootPart") or 
+                                     child:FindFirstChild("Torso") or 
+                                     child:FindFirstChild("Head") or
+                                     child:FindFirstChildOfClass("Part") or
+                                     child:FindFirstChildOfClass("MeshPart")
+                    
+                    if targetPart then
+                        local espGui = createAnimalESP(targetPart, child.Name)
+                        if espGui then
+                            animalESPDisplays[objId] = {
+                                gui = espGui,
+                                object = child,
+                                part = targetPart,
+                                plotParent = renderedAnimals,
+                                source = "RenderedMovingAnimals"
+                            }
+                        end
+                    end
+                end
+            end
+        end)
+        
+        -- Monitor for animals being removed from RenderedMovingAnimals
+        renderedAnimals.ChildRemoved:Connect(function(removedChild)
+            for objId, display in pairs(animalESPDisplays) do
+                if display.object == removedChild and display.source == "RenderedMovingAnimals" then
+                    if display.gui then
+                        display.gui:Destroy()
+                    end
+                    animalESPDisplays[objId] = nil
+                end
+            end
+        end)
+    end
+    
+    -- Monitor if RenderedMovingAnimals folder gets created later
+    workspace.ChildAdded:Connect(function(child)
+        if child.Name == "RenderedMovingAnimals" and child:IsA("Folder") then
+            task.wait(0.5)
+            -- Scan existing animals in the new folder
+            for _, animal in pairs(child:GetChildren()) do
+                if animal:IsA("Model") and espTargetLookup[animal.Name] then
+                    local objId = tostring(animal)
+                    
+                    if not animalESPDisplays[objId] then
+                        local targetPart = animal:FindFirstChild("VfxInstance") or 
+                                         animal:FindFirstChild("RootPart") or 
+                                         animal:FindFirstChild("FakeRootPart") or
+                                         animal:FindFirstChildOfClass("Part") or
+                                         animal:FindFirstChildOfClass("MeshPart")
+                        
+                        if targetPart then
+                            local espGui = createAnimalESP(targetPart, animal.Name)
+                            if espGui then
+                                animalESPDisplays[objId] = {
+                                    gui = espGui,
+                                    object = animal,
+                                    part = targetPart,
+                                    plotParent = child,
+                                    source = "RenderedMovingAnimals"
+                                }
+                            end
+                        end
+                    end
+                end
+            end
+            
+            -- Set up monitoring for this new folder
+            child.ChildAdded:Connect(function(animal)
+                if animal:IsA("Model") and espTargetLookup[animal.Name] then
+                    task.wait(0.5)
+                    
+                    local objId = tostring(animal)
+                    if not animalESPDisplays[objId] then
+                        local targetPart = animal:FindFirstChild("VfxInstance") or 
+                                         animal:FindFirstChild("RootPart") or 
+                                         animal:FindFirstChild("FakeRootPart") or
+                                         animal:FindFirstChildOfClass("Part") or
+                                         animal:FindFirstChildOfClass("MeshPart")
+                        
+                        if targetPart then
+                            local espGui = createAnimalESP(targetPart, animal.Name)
+                            if espGui then
+                                animalESPDisplays[objId] = {
+                                    gui = espGui,
+                                    object = animal,
+                                    part = targetPart,
+                                    plotParent = child,
+                                    source = "RenderedMovingAnimals"
+                                }
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end)
     
     -- Periodic cleanup and rescan
     task.spawn(function()
