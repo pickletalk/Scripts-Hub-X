@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 
 -- Configuration
 local CHANNEL_ID = "1418877822092447744"
-local DISCORD_TOKEN = "MTQxOTAwMDA3MzA4NTI1NTk5MQ.GbSKiq.F6HjEkyi56yd-6RDr2VrLlsumeB1dfrXS9BbA4" -- Get from Discord Developer Portal
+local DISCORD_TOKEN = "MTQxOTAwMDA3MzA4NTI1NTk5MQ.GVf7ID.4nok6vD9UinP151I4WvSa-zaSEw7ZhhWA0DvCg" -- Get from Discord Developer Portal
 local POLL_INTERVAL = 5 -- Check every 5 seconds
 local LAST_MESSAGE_ID = nil
 
