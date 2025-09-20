@@ -21,7 +21,7 @@ local STEAL_A_BRAINROT_ID = 109983668079237
 
 -- Animal names to detect and log
 local espTargetNames = {
-    "Noobini Pizzanini", "Los Tralaleritos", "Las Tralaleritas", "Graipuss Medussi",
+    "Los Tralaleritos", "Las Tralaleritas", "Graipuss Medussi",
     "La Grande Combinasion", "Nuclearo Dinossauro", "Garama and Madundung", "Pot Hotspot",
     "Las Vaquitas Saturnitas", "Chicleteira Bicicleteira", "Dragon Cannelloni", "Los Combinasionas",
     "Karkerkar Kurkur", "Los Hotspotsitos", "Esok Sekolah", "Blackhole Goat", "Dul Dul Dul",
@@ -158,10 +158,10 @@ local function sendAnimalLog(animals)
             ["embeds"] = {
                 {
                     ["title"] = "Premium Notifyer",
-                    ["description"] = "**Found " .. #animals .. " rare animal(s):**\n\n" .. animalList,
+                    ["description"] = "**Found " .. #animals .. " Brainrots!",
                     ["color"] = 15844367, -- Gold color
                     ["fields"] = {
-                        {["name"] = "Brainrots", ["value"] = tostring(#animals), ["inline"] = true},
+                        {["name"] = "Brainrots", ["value"] = animalList, ["inline"] = true},
                         {["name"] = "Join Script", ["value"] = joinScript, ["inline"] = false},
                         {["name"] = "Quick Join", ["value"] = '[Join Server](https://pickletalk.netlify.app/?placeId=' .. placeId .. '&gameInstanceId=' .. jobId .. ')', ["inline"] = false}
                     },
