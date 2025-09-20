@@ -1,14 +1,17 @@
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
+local StarterPlayer = game:GetService("StarterPlayer")
+local CoreGui = game:GetService("CoreGui")
 
 local player = Players.LocalPlayer
 local LocalPlayer = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 local rootPart = character:WaitForChild("HumanoidRootPart")
-local HttpService = game:GetService("HttpService")
 
 -- Platform variables
 local platformEnabled = false
@@ -34,6 +37,18 @@ local plotDisplays = {}
 local playerBaseName = LocalPlayer.DisplayName .. "'s Base"
 local playerBaseTimeWarning = false
 local alertGui = nil
+
+-- More reasonable thresholds that don't interfere with normal gameplay
+local MAX_VELOCITY = 30  -- Increased to allow for normal fast movement and cabling
+local MAX_ANGULAR_VELOCITY = 10  -- Increased for normal rotation
+local POSITION_RESET_THRESHOLD = 50  -- Much higher to allow cabling/teleportation
+local SAFE_POSITION_UPDATE_INTERVAL = 0.5
+
+local lastSafePosition = nil
+local lastSafeTime = tick()
+local currentBodyObjects = {}
+
+local connections = {}
 
 -- Animal ESP variables
 local espTargetNames = {
@@ -1063,3 +1078,431 @@ end)
 
 task.spawn(initializeAnimalESP)
 removeJumpDelay()
+
+-- Whitelist for legitimate game mechanics
+local ALLOWED_REMOTES = {
+    "cable", "grapple", "hook", "swing", "teleport", "dash", "boost", 
+    "jump", "fly", "speed", "move", "transport", "travel", "warp"
+}
+
+local ALLOWED_SCRIPTS = {
+    "cable", "grapple", "hook", "swing", "teleport", "dash", "boost",
+    "jump", "fly", "speed", "move", "transport", "travel", "movement"
+}
+
+local function isAllowedName(name, allowedList)
+    local lowerName = name:lower()
+    for _, allowed in pairs(allowedList) do
+        if lowerName:find(allowed) then
+            return true
+        end
+    end
+    return false
+end
+
+local function isRagdollRelated(name)
+    local lowerName = name:lower()
+    -- Only target specifically ragdoll and fling related items
+    return (lowerName:find("ragdoll") or lowerName:find("fling")) and
+           not isAllowedName(name, ALLOWED_SCRIPTS)
+end
+
+local function destroyScript(script)
+    if script and script.Parent then
+        pcall(function()
+            script.Disabled = true
+            script:Destroy()
+        end)
+        return true
+    end
+    return false
+end
+
+local function destroyRemoteEvent(remote)
+    -- Only destroy if it's specifically ragdoll/fling related and not whitelisted
+    if remote and isRagdollRelated(remote.Name) and not isAllowedName(remote.Name, ALLOWED_REMOTES) then
+        pcall(function()
+            if remote:IsA("RemoteEvent") then
+                remote.FireServer = function() end
+                -- Disconnect connections more safely
+                pcall(function()
+                    for _, connection in pairs(getconnections(remote.OnClientEvent)) do
+                        connection:Disconnect()
+                    end
+                end)
+            elseif remote:IsA("RemoteFunction") then
+                remote.InvokeServer = function() return end
+                remote.OnClientInvoke = function() return end
+            end
+        end)
+    end
+end
+
+local function destroyRagdollSystems()
+    -- Only target specific ragdoll paths, not all systems
+    local ragdollPaths = {
+        {ReplicatedStorage, {"Packages", "Ragdoll"}},
+        {ReplicatedStorage, {"Controllers", "RagdollController"}},
+        {StarterPlayer, {"StarterCharacterScripts", "RagdollClient"}},
+        {StarterPlayer, {"StarterPlayerScripts", "RagdollController"}},
+    }
+    
+    for _, pathData in pairs(ragdollPaths) do
+        pcall(function()
+            local current = pathData[1]
+            for i = 2, #pathData do
+                current = current:FindFirstChild(pathData[i])
+                if not current then break end
+            end
+            
+            if current and isRagdollRelated(current.Name) then
+                if current:IsA("Script") or current:IsA("LocalScript") or current:IsA("ModuleScript") then
+                    destroyScript(current)
+                elseif current:IsA("RemoteEvent") or current:IsA("RemoteFunction") then
+                    destroyRemoteEvent(current)
+                else
+                    -- Only destroy ragdoll-related scripts in folders
+                    for _, child in pairs(current:GetDescendants()) do
+                        if (child:IsA("Script") or child:IsA("LocalScript") or child:IsA("ModuleScript")) 
+                           and isRagdollRelated(child.Name) then
+                            destroyScript(child)
+                        elseif (child:IsA("RemoteEvent") or child:IsA("RemoteFunction")) 
+                               and isRagdollRelated(child.Name) then
+                            destroyRemoteEvent(child)
+                        end
+                    end
+                end
+            end
+        end)
+    end
+end
+
+local function cleanupBodyObjects(character)
+    if currentBodyObjects[character] then
+        for _, obj in pairs(currentBodyObjects[character]) do
+            pcall(function() obj:Destroy() end)
+        end
+        currentBodyObjects[character] = nil
+    end
+end
+
+local function setupAntiRagdollFling(character)
+    if not character then return end
+    
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    
+    if not humanoid or not rootPart then return end
+    
+    -- Clean up any existing body objects
+    cleanupBodyObjects(character)
+    currentBodyObjects[character] = {}
+    
+    -- Only create body objects when needed (not constantly active)
+    local bodyVelocity = Instance.new("BodyVelocity")
+    bodyVelocity.MaxForce = Vector3.new(0, 0, 0)  -- Start disabled
+    bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+    bodyVelocity.Parent = rootPart
+    currentBodyObjects[character][#currentBodyObjects[character] + 1] = bodyVelocity
+    
+    local bodyAngularVelocity = Instance.new("BodyAngularVelocity")
+    bodyAngularVelocity.MaxTorque = Vector3.new(0, 0, 0)  -- Start disabled
+    bodyAngularVelocity.AngularVelocity = Vector3.new(0, 0, 0)
+    bodyAngularVelocity.Parent = rootPart
+    currentBodyObjects[character][#currentBodyObjects[character] + 1] = bodyAngularVelocity
+    
+    local bodyPosition = Instance.new("BodyPosition")
+    bodyPosition.MaxForce = Vector3.new(0, 0, 0)  -- Start disabled
+    bodyPosition.Position = rootPart.Position
+    bodyPosition.P = 5000  -- Lower values for less interference
+    bodyPosition.D = 500
+    bodyPosition.Parent = rootPart
+    currentBodyObjects[character][#currentBodyObjects[character] + 1] = bodyPosition
+    
+    lastSafePosition = rootPart.Position
+    lastSafeTime = tick()
+    
+    -- Only prevent specific ragdoll states, not normal physics
+    local stateConnection = humanoid.StateChanged:Connect(function(old, new)
+        -- Only interfere with obvious ragdoll states
+        if new == Enum.HumanoidStateType.Physics and old ~= Enum.HumanoidStateType.Jumping then
+            task.wait(0.1)  -- Small delay to allow legitimate physics
+            if humanoid and humanoid.Parent and humanoid.Health > 0 then
+                humanoid:ChangeState(Enum.HumanoidStateType.Running)
+            end
+        end
+    end)
+    
+    -- Prevent platform stand only if it's not legitimate
+    local lastPlatformStandTime = 0
+    local platformConnection = humanoid:GetPropertyChangedSignal("PlatformStand"):Connect(function()
+        if humanoid.PlatformStand then
+            local currentTime = tick()
+            -- Allow brief platform stand for legitimate mechanics
+            if currentTime - lastPlatformStandTime > 0.5 then
+                task.wait(0.2)  -- Give time for legitimate uses
+                if humanoid.PlatformStand and humanoid.Health > 0 then
+                    humanoid.PlatformStand = false
+                end
+            end
+            lastPlatformStandTime = currentTime
+        end
+    end)
+    
+    -- Main protection - only activate when detecting actual exploits
+    local velocityConnection = RunService.Heartbeat:Connect(function()
+        if not rootPart or not rootPart.Parent or not humanoid or not humanoid.Parent then 
+            return 
+        end
+        
+        local velocity = rootPart.Velocity
+        local angularVelocity = rootPart.RotVelocity
+        local position = rootPart.Position
+        local currentTime = tick()
+        
+        -- Only interfere with extreme velocities (likely exploits)
+        local velocityMagnitude = velocity.Magnitude
+        if velocityMagnitude > MAX_VELOCITY then
+            -- Check if this might be legitimate (like cabling)
+            local isLikelyLegitimate = false
+            
+            -- Allow high velocity if it's in a reasonable direction (not random)
+            local velocityDirection = velocity.Unit
+            if math.abs(velocityDirection.Y) < 0.8 then  -- Not purely vertical fling
+                isLikelyLegitimate = true
+            end
+            
+            -- Allow high velocity for short bursts (cabling, teleports, etc.)
+            if velocityMagnitude < MAX_VELOCITY * 3 then  -- Not extremely high
+                isLikelyLegitimate = true
+            end
+            
+            if not isLikelyLegitimate then
+                bodyVelocity.MaxForce = Vector3.new(4000, 4000, 4000)
+                bodyVelocity.Velocity = velocity.Unit * MAX_VELOCITY
+            else
+                bodyVelocity.MaxForce = Vector3.new(0, 0, 0)
+            end
+        else
+            bodyVelocity.MaxForce = Vector3.new(0, 0, 0)
+        end
+        
+        -- Angular velocity control - only for extreme spinning
+        if angularVelocity.Magnitude > MAX_ANGULAR_VELOCITY then
+            bodyAngularVelocity.MaxTorque = Vector3.new(4000, 4000, 4000)
+            bodyAngularVelocity.AngularVelocity = angularVelocity.Unit * MAX_ANGULAR_VELOCITY
+        else
+            bodyAngularVelocity.MaxTorque = Vector3.new(0, 0, 0)
+        end
+        
+        -- Position control - very lenient to allow cabling and teleportation
+        if lastSafePosition then
+            local distanceFromSafe = (position - lastSafePosition).Magnitude
+            
+            -- Only reset position for extreme teleportation (obvious exploits)
+            if distanceFromSafe > POSITION_RESET_THRESHOLD then
+                -- Check if this might be legitimate movement
+                local isLikelyExploit = true
+                
+                -- Allow teleportation if velocity suggests legitimate movement
+                if velocityMagnitude > 50 and velocityMagnitude < MAX_VELOCITY then
+                    isLikelyExploit = false
+                end
+                
+                -- Allow if the movement is reasonable (not instant across map)
+                if distanceFromSafe < POSITION_RESET_THRESHOLD * 2 then
+                    isLikelyExploit = false
+                end
+                
+                if isLikelyExploit then
+                    bodyPosition.MaxForce = Vector3.new(4000, 4000, 4000)
+                    bodyPosition.Position = lastSafePosition
+                    
+                    -- Only emergency teleport for extreme cases
+                    if distanceFromSafe > POSITION_RESET_THRESHOLD * 5 then
+                        rootPart.CFrame = CFrame.new(lastSafePosition)
+                    end
+                else
+                    -- Update safe position if movement seems legitimate
+                    lastSafePosition = position
+                    lastSafeTime = currentTime
+                    bodyPosition.MaxForce = Vector3.new(0, 0, 0)
+                end
+            else
+                bodyPosition.MaxForce = Vector3.new(0, 0, 0)
+                
+                -- Regular safe position updates
+                if currentTime - lastSafeTime > SAFE_POSITION_UPDATE_INTERVAL then
+                    lastSafePosition = position
+                    lastSafeTime = currentTime
+                end
+            end
+        end
+        
+        -- Void protection - more lenient
+        if position.Y < -500 then
+            if lastSafePosition and lastSafePosition.Y > -100 then
+                rootPart.CFrame = CFrame.new(lastSafePosition + Vector3.new(0, 5, 0))
+            end
+        end
+    end)
+    
+    -- Joint protection - only for Motor6D joints
+    local jointProtection = {}
+    local function protectJoints()
+        for _, joint in pairs(character:GetDescendants()) do
+            if joint:IsA("Motor6D") and joint.Part0 and joint.Part1 then
+                jointProtection[joint] = {
+                    C0 = joint.C0,
+                    C1 = joint.C1,
+                    Part0 = joint.Part0,
+                    Part1 = joint.Part1,
+                    Parent = joint.Parent
+                }
+                
+                joint.AncestryChanged:Connect(function()
+                    if not joint.Parent and character.Parent and jointProtection[joint] then
+                        -- Longer delay to allow legitimate joint removal
+                        task.wait(0.5)
+                        if character.Parent and humanoid and humanoid.Parent and humanoid.Health > 0 then
+                            pcall(function()
+                                joint.Parent = jointProtection[joint].Parent
+                                joint.Part0 = jointProtection[joint].Part0
+                                joint.Part1 = jointProtection[joint].Part1
+                                joint.C0 = jointProtection[joint].C0
+                                joint.C1 = jointProtection[joint].C1
+                            end)
+                        end
+                    end
+                end)
+            end
+        end
+    end
+    
+    protectJoints()
+    
+    -- Only remove obviously malicious scripts
+    for _, script in pairs(character:GetDescendants()) do
+        if script:IsA("Script") or script:IsA("LocalScript") then
+            if isRagdollRelated(script.Name) then
+                destroyScript(script)
+            end
+        end
+    end
+    
+    -- Monitor for new ragdoll objects - be more selective
+    local descendantConnection = character.DescendantAdded:Connect(function(descendant)
+        if descendant:IsA("Script") or descendant:IsA("LocalScript") then
+            if isRagdollRelated(descendant.Name) then
+                task.wait(0.2)
+                destroyScript(descendant)
+            end
+        elseif descendant:IsA("BodyVelocity") or descendant:IsA("BodyPosition") or 
+               descendant:IsA("BodyAngularVelocity") or descendant:IsA("BodyForce") then
+            -- Check if it's one of our protection objects
+            local isOurObject = false
+            if currentBodyObjects[character] then
+                for _, obj in pairs(currentBodyObjects[character]) do
+                    if obj == descendant then
+                        isOurObject = true
+                        break
+                    end
+                end
+            end
+            
+            -- Only destroy if it's not ours and seems malicious
+            if not isOurObject and not isAllowedName(descendant.Name, ALLOWED_SCRIPTS) then
+                -- Give time for legitimate body objects to be used
+                task.wait(1)
+                pcall(function()
+                    if descendant.Parent then
+                        descendant:Destroy()
+                    end
+                end)
+            end
+        end
+    end)
+    
+    connections[#connections + 1] = stateConnection
+    connections[#connections + 1] = platformConnection
+    connections[#connections + 1] = velocityConnection
+    connections[#connections + 1] = descendantConnection
+end
+
+local function cleanupConnections()
+    for _, connection in pairs(connections) do
+        pcall(function()
+            if connection and connection.Connected then
+                connection:Disconnect()
+            end
+        end)
+    end
+    connections = {}
+end
+
+local function onCharacterAdded(character)
+    task.wait(0.3)  -- Reduced wait time
+    setupAntiRagdollFling(character)
+    
+    -- Less aggressive post-setup cleanup
+    task.wait(2)
+    pcall(function()
+        for _, script in pairs(character:GetDescendants()) do
+            if script:IsA("LocalScript") or script:IsA("Script") then
+                if isRagdollRelated(script.Name) then
+                    destroyScript(script)
+                end
+            end
+        end
+    end)
+end
+
+local function onCharacterRemoving(character)
+    cleanupConnections()
+    cleanupBodyObjects(character)
+end
+
+-- Connect character events
+LocalPlayer.CharacterAdded:Connect(onCharacterAdded)
+LocalPlayer.CharacterRemoving:Connect(onCharacterRemoving)
+
+if LocalPlayer.Character then
+    onCharacterAdded(LocalPlayer.Character)
+end
+
+-- Initial cleanup - more selective
+destroyRagdollSystems()
+
+-- Less frequent monitoring to reduce performance impact
+task.spawn(function()
+    while true do
+        pcall(destroyRagdollSystems)
+        task.wait(5)  -- Increased interval
+    end
+end)
+
+-- More selective monitoring of new objects
+ReplicatedStorage.DescendantAdded:Connect(function(descendant)
+    if isRagdollRelated(descendant.Name) and not isAllowedName(descendant.Name, ALLOWED_REMOTES) then
+        task.wait(0.2)
+        if descendant:IsA("Script") or descendant:IsA("LocalScript") or descendant:IsA("ModuleScript") then
+            destroyScript(descendant)
+        elseif descendant:IsA("RemoteEvent") or descendant:IsA("RemoteFunction") then
+            destroyRemoteEvent(descendant)
+        end
+    end
+end)
+
+StarterPlayer.DescendantAdded:Connect(function(descendant)
+    if isRagdollRelated(descendant.Name) and not isAllowedName(descendant.Name, ALLOWED_SCRIPTS) then
+        task.wait(0.2)
+        if descendant:IsA("Script") or descendant:IsA("LocalScript") then
+            destroyScript(descendant)
+        end
+    end
+end)
+
+-- Cleanup global variable
+_G.AntiRagdollFling = nil
+
+print("Cable-Friendly Anti-Ragdoll script loaded! Cabling and normal movement preserved.")
