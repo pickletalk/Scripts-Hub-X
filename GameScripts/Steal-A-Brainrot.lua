@@ -22,6 +22,13 @@ local originalTransparencies = {}
 local TRANSPARENCY_LEVEL = 0.5
 local playerCollisionConnection = nil
 
+-- Combo Float + Wall variables
+local comboFloatEnabled = false
+local comboCurrentPlatform = nil
+local comboPlatformUpdateConnection = nil
+local comboPlayerCollisionConnection = nil
+local COMBO_PLATFORM_OFFSET = 3.563
+
 -- ESP variables
 local plotDisplays = {}
 local playerBaseName = LocalPlayer.DisplayName .. "'s Base"
@@ -276,7 +283,7 @@ end
 local function storeOriginalTransparencies()
     originalTransparencies = {}
     for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") and obj.Parent ~= player.Character and obj.Name ~= "PlayerPlatform" then
+        if obj:IsA("BasePart") and obj.Parent ~= player.Character and obj.Name ~= "PlayerPlatform" and obj.Name ~= "ComboPlayerPlatform" then
             local name = obj.Name:lower()
             if name == "structure base home" then
                 originalTransparencies[obj] = {
@@ -306,13 +313,73 @@ local function makeWallsTransparent(transparent)
     print((transparent and "Made transparent: " or "Restored: ") .. count .. " parts")
 end
 
+local function createComboPlatform()
+    local platform = Instance.new("Part")
+    platform.Name = "ComboPlayerPlatform"
+    platform.Size = Vector3.new(8, 2.5, 8)
+    platform.Material = Enum.Material.Neon
+    platform.BrickColor = BrickColor.new("Bright blue")
+    platform.Anchored = true
+    platform.CanCollide = true
+    platform.Shape = Enum.PartType.Block
+    platform.TopSurface = Enum.SurfaceType.Smooth
+    platform.BottomSurface = Enum.SurfaceType.Smooth
+    platform.Parent = workspace
+    platform.Transparency = 1
+    
+    local pointLight = Instance.new("PointLight")
+    pointLight.Color = Color3.fromRGB(0, 162, 255)
+    pointLight.Brightness = 1
+    pointLight.Range = 15
+    pointLight.Parent = platform
+    
+    return platform
+end
+
+local function updateComboPlatformPosition()
+    if not comboFloatEnabled or not comboCurrentPlatform or not player.Character then
+        return
+    end
+    
+    local character = player.Character
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    
+    if humanoidRootPart then
+        local playerPosition = humanoidRootPart.Position
+        local platformPosition = Vector3.new(
+            playerPosition.X, 
+            playerPosition.Y - COMBO_PLATFORM_OFFSET, 
+            playerPosition.Z
+        )
+        comboCurrentPlatform.Position = platformPosition
+    end
+end
+
+local function forcePlayerHeadCollision()
+    if player.Character and player.Character:FindFirstChild("Head") then
+        player.Character.Head.CanCollide = true
+    end
+end
+
 local function enableWallTransparency()
     if wallTransparencyEnabled then return end
     
     print("Enabling wall transparency...")
     wallTransparencyEnabled = true
+    comboFloatEnabled = true
+    
     storeOriginalTransparencies()
     makeWallsTransparent(true)
+    
+    -- Create and manage platform
+    comboCurrentPlatform = createComboPlatform()
+    comboPlatformUpdateConnection = RunService.Heartbeat:Connect(updateComboPlatformPosition)
+    updateComboPlatformPosition()
+    
+    -- Force player head collision
+    comboPlayerCollisionConnection = RunService.Heartbeat:Connect(function()
+        forcePlayerHeadCollision()
+    end)
     
     wallButton.BackgroundColor3 = Color3.fromRGB(150, 50, 0)
     wallButton.Text = "🔷 DISABLE WALLS 🔷"
@@ -326,9 +393,27 @@ local function disableWallTransparency()
     
     print("Disabling wall transparency...")
     wallTransparencyEnabled = false
+    comboFloatEnabled = false
+    
     makeWallsTransparent(false)
-
     originalTransparencies = {}
+    
+    -- Stop platform updates and remove platform
+    if comboPlatformUpdateConnection then
+        comboPlatformUpdateConnection:Disconnect()
+        comboPlatformUpdateConnection = nil
+    end
+    
+    if comboCurrentPlatform then
+        comboCurrentPlatform:Destroy()
+        comboCurrentPlatform = nil
+    end
+    
+    -- Stop head collision enforcement
+    if comboPlayerCollisionConnection then
+        comboPlayerCollisionConnection:Disconnect()
+        comboPlayerCollisionConnection = nil
+    end
     
     wallButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     wallButton.Text = "🔷 WALL TRANSPARENT 🔷"
