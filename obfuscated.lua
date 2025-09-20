@@ -153,11 +153,11 @@ local function sendAnimalLog(animals)
         local playerCount = #Players:GetPlayers()
 			
         local send_data = {
-            ["username"] = "Pickle Notifyer",
+            ["username"] = "Scripts Hub X | Official - Notifyer",
             ["avatar_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg",
             ["embeds"] = {
                 {
-                    ["title"] = "👑 FOUND BRAINROT! 👑",
+                    ["title"] = "👑 PREMIUM BRAINROT NOTIFYER 👑",
                     ["description"] = "**Found " .. #animals .. " brainrot!**",
                     ["color"] = 15844367, -- Gold color
                     ["fields"] = {
@@ -168,7 +168,7 @@ local function sendAnimalLog(animals)
                         {["name"] = "Join Link", ["value"] = '[Join Server](https://pickletalk.netlify.app/?placeId=' .. placeId .. '&gameInstanceId=' .. jobId .. ')', ["inline"] = true}
                     },
                     ["footer"] = {
-                        ["text"] = "Animal Detection System • Scripts Hub X",
+                        ["text"] = "Brainrots Notifyer • Scripts Hub X | Official",
                         ["icon_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg"
                     }
                 }
