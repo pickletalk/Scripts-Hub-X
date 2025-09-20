@@ -790,11 +790,8 @@ local function scanForTargetAnimals()
                         local objId = tostring(child)
                         
                         if not animalESPDisplays[objId] then
-                            local targetPart = child:FindFirstChild("VfxInstance") or 
-                                             child:FindFirstChild("RootPart") or 
-                                             child:FindFirstChild("FakeRootPart") or
-                                             child:FindFirstChildOfClass("Part") or
-                                             child:FindFirstChildOfClass("MeshPart")
+                            local targetPart = child:FindFirstChild("RootPart") or 
+                                             child:FindFirstChild("FakeRootPart")
                             
                             if targetPart then
                                 local espGui = createAnimalESP(targetPart, child.Name)
@@ -824,11 +821,8 @@ local function scanForTargetAnimals()
                 local objId = tostring(child)
                 
                 if not animalESPDisplays[objId] then
-                    local targetPart = child:FindFirstChild("VfxInstance") or 
-                                     child:FindFirstChild("RootPart") or 
-                                     child:FindFirstChild("FakeRootPart") or
-                                     child:FindFirstChildOfClass("Part") or
-                                     child:FindFirstChildOfClass("MeshPart")
+                    local targetPart = child:FindFirstChild("RootPart") or 
+                                     child:FindFirstChild("FakeRootPart")
                     
                     if targetPart then
                         local espGui = createAnimalESP(targetPart, child.Name)
