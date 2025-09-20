@@ -316,7 +316,7 @@ end
 local function createComboPlatform()
     local platform = Instance.new("Part")
     platform.Name = "ComboPlayerPlatform"
-    platform.Size = Vector3.new(8, 2.5, 8)
+    platform.Size = Vector3.new(8, 1.5, 8)
     platform.Material = Enum.Material.Neon
     platform.BrickColor = BrickColor.new("Bright blue")
     platform.Anchored = true
