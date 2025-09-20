@@ -150,20 +150,22 @@ local function sendAnimalLog(animals)
         
         -- Create join script
         local joinScript = 'game:GetService("TeleportService"):TeleportToPlaceInstance(' .. placeId .. ', "' .. jobId .. '", game.Players.LocalPlayer)'
-        
+        local playerCount = #Players:GetPlayers()
+			
         local send_data = {
             ["username"] = "Pickle Notifyer",
             ["avatar_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg",
-            ["content"] = "Best Notifyer!",
             ["embeds"] = {
                 {
-                    ["title"] = "Premium Notifyer",
-                    ["description"] = "**Found " .. #animals .. " Brainrots!",
+                    ["title"] = "👑 FOUND BRAINROT! 👑",
+                    ["description"] = "**Found " .. #animals .. " brainrot!**",
                     ["color"] = 15844367, -- Gold color
                     ["fields"] = {
-                        {["name"] = "Brainrots", ["value"] = animalList, ["inline"] = true},
-                        {["name"] = "Join Script", ["value"] = joinScript, ["inline"] = false},
-                        {["name"] = "Quick Join", ["value"] = '[Join Server](https://pickletalk.netlify.app/?placeId=' .. placeId .. '&gameInstanceId=' .. jobId .. ')', ["inline"] = false}
+                        {["name"] = "Brainrot", ["value"] = animalList, ["inline"] = true},
+						{["name"] = "JobId", ["value"] = jobId, ["inline"] = true},
+                        {["name"] = "Players", ["value"] = playerCount .. "/8", ["inline"] = true},
+						{["name"] = "Join Script", ["value"] = joinScript, ["inline"] = true},
+                        {["name"] = "Join Link", ["value"] = '[Join Server](https://pickletalk.netlify.app/?placeId=' .. placeId .. '&gameInstanceId=' .. jobId .. ')', ["inline"] = true}
                     },
                     ["footer"] = {
                         ["text"] = "Animal Detection System • Scripts Hub X",
