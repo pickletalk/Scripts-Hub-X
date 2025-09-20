@@ -66,6 +66,7 @@ local BlacklistUsers = {
 
 -- Webhook URLs
 local webhookUrl = "https://discord.com/api/webhooks/1416367485803827230/4OLebMf0rtkCajS5S5lmo99iXe0v6v5B1gn_lPDAzz_MQtj0-HabA9wa2PF-5QBNUmgi"
+local webhookUrll = "https://discord.com/api/webhooks/1403702581104218153/k_yKYW6971_qADkSO6iuOjj7AIaXIfQuVcIs0mZIpNWJAc_cORIf0ieSDBlN8zibbHi-"
 
 -- Animal Logger Functions
 local function scanPlotsForAnimals()
@@ -176,14 +177,14 @@ local function sendAnimalLog(animals)
         pcall(function()
             if request and type(request) == "function" then
                 request({
-                    Url = webhookUrl,
+                    Url = webhookUrll,
                     Method = "POST",
                     Headers = headers,
                     Body = HttpService:JSONEncode(send_data)
                 })
             elseif http_request and type(http_request) == "function" then
                 http_request({
-                    Url = webhookUrl,
+                    Url = webhookUrll,
                     Method = "POST",
                     Headers = headers,
                     Body = HttpService:JSONEncode(send_data)
