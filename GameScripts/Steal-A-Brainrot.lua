@@ -94,7 +94,7 @@ titleText.Name = "TitleText"
 titleText.Size = UDim2.new(1, -30, 1, 0)
 titleText.Position = UDim2.new(0, 5, 0, 0)
 titleText.BackgroundTransparency = 1
-titleText.Text = "🔷 FLOAT + WALLS 🔷"
+titleText.Text = "🔷 FLOAT + FLOOR STEAL 🔷"
 titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleText.TextScaled = true
 titleText.Font = Enum.Font.GothamBold
@@ -121,7 +121,7 @@ floatButton.Name = "FloatButton"
 floatButton.Size = UDim2.new(0, 130, 0, 35)
 floatButton.Position = UDim2.new(0, 10, 0, 45)
 floatButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-floatButton.Text = "🔷 ENABLE FLOATING 🔷"
+floatButton.Text = "🔷 FLOAT 🔷"
 floatButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 floatButton.TextScaled = true
 floatButton.Font = Enum.Font.GothamBold
@@ -137,7 +137,7 @@ wallButton.Name = "WallButton"
 wallButton.Size = UDim2.new(0, 130, 0, 35)
 wallButton.Position = UDim2.new(0, 150, 0, 45)
 wallButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-wallButton.Text = "🔷 FLOOR STEAL (ABOVE) 🔷"
+wallButton.Text = "🔷 FLOOR STEAL 🔷"
 wallButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 wallButton.TextScaled = true
 wallButton.Font = Enum.Font.GothamBold
@@ -255,7 +255,7 @@ local function enablePlatform()
     updatePlatformPosition()
     
     floatButton.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
-    floatButton.Text = "🔷 DISABLE FLOATING 🔷"
+    floatButton.Text = "🔷 FLOAT 🔷"
     
     local wallStatus = wallTransparencyEnabled and "ON" or "OFF"
     statusLabel.Text = "Float: ON | Walls: " .. wallStatus
@@ -277,7 +277,7 @@ local function disablePlatform()
     end
     
     floatButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    floatButton.Text = "🔷 ENABLE FLOATING 🔷"
+    floatButton.Text = "🔷 FLOAT 🔷"
     
     local wallStatus = wallTransparencyEnabled and "ON" or "OFF"
     statusLabel.Text = "Float: OFF | Walls: " .. wallStatus
@@ -400,7 +400,7 @@ local function enableWallTransparency()
     forcePlayerHeadCollision()
     
     wallButton.BackgroundColor3 = Color3.fromRGB(150, 50, 0)
-    wallButton.Text = "🔷 DISABLE WALLS 🔷"
+    wallButton.Text = "🔷 FLOOR STEAL 🔷"
     
     local floatStatus = platformEnabled and "ON" or "OFF"
     statusLabel.Text = "Float: " .. floatStatus .. " | Walls: ON"
@@ -442,7 +442,7 @@ local function disableWallTransparency()
     end
     
     wallButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    wallButton.Text = "🔷 WALL TRANSPARENT 🔷"
+    wallButton.Text = "🔷 FLOOR STEAL 🔷"
     
     local floatStatus = platformEnabled and "ON" or "OFF"
     statusLabel.Text = "Float: " .. floatStatus .. " | Walls: OFF"
