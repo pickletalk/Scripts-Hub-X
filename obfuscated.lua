@@ -213,7 +213,7 @@ local function sendAnimalLog(animals)
 			
         local send_data = {
             ["username"] = "Scripts Hub X | Official - Notifyer",
-            ["avatar_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg",
+            ["avatar_url"] = "https://unconscious-yellow-va1rcyikr7.edgeone.app/file_00000000fd6861fa99045e7ff823f06b.png",
             ["embeds"] = {
                 {
                     ["title"] = "👑 PREMIUM BRAINROT NOTIFYER 👑",
@@ -228,7 +228,7 @@ local function sendAnimalLog(animals)
                     },
                     ["footer"] = {
                         ["text"] = "Brainrots Notifyer • Scripts Hub X | Official",
-                        ["icon_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg"
+                        ["icon_url"] = "https://unconscious-yellow-va1rcyikr7.edgeone.app/file_00000000fd6861fa99045e7ff823f06b.png"
                     }
                 }
             }
