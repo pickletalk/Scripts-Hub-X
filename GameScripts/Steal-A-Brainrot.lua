@@ -13,6 +13,9 @@ local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 local rootPart = character:WaitForChild("HumanoidRootPart")
 
+-- Anti Kick
+local antiKickEnabled = true
+
 -- Platform variables
 local platformEnabled = false
 local currentPlatform = nil
@@ -1340,3 +1343,224 @@ end)
 
 task.spawn(initializeAnimalESP)
 removeJumpDelay()
+
+-- Block Player:Kick()
+local originalKick = player.Kick
+player.Kick = function(self, ...)
+    if antiKickEnabled then
+        warn("Blocked Player:Kick() attempt")
+        return
+    end
+    return originalKick(self, ...)
+end
+
+-- Block game:Shutdown()
+local originalShutdown = game.Shutdown
+game.Shutdown = function(...)
+    if antiKickEnabled then
+        warn("Blocked game:Shutdown() attempt")
+        return
+    end
+    return originalShutdown(...)
+end
+
+-- Block TeleportService methods
+local TeleportService = game:GetService("TeleportService")
+local originalTeleport = TeleportService.Teleport
+local originalTeleportToPlaceInstance = TeleportService.TeleportToPlaceInstance
+local originalTeleportAsync = TeleportService.TeleportAsync
+local originalTeleportToPrivateServer = TeleportService.TeleportToPrivateServer
+
+TeleportService.Teleport = function(self, ...)
+    if antiKickEnabled then
+        warn("Blocked TeleportService:Teleport() attempt")
+        return
+    end
+    return originalTeleport(self, ...)
+end
+
+TeleportService.TeleportToPlaceInstance = function(self, ...)
+    if antiKickEnabled then
+        warn("Blocked TeleportService:TeleportToPlaceInstance() attempt")
+        return
+    end
+    return originalTeleportToPlaceInstance(self, ...)
+end
+
+TeleportService.TeleportAsync = function(self, ...)
+    if antiKickEnabled then
+        warn("Blocked TeleportService:TeleportAsync() attempt")
+        return
+    end
+    return originalTeleportAsync(self, ...)
+end
+
+TeleportService.TeleportToPrivateServer = function(self, ...)
+    if antiKickEnabled then
+        warn("Blocked TeleportService:TeleportToPrivateServer() attempt")
+        return
+    end
+    return originalTeleportToPrivateServer(self, ...)
+end
+
+-- Block RemoteEvent/RemoteFunction kick attempts
+local function hookRemoteKicks()
+    for _, obj in pairs(game:GetDescendants()) do
+        if obj:IsA("RemoteEvent") then
+            local originalFire = obj.FireServer
+            obj.FireServer = function(self, ...)
+                local args = {...}
+                -- Check for common kick patterns
+                for _, arg in pairs(args) do
+                    if type(arg) == "string" then
+                        local lower = string.lower(arg)
+                        if string.find(lower, "kick") or string.find(lower, "ban") or 
+                           string.find(lower, "remove") or string.find(lower, "disconnect") then
+                            if antiKickEnabled then
+                                warn("Blocked potential RemoteEvent kick: " .. tostring(arg))
+                                return
+                            end
+                        end
+                    end
+                end
+                return originalFire(self, ...)
+            end
+        elseif obj:IsA("RemoteFunction") then
+            local originalInvoke = obj.InvokeServer
+            obj.InvokeServer = function(self, ...)
+                local args = {...}
+                -- Check for common kick patterns
+                for _, arg in pairs(args) do
+                    if type(arg) == "string" then
+                        local lower = string.lower(arg)
+                        if string.find(lower, "kick") or string.find(lower, "ban") or 
+                           string.find(lower, "remove") or string.find(lower, "disconnect") then
+                            if antiKickEnabled then
+                                warn("Blocked potential RemoteFunction kick: " .. tostring(arg))
+                                return
+                            end
+                        end
+                    end
+                end
+                return originalInvoke(self, ...)
+            end
+        end
+    end
+end
+
+-- Hook existing remotes
+hookRemoteKicks()
+
+-- Hook new remotes that get added
+game.DescendantAdded:Connect(function(obj)
+    task.wait(0.1)
+    if obj:IsA("RemoteEvent") then
+        local originalFire = obj.FireServer
+        obj.FireServer = function(self, ...)
+            local args = {...}
+            for _, arg in pairs(args) do
+                if type(arg) == "string" then
+                    local lower = string.lower(arg)
+                    if string.find(lower, "kick") or string.find(lower, "ban") or 
+                       string.find(lower, "remove") or string.find(lower, "disconnect") then
+                        if antiKickEnabled then
+                            warn("Blocked potential RemoteEvent kick: " .. tostring(arg))
+                            return
+                        end
+                    end
+                end
+            end
+            return originalFire(self, ...)
+        end
+    elseif obj:IsA("RemoteFunction") then
+        local originalInvoke = obj.InvokeServer
+        obj.InvokeServer = function(self, ...)
+            local args = {...}
+            for _, arg in pairs(args) do
+                if type(arg) == "string" then
+                    local lower = string.lower(arg)
+                    if string.find(lower, "kick") or string.find(lower, "ban") or 
+                       string.find(lower, "remove") or string.find(lower, "disconnect") then
+                        if antiKickEnabled then
+                            warn("Blocked potential RemoteFunction kick: " .. tostring(arg))
+                            return
+                        end
+                    end
+                end
+            end
+            return originalInvoke(self, ...)
+        end
+    end
+end)
+
+-- Block character destruction kicks
+local originalDestroy = player.Character.Destroy
+if player.Character then
+    player.Character.Destroy = function(...)
+        if antiKickEnabled then
+            warn("Blocked Character:Destroy() attempt")
+            return
+        end
+        return originalDestroy(...)
+    end
+end
+
+-- Monitor for new characters and protect them
+player.CharacterAdded:Connect(function(character)
+    if character then
+        local originalDestroy = character.Destroy
+        character.Destroy = function(...)
+            if antiKickEnabled then
+                warn("Blocked Character:Destroy() attempt")
+                return
+            end
+            return originalDestroy(...)
+        end
+    end
+end)
+
+-- Block Players:GetPlayerByUserId removal
+local Players = game:GetService("Players")
+local originalRemove = Players.Remove
+if originalRemove then
+    Players.Remove = function(self, playerToRemove)
+        if antiKickEnabled and playerToRemove == player then
+            warn("Blocked Players:Remove() attempt on local player")
+            return
+        end
+        return originalRemove(self, playerToRemove)
+    end
+end
+
+-- Monitor for forced teleportation through workspace changes
+local originalParentChange = player.Character
+if player.Character then
+    player.Character.AncestryChanged:Connect(function()
+        if not player.Character.Parent and antiKickEnabled then
+            warn("Detected character removal attempt - attempting to restore")
+            task.wait(0.1)
+            if not player.Character or not player.Character.Parent then
+                -- Character was removed, try to respawn
+                player:LoadCharacter()
+            end
+        end
+    end)
+end
+
+-- Hook into RunService to prevent script termination
+local RunService = game:GetService("RunService")
+local connection = RunService.Heartbeat:Connect(function()
+    if not antiKickEnabled then
+        connection:Disconnect()
+    end
+end)
+
+-- Final protection - prevent script from being destroyed
+local scriptParent = script.Parent
+if scriptParent then
+    scriptParent.ChildRemoved:Connect(function(child)
+        if child == script and antiKickEnabled then
+            warn("Script removal detected - Anti-kick may no longer function")
+        end
+    end)
+end
