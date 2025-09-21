@@ -69,8 +69,6 @@ local espTargetNames = {
 	"Ketchuru and Musturu",
 	"Spaghetti Tualetti",
 	"Strawberry Elephant",
-	"Alessio",
-	"Carloo",
 	"Los Bombinitos",
 	"Crabbo Limonetta",
 	"Los Spyderinis",
