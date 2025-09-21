@@ -144,7 +144,7 @@ wallButton.Name = "WallButton"
 wallButton.Size = UDim2.new(0, 130, 0, 35)
 wallButton.Position = UDim2.new(0, 150, 0, 45)
 wallButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-wallButton.Text = "🔷 FLOOR STEAL 🔷"
+wallButton.Text = "🔷 FLOOR STEAL/ELEVATE 🔷"
 wallButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 wallButton.TextScaled = true
 wallButton.Font = Enum.Font.GothamBold
@@ -469,7 +469,7 @@ local function enableWallTransparency()
     forcePlayerHeadCollision()
     
     wallButton.BackgroundColor3 = Color3.fromRGB(150, 50, 0)
-    wallButton.Text = "🔷 FLOOR STEAL 🔷"
+    wallButton.Text = "🔷 FLOOR STEAL/ELEVATE 🔷"
     
     local floatStatus = platformEnabled and "ON" or "OFF"
     statusLabel.Text = "Float: " .. floatStatus .. " | Walls: ON"
@@ -511,7 +511,7 @@ local function disableWallTransparency()
     end
     
     wallButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    wallButton.Text = "🔷 FLOOR STEAL 🔷"
+    wallButton.Text = "🔷 FLOOR STEAL/ELEVATE 🔷"
     
     local floatStatus = platformEnabled and "ON" or "OFF"
     statusLabel.Text = "Float: " .. floatStatus .. " | Walls: OFF"
