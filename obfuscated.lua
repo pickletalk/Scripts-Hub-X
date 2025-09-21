@@ -195,7 +195,7 @@ local function createESP(object, animalName)
         nameLabel.TextStrokeColor3 = Color3.new(0, 0.8, 1) -- Black outline
         nameLabel.TextScaled = true
         nameLabel.TextSize = 14 -- Fixed smaller size
-        nameLabel.Font = Enum.Font.GothamMedium -- Less bold
+        nameLabel.Font = Enum.Font.SourceSansBold -- Less bold
         
         return billboardGui
     end
