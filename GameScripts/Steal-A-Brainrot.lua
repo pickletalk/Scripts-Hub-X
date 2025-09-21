@@ -23,7 +23,7 @@ local currentPlatform = nil
 local platformUpdateConnection = nil
 local PLATFORM_OFFSET = 3.62
 -- NEW VARIABLES FOR SLOW FALL
-local SLOW_FALL_SPEED = -0.2 -- Negative because falling down (make smaller like -1 or -0.5 for super slow)
+local SLOW_FALL_SPEED = -0.1 -- Negative because falling down (make smaller like -1 or -0.5 for super slow)
 local originalGravity = nil
 local bodyVelocity = nil
 
@@ -469,7 +469,7 @@ local function enableWallTransparency()
     forcePlayerHeadCollision()
     
     wallButton.BackgroundColor3 = Color3.fromRGB(150, 50, 0)
-    wallButton.Text = "🔷 FLOOR STEAL 🔷"
+    wallButton.Text = "🔷 FLOOR STEAL/ELEVATE 🔷"
     
     local floatStatus = platformEnabled and "ON" or "OFF"
     statusLabel.Text = "Float: " .. floatStatus .. " | Walls: ON"
@@ -511,7 +511,7 @@ local function disableWallTransparency()
     end
     
     wallButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    wallButton.Text = "🔷 FLOOR STEAL 🔷"
+    wallButton.Text = "🔷 FLOOR STEAL/ELEVATE 🔷"
     
     local floatStatus = platformEnabled and "ON" or "OFF"
     statusLabel.Text = "Float: " .. floatStatus .. " | Walls: OFF"
