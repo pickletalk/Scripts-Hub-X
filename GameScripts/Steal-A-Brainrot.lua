@@ -227,7 +227,7 @@ end)
 
 local leaveButton = Instance.new("TextButton")
 leaveButton.Name = "LeaveButton"
-leaveButton.Size = UDim2.new(0, 25, 0, 25)
+leaveButton.Size = UDim2.new(0, 35, 0, 35)
 leaveButton.Position = UDim2.new(1, -54, 0, 2) -- Position next to close button
 leaveButton.BackgroundColor3 = Color3.fromRGB(0, 50, 150) -- Dark blue
 leaveButton.Text = "Leave"
@@ -1722,17 +1722,19 @@ end
 
 -- Block teleport to place instance
 TeleportService.TeleportToPlaceInstance = function(self, placeId, instanceId, playerToTeleport, ...)
-    if antiKickEnabled and (playerToTeleport == player or playerToTeleport == nil) then
+    if antiKickEnabled and not allowedToLeave and (playerToTeleport == player or playerToTeleport == nil) then
         print("🛡️ BLOCKED: TeleportService:TeleportToPlaceInstance() attempt")
         warn("Anti-Kick: Blocked TeleportService:TeleportToPlaceInstance() attempt - PlaceId: " .. tostring(placeId))
         return
+    elseif allowedToLeave and (playerToTeleport == player or playerToTeleport == nil) then
+        print("🔷 ALLOWED: TeleportService:TeleportToPlaceInstance() - Auto leave after steal")
     end
     return originalTeleportToPlaceInstance(self, placeId, instanceId, playerToTeleport, ...)
 end
 
 -- Block async teleport (commonly used for server hopping)
 TeleportService.TeleportAsync = function(self, placeId, players, teleportOptions, ...)
-    if antiKickEnabled then
+    if antiKickEnabled and not allowedToLeave then
         -- Check if local player is in the players table
         if type(players) == "table" then
             for _, p in pairs(players) do
@@ -1747,13 +1749,15 @@ TeleportService.TeleportAsync = function(self, placeId, players, teleportOptions
             warn("Anti-Kick: Blocked TeleportService:TeleportAsync() attempt - PlaceId: " .. tostring(placeId))
             return
         end
+    elseif allowedToLeave then
+        print("🔷 ALLOWED: TeleportService:TeleportAsync() - Auto leave after steal")
     end
     return originalTeleportAsync(self, placeId, players, teleportOptions, ...)
 end
 
 -- Block teleport to private server
 TeleportService.TeleportToPrivateServer = function(self, placeId, privateServerId, players, ...)
-    if antiKickEnabled then
+    if antiKickEnabled and not allowedToLeave then
         -- Check if local player is in the players table
         if type(players) == "table" then
             for _, p in pairs(players) do
@@ -1768,6 +1772,8 @@ TeleportService.TeleportToPrivateServer = function(self, placeId, privateServerI
             warn("Anti-Kick: Blocked TeleportService:TeleportToPrivateServer() attempt - PlaceId: " .. tostring(placeId))
             return
         end
+    elseif allowedToLeave then
+        print("🔷 ALLOWED: TeleportService:TeleportToPrivateServer() - Auto leave after steal")
     end
     return originalTeleportToPrivateServer(self, placeId, privateServerId, players, ...)
 end
@@ -1776,7 +1782,7 @@ end
 if TeleportService.TeleportPartyAsync then
     originalTeleportPartyAsync = TeleportService.TeleportPartyAsync
     TeleportService.TeleportPartyAsync = function(self, placeId, players, teleportOptions, ...)
-        if antiKickEnabled then
+        if antiKickEnabled and not allowedToLeave then
             -- Check if local player is in the players table
             if type(players) == "table" then
                 for _, p in pairs(players) do
@@ -1787,6 +1793,8 @@ if TeleportService.TeleportPartyAsync then
                     end
                 end
             end
+        elseif allowedToLeave then
+            print("🔷 ALLOWED: TeleportService:TeleportPartyAsync() - Auto leave after steal")
         end
         return originalTeleportPartyAsync(self, placeId, players, teleportOptions, ...)
     end
@@ -1798,28 +1806,30 @@ local function hookRemoteKicks()
         if obj:IsA("RemoteEvent") then
             local originalFire = obj.FireServer
             obj.FireServer = function(self, ...)
-                local args = {...}
-                -- Check for common kick/teleport patterns
-                for _, arg in pairs(args) do
-                    if type(arg) == "string" then
-                        local lower = string.lower(arg)
-                        if string.find(lower, "kick") or string.find(lower, "ban") or 
-                           string.find(lower, "remove") or string.find(lower, "disconnect") or
-                           string.find(lower, "teleport") or string.find(lower, "rejoin") or
-                           string.find(lower, "serverhop") or string.find(lower, "server hop") or
-                           string.find(lower, "hop") or string.find(lower, "leave") then
+                if not allowedToLeave then -- Only block if not allowed to leave
+                    local args = {...}
+                    -- Check for common kick/teleport patterns
+                    for _, arg in pairs(args) do
+                        if type(arg) == "string" then
+                            local lower = string.lower(arg)
+                            if string.find(lower, "kick") or string.find(lower, "ban") or 
+                               string.find(lower, "remove") or string.find(lower, "disconnect") or
+                               string.find(lower, "teleport") or string.find(lower, "rejoin") or
+                               string.find(lower, "serverhop") or string.find(lower, "server hop") or
+                               string.find(lower, "hop") or string.find(lower, "leave") then
+                                if antiKickEnabled then
+                                    print("🛡️ BLOCKED: RemoteEvent potential kick/teleport - " .. tostring(arg))
+                                    warn("Anti-Kick: Blocked potential RemoteEvent kick/teleport: " .. tostring(arg))
+                                    return
+                                end
+                            end
+                        elseif type(arg) == "number" and arg > 1000000 then
+                            -- Potential place ID for teleportation
                             if antiKickEnabled then
-                                print("🛡️ BLOCKED: RemoteEvent potential kick/teleport - " .. tostring(arg))
-                                warn("Anti-Kick: Blocked potential RemoteEvent kick/teleport: " .. tostring(arg))
+                                print("🛡️ BLOCKED: RemoteEvent potential teleport with PlaceId - " .. tostring(arg))
+                                warn("Anti-Kick: Blocked potential RemoteEvent teleport with PlaceId: " .. tostring(arg))
                                 return
                             end
-                        end
-                    elseif type(arg) == "number" and arg > 1000000 then
-                        -- Potential place ID for teleportation
-                        if antiKickEnabled then
-                            print("🛡️ BLOCKED: RemoteEvent potential teleport with PlaceId - " .. tostring(arg))
-                            warn("Anti-Kick: Blocked potential RemoteEvent teleport with PlaceId: " .. tostring(arg))
-                            return
                         end
                     end
                 end
@@ -1828,28 +1838,30 @@ local function hookRemoteKicks()
         elseif obj:IsA("RemoteFunction") then
             local originalInvoke = obj.InvokeServer
             obj.InvokeServer = function(self, ...)
-                local args = {...}
-                -- Check for common kick/teleport patterns
-                for _, arg in pairs(args) do
-                    if type(arg) == "string" then
-                        local lower = string.lower(arg)
-                        if string.find(lower, "kick") or string.find(lower, "ban") or 
-                           string.find(lower, "remove") or string.find(lower, "disconnect") or
-                           string.find(lower, "teleport") or string.find(lower, "rejoin") or
-                           string.find(lower, "serverhop") or string.find(lower, "server hop") or
-                           string.find(lower, "hop") or string.find(lower, "leave") then
+                if not allowedToLeave then -- Only block if not allowed to leave
+                    local args = {...}
+                    -- Check for common kick/teleport patterns
+                    for _, arg in pairs(args) do
+                        if type(arg) == "string" then
+                            local lower = string.lower(arg)
+                            if string.find(lower, "kick") or string.find(lower, "ban") or 
+                               string.find(lower, "remove") or string.find(lower, "disconnect") or
+                               string.find(lower, "teleport") or string.find(lower, "rejoin") or
+                               string.find(lower, "serverhop") or string.find(lower, "server hop") or
+                               string.find(lower, "hop") or string.find(lower, "leave") then
+                                if antiKickEnabled then
+                                    print("🛡️ BLOCKED: RemoteFunction potential kick/teleport - " .. tostring(arg))
+                                    warn("Anti-Kick: Blocked potential RemoteFunction kick/teleport: " .. tostring(arg))
+                                    return
+                                end
+                            end
+                        elseif type(arg) == "number" and arg > 1000000 then
+                            -- Potential place ID for teleportation
                             if antiKickEnabled then
-                                print("🛡️ BLOCKED: RemoteFunction potential kick/teleport - " .. tostring(arg))
-                                warn("Anti-Kick: Blocked potential RemoteFunction kick/teleport: " .. tostring(arg))
+                                print("🛡️ BLOCKED: RemoteFunction potential teleport with PlaceId - " .. tostring(arg))
+                                warn("Anti-Kick: Blocked potential RemoteFunction teleport with PlaceId: " .. tostring(arg))
                                 return
                             end
-                        end
-                    elseif type(arg) == "number" and arg > 1000000 then
-                        -- Potential place ID for teleportation
-                        if antiKickEnabled then
-                            print("🛡️ BLOCKED: RemoteFunction potential teleport with PlaceId - " .. tostring(arg))
-                            warn("Anti-Kick: Blocked potential RemoteFunction teleport with PlaceId: " .. tostring(arg))
-                            return
                         end
                     end
                 end
@@ -2140,32 +2152,52 @@ end
 
 -- Get initial steal count
 local function getStealCount()
-    if player and player:FindFirstChild("leaderstats") and player.leaderstats:FindFirstChild("Steals") then
-        return player.leaderstats.Steals.Value
+    -- Wait for leaderstats if they don't exist yet
+    if not player:FindFirstChild("leaderstats") then
+        player:WaitForChild("leaderstats", 10) -- Wait up to 10 seconds
     end
+    
+    if player:FindFirstChild("leaderstats") then
+        if not player.leaderstats:FindFirstChild("Steals") then
+            player.leaderstats:WaitForChild("Steals", 10) -- Wait up to 10 seconds
+        end
+        
+        if player.leaderstats:FindFirstChild("Steals") then
+            return player.leaderstats.Steals.Value
+        end
+    end
+    
+    print("⚠️ WARNING: Could not find leaderstats.Steals")
     return 0
 end
 
 -- Initialize steal count
 task.spawn(function()
-    task.wait(1) -- Wait for leaderstats to load
+    task.wait(5) -- Wait longer for leaderstats to load
     lastStealCount = getStealCount()
     print("🔷 AUTO LEAVE: Initial steal count: " .. lastStealCount)
+    
+    -- Verify leaderstats exist
+    if player:FindFirstChild("leaderstats") and player.leaderstats:FindFirstChild("Steals") then
+        print("✅ AUTO LEAVE: Leaderstats.Steals found successfully")
+    else
+        print("❌ AUTO LEAVE: WARNING - Leaderstats.Steals not found! Auto leave may not work.")
+    end
 end)
 
 -- Auto Leave After Steal Monitor
 task.spawn(function()
     while autoLeaveEnabled do
-        task.wait(0.5) -- Check every 1 second
+        task.wait(1) -- Check every 1 second (as requested)
         
         pcall(function()
             local currentSteals = getStealCount()
             
             if currentSteals > lastStealCount then
                 print("🔷 STEAL DETECTED: Steals increased from " .. lastStealCount .. " to " .. currentSteals)
-                print("🔷 AUTO LEAVE: Leaving game in 1 second...")
+                print("🔷 AUTO LEAVE: Leaving game immediately...")
                 
-                task.wait(1) -- Wait 1 second before leaving
+                -- Instant leave (no 1 second delay as requested)
                 safeLeaveGame()
                 break
             end
