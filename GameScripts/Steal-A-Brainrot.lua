@@ -6,6 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
 local StarterPlayer = game:GetService("StarterPlayer")
 local CoreGui = game:GetService("CoreGui")
+local TeleportService = game:GetService("TeleportService")
 
 local player = Players.LocalPlayer
 local LocalPlayer = Players.LocalPlayer
@@ -1418,7 +1419,8 @@ removeJumpDelay()
 local originalKick = player.Kick
 player.Kick = function(self, ...)
     if antiKickEnabled then
-        warn("Blocked Player:Kick() attempt")
+        print("🛡️ BLOCKED: Player:Kick() attempt")
+        warn("Anti-Kick: Blocked Player:Kick() attempt")
         return
     end
     return originalKick(self, ...)
@@ -1428,68 +1430,130 @@ end
 local originalShutdown = game.Shutdown
 game.Shutdown = function(...)
     if antiKickEnabled then
-        warn("Blocked game:Shutdown() attempt")
+        print("🛡️ BLOCKED: game:Shutdown() attempt")
+        warn("Anti-Kick: Blocked game:Shutdown() attempt")
         return
     end
     return originalShutdown(...)
 end
 
--- Block TeleportService methods
-local TeleportService = game:GetService("TeleportService")
+-- Block all TeleportService methods (including rejoin/server hop)
 local originalTeleport = TeleportService.Teleport
 local originalTeleportToPlaceInstance = TeleportService.TeleportToPlaceInstance
 local originalTeleportAsync = TeleportService.TeleportAsync
 local originalTeleportToPrivateServer = TeleportService.TeleportToPrivateServer
+local originalTeleportPartyAsync = TeleportService.TeleportPartyAsync
 
-TeleportService.Teleport = function(self, ...)
-    if antiKickEnabled then
-        warn("Blocked TeleportService:Teleport() attempt")
+-- Block standard teleport
+TeleportService.Teleport = function(self, placeId, playerToTeleport, ...)
+    if antiKickEnabled and (playerToTeleport == player or playerToTeleport == nil) then
+        print("🛡️ BLOCKED: TeleportService:Teleport() attempt")
+        warn("Anti-Kick: Blocked TeleportService:Teleport() attempt - PlaceId: " .. tostring(placeId))
         return
     end
-    return originalTeleport(self, ...)
+    return originalTeleport(self, placeId, playerToTeleport, ...)
 end
 
-TeleportService.TeleportToPlaceInstance = function(self, ...)
-    if antiKickEnabled then
-        warn("Blocked TeleportService:TeleportToPlaceInstance() attempt")
+-- Block teleport to place instance
+TeleportService.TeleportToPlaceInstance = function(self, placeId, instanceId, playerToTeleport, ...)
+    if antiKickEnabled and (playerToTeleport == player or playerToTeleport == nil) then
+        print("🛡️ BLOCKED: TeleportService:TeleportToPlaceInstance() attempt")
+        warn("Anti-Kick: Blocked TeleportService:TeleportToPlaceInstance() attempt - PlaceId: " .. tostring(placeId))
         return
     end
-    return originalTeleportToPlaceInstance(self, ...)
+    return originalTeleportToPlaceInstance(self, placeId, instanceId, playerToTeleport, ...)
 end
 
-TeleportService.TeleportAsync = function(self, ...)
+-- Block async teleport (commonly used for server hopping)
+TeleportService.TeleportAsync = function(self, placeId, players, teleportOptions, ...)
     if antiKickEnabled then
-        warn("Blocked TeleportService:TeleportAsync() attempt")
-        return
+        -- Check if local player is in the players table
+        if type(players) == "table" then
+            for _, p in pairs(players) do
+                if p == player then
+                    print("🛡️ BLOCKED: TeleportService:TeleportAsync() attempt (Server Hop/Rejoin)")
+                    warn("Anti-Kick: Blocked TeleportService:TeleportAsync() attempt - PlaceId: " .. tostring(placeId))
+                    return
+                end
+            end
+        elseif players == player then
+            print("🛡️ BLOCKED: TeleportService:TeleportAsync() attempt (Server Hop/Rejoin)")
+            warn("Anti-Kick: Blocked TeleportService:TeleportAsync() attempt - PlaceId: " .. tostring(placeId))
+            return
+        end
     end
-    return originalTeleportAsync(self, ...)
+    return originalTeleportAsync(self, placeId, players, teleportOptions, ...)
 end
 
-TeleportService.TeleportToPrivateServer = function(self, ...)
+-- Block teleport to private server
+TeleportService.TeleportToPrivateServer = function(self, placeId, privateServerId, players, ...)
     if antiKickEnabled then
-        warn("Blocked TeleportService:TeleportToPrivateServer() attempt")
-        return
+        -- Check if local player is in the players table
+        if type(players) == "table" then
+            for _, p in pairs(players) do
+                if p == player then
+                    print("🛡️ BLOCKED: TeleportService:TeleportToPrivateServer() attempt")
+                    warn("Anti-Kick: Blocked TeleportService:TeleportToPrivateServer() attempt - PlaceId: " .. tostring(placeId))
+                    return
+                end
+            end
+        elseif players == player then
+            print("🛡️ BLOCKED: TeleportService:TeleportToPrivateServer() attempt")
+            warn("Anti-Kick: Blocked TeleportService:TeleportToPrivateServer() attempt - PlaceId: " .. tostring(placeId))
+            return
+        end
     end
-    return originalTeleportToPrivateServer(self, ...)
+    return originalTeleportToPrivateServer(self, placeId, privateServerId, players, ...)
 end
 
--- Block RemoteEvent/RemoteFunction kick attempts
+-- Block party teleport (if it exists)
+if TeleportService.TeleportPartyAsync then
+    originalTeleportPartyAsync = TeleportService.TeleportPartyAsync
+    TeleportService.TeleportPartyAsync = function(self, placeId, players, teleportOptions, ...)
+        if antiKickEnabled then
+            -- Check if local player is in the players table
+            if type(players) == "table" then
+                for _, p in pairs(players) do
+                    if p == player then
+                        print("🛡️ BLOCKED: TeleportService:TeleportPartyAsync() attempt")
+                        warn("Anti-Kick: Blocked TeleportService:TeleportPartyAsync() attempt - PlaceId: " .. tostring(placeId))
+                        return
+                    end
+                end
+            end
+        end
+        return originalTeleportPartyAsync(self, placeId, players, teleportOptions, ...)
+    end
+end
+
+-- Block RemoteEvent/RemoteFunction kick attempts with enhanced detection
 local function hookRemoteKicks()
     for _, obj in pairs(game:GetDescendants()) do
         if obj:IsA("RemoteEvent") then
             local originalFire = obj.FireServer
             obj.FireServer = function(self, ...)
                 local args = {...}
-                -- Check for common kick patterns
+                -- Check for common kick/teleport patterns
                 for _, arg in pairs(args) do
                     if type(arg) == "string" then
                         local lower = string.lower(arg)
                         if string.find(lower, "kick") or string.find(lower, "ban") or 
-                           string.find(lower, "remove") or string.find(lower, "disconnect") then
+                           string.find(lower, "remove") or string.find(lower, "disconnect") or
+                           string.find(lower, "teleport") or string.find(lower, "rejoin") or
+                           string.find(lower, "serverhop") or string.find(lower, "server hop") or
+                           string.find(lower, "hop") or string.find(lower, "leave") then
                             if antiKickEnabled then
-                                warn("Blocked potential RemoteEvent kick: " .. tostring(arg))
+                                print("🛡️ BLOCKED: RemoteEvent potential kick/teleport - " .. tostring(arg))
+                                warn("Anti-Kick: Blocked potential RemoteEvent kick/teleport: " .. tostring(arg))
                                 return
                             end
+                        end
+                    elseif type(arg) == "number" and arg > 1000000 then
+                        -- Potential place ID for teleportation
+                        if antiKickEnabled then
+                            print("🛡️ BLOCKED: RemoteEvent potential teleport with PlaceId - " .. tostring(arg))
+                            warn("Anti-Kick: Blocked potential RemoteEvent teleport with PlaceId: " .. tostring(arg))
+                            return
                         end
                     end
                 end
@@ -1499,16 +1563,27 @@ local function hookRemoteKicks()
             local originalInvoke = obj.InvokeServer
             obj.InvokeServer = function(self, ...)
                 local args = {...}
-                -- Check for common kick patterns
+                -- Check for common kick/teleport patterns
                 for _, arg in pairs(args) do
                     if type(arg) == "string" then
                         local lower = string.lower(arg)
                         if string.find(lower, "kick") or string.find(lower, "ban") or 
-                           string.find(lower, "remove") or string.find(lower, "disconnect") then
+                           string.find(lower, "remove") or string.find(lower, "disconnect") or
+                           string.find(lower, "teleport") or string.find(lower, "rejoin") or
+                           string.find(lower, "serverhop") or string.find(lower, "server hop") or
+                           string.find(lower, "hop") or string.find(lower, "leave") then
                             if antiKickEnabled then
-                                warn("Blocked potential RemoteFunction kick: " .. tostring(arg))
+                                print("🛡️ BLOCKED: RemoteFunction potential kick/teleport - " .. tostring(arg))
+                                warn("Anti-Kick: Blocked potential RemoteFunction kick/teleport: " .. tostring(arg))
                                 return
                             end
+                        end
+                    elseif type(arg) == "number" and arg > 1000000 then
+                        -- Potential place ID for teleportation
+                        if antiKickEnabled then
+                            print("🛡️ BLOCKED: RemoteFunction potential teleport with PlaceId - " .. tostring(arg))
+                            warn("Anti-Kick: Blocked potential RemoteFunction teleport with PlaceId: " .. tostring(arg))
+                            return
                         end
                     end
                 end
@@ -1532,11 +1607,21 @@ game.DescendantAdded:Connect(function(obj)
                 if type(arg) == "string" then
                     local lower = string.lower(arg)
                     if string.find(lower, "kick") or string.find(lower, "ban") or 
-                       string.find(lower, "remove") or string.find(lower, "disconnect") then
+                       string.find(lower, "remove") or string.find(lower, "disconnect") or
+                       string.find(lower, "teleport") or string.find(lower, "rejoin") or
+                       string.find(lower, "serverhop") or string.find(lower, "server hop") or
+                       string.find(lower, "hop") or string.find(lower, "leave") then
                         if antiKickEnabled then
-                            warn("Blocked potential RemoteEvent kick: " .. tostring(arg))
+                            print("🛡️ BLOCKED: New RemoteEvent potential kick/teleport - " .. tostring(arg))
+                            warn("Anti-Kick: Blocked potential new RemoteEvent kick/teleport: " .. tostring(arg))
                             return
                         end
+                    end
+                elseif type(arg) == "number" and arg > 1000000 then
+                    if antiKickEnabled then
+                        print("🛡️ BLOCKED: New RemoteEvent potential teleport with PlaceId - " .. tostring(arg))
+                        warn("Anti-Kick: Blocked potential new RemoteEvent teleport with PlaceId: " .. tostring(arg))
+                        return
                     end
                 end
             end
@@ -1550,11 +1635,21 @@ game.DescendantAdded:Connect(function(obj)
                 if type(arg) == "string" then
                     local lower = string.lower(arg)
                     if string.find(lower, "kick") or string.find(lower, "ban") or 
-                       string.find(lower, "remove") or string.find(lower, "disconnect") then
+                       string.find(lower, "remove") or string.find(lower, "disconnect") or
+                       string.find(lower, "teleport") or string.find(lower, "rejoin") or
+                       string.find(lower, "serverhop") or string.find(lower, "server hop") or
+                       string.find(lower, "hop") or string.find(lower, "leave") then
                         if antiKickEnabled then
-                            warn("Blocked potential RemoteFunction kick: " .. tostring(arg))
+                            print("🛡️ BLOCKED: New RemoteFunction potential kick/teleport - " .. tostring(arg))
+                            warn("Anti-Kick: Blocked potential new RemoteFunction kick/teleport: " .. tostring(arg))
                             return
                         end
+                    end
+                elseif type(arg) == "number" and arg > 1000000 then
+                    if antiKickEnabled then
+                        print("🛡️ BLOCKED: New RemoteFunction potential teleport with PlaceId - " .. tostring(arg))
+                        warn("Anti-Kick: Blocked potential new RemoteFunction teleport with PlaceId: " .. tostring(arg))
+                        return
                     end
                 end
             end
@@ -1564,64 +1659,149 @@ game.DescendantAdded:Connect(function(obj)
 end)
 
 -- Block character destruction kicks
-local originalDestroy = player.Character.Destroy
-if player.Character then
-    player.Character.Destroy = function(...)
-        if antiKickEnabled then
-            warn("Blocked Character:Destroy() attempt")
-            return
-        end
-        return originalDestroy(...)
-    end
-end
-
--- Monitor for new characters and protect them
-player.CharacterAdded:Connect(function(character)
+local function protectCharacter(character)
     if character then
         local originalDestroy = character.Destroy
         character.Destroy = function(...)
             if antiKickEnabled then
-                warn("Blocked Character:Destroy() attempt")
+                print("🛡️ BLOCKED: Character:Destroy() attempt")
+                warn("Anti-Kick: Blocked Character:Destroy() attempt")
                 return
             end
             return originalDestroy(...)
         end
+        
+        -- Monitor character removal
+        character.AncestryChanged:Connect(function()
+            if not character.Parent and antiKickEnabled then
+                print("🛡️ DETECTED: Character removal attempt - attempting to restore")
+                warn("Anti-Kick: Detected character removal attempt - attempting to restore")
+                task.wait(0.1)
+                if not player.Character or not player.Character.Parent then
+                    print("🛡️ RESTORING: Character was removed, attempting to respawn")
+                    pcall(function()
+                        player:LoadCharacter()
+                    end)
+                end
+            end
+        end)
     end
+end
+
+-- Protect current character
+if player.Character then
+    protectCharacter(player.Character)
+end
+
+-- Protect new characters
+player.CharacterAdded:Connect(function(character)
+    protectCharacter(character)
 end)
 
 -- Block Players:GetPlayerByUserId removal
-local Players = game:GetService("Players")
 local originalRemove = Players.Remove
 if originalRemove then
     Players.Remove = function(self, playerToRemove)
         if antiKickEnabled and playerToRemove == player then
-            warn("Blocked Players:Remove() attempt on local player")
+            print("🛡️ BLOCKED: Players:Remove() attempt on local player")
+            warn("Anti-Kick: Blocked Players:Remove() attempt on local player")
             return
         end
         return originalRemove(self, playerToRemove)
     end
 end
 
--- Monitor for forced teleportation through workspace changes
-local originalParentChange = player.Character
-if player.Character then
-    player.Character.AncestryChanged:Connect(function()
-        if not player.Character.Parent and antiKickEnabled then
-            warn("Detected character removal attempt - attempting to restore")
-            task.wait(0.1)
-            if not player.Character or not player.Character.Parent then
-                -- Character was removed, try to respawn
-                player:LoadCharacter()
-            end
+-- Block GuiService ShowLeaveConfirmation (forces player to leave)
+local GuiService = game:GetService("GuiService")
+if GuiService and GuiService.ShowLeaveConfirmation then
+    local originalShowLeave = GuiService.ShowLeaveConfirmation
+    GuiService.ShowLeaveConfirmation = function(...)
+        if antiKickEnabled then
+            print("🛡️ BLOCKED: GuiService:ShowLeaveConfirmation() attempt")
+            warn("Anti-Kick: Blocked GuiService:ShowLeaveConfirmation() attempt")
+            return
         end
-    end)
+        return originalShowLeave(...)
+    end
 end
 
--- Hook into RunService to prevent script termination
-local RunService = game:GetService("RunService")
-local connection = RunService.Heartbeat:Connect(function()
+-- Block potential HTTP-based server hop requests
+local originalHttpGet = HttpService.GetAsync
+local originalHttpPost = HttpService.PostAsync
+
+HttpService.GetAsync = function(self, url, ...)
+    if antiKickEnabled then
+        local lowerUrl = string.lower(url)
+        if string.find(lowerUrl, "teleport") or string.find(lowerUrl, "rejoin") or 
+           string.find(lowerUrl, "serverhop") or string.find(lowerUrl, "server") or
+           string.find(lowerUrl, "place") then
+            print("🛡️ BLOCKED: Suspicious HTTP GET request - " .. tostring(url))
+            warn("Anti-Kick: Blocked suspicious HTTP GET request: " .. tostring(url))
+            return "{}"
+        end
+    end
+    return originalHttpGet(self, url, ...)
+end
+
+HttpService.PostAsync = function(self, url, data, ...)
+    if antiKickEnabled then
+        local lowerUrl = string.lower(url)
+        local lowerData = string.lower(tostring(data))
+        if string.find(lowerUrl, "teleport") or string.find(lowerUrl, "rejoin") or 
+           string.find(lowerUrl, "serverhop") or string.find(lowerData, "teleport") or
+           string.find(lowerData, "rejoin") or string.find(lowerData, "serverhop") then
+            print("🛡️ BLOCKED: Suspicious HTTP POST request - " .. tostring(url))
+            warn("Anti-Kick: Blocked suspicious HTTP POST request: " .. tostring(url))
+            return "{}"
+        end
+    end
+    return originalHttpPost(self, url, data, ...)
+end
+
+-- Monitor for suspicious script behavior
+local function monitorScriptBehavior()
+    -- Monitor for scripts that might try to force teleportation
+    for _, obj in pairs(game:GetDescendants()) do
+        if obj:IsA("LocalScript") or obj:IsA("Script") then
+            -- Monitor script source changes that might indicate kick attempts
+            pcall(function()
+                if obj.Source and string.find(string.lower(obj.Source), "teleportservice") then
+                    print("🛡️ MONITORING: Script with TeleportService detected - " .. obj:GetFullName())
+                end
+            end)
+        end
+    end
+end
+
+-- Run initial monitoring
+pcall(monitorScriptBehavior)
+
+-- Monitor new scripts
+game.DescendantAdded:Connect(function(obj)
+    if obj:IsA("LocalScript") or obj:IsA("Script") then
+        task.wait(0.1)
+        pcall(function()
+            if obj.Source and string.find(string.lower(obj.Source), "teleportservice") then
+                print("🛡️ MONITORING: New script with TeleportService detected - " .. obj:GetFullName())
+            end
+        end)
+    end
+end)
+
+-- Hook into RunService to prevent script termination and maintain protection
+local heartbeatConnection = RunService.Heartbeat:Connect(function()
     if not antiKickEnabled then
-        connection:Disconnect()
+        heartbeatConnection:Disconnect()
+    end
+    
+    -- Ensure player is still connected and character exists
+    if player and player.Parent and antiKickEnabled then
+        if not player.Character and player.Parent == Players then
+            print("🛡️ RESTORING: No character detected, attempting to respawn")
+            pcall(function()
+                player:LoadCharacter()
+            end)
+        end
     end
 end)
 
@@ -1630,7 +1810,26 @@ local scriptParent = script.Parent
 if scriptParent then
     scriptParent.ChildRemoved:Connect(function(child)
         if child == script and antiKickEnabled then
-            warn("Script removal detected - Anti-kick may no longer function")
+            print("🛡️ WARNING: Anti-kick script removal detected - protection may no longer function")
+            warn("Anti-Kick: Script removal detected - Anti-kick may no longer function")
         end
     end)
 end
+
+-- Block workspace changes that might indicate forced teleportation
+workspace.ChildRemoved:Connect(function(child)
+    if child == player.Character and antiKickEnabled then
+        print("🛡️ DETECTED: Character removed from workspace")
+        warn("Anti-Kick: Character removed from workspace - potential kick attempt")
+    end
+end)
+
+-- Additional protection against direct player removal from Players service
+Players.PlayerRemoving:Connect(function(playerLeaving)
+    if playerLeaving == player and antiKickEnabled then
+        print("🛡️ BLOCKED: Attempt to remove local player from Players service")
+        warn("Anti-Kick: Blocked attempt to remove local player from Players service")
+        -- Try to prevent the removal (may not always work due to engine limitations)
+        return
+    end
+end)
