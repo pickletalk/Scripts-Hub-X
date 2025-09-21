@@ -30,7 +30,6 @@ local bodyVelocity = nil
 -- Define the specific remotes to block
 local blockedRemotes = {
     "RE/f756228f-15f8-4b6d-93a4-dfe62bb409cb",
-    "RE/b096e1ca-9c3a-453b-8b60-268b235083b9", 
     "RE/156ed911-fc4b-4d24-a648-acd1e9761e4f",
     "RE/5aa39ea1-0c65-4fcf-aff9-b18a7ef277c3",
     "RE/TeleportService/Reconnect",
