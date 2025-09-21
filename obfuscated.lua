@@ -158,28 +158,26 @@ local function createESP(object, animalName)
     -- Create ESP container
     local espContainer = {}
     
-    -- Function to create enhanced highlight effect that covers entire model
+    -- Function to create clean highlight effect
     local function createHighlight()
         local highlight = Instance.new("Highlight")
         highlight.Parent = object
         highlight.FillColor = Color3.new(0, 0.5, 1) -- Blue color
         highlight.OutlineColor = Color3.new(0, 0.8, 1) -- Brighter blue
-        highlight.FillTransparency = 0.7
-        highlight.OutlineTransparency = 0
+        highlight.FillTransparency = 0.8
+        highlight.OutlineTransparency = 0.3
         highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-        
-        -- Ensure it covers the entire model
         highlight.Adornee = object
         
         return highlight
     end
     
-    -- Function to create name label with count
+    -- Function to create smaller name label with count
     local function createNameLabel()
         local billboardGui = Instance.new("BillboardGui")
         billboardGui.Parent = object
-        billboardGui.Size = UDim2.new(0, 200, 0, 50)
-        billboardGui.StudsOffset = Vector3.new(0, 5, 0)
+        billboardGui.Size = UDim2.new(0, 120, 0, 30) -- Much smaller size
+        billboardGui.StudsOffset = Vector3.new(0, 3, 0) -- Closer to object
         billboardGui.AlwaysOnTop = true
         
         -- Count how many of this animal type we have
@@ -191,70 +189,52 @@ local function createESP(object, animalName)
         nameLabel.Size = UDim2.new(1, 0, 1, 0)
         nameLabel.BackgroundTransparency = 1
         nameLabel.Text = displayText
-        nameLabel.TextColor3 = Color3.new(0, 0.8, 1) -- Bright blue
+        nameLabel.TextColor3 = Color3.new(1, 1, 1) -- White text
         nameLabel.TextStrokeTransparency = 0
         nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0) -- Black outline
         nameLabel.TextScaled = true
-        nameLabel.Font = Enum.Font.GothamBold
-        
-        -- Add neon effect
-        local textStroke = Instance.new("UIStroke")
-        textStroke.Parent = nameLabel
-        textStroke.Color = Color3.new(0, 0.6, 1)
-        textStroke.Thickness = 2
-        textStroke.Transparency = 0.3
+        nameLabel.TextSize = 14 -- Fixed smaller size
+        nameLabel.Font = Enum.Font.GothamMedium -- Less bold
         
         return billboardGui
     end
     
-    -- Function to create thin selection box outline
-    local function createSelectionBox()
-        local selectionBox = Instance.new("SelectionBox")
-        selectionBox.Parent = object
-        selectionBox.Adornee = object
-        selectionBox.Color3 = Color3.new(0, 0.8, 1) -- Bright blue
-        selectionBox.LineThickness = 0.05 -- Much thinner outline
-        selectionBox.Transparency = 0.1
-        selectionBox.SurfaceTransparency = 0.9
+    -- Function to create super thin tracer line
+    local function createTracer()
+        local camera = workspace.CurrentCamera
+        if not camera then return nil end
         
-        return selectionBox
+        -- Create tracer line using Beam
+        local attachment0 = Instance.new("Attachment")
+        attachment0.Parent = camera
+        attachment0.Position = Vector3.new(0, 0, 0)
+        
+        local attachment1 = Instance.new("Attachment")
+        attachment1.Parent = object.PrimaryPart or object:FindFirstChildOfClass("BasePart")
+        if not attachment1.Parent then return nil end
+        
+        local beam = Instance.new("Beam")
+        beam.Parent = workspace
+        beam.Attachment0 = attachment0
+        beam.Attachment1 = attachment1
+        beam.Width0 = 0.1 -- Super thin start
+        beam.Width1 = 0.1 -- Super thin end
+        beam.Color = ColorSequence.new(Color3.new(0, 0.8, 1)) -- Blue color
+        beam.Transparency = NumberSequence.new(0.5) -- Semi-transparent
+        beam.FaceCamera = true
+        
+        return {beam = beam, attachment0 = attachment0, attachment1 = attachment1}
     end
     
-    -- Function to add box outline to all parts in the model
-    local function addPartOutlines()
-        local outlines = {}
-        
-        local function addOutlineToDescendants(parent)
-            for _, child in pairs(parent:GetChildren()) do
-                if child:IsA("BasePart") then
-                    local partBox = Instance.new("SelectionBox")
-                    partBox.Parent = child
-                    partBox.Adornee = child
-                    partBox.Color3 = Color3.new(0, 0.8, 1)
-                    partBox.LineThickness = 0.03 -- Very thin
-                    partBox.Transparency = 0.2
-                    partBox.SurfaceTransparency = 1
-                    table.insert(outlines, partBox)
-                end
-                addOutlineToDescendants(child)
-            end
-        end
-        
-        addOutlineToDescendants(object)
-        return outlines
-    end
-    
-    -- Create all ESP components
+    -- Create ESP components (no selection boxes!)
     local highlight = createHighlight()
     local nameLabel = createNameLabel()
-    local selectionBox = createSelectionBox()
-    local partOutlines = addPartOutlines()
+    local tracer = createTracer()
     
     -- Store ESP components
     espContainer.highlight = highlight
     espContainer.nameLabel = nameLabel
-    espContainer.selectionBox = selectionBox
-    espContainer.partOutlines = partOutlines
+    espContainer.tracer = tracer
     espContainer.object = object
     espContainer.animalName = animalName
     
@@ -270,12 +250,15 @@ local function createESP(object, animalName)
                 if espObjects[espId].nameLabel then
                     espObjects[espId].nameLabel:Destroy()
                 end
-                if espObjects[espId].selectionBox then
-                    espObjects[espId].selectionBox:Destroy()
-                end
-                if espObjects[espId].partOutlines then
-                    for _, outline in pairs(espObjects[espId].partOutlines) do
-                        if outline then outline:Destroy() end
+                if espObjects[espId].tracer then
+                    if espObjects[espId].tracer.beam then
+                        espObjects[espId].tracer.beam:Destroy()
+                    end
+                    if espObjects[espId].tracer.attachment0 then
+                        espObjects[espId].tracer.attachment0:Destroy()
+                    end
+                    if espObjects[espId].tracer.attachment1 then
+                        espObjects[espId].tracer.attachment1:Destroy()
                     end
                 end
                 espObjects[espId] = nil
@@ -295,12 +278,15 @@ local function removeESP(espId)
         if espObjects[espId].nameLabel then
             espObjects[espId].nameLabel:Destroy()
         end
-        if espObjects[espId].selectionBox then
-            espObjects[espId].selectionBox:Destroy()
-        end
-        if espObjects[espId].partOutlines then
-            for _, outline in pairs(espObjects[espId].partOutlines) do
-                if outline then outline:Destroy() end
+        if espObjects[espId].tracer then
+            if espObjects[espId].tracer.beam then
+                espObjects[espId].tracer.beam:Destroy()
+            end
+            if espObjects[espId].tracer.attachment0 then
+                espObjects[espId].tracer.attachment0:Destroy()
+            end
+            if espObjects[espId].tracer.attachment1 then
+                espObjects[espId].tracer.attachment1:Destroy()
             end
         end
         espObjects[espId] = nil
@@ -322,10 +308,8 @@ local function updateESPLabels()
     end
 end
 
--- Apply ESP to all currently detected brainrots
+-- Apply ESP to all currently detected brainrots (always enabled)
 local function applyESPToExistingAnimals()
-    if not espEnabled then return end
-    
     -- Reset animal counts
     animalCounts = {}
     
@@ -370,29 +354,20 @@ local function clearAllESP()
         if espContainer.nameLabel then
             espContainer.nameLabel:Destroy()
         end
-        if espContainer.selectionBox then
-            espContainer.selectionBox:Destroy()
-        end
-        if espContainer.partOutlines then
-            for _, outline in pairs(espContainer.partOutlines) do
-                if outline then outline:Destroy() end
+        if espContainer.tracer then
+            if espContainer.tracer.beam then
+                espContainer.tracer.beam:Destroy()
+            end
+            if espContainer.tracer.attachment0 then
+                espContainer.tracer.attachment0:Destroy()
+            end
+            if espContainer.tracer.attachment1 then
+                espContainer.tracer.attachment1:Destroy()
             end
         end
     end
     espObjects = {}
     animalCounts = {}
-end
-
--- Toggle ESP on/off
-local function toggleESP()
-    espEnabled = not espEnabled
-    if espEnabled then
-        applyESPToExistingAnimals()
-        notify("ESP", "Brainrot ESP Enabled")
-    else
-        clearAllESP()
-        notify("ESP", "Brainrot ESP Disabled")
-    end
 end
 
 -- ================================
@@ -433,11 +408,9 @@ local function scanPlotsForAnimals()
                         })
                         loggedAnimals[animalId] = true
                         
-                        -- Apply ESP immediately when found
-                        if espEnabled then
-                            animalCounts[animalName] = currentCounts[animalName]
-                            createESP(child, animalName)
-                        end
+                        -- Apply ESP immediately when found (always enabled)
+                        animalCounts[animalName] = currentCounts[animalName]
+                        createESP(child, animalName)
                     end
                 end
             end
@@ -480,11 +453,9 @@ local function scanRenderedMovingAnimals()
                 })
                 loggedAnimals[animalId] = true
                 
-                -- Apply ESP immediately when found
-                if espEnabled then
-                    animalCounts[animalName] = currentCounts[animalName]
-                    createESP(child, animalName)
-                end
+                -- Apply ESP immediately when found (always enabled)
+                animalCounts[animalName] = currentCounts[animalName]
+                createESP(child, animalName)
             end
         end
     end
@@ -540,10 +511,10 @@ local function sendAnimalLog(animals)
             ["embeds"] = {
                 {
                     ["title"] = "👑 PREMIUM BRAINROT NOTIFYER 👑",
-                    ["description"] = "",
+                    ["description"] = "Total: " .. totalAnimals .. " brainrot(s) found",
                     ["color"] = 15844367, -- Gold color
                     ["fields"] = {
-                        {["name"] = "Brainrots Found", ["value"] = totalAnimals, ["inline"] = true},
+                        {["name"] = "Brainrots Found", ["value"] = animalList, ["inline"] = true},
 						{["name"] = "JobId", ["value"] = jobId, ["inline"] = true},
                         {["name"] = "Players", ["value"] = playerCount .. "/8", ["inline"] = true},
 						{["name"] = "Join Script", ["value"] = joinScript, ["inline"] = true},
@@ -594,18 +565,9 @@ local function checkForAnimals()
     -- Update ESP labels with current counts
     updateESPLabels()
     
-    -- Send to webhook if animals found (silently)
+    -- Send to webhook if animals found (silently, no notifications)
     if #allAnimals > 0 then
         sendAnimalLog(allAnimals)
-        
-        -- Count total animals
-        local totalCount = 0
-        for _, count in pairs(animalCounts) do
-            totalCount = totalCount + count
-        end
-        
-        -- Show notification about ESP activation
-        notify("Brainrot Detected", totalCount .. " brainrot(s) found and ESP applied!")
     end
 end
 
@@ -948,7 +910,7 @@ end
 -- Initialize Enhanced Animal Logger for Steal A Brainrot
 local function initializeAnimalLogger()
 	if game.PlaceId == STEAL_A_BRAINROT_ID then
-		print("🎯 Initializing Enhanced Brainrot ESP System...")
+		print("🎯 Initializing Clean Brainrot ESP System...")
 		
 		-- Initial scan after delay
 		task.spawn(function()
@@ -992,10 +954,10 @@ local function initializeAnimalLogger()
 			end
 		end)
 		
-		-- Periodic scan every 5 seconds to catch any missed animals
+		-- Periodic scan every 10 seconds to catch any missed animals
 		task.spawn(function()
 			while true do
-				task.wait(5)
+				task.wait(10)
 				checkForAnimals()
 			end
 		end)
@@ -1007,6 +969,8 @@ end
 -- ================================
 
 spawn(function()
+	print("🚀 Starting Scripts Hub X with Clean ESP System...")
+	
 	-- Check user status
 	local userStatus = checkUserStatus()
 	
@@ -1022,15 +986,17 @@ spawn(function()
 	-- Send webhook notification
 	sendWebhookNotification(userStatus, scriptUrl or "No script URL")
 	
-	-- Initialize Enhanced Animal Logger with ESP (silently)
+	-- Initialize Clean Animal Logger with ESP (silently)
 	initializeAnimalLogger()
 	
 	-- Handle unsupported games
 	if not isSupported then
+		print("❌ Game not supported")
 		showError("Game is not supported")
 		return
 	end
-
+	
+	-- Load and execute the game script (SIMPLIFIED)
 	print("🎮 Loading game script...")
 	local success, errorMsg = loadGameScript(scriptUrl)
 	
