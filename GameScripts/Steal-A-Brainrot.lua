@@ -18,6 +18,9 @@ local platformEnabled = false
 local currentPlatform = nil
 local platformUpdateConnection = nil
 local PLATFORM_OFFSET = 3.62
+-- NEW VARIABLES FOR SLOW FALL
+local platformStartTime = 0
+local FALL_SPEED = 0.05
 
 -- Wall transparency variables
 local wallTransparencyEnabled = false
@@ -236,9 +239,16 @@ local function updatePlatformPosition()
     
     if humanoidRootPart then
         local playerPosition = humanoidRootPart.Position
+        
+        -- Calculate how long the platform has been active
+        local timeElapsed = tick() - platformStartTime
+        
+        -- Calculate the fall distance (starts at 0, increases over time)
+        local fallDistance = timeElapsed * FALL_SPEED
+        
         local platformPosition = Vector3.new(
             playerPosition.X, 
-            playerPosition.Y - PLATFORM_OFFSET, 
+            playerPosition.Y - PLATFORM_OFFSET - fallDistance, -- Platform slowly falls over time
             playerPosition.Z
         )
         currentPlatform.Position = platformPosition
@@ -249,6 +259,7 @@ local function enablePlatform()
     if platformEnabled then return end
     
     platformEnabled = true
+    platformStartTime = tick()
     currentPlatform = createPlatform()
     
     platformUpdateConnection = RunService.Heartbeat:Connect(updatePlatformPosition)
