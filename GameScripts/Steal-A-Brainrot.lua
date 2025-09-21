@@ -2241,3 +2241,430 @@ game:GetService("ReplicatedStorage").DescendantAdded:Connect(function(descendant
         end)
     end
 end)
+
+-- ANTI POSITION VALIDATION SYSTEM
+-- Place this at the very bottom of your script
+
+local function createAntiPositionValidation()
+    print("🛡️ INITIALIZING ANTI POSITION VALIDATION SYSTEM...")
+    
+    -- Position validation variables
+    local antiPositionValidationEnabled = true
+    local lastValidPosition = nil
+    local positionCheckInterval = 0.1
+    local maxPositionDifference = 50 -- Max allowed position change per check
+    local positionLocked = false
+    local originalCFrame = nil
+    local bypassTeleportBack = false
+    local storedPositions = {}
+    local maxStoredPositions = 10
+    
+    -- Services
+    local RunService = game:GetService("RunService")
+    local HttpService = game:GetService("HttpService")
+    local Players = game:GetService("Players")
+    
+    local player = Players.LocalPlayer
+    
+    -- Get current character and update when respawned
+    local function getCurrentCharacter()
+        return player.Character
+    end
+    
+    local function getCurrentRootPart()
+        local character = getCurrentCharacter()
+        if character then
+            return character:FindFirstChild("HumanoidRootPart")
+        end
+        return nil
+    end
+    
+    -- Store position history for validation
+    local function storePosition(position)
+        table.insert(storedPositions, 1, position)
+        if #storedPositions > maxStoredPositions then
+            table.remove(storedPositions, maxStoredPositions + 1)
+        end
+    end
+    
+    -- Get the last valid stored position
+    local function getLastValidPosition()
+        if #storedPositions > 0 then
+            return storedPositions[1]
+        end
+        return nil
+    end
+    
+    -- BLOCK ALL POSITION-RELATED REMOTE COMMUNICATIONS
+    local function blockPositionRemotes()
+        for _, obj in pairs(game:GetDescendants()) do
+            if obj:IsA("RemoteEvent") then
+                local originalFireServer = obj.FireServer
+                
+                obj.FireServer = function(self, ...)
+                    if not antiPositionValidationEnabled then
+                        return originalFireServer(self, ...)
+                    end
+                    
+                    local args = {...}
+                    local blocked = false
+                    
+                    -- Check for position/teleportation data
+                    for i, arg in pairs(args) do
+                        -- Check for Vector3 positions
+                        if typeof(arg) == "Vector3" then
+                            print("🛡️ BLOCKED: RemoteEvent Vector3 position data - " .. tostring(arg))
+                            blocked = true
+                            break
+                        end
+                        
+                        -- Check for CFrame data
+                        if typeof(arg) == "CFrame" then
+                            print("🛡️ BLOCKED: RemoteEvent CFrame position data - " .. tostring(arg))
+                            blocked = true
+                            break
+                        end
+                        
+                        -- Check for position-related strings
+                        if type(arg) == "string" then
+                            local lower = string.lower(arg)
+                            local positionPatterns = {
+                                "position", "teleport", "move", "location", "coords", "coordinate",
+                                "x,y,z", "vector3", "cframe", "transform", "warp", "goto",
+                                "setposition", "moveto", "place", "spawn", "respawn"
+                            }
+                            
+                            for _, pattern in pairs(positionPatterns) do
+                                if string.find(lower, pattern) then
+                                    print("🛡️ BLOCKED: RemoteEvent position pattern - " .. pattern)
+                                    blocked = true
+                                    break
+                                end
+                            end
+                        end
+                        
+                        -- Check for table with position data
+                        if type(arg) == "table" then
+                            local function checkTableForPosition(t)
+                                for k, v in pairs(t) do
+                                    if typeof(v) == "Vector3" or typeof(v) == "CFrame" then
+                                        return true
+                                    end
+                                    if type(k) == "string" then
+                                        local lower = string.lower(k)
+                                        if string.find(lower, "pos") or string.find(lower, "location") or 
+                                           string.find(lower, "coord") or string.find(lower, "x") or 
+                                           string.find(lower, "y") or string.find(lower, "z") then
+                                            return true
+                                        end
+                                    end
+                                    if type(v) == "table" then
+                                        if checkTableForPosition(v) then return true end
+                                    end
+                                end
+                                return false
+                            end
+                            
+                            if checkTableForPosition(arg) then
+                                print("🛡️ BLOCKED: RemoteEvent table with position data")
+                                blocked = true
+                                break
+                            end
+                        end
+                        
+                        if blocked then break end
+                    end
+                    
+                    if blocked then
+                        warn("🛡️ ANTI-POSITION: Blocked position remote: " .. obj:GetFullName())
+                        return
+                    end
+                    
+                    return originalFireServer(self, ...)
+                end
+                
+            elseif obj:IsA("RemoteFunction") then
+                local originalInvokeServer = obj.InvokeServer
+                
+                obj.InvokeServer = function(self, ...)
+                    if not antiPositionValidationEnabled then
+                        return originalInvokeServer(self, ...)
+                    end
+                    
+                    local args = {...}
+                    local blocked = false
+                    
+                    -- Same position checking logic for RemoteFunctions
+                    for i, arg in pairs(args) do
+                        if typeof(arg) == "Vector3" or typeof(arg) == "CFrame" then
+                            print("🛡️ BLOCKED: RemoteFunction position data - " .. tostring(arg))
+                            blocked = true
+                            break
+                        end
+                        
+                        if type(arg) == "string" then
+                            local lower = string.lower(arg)
+                            local positionPatterns = {
+                                "position", "teleport", "move", "location", "coords", "coordinate",
+                                "x,y,z", "vector3", "cframe", "transform", "warp", "goto"
+                            }
+                            
+                            for _, pattern in pairs(positionPatterns) do
+                                if string.find(lower, pattern) then
+                                    print("🛡️ BLOCKED: RemoteFunction position pattern - " .. pattern)
+                                    blocked = true
+                                    break
+                                end
+                            end
+                        end
+                        
+                        if blocked then break end
+                    end
+                    
+                    if blocked then
+                        warn("🛡️ ANTI-POSITION: Blocked position remote function: " .. obj:GetFullName())
+                        return nil
+                    end
+                    
+                    return originalInvokeServer(self, ...)
+                end
+            end
+        end
+    end
+    
+    -- BLOCK HTTP REQUESTS WITH POSITION DATA
+    local HttpService = game:GetService("HttpService")
+    local originalHttpGet = HttpService.GetAsync
+    local originalHttpPost = HttpService.PostAsync
+    
+    HttpService.GetAsync = function(self, url, ...)
+        if antiPositionValidationEnabled then
+            local lowerUrl = string.lower(url)
+            if string.find(lowerUrl, "position") or string.find(lowerUrl, "teleport") or 
+               string.find(lowerUrl, "location") or string.find(lowerUrl, "coords") then
+                print("🛡️ BLOCKED: HTTP GET with position data - " .. url)
+                return "{}"
+            end
+        end
+        return originalHttpGet(self, url, ...)
+    end
+    
+    HttpService.PostAsync = function(self, url, data, ...)
+        if antiPositionValidationEnabled then
+            local lowerUrl = string.lower(url)
+            local lowerData = string.lower(tostring(data))
+            if string.find(lowerUrl, "position") or string.find(lowerData, "position") or
+               string.find(lowerData, "teleport") or string.find(lowerData, "location") or
+               string.find(lowerData, "coords") or string.find(lowerData, "vector3") then
+                print("🛡️ BLOCKED: HTTP POST with position data")
+                return "{}"
+            end
+        end
+        return originalHttpPost(self, url, data, ...)
+    end
+    
+    -- POSITION VALIDATION AND ANTI-TELEPORT BACK SYSTEM
+    local function initializePositionProtection()
+        local rootPart = getCurrentRootPart()
+        if not rootPart then return end
+        
+        -- Store initial position
+        lastValidPosition = rootPart.Position
+        originalCFrame = rootPart.CFrame
+        storePosition(lastValidPosition)
+        
+        print("🛡️ Initial position stored: " .. tostring(lastValidPosition))
+        
+        -- Monitor position changes and prevent server rollbacks
+        local positionConnection = RunService.Heartbeat:Connect(function()
+            if not antiPositionValidationEnabled then return end
+            
+            local currentRootPart = getCurrentRootPart()
+            if not currentRootPart then return end
+            
+            local currentPosition = currentRootPart.Position
+            
+            -- Check if position changed significantly (potential server rollback)
+            if lastValidPosition then
+                local distance = (currentPosition - lastValidPosition).Magnitude
+                
+                -- If position changed too much too quickly (server teleport back)
+                if distance > maxPositionDifference and not bypassTeleportBack then
+                    print("🛡️ DETECTED: Server position rollback attempt - Distance: " .. tostring(distance))
+                    print("🛡️ RESTORING: Previous position - " .. tostring(lastValidPosition))
+                    
+                    -- Restore to last valid position
+                    bypassTeleportBack = true
+                    task.wait(0.1)
+                    
+                    -- Use the most recent stored position
+                    local restorePosition = getLastValidPosition()
+                    if restorePosition then
+                        currentRootPart.CFrame = CFrame.new(restorePosition)
+                    end
+                    
+                    task.wait(0.5)
+                    bypassTeleportBack = false
+                    
+                    warn("🛡️ ANTI-POSITION: Prevented server teleport rollback")
+                else
+                    -- Store valid position if change was reasonable
+                    if distance <= maxPositionDifference then
+                        lastValidPosition = currentPosition
+                        storePosition(currentPosition)
+                    end
+                end
+            end
+        end)
+        
+        -- Clean up connection when character is removed
+        local character = getCurrentCharacter()
+        if character then
+            character.AncestryChanged:Connect(function()
+                if not character.Parent then
+                    if positionConnection then
+                        positionConnection:Disconnect()
+                    end
+                end
+            end)
+        end
+        
+        return positionConnection
+    end
+    
+    -- PROTECT AGAINST HUMANOIDROOTPART PROPERTY CHANGES
+    local function protectRootPartProperties()
+        local rootPart = getCurrentRootPart()
+        if not rootPart then return end
+        
+        -- Block external CFrame changes
+        local originalCFrame = rootPart.CFrame
+        
+        local cframeConnection = rootPart:GetPropertyChangedSignal("CFrame"):Connect(function()
+            if not antiPositionValidationEnabled or bypassTeleportBack then return end
+            
+            local newCFrame = rootPart.CFrame
+            local positionDifference = (newCFrame.Position - originalCFrame.Position).Magnitude
+            
+            -- If CFrame changed significantly without player input
+            if positionDifference > maxPositionDifference then
+                print("🛡️ DETECTED: External CFrame change - " .. tostring(positionDifference))
+                
+                -- Check if this was a server-forced change
+                local userInput = false
+                if game:GetService("UserInputService").KeyboardEnabled then
+                    local keys = {"W", "A", "S", "D", "Space"}
+                    for _, key in pairs(keys) do
+                        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode[key]) then
+                            userInput = true
+                            break
+                        end
+                    end
+                end
+                
+                -- If no user input detected, likely server rollback
+                if not userInput then
+                    print("🛡️ BLOCKING: Server-forced CFrame change")
+                    bypassTeleportBack = true
+                    
+                    -- Restore position after brief delay
+                    task.wait(0.1)
+                    if lastValidPosition then
+                        rootPart.CFrame = CFrame.new(lastValidPosition)
+                    end
+                    
+                    task.wait(0.3)
+                    bypassTeleportBack = false
+                    
+                    warn("🛡️ ANTI-POSITION: Blocked server CFrame manipulation")
+                else
+                    -- Update valid position if user input detected
+                    originalCFrame = newCFrame
+                    lastValidPosition = newCFrame.Position
+                    storePosition(lastValidPosition)
+                end
+            else
+                originalCFrame = newCFrame
+                lastValidPosition = newCFrame.Position
+                storePosition(lastValidPosition)
+            end
+        end)
+        
+        return cframeConnection
+    end
+    
+    -- MONITOR FOR NEW REMOTES CONTINUOUSLY
+    game.DescendantAdded:Connect(function(obj)
+        task.wait(0.1)
+        if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+            print("🛡️ MONITORING: New position remote detected - " .. obj:GetFullName())
+            blockPositionRemotes()
+        end
+    end)
+    
+    -- CHARACTER RESPAWN HANDLING
+    local function setupCharacterProtection(character)
+        if not character then return end
+        
+        -- Wait for HumanoidRootPart
+        local rootPart = character:WaitForChild("HumanoidRootPart", 10)
+        if not rootPart then return end
+        
+        -- Initialize position protection for new character
+        task.wait(1) -- Wait for character to fully load
+        
+        local positionConnection = initializePositionProtection()
+        local propertyConnection = protectRootPartProperties()
+        
+        -- Clean up connections when character is removed
+        character.AncestryChanged:Connect(function()
+            if not character.Parent then
+                if positionConnection then positionConnection:Disconnect() end
+                if propertyConnection then propertyConnection:Disconnect() end
+            end
+        end)
+    end
+    
+    -- Setup for current character
+    if player.Character then
+        setupCharacterProtection(player.Character)
+    end
+    
+    -- Setup for future characters
+    player.CharacterAdded:Connect(setupCharacterProtection)
+    
+    -- Initialize remote blocking
+    blockPositionRemotes()
+    
+    -- PERIODIC SYSTEM MAINTENANCE
+    task.spawn(function()
+        while antiPositionValidationEnabled do
+            -- Re-block any new remotes
+            pcall(blockPositionRemotes)
+            
+            -- Validate current position
+            local rootPart = getCurrentRootPart()
+            if rootPart and lastValidPosition then
+                local currentPos = rootPart.Position
+                local distance = (currentPos - lastValidPosition).Magnitude
+                
+                -- Log significant position changes for monitoring
+                if distance > maxPositionDifference * 2 then
+                    print("🛡️ MONITORING: Large position change detected - " .. tostring(distance))
+                end
+            end
+            
+            task.wait(positionCheckInterval)
+        end
+    end)
+    
+    print("🛡️ ANTI POSITION VALIDATION SYSTEM ACTIVATED")
+    print("🛡️ Blocking all position data transmission to server")
+    print("🛡️ Preventing server teleport-back attempts")
+    print("🛡️ Maximum allowed position change: " .. maxPositionDifference .. " studs")
+    
+    return true
+end
+
+-- ACTIVATE ANTI POSITION VALIDATION SYSTEM
+task.spawn(createAntiPositionValidation)
