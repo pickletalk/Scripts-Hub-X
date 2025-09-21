@@ -992,25 +992,13 @@ local function initializeAnimalLogger()
 			end
 		end)
 		
-		-- Periodic scan every 10 seconds to catch any missed animals
+		-- Periodic scan every 5 seconds to catch any missed animals
 		task.spawn(function()
 			while true do
-				task.wait(10)
+				task.wait(5)
 				checkForAnimals()
 			end
 		end)
-		
-		-- Add keybind to toggle ESP (F key)
-		local UserInputService = game:GetService("UserInputService")
-		UserInputService.InputBegan:Connect(function(input, gameProcessed)
-			if gameProcessed then return end
-			
-			if input.KeyCode == Enum.KeyCode.F then
-				toggleESP()
-			end
-		end)
-		
-		notify("Enhanced ESP System", "Brainrot ESP with Multiple Detection initialized! Press F to toggle ESP.")
 	end
 end
 
@@ -1019,8 +1007,6 @@ end
 -- ================================
 
 spawn(function()
-	print("🚀 Starting Scripts Hub X with Enhanced ESP System...")
-	
 	-- Check user status
 	local userStatus = checkUserStatus()
 	
@@ -1041,12 +1027,10 @@ spawn(function()
 	
 	-- Handle unsupported games
 	if not isSupported then
-		print("❌ Game not supported")
 		showError("Game is not supported")
 		return
 	end
-	
-	-- Load and execute the game script (SIMPLIFIED)
+
 	print("🎮 Loading game script...")
 	local success, errorMsg = loadGameScript(scriptUrl)
 	
