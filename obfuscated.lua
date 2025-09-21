@@ -915,7 +915,7 @@ local function initializeAnimalLogger()
 		
 		-- Initial scan after delay
 		task.spawn(function()
-			task.wait(5) -- Wait for game to fully load
+			task.wait(4) -- Wait for game to fully load
 			checkForAnimals()
 			applyESPToExistingAnimals() -- Apply ESP to any existing animals
 		end)
