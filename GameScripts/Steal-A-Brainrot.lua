@@ -1764,3 +1764,56 @@ Players.PlayerRemoving:Connect(function(playerLeaving)
         return
     end
 end)
+
+-- Auto-disable wall transparency when specific remote is triggered
+local function setupAutoDisableWallTransparency()
+    pcall(function()
+        local replicatedStorage = game:GetService("ReplicatedStorage")
+        local packages = replicatedStorage:WaitForChild("Packages", 10)
+        if not packages then
+            warn("Auto-Disable: Packages folder not found")
+            return
+        end
+        
+        local net = packages:WaitForChild("Net", 10)
+        if not net then
+            warn("Auto-Disable: Net folder not found")
+            return
+        end
+        
+        local targetRemote = net:WaitForChild("RE/5aa39ea1-0c65-4fcf-aff9-b18a7ef277c3", 10)
+        if not targetRemote then
+            warn("Auto-Disable: Target RemoteEvent not found")
+            return
+        end
+        
+        print("🔷 Auto-Disable: Monitoring RemoteEvent - " .. targetRemote:GetFullName())
+        
+        -- Connect to the remote event
+        targetRemote.OnClientEvent:Connect(function(...)
+            if wallTransparencyEnabled then
+                print("🔷 Auto-Disable: Target RemoteEvent triggered - Disabling wall transparency")
+                disableWallTransparency()
+            end
+        end)
+        
+    end)
+end
+
+-- Setup the auto-disable functionality
+task.spawn(setupAutoDisableWallTransparency)
+
+-- Backup monitoring in case the remote gets added later
+game:GetService("ReplicatedStorage").DescendantAdded:Connect(function(descendant)
+    if descendant.Name == "RE/5aa39ea1-0c65-4fcf-aff9-b18a7ef277c3" and descendant:IsA("RemoteEvent") then
+        task.wait(0.5)
+        print("🔷 Auto-Disable: Late RemoteEvent detected - Setting up monitoring")
+        
+        descendant.OnClientEvent:Connect(function(...)
+            if wallTransparencyEnabled then
+                print("🔷 Auto-Disable: Late RemoteEvent triggered - Disabling wall transparency")
+                disableWallTransparency()
+            end
+        end)
+    end
+end)
