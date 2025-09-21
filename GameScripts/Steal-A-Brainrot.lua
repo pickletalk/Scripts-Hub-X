@@ -17,7 +17,7 @@ local rootPart = character:WaitForChild("HumanoidRootPart")
 local platformEnabled = false
 local currentPlatform = nil
 local platformUpdateConnection = nil
-local PLATFORM_OFFSET = 3.563
+local PLATFORM_OFFSET = 4
 
 -- Wall transparency variables
 local wallTransparencyEnabled = false
