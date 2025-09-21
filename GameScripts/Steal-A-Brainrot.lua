@@ -29,17 +29,18 @@ local bodyVelocity = nil
 
 -- Define the specific remotes to block
 local blockedRemotes = {
-    "RE/f756228f-15f8-4b6d-93a4-dfe62bb409cb",
-    "RE/156ed911-fc4b-4d24-a648-acd1e9761e4f",
-    "RE/5aa39ea1-0c65-4fcf-aff9-b18a7ef277c3",
-    "RE/TeleportService/Reconnect",
-    "RobloxChatSystemMessage",
-    "RE/Tools/Cooldown",
-    "Chat"
+    "game:GetService(\"ReplicatedStorage\").Packages.Net[\"RE/f756228f-15f8-4b6d-93a4-dfe62bb409cb\"]",
+    "game:GetService(\"ReplicatedStorage\").Packages.Net[\"RE/156ed911-fc4b-4d24-a648-acd1e9761e4f\"]",
+    "game:GetService(\"ReplicatedStorage\").Packages.Net[\"RE/5aa39ea1-0c65-4fcf-aff9-b18a7ef277c3\"]",
+    "game:GetService(\"ReplicatedStorage\").Packages.Net[\"RE/TeleportService/Reconnect\"]",
+    "Chat",
+    "RobloxChatSystemMessage"
 }
-
 -- Define the remote to monitor for auto-disable
 local stealRemotePath = "RE/StealService/Grab"
+
+local fastInteractionEnabled = true
+local proximityPrompts = {}
 
 -- Wall transparency variables
 local wallTransparencyEnabled = false
@@ -1780,190 +1781,167 @@ Players.PlayerRemoving:Connect(function(playerLeaving)
 end)
 
 -- Function to safely get remote objects
-local function getRemoteObject(path)
-    local success, remote = pcall(function()
-        return game:GetService("ReplicatedStorage").Packages.Net[path]
-    end)
-    if success and remote then
-        return remote
-    end
-    return nil
-end
-
--- Function to block a specific remote
-local function blockRemote(remotePath)
-    local remote = getRemoteObject(remotePath)
-    if remote and remote:IsA("RemoteEvent") then
-        -- Store original FireServer function
-        local originalFire = remote.FireServer
-        
-        -- Override FireServer to block it
-        remote.FireServer = function(self, ...)
-            if antiKickEnabled then
-                print("🛡️ BLOCKED: Specific RemoteEvent - " .. remotePath)
-                warn("Custom Remote Block: Blocked " .. remotePath)
-                return
-            end
-            return originalFire(self, ...)
-        end
-        
-        print("✅ Successfully blocked remote: " .. remotePath)
-        return true
-    elseif remote and remote:IsA("RemoteFunction") then
-        -- Store original InvokeServer function
-        local originalInvoke = remote.InvokeServer
-        
-        -- Override InvokeServer to block it
-        remote.InvokeServer = function(self, ...)
-            if antiKickEnabled then
-                print("🛡️ BLOCKED: Specific RemoteFunction - " .. remotePath)
-                warn("Custom Remote Block: Blocked " .. remotePath)
-                return
-            end
-            return originalInvoke(self, ...)
-        end
-        
-        print("✅ Successfully blocked remote: " .. remotePath)
-        return true
-    else
-        print("❌ Failed to find or block remote: " .. remotePath)
-        return false
-    end
-end
-
--- Function to monitor steal remote and auto-disable floor steal
-local function setupStealRemoteMonitor()
-    local stealRemote = getRemoteObject(stealRemotePath)
-    if stealRemote and stealRemote:IsA("RemoteEvent") then
-        -- Store original FireServer function
-        local originalStealFire = stealRemote.FireServer
-        
-        -- Override FireServer to detect usage and auto-disable
-        stealRemote.FireServer = function(self, ...)
-            -- Call original function first
-            local result = originalStealFire(self, ...)
-            
-            -- Auto-disable floor steal/elevate feature
-            if wallTransparencyEnabled then
-                print("🚨 STEAL REMOTE TRIGGERED: Auto-disabling Floor Steal/Elevate")
-                warn("Auto-Disable: StealService/Grab remote triggered - disabling Floor Steal")
+local function getRemoteObjects()
+    local remotes = {}
+    
+    -- Try to get the blocked remotes
+    pcall(function()
+        local packages = ReplicatedStorage:FindFirstChild("Packages")
+        if packages then
+            local net = packages:FindFirstChild("Net")
+            if net then
+                -- Add blocked remotes
+                local blockedIds = {
+                    "RE/f756228f-15f8-4b6d-93a4-dfe62bb409cb",
+                    "RE/156ed911-fc4b-4d24-a648-acd1e9761e4f", 
+                    "RE/5aa39ea1-0c65-4fcf-aff9-b18a7ef277c3",
+                    "RE/TeleportService/Reconnect",
+                    "Chat",
+                    "RobloxChatSystemMessage"
+                }
                 
-                -- Use a small delay to ensure the steal action processes first
-                task.spawn(function()
-                    task.wait(0.1)
-                    disableWallTransparency()
-                end)
-            end
-            
-            return result
-        end
-        
-        print("✅ Successfully set up StealService/Grab monitor with auto-disable")
-        return true
-    else
-        print("❌ Failed to find StealService/Grab remote for monitoring")
-        return false
-    end
-end
-
--- Apply blocking to all specified remotes
-local function initializeCustomRemoteBlocking()
-    local blockedCount = 0
-    local totalRemotes = #blockedRemotes
-    
-    print("🔧 Blocking " .. totalRemotes .. " specific remotes...")
-    
-    for _, remotePath in ipairs(blockedRemotes) do
-        if blockRemote(remotePath) then
-            blockedCount = blockedCount + 1
-        end
-        task.wait(0.1) -- Small delay between blocks
-    end
-    
-    print("✅ Successfully blocked " .. blockedCount .. "/" .. totalRemotes .. " remotes")
-    
-    -- Set up steal remote monitoring
-    setupStealRemoteMonitor()
-    
-    -- Set up monitoring for new remotes that might get added later
-    local replicatedStorage = game:GetService("ReplicatedStorage")
-    
-    local function monitorNewRemotes(container)
-        container.DescendantAdded:Connect(function(descendant)
-            task.wait(0.1)
-            
-            -- Check if it's one of our blocked remotes
-            if descendant:IsA("RemoteEvent") or descendant:IsA("RemoteFunction") then
-                local fullPath = descendant:GetFullName()
-                
-                -- Check against blocked remotes
-                for _, blockedPath in ipairs(blockedRemotes) do
-                    if string.find(fullPath, blockedPath) then
-                        print("🔄 New blocked remote detected: " .. blockedPath)
-                        blockRemote(blockedPath)
-                        break
+                for _, id in pairs(blockedIds) do
+                    local remote = net:FindFirstChild(id)
+                    if remote then
+                        remotes[remote] = true
+                        print("🔒 Found blocked remote: " .. id)
                     end
                 end
                 
-                -- Check if it's the steal remote
-                if string.find(fullPath, stealRemotePath) then
-                    print("🔄 New StealService/Grab remote detected, setting up monitor")
-                    setupStealRemoteMonitor()
+                -- Get StealService/Grab remote for auto-disable
+                local stealRemote = net:FindFirstChild("RE/StealService/Grab")
+                if stealRemote then
+                    remotes.stealGrab = stealRemote
+                    print("🔒 Found StealService/Grab remote for auto-disable")
+                end
+                
+                -- Get proximity prompt remote for fast interaction
+                local proximityRemote = net:FindFirstChild("RE/b096e1ca-9c3a-453b-8b60-268b235083b9")
+                if proximityRemote then
+                    remotes.proximityPrompt = proximityRemote
+                    print("🔒 Found proximity prompt remote for fast interaction")
+                end
+            end
+        end
+    end)
+    
+    return remotes
+end
+
+local function scanForProximityPrompts()
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("ProximityPrompt") and not proximityPrompts[obj] then
+            proximityPrompts[obj] = true
+            
+            -- Monitor proximity prompt triggering
+            obj.Triggered:Connect(function(player)
+                if player == LocalPlayer and fastInteractionEnabled then
+                    print("🚀 Fast interaction: ProximityPrompt triggered")
+                    
+                    -- Get the remote objects
+                    local remoteObjects = getRemoteObjects()
+                    if remoteObjects.proximityPrompt then
+                        -- Fire the remote multiple times for fast interaction
+                        task.spawn(function()
+                            for i = 1, 3 do -- Fire 3 times quickly
+                                pcall(function()
+                                    remoteObjects.proximityPrompt:FireServer()
+                                end)
+                                task.wait(0.01) -- Small delay between fires
+                            end
+                        end)
+                    end
+                end
+            end)
+        end
+    end
+end
+
+-- Monitor for new proximity prompts
+workspace.DescendantAdded:Connect(function(obj)
+    if obj:IsA("ProximityPrompt") and not proximityPrompts[obj] then
+        task.wait(0.1)
+        proximityPrompts[obj] = true
+        
+        obj.Triggered:Connect(function(player)
+            if player == LocalPlayer and fastInteractionEnabled then
+                print("🚀 Fast interaction: New ProximityPrompt triggered")
+                
+                local remoteObjects = getRemoteObjects()
+                if remoteObjects.proximityPrompt then
+                    task.spawn(function()
+                        for i = 1, 3 do
+                            pcall(function()
+                                remoteObjects.proximityPrompt:FireServer()
+                            end)
+                            task.wait(0.01)
+                        end
+                    end)
                 end
             end
         end)
     end
-    
-    -- Monitor the Packages.Net folder
-    pcall(function()
-        local netFolder = replicatedStorage.Packages.Net
-        if netFolder then
-            monitorNewRemotes(netFolder)
-        end
-    end)
-    
-    -- Also monitor ReplicatedStorage in case the structure changes
-    monitorNewRemotes(replicatedStorage)
-end
+end)
 
--- Function to retry blocking if remotes aren't found initially
-local function retryRemoteBlocking()
-    local maxRetries = 10
-    local retryDelay = 2
+task.spawn(function()
+    task.wait(2) -- Wait for game to load
+    scanForProximityPrompts()
+end)
+
+-- Hook metamethod to block remotes and add auto-disable
+local oldNamecall
+oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+    local method = getnamecallmethod()
+    local args = {...}
     
-    for attempt = 1, maxRetries do
-        print("🔄 Remote blocking attempt " .. attempt .. "/" .. maxRetries)
+    if method == "FireServer" or method == "InvokeServer" then
+        local remoteObjects = getRemoteObjects()
         
-        initializeCustomRemoteBlocking()
+        -- Block specific remotes
+        if remoteObjects[self] then
+            print("🛡️ BLOCKED: Attempt to fire blocked remote - " .. tostring(self:GetFullName()))
+            warn("Remote Block: Blocked remote call to " .. tostring(self:GetFullName()))
+            return
+        end
         
-        -- Check if all remotes were found and blocked
-        local foundCount = 0
-        for _, remotePath in ipairs(blockedRemotes) do
-            if getRemoteObject(remotePath) then
-                foundCount = foundCount + 1
+        -- Auto-disable FLOOR STEAL/ELEVATE when StealService/Grab is triggered
+        if remoteObjects.stealGrab and self == remoteObjects.stealGrab then
+            print("🔄 AUTO-DISABLE: StealService/Grab detected - disabling FLOOR STEAL/ELEVATE")
+            
+            -- Disable wall transparency if enabled
+            if wallTransparencyEnabled then
+                task.spawn(function()
+                    task.wait(0.1) -- Small delay to ensure the steal happens first
+                    disableWallTransparency()
+                    print("✅ AUTO-DISABLE: FLOOR STEAL/ELEVATE disabled successfully")
+                end)
             end
         end
         
-        -- Check if steal remote exists
-        local stealRemoteExists = getRemoteObject(stealRemotePath) ~= nil
-        
-        if foundCount == #blockedRemotes and stealRemoteExists then
-            print("✅ All remotes found and blocked successfully!")
-            break
-        elseif attempt == maxRetries then
-            print("⚠️ Not all remotes found after " .. maxRetries .. " attempts")
-            print("📊 Found " .. foundCount .. "/" .. #blockedRemotes .. " blocked remotes")
-            print("📊 StealService/Grab remote found: " .. tostring(stealRemoteExists))
-        else
-            print("⏳ Waiting " .. retryDelay .. " seconds before next attempt...")
-            task.wait(retryDelay)
+        -- Enhanced fast interaction for proximity prompt remote
+        if remoteObjects.proximityPrompt and self == remoteObjects.proximityPrompt and fastInteractionEnabled then
+            print("🚀 FAST INTERACTION: Proximity prompt remote triggered")
+            -- Allow the original call to go through but also fire additional ones
+            task.spawn(function()
+                for i = 1, 2 do -- Fire 2 additional times
+                    task.wait(0.005)
+                    pcall(function()
+                        oldNamecall(self, ...)
+                    end)
+                end
+            end)
         end
     end
-end
+    
+    return oldNamecall(self, ...)
+end)
 
--- Initialize the custom remote blocking system
+-- Monitor for remote changes and update blocking
 task.spawn(function()
-    -- Wait a bit for the game to fully load
-    task.wait(2)
-    retryRemoteBlocking()
+    while true do
+        task.wait(3) -- Check every 5 seconds
+        pcall(function()
+            getRemoteObjects() -- Refresh remote objects
+        end)
+    end
 end)
