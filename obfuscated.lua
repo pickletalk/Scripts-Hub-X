@@ -86,8 +86,7 @@ local espTargetNames = {
 	"Taco Lucky Block",
 	"Tacorita Bicicleta",
 	"La Extinct Grande",
-	"Quesadilla Crocodila",
-	"Pakrahmatmamat"
+	"Quesadilla Crocodila"
 }
 
 -- Create lookup table for faster checking
