@@ -80,7 +80,6 @@ local espTargetNames = {
 	"Gattatino Nyanino",
 	"Espresso Signora",
 	"Unclito Samito",
-	"Extinct Ballerina",
 	"Sammyini Spyderini",
 	"Chachechi",
 	"Extinct Tralalero",
