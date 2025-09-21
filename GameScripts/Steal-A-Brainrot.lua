@@ -39,10 +39,6 @@ local comboCurrentPlatform = nil
 local comboPlatformUpdateConnection = nil
 local comboPlayerCollisionConnection = nil
 local COMBO_PLATFORM_OFFSET = 3.57
-local ELEVATE_SPEED = 0.09 -- Slow elevation speed
-local elevationBodyVelocity = nil
-local elevationEnabled = false
-local elevationAnimationLoop = nil
 
 -- ESP variables
 local plotDisplays = {}
@@ -362,8 +358,7 @@ local function storeOriginalTransparencies()
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("BasePart") and obj.Parent ~= player.Character and obj.Name ~= "PlayerPlatform" and obj.Name ~= "ComboPlayerPlatform" then
             local name = obj.Name
-            -- Fixed the conditional logic here with better transparency handling
-            if name == "structure base home" or name == "Hitbox" then
+            if name == "structure base home" and name == "Hitbox" then
                 originalTransparencies[obj] = {
                     transparency = obj.Transparency,
                     canCollide = obj.CanCollide
@@ -379,12 +374,10 @@ local function makeWallsTransparent(transparent)
     for obj, data in pairs(originalTransparencies) do
         if obj and obj.Parent and data then
             if transparent then
-                -- Use higher transparency to reduce visual issues
                 obj.Transparency = TRANSPARENCY_LEVEL
                 obj.CanCollide = false
                 count = count + 1
             else
-                -- Restore original values
                 obj.Transparency = data.transparency
                 obj.CanCollide = data.canCollide
             end
@@ -392,7 +385,6 @@ local function makeWallsTransparent(transparent)
     end
     print((transparent and "Made transparent: " or "Restored: ") .. count .. " parts")
 end
-
 local function createComboPlatform()
     local platform = Instance.new("Part")
     platform.Name = "ComboPlayerPlatform"
@@ -456,61 +448,40 @@ end
 local function enableWallTransparency()
     if wallTransparencyEnabled then return end
     
-    print("Enabling wall transparency with elevation...")
+    print("Enabling wall transparency...")
     wallTransparencyEnabled = true
     comboFloatEnabled = true
-    elevationEnabled = true
     
-    -- Store and apply transparency
     storeOriginalTransparencies()
     makeWallsTransparent(true)
     
     -- Create and manage platform
-    if comboCurrentPlatform then
-        comboCurrentPlatform:Destroy()
-    end
     comboCurrentPlatform = createComboPlatform()
-    
-    if comboPlatformUpdateConnection then
-        comboPlatformUpdateConnection:Disconnect()
-    end
     comboPlatformUpdateConnection = RunService.Heartbeat:Connect(updateComboPlatformPosition)
     updateComboPlatformPosition()
     
-    -- Apply slow elevation with falling animation
-    applySlowElevation()
-    
     -- Force player collision more aggressively
-    if comboPlayerCollisionConnection then
-        comboPlayerCollisionConnection:Disconnect()
-    end
     comboPlayerCollisionConnection = RunService.Heartbeat:Connect(function()
         forcePlayerHeadCollision()
     end)
     
-    -- Set initial collision state
+    -- Also set initial collision state
     forcePlayerHeadCollision()
     
     wallButton.BackgroundColor3 = Color3.fromRGB(150, 50, 0)
-    wallButton.Text = "🔷 FLOOR STEAL/ELEVATE 🔷"
+    wallButton.Text = "🔷 FLOOR STEAL 🔷"
     
     local floatStatus = platformEnabled and "ON" or "OFF"
     statusLabel.Text = "Float: " .. floatStatus .. " | Walls: ON"
 end
 
--- Replace the disableWallTransparency function
 local function disableWallTransparency()
     if not wallTransparencyEnabled then return end
     
-    print("Disabling wall transparency and elevation...")
+    print("Disabling wall transparency...")
     wallTransparencyEnabled = false
     comboFloatEnabled = false
-    elevationEnabled = false
     
-    -- Remove elevation effect first
-    removeSlowElevation()
-    
-    -- Restore wall transparency
     makeWallsTransparent(false)
     originalTransparencies = {}
     
@@ -523,7 +494,6 @@ local function disableWallTransparency()
     if comboCurrentPlatform then
         comboCurrentPlatform:Destroy()
         comboCurrentPlatform = nil
-        print("Destroyed combo platform")
     end
     
     -- Stop head collision enforcement
@@ -538,108 +508,13 @@ local function disableWallTransparency()
         if head then
             head.CanCollide = false -- Default Roblox state for head
         end
-        
-        -- Ensure humanoid is in normal state
-        local humanoid = player.Character:FindFirstChild("Humanoid")
-        if humanoid then
-            humanoid.FreeFalling = false
-            humanoid:ChangeState(Enum.HumanoidStateType.Running)
-        end
     end
     
     wallButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    wallButton.Text = "🔷 FLOOR STEAL/ELEVATE 🔷"
+    wallButton.Text = "🔷 FLOOR STEAL 🔷"
     
     local floatStatus = platformEnabled and "ON" or "OFF"
     statusLabel.Text = "Float: " .. floatStatus .. " | Walls: OFF"
-end
-
--- Add these new functions after the removeSlowFall function (around line 240)
-local function applySlowElevation()
-    if not player.Character then return end
-    
-    local character = player.Character
-    local humanoid = character:FindFirstChild("Humanoid")
-    local rootPart = character:FindFirstChild("HumanoidRootPart")
-    
-    if not humanoid or not rootPart then return end
-    
-    print("Applying slow elevation with falling animation...")
-    
-    -- Create BodyVelocity to control elevation speed
-    if elevationBodyVelocity then
-        elevationBodyVelocity:Destroy()
-    end
-    
-    elevationBodyVelocity = Instance.new("BodyVelocity")
-    elevationBodyVelocity.MaxForce = Vector3.new(0, math.huge, 0) -- Only affect Y axis
-    elevationBodyVelocity.Velocity = Vector3.new(0, ELEVATE_SPEED, 0) -- Super slow upward movement
-    elevationBodyVelocity.Parent = rootPart
-    
-    -- Force the character into falling state while elevating with more aggressive approach
-    if elevationAnimationLoop then
-        elevationAnimationLoop:Disconnect()
-    end
-    
-    elevationAnimationLoop = RunService.Heartbeat:Connect(function()
-        if elevationEnabled and humanoid and humanoid.Parent and elevationBodyVelocity and elevationBodyVelocity.Parent then
-            -- Continuously force falling state for animation
-            if humanoid.PlatformStand then
-                humanoid.PlatformStand = false
-            end
-            
-            -- Force freefall state more aggressively
-            humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
-            
-            -- Maintain elevation velocity
-            elevationBodyVelocity.Velocity = Vector3.new(0, ELEVATE_SPEED, 0)
-            
-            -- Also try setting the humanoid to physics mode briefly to trigger animation
-            if math.random() > 0.95 then -- Occasionally do this to maintain animation
-                humanoid:ChangeState(Enum.HumanoidStateType.Physics)
-                task.wait()
-                humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
-            end
-        end
-    end)
-    
-    -- Additional animation forcing with spawn
-    task.spawn(function()
-        while elevationEnabled and humanoid and humanoid.Parent do
-            pcall(function()
-                if humanoid.FloorMaterial == Enum.Material.Air then
-                    humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
-                end
-                humanoid.FreeFalling = true
-            end)
-            task.wait(0.05) -- Very frequent updates for animation
-        end
-    end)
-end
-
-local function removeSlowElevation()
-    print("Removing slow elevation...")
-    
-    if elevationAnimationLoop then
-        elevationAnimationLoop:Disconnect()
-        elevationAnimationLoop = nil
-    end
-    
-    if elevationBodyVelocity then
-        elevationBodyVelocity:Destroy()
-        elevationBodyVelocity = nil
-    end
-    
-    if player.Character then
-        local humanoid = player.Character:FindFirstChild("Humanoid")
-        if humanoid then
-            -- Return to normal state
-            humanoid.FreeFalling = false
-            humanoid:ChangeState(Enum.HumanoidStateType.Running)
-            task.wait(0.1)
-            humanoid:ChangeState(Enum.HumanoidStateType.Running) -- Double ensure
-        end
-    end
 end
 
 local function createAlertGui()
@@ -1323,19 +1198,6 @@ local function onCharacterAdded(newCharacter)
         applySlowFall() -- Reapply slow fall to new character
         updatePlatformPosition()
     end
-    
-    -- Reapply elevation if wall transparency was enabled
-    if wallTransparencyEnabled and elevationEnabled then
-        task.wait(1)
-        applySlowElevation()
-        
-        -- Recreate combo platform for new character
-        if comboCurrentPlatform then
-            comboCurrentPlatform:Destroy()
-        end
-        comboCurrentPlatform = createComboPlatform()
-        updateComboPlatformPosition()
-    end
 end
 
 player.CharacterAdded:Connect(onCharacterAdded)
@@ -1469,18 +1331,6 @@ addHoverEffect(floatButton, Color3.fromRGB(30, 30, 30), Color3.fromRGB(0, 0, 0))
 addHoverEffect(wallButton, Color3.fromRGB(30, 30, 30), Color3.fromRGB(0, 0, 0))
 
 game:BindToClose(function()
-    if elevationAnimationLoop then
-        elevationAnimationLoop:Disconnect()
-    end
-    if elevationBodyVelocity then
-        elevationBodyVelocity:Destroy()
-    end
-    if comboCurrentPlatform then
-        comboCurrentPlatform:Destroy()
-    end
-    if platformEnabled then
-        disablePlatform()
-    end
     if wallTransparencyEnabled then
         disableWallTransparency()
     end
