@@ -17,6 +17,11 @@ local rootPart = character:WaitForChild("HumanoidRootPart")
 -- Anti Kick
 local antiKickEnabled = true
 
+-- Auto Leave After Steal Variables
+local autoLeaveEnabled = true
+local lastStealCount = 0
+local allowedToLeave = false
+
 -- Platform variables
 local platformEnabled = false
 local currentPlatform = nil
@@ -219,6 +224,22 @@ titleBar.InputChanged:Connect(function(input)
         end
     end
 end)
+
+local leaveButton = Instance.new("TextButton")
+leaveButton.Name = "LeaveButton"
+leaveButton.Size = UDim2.new(0, 25, 0, 25)
+leaveButton.Position = UDim2.new(1, -54, 0, 2) -- Position next to close button
+leaveButton.BackgroundColor3 = Color3.fromRGB(0, 50, 150) -- Dark blue
+leaveButton.Text = "Leave"
+leaveButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+leaveButton.TextScaled = true
+leaveButton.Font = Enum.Font.GothamBold
+leaveButton.BorderSizePixel = 0
+leaveButton.Parent = titleBar
+
+local leaveCorner = Instance.new("UICorner")
+leaveCorner.CornerRadius = UDim.new(0, 4)
+leaveCorner.Parent = leaveButton
 
 local function createFloatingEffects()
     if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
@@ -1634,6 +1655,7 @@ end
 addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
 addHoverEffect(floatButton, Color3.fromRGB(30, 30, 30), Color3.fromRGB(0, 0, 0))
 addHoverEffect(wallButton, Color3.fromRGB(30, 30, 30), Color3.fromRGB(0, 0, 0))
+addHoverEffect(leaveButton, Color3.fromRGB(30, 70, 180), Color3.fromRGB(0, 50, 150))
 
 game:BindToClose(function()
     if wallTransparencyEnabled then
@@ -1656,10 +1678,12 @@ removeJumpDelay()
 -- Block Player:Kick()
 local originalKick = player.Kick
 player.Kick = function(self, ...)
-    if antiKickEnabled then
+    if antiKickEnabled and not allowedToLeave then
         print("🛡️ BLOCKED: Player:Kick() attempt")
         warn("Anti-Kick: Blocked Player:Kick() attempt")
         return
+    elseif allowedToLeave then
+        print("🔷 ALLOWED: Player:Kick() - Auto leave after steal")
     end
     return originalKick(self, ...)
 end
@@ -1667,10 +1691,12 @@ end
 -- Block game:Shutdown()
 local originalShutdown = game.Shutdown
 game.Shutdown = function(...)
-    if antiKickEnabled then
+    if antiKickEnabled and not allowedToLeave then
         print("🛡️ BLOCKED: game:Shutdown() attempt")
         warn("Anti-Kick: Blocked game:Shutdown() attempt")
         return
+    elseif allowedToLeave then
+        print("🔷 ALLOWED: game:Shutdown() - Auto leave after steal")
     end
     return originalShutdown(...)
 end
@@ -1684,10 +1710,12 @@ local originalTeleportPartyAsync = TeleportService.TeleportPartyAsync
 
 -- Block standard teleport
 TeleportService.Teleport = function(self, placeId, playerToTeleport, ...)
-    if antiKickEnabled and (playerToTeleport == player or playerToTeleport == nil) then
+    if antiKickEnabled and not allowedToLeave and (playerToTeleport == player or playerToTeleport == nil) then
         print("🛡️ BLOCKED: TeleportService:Teleport() attempt")
         warn("Anti-Kick: Blocked TeleportService:Teleport() attempt - PlaceId: " .. tostring(placeId))
         return
+    elseif allowedToLeave and (playerToTeleport == player or playerToTeleport == nil) then
+        print("🔷 ALLOWED: TeleportService:Teleport() - Auto leave after steal")
     end
     return originalTeleport(self, placeId, playerToTeleport, ...)
 end
@@ -2070,4 +2098,94 @@ Players.PlayerRemoving:Connect(function(playerLeaving)
         -- Try to prevent the removal (may not always work due to engine limitations)
         return
     end
+end)
+
+-- Function to safely leave the game (bypasses anti-kick)
+local function safeLeaveGame()
+    allowedToLeave = true -- Allow anti-kick to permit leaving
+    print("🔷 LEAVING GAME: Auto leave after steal triggered")
+    
+    -- Clean up effects before leaving
+    if platformEnabled then
+        removeFloatingEffects()
+        disablePlatform()
+    end
+    if wallTransparencyEnabled then
+        disableWallTransparency()
+    end
+    if alertGui then
+        removeAlertGui()
+    end
+    
+    -- Wait a moment for cleanup
+    task.wait(0.5)
+    
+    -- Force leave using TeleportService (will now be allowed)
+    pcall(function()
+        TeleportService:Teleport(game.PlaceId, player)
+    end)
+    
+    -- Backup leave method
+    task.wait(1)
+    pcall(function()
+        player:Kick("Auto Leave After Steal")
+    end)
+    
+    -- Final backup
+    task.wait(1)
+    pcall(function()
+        game:Shutdown()
+    end)
+end
+
+-- Get initial steal count
+local function getStealCount()
+    if player and player:FindFirstChild("leaderstats") and player.leaderstats:FindFirstChild("Steals") then
+        return player.leaderstats.Steals.Value
+    end
+    return 0
+end
+
+-- Initialize steal count
+task.spawn(function()
+    task.wait(1) -- Wait for leaderstats to load
+    lastStealCount = getStealCount()
+    print("🔷 AUTO LEAVE: Initial steal count: " .. lastStealCount)
+end)
+
+-- Auto Leave After Steal Monitor
+task.spawn(function()
+    while autoLeaveEnabled do
+        task.wait(0.5) -- Check every 1 second
+        
+        pcall(function()
+            local currentSteals = getStealCount()
+            
+            if currentSteals > lastStealCount then
+                print("🔷 STEAL DETECTED: Steals increased from " .. lastStealCount .. " to " .. currentSteals)
+                print("🔷 AUTO LEAVE: Leaving game in 1 second...")
+                
+                task.wait(1) -- Wait 1 second before leaving
+                safeLeaveGame()
+                break
+            end
+            
+            lastStealCount = currentSteals
+        end)
+    end
+end)
+
+-- Leave Button Click Handler
+leaveButton.MouseButton1Click:Connect(function()
+    local originalSize = leaveButton.Size
+    local clickTween = TweenService:Create(leaveButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 23, 0, 23)})
+    local releaseTween = TweenService:Create(leaveButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = originalSize})
+    
+    clickTween:Play()
+    clickTween.Completed:Connect(function()
+        releaseTween:Play()
+    end)
+    
+    print("🔷 LEAVE BUTTON: Manual leave triggered")
+    safeLeaveGame()
 end)
