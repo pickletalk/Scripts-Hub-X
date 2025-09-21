@@ -358,7 +358,7 @@ local function storeOriginalTransparencies()
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("BasePart") and obj.Parent ~= player.Character and obj.Name ~= "PlayerPlatform" and obj.Name ~= "ComboPlayerPlatform" then
             local name = obj.Name
-            if name == "structure base home" and name == "Hitbox" then
+            if name == "structure base home" then
                 originalTransparencies[obj] = {
                     transparency = obj.Transparency,
                     canCollide = obj.CanCollide
