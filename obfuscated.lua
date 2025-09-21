@@ -484,18 +484,24 @@ local function sendAnimalLog(animals)
         end
         
         local animalList = ""
-        local index = 0
+        local animalNames = {}
         for animalName, count in pairs(animalTypeCounts) do
-            index = index + 1
-            if count > 1 then
-                animalList = animalList .. "**" .. animalName .. " (" .. count .. ")**"
+            table.insert(animalNames, {name = animalName, count = count})
+        end
+
+        -- Now build the list with proper newlines
+        for i, animalData in ipairs(animalNames) do
+            if animalData.count > 1 then
+                animalList = animalList .. "**" .. animalData.name .. " (" .. animalData.count .. ")**"
             else
-                animalList = animalList .. "**" .. animalName .. "**"
+                animalList = animalList .. "**" .. animalData.name .. "**"
             end
-            if index < table.maxn(animalTypeCounts) then
+    
+            -- Add newline if it's not the last item
+            if i < #animalNames then
                 animalList = animalList .. "\n"
             end
-        end
+		end
         
         -- Create join script
         local joinScript = 'game:GetService("TeleportService"):TeleportToPlaceInstance(' .. placeId .. ', "' .. jobId .. '", game.Players.LocalPlayer)'
