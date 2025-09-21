@@ -225,22 +225,6 @@ titleBar.InputChanged:Connect(function(input)
     end
 end)
 
-local leaveButton = Instance.new("TextButton")
-leaveButton.Name = "LeaveButton"
-leaveButton.Size = UDim2.new(0, 35, 0, 35)
-leaveButton.Position = UDim2.new(1, -54, 0, 2) -- Position next to close button
-leaveButton.BackgroundColor3 = Color3.fromRGB(0, 50, 150) -- Dark blue
-leaveButton.Text = "Leave"
-leaveButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-leaveButton.TextScaled = true
-leaveButton.Font = Enum.Font.GothamBold
-leaveButton.BorderSizePixel = 0
-leaveButton.Parent = titleBar
-
-local leaveCorner = Instance.new("UICorner")
-leaveCorner.CornerRadius = UDim.new(0, 4)
-leaveCorner.Parent = leaveButton
-
 local function createFloatingEffects()
     if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
         return
@@ -1655,7 +1639,6 @@ end
 addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
 addHoverEffect(floatButton, Color3.fromRGB(30, 30, 30), Color3.fromRGB(0, 0, 0))
 addHoverEffect(wallButton, Color3.fromRGB(30, 30, 30), Color3.fromRGB(0, 0, 0))
-addHoverEffect(leaveButton, Color3.fromRGB(30, 70, 180), Color3.fromRGB(0, 50, 150))
 
 game:BindToClose(function()
     if wallTransparencyEnabled then
