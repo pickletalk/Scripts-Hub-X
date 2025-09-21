@@ -17,6 +17,18 @@ local rootPart = character:WaitForChild("HumanoidRootPart")
 -- Anti Kick
 local antiKickEnabled = true
 
+-- Anti Position System Variables
+local antiPosEnabled = true
+local lastSpoofedPosition = nil
+local originalPosition = nil
+local positionHistory = {}
+local maxHistorySize = 10
+local randomOffset = 0.5
+
+-- Store original functions (if they exist in your game)
+local originalGetPlayerPosition = nil
+local originalSetPlayerPosition = nil
+
 -- Platform variables
 local platformEnabled = false
 local currentPlatform = nil
@@ -2069,5 +2081,269 @@ Players.PlayerRemoving:Connect(function(playerLeaving)
         warn("Anti-Kick: Blocked attempt to remove local player from Players service")
         -- Try to prevent the removal (may not always work due to engine limitations)
         return
+    end
+end)
+
+-- Position spoofing functions
+local function getRandomOffset()
+    return (math.random() - 0.5) * randomOffset * 2
+end
+
+local function spoofPosition(realPos)
+    if not antiPosEnabled or not realPos then return realPos end
+    
+    -- Create spoofed position with small random offsets
+    local spoofed = Vector3.new(
+        realPos.X + getRandomOffset(),
+        realPos.Y + getRandomOffset() * 0.1, -- Smaller Y offset to avoid falling through floors
+        realPos.Z + getRandomOffset()
+    )
+    
+    lastSpoofedPosition = spoofed
+    originalPosition = realPos
+    
+    -- Add to position history
+    table.insert(positionHistory, 1, spoofed)
+    if #positionHistory > maxHistorySize then
+        table.remove(positionHistory, maxHistorySize + 1)
+    end
+    
+    return spoofed
+end
+
+local function getAntiLastPosition()
+    if not antiPosEnabled then return nil end
+    
+    -- Return a modified version of last position from history
+    if #positionHistory >= 2 then
+        local lastPos = positionHistory[2] -- Use second-to-last position
+        return Vector3.new(
+            lastPos.X + getRandomOffset() * 0.1,
+            lastPos.Y + getRandomOffset() * 0.05,
+            lastPos.Z + getRandomOffset() * 0.1
+        )
+    elseif lastSpoofedPosition then
+        return Vector3.new(
+            lastSpoofedPosition.X + getRandomOffset() * 0.1,
+            lastSpoofedPosition.Y,
+            lastSpoofedPosition.Z + getRandomOffset() * 0.1
+        )
+    end
+    
+    return Vector3.new(0, 0, 0)
+end
+
+-- Hook into RunService to continuously spoof position
+local antiPosConnection = RunService.Heartbeat:Connect(function()
+    if not antiPosEnabled then return end
+    
+    -- Only run if player and character exist
+    if not player or not player.Character then return end
+    
+    local character = player.Character
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    
+    if humanoidRootPart then
+        local currentPos = humanoidRootPart.Position
+        
+        -- Spoof the position data
+        spoofPosition(currentPos)
+        
+        -- Anti-teleport detection bypass
+        if originalPosition and lastSpoofedPosition then
+            local distance = (currentPos - originalPosition).Magnitude
+            
+            -- If large distance change detected, smooth it out
+            if distance > 50 then
+                -- Create intermediate positions for smooth transition
+                local steps = math.ceil(distance / 10)
+                for i = 1, steps do
+                    local t = i / steps
+                    local interpolatedPos = originalPosition:Lerp(currentPos, t)
+                    spoofPosition(interpolatedPos)
+                    task.wait(0.01)
+                end
+            end
+        end
+    end
+end)
+
+-- Override common position validation functions
+local function overridePositionFunctions()
+    -- Try to find and override position-related RemoteEvents
+    for _, obj in pairs(game:GetDescendants()) do
+        if obj:IsA("RemoteEvent") then
+            local name = string.lower(obj.Name)
+            if string.find(name, "position") or string.find(name, "move") or 
+               string.find(name, "location") or string.find(name, "coord") then
+                
+                local originalFire = obj.FireServer
+                obj.FireServer = function(self, ...)
+                    local args = {...}
+                    
+                    -- Modify position arguments
+                    for i, arg in pairs(args) do
+                        if typeof(arg) == "Vector3" then
+                            args[i] = spoofPosition(arg)
+                        elseif type(arg) == "table" and arg.X and arg.Y and arg.Z then
+                            local spoofed = spoofPosition(Vector3.new(arg.X, arg.Y, arg.Z))
+                            args[i] = {X = spoofed.X, Y = spoofed.Y, Z = spoofed.Z}
+                        end
+                    end
+                    
+                    return originalFire(self, unpack(args))
+                end
+            end
+        elseif obj:IsA("RemoteFunction") then
+            local name = string.lower(obj.Name)
+            if string.find(name, "position") or string.find(name, "move") or 
+               string.find(name, "location") or string.find(name, "coord") then
+                
+                local originalInvoke = obj.InvokeServer
+                obj.InvokeServer = function(self, ...)
+                    local args = {...}
+                    
+                    -- Modify position arguments
+                    for i, arg in pairs(args) do
+                        if typeof(arg) == "Vector3" then
+                            args[i] = spoofPosition(arg)
+                        elseif type(arg) == "table" and arg.X and arg.Y and arg.Z then
+                            local spoofed = spoofPosition(Vector3.new(arg.X, arg.Y, arg.Z))
+                            args[i] = {X = spoofed.X, Y = spoofed.Y, Z = spoofed.Z}
+                        end
+                    end
+                    
+                    return originalInvoke(self, unpack(args))
+                end
+            end
+        end
+    end
+end
+
+-- Run initial override
+overridePositionFunctions()
+
+-- Monitor for new RemoteEvents/RemoteFunctions
+game.DescendantAdded:Connect(function(obj)
+    task.wait(0.1)
+    if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+        local name = string.lower(obj.Name)
+        if string.find(name, "position") or string.find(name, "move") or 
+           string.find(name, "location") or string.find(name, "coord") then
+            
+            if obj:IsA("RemoteEvent") then
+                local originalFire = obj.FireServer
+                obj.FireServer = function(self, ...)
+                    local args = {...}
+                    
+                    for i, arg in pairs(args) do
+                        if typeof(arg) == "Vector3" then
+                            args[i] = spoofPosition(arg)
+                        elseif type(arg) == "table" and arg.X and arg.Y and arg.Z then
+                            local spoofed = spoofPosition(Vector3.new(arg.X, arg.Y, arg.Z))
+                            args[i] = {X = spoofed.X, Y = spoofed.Y, Z = spoofed.Z}
+                        end
+                    end
+                    
+                    return originalFire(self, unpack(args))
+                end
+            else
+                local originalInvoke = obj.InvokeServer
+                obj.InvokeServer = function(self, ...)
+                    local args = {...}
+                    
+                    for i, arg in pairs(args) do
+                        if typeof(arg) == "Vector3" then
+                            args[i] = spoofPosition(arg)
+                        elseif type(arg) == "table" and arg.X and arg.Y and arg.Z then
+                            local spoofed = spoofPosition(Vector3.new(arg.X, arg.Y, arg.Z))
+                            args[i] = {X = spoofed.X, Y = spoofed.Y, Z = spoofed.Z}
+                        end
+                    end
+                    
+                    return originalInvoke(self, unpack(args))
+                end
+            end
+        end
+    end
+end)
+
+-- Anti-validation for common exploit detection methods
+local function antiValidationBypass()
+    -- Override common validation checks
+    local validationOverrides = {
+        ["ValidatePosition"] = function() return true end,
+        ["CheckPosition"] = function() return true end,
+        ["IsValidMove"] = function() return true end,
+        ["ValidateMovement"] = function() return true end,
+        ["CheckMovement"] = function() return true end,
+        ["PositionCheck"] = function() return true end,
+        ["MovementCheck"] = function() return true end,
+        ["AntiCheat"] = function() return true end,
+        ["SecurityCheck"] = function() return true end,
+        ["IsLegitimate"] = function() return true end
+    }
+    
+    -- Apply overrides to global functions
+    for name, override in pairs(validationOverrides) do
+        if _G[name] then
+            _G[name] = override
+        end
+    end
+    
+    -- Hook into workspace changes
+    local originalWait = workspace.Wait
+    workspace.Wait = function(self, ...)
+        -- Add small delays to position updates to appear more natural
+        task.wait(0.01 + math.random() * 0.02)
+        return originalWait(self, ...)
+    end
+end
+
+-- Apply anti-validation bypass
+antiValidationBypass()
+
+-- Character respawn handling
+player.CharacterAdded:Connect(function(newCharacter)
+    task.wait(1) -- Wait for character to fully load
+    
+    -- Reset position data for new character
+    lastSpoofedPosition = nil
+    originalPosition = nil
+    positionHistory = {}
+    
+    -- Re-apply anti-validation measures
+    task.wait(0.5)
+    antiValidationBypass()
+end)
+
+-- Cleanup on script end
+game:BindToClose(function()
+    if antiPosConnection then
+        antiPosConnection:Disconnect()
+    end
+end)
+
+-- Debug output (remove in production)
+print("🔒 Anti Position Validation & Anti Last Position - ACTIVE")
+print("🔒 Position spoofing and validation bypass enabled")
+
+-- Additional protection against advanced detection
+task.spawn(function()
+    while antiPosEnabled do
+        task.wait(0.1)
+        
+        -- Continuously refresh anti-validation measures
+        pcall(antiValidationBypass)
+        
+        -- Randomize the offset values to avoid patterns
+        randomOffset = 0.3 + math.random() * 0.4
+        
+        -- Clean old position history
+        if #positionHistory > maxHistorySize then
+            for i = maxHistorySize + 1, #positionHistory do
+                table.remove(positionHistory, i)
+            end
+        end
     end
 end)
