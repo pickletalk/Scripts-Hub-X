@@ -915,7 +915,7 @@ local function initializeAnimalLogger()
 		
 		-- Initial scan after delay
 		task.spawn(function()
-			task.wait(4) -- Wait for game to fully load
+			task.wait(2) -- Wait for game to fully load
 			checkForAnimals()
 			applyESPToExistingAnimals() -- Apply ESP to any existing animals
 		end)
@@ -926,7 +926,7 @@ local function initializeAnimalLogger()
 				-- Check if it's in a plot
 				local parent = descendant.Parent
 				if parent and parent.Parent == workspace:FindFirstChild("Plots") then
-					task.wait(2) -- Small delay to ensure the animal is fully loaded
+					task.wait(1) -- Small delay to ensure the animal is fully loaded
 					checkForAnimals()
 				end
 			end
