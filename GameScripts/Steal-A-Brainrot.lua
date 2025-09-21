@@ -17,7 +17,7 @@ local rootPart = character:WaitForChild("HumanoidRootPart")
 local platformEnabled = false
 local currentPlatform = nil
 local platformUpdateConnection = nil
-local PLATFORM_OFFSET = 3.65
+local PLATFORM_OFFSET = 3.62
 
 -- Wall transparency variables
 local wallTransparencyEnabled = false
@@ -30,7 +30,7 @@ local comboFloatEnabled = false
 local comboCurrentPlatform = nil
 local comboPlatformUpdateConnection = nil
 local comboPlayerCollisionConnection = nil
-local COMBO_PLATFORM_OFFSET = 3.565
+local COMBO_PLATFORM_OFFSET = 3.57
 
 -- ESP variables
 local plotDisplays = {}
