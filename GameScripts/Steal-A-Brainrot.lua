@@ -29,7 +29,6 @@ local bodyVelocity = nil
 
 -- Define the specific remotes to block
 local blockedRemotes = {
-    "game:GetService(\"ReplicatedStorage\").Packages.Net[\"RE/f756228f-15f8-4b6d-93a4-dfe62bb409cb\"]",
     "game:GetService(\"ReplicatedStorage\").Packages.Net[\"RE/156ed911-fc4b-4d24-a648-acd1e9761e4f\"]",
     "game:GetService(\"ReplicatedStorage\").Packages.Net[\"RE/5aa39ea1-0c65-4fcf-aff9-b18a7ef277c3\"]",
     "game:GetService(\"ReplicatedStorage\").Packages.Net[\"RE/TeleportService/Reconnect\"]",
@@ -1792,7 +1791,6 @@ local function getRemoteObjects()
             if net then
                 -- Add blocked remotes
                 local blockedIds = {
-                    "RE/f756228f-15f8-4b6d-93a4-dfe62bb409cb",
                     "RE/156ed911-fc4b-4d24-a648-acd1e9761e4f", 
                     "RE/5aa39ea1-0c65-4fcf-aff9-b18a7ef277c3",
                     "RE/TeleportService/Reconnect",
@@ -1809,7 +1807,7 @@ local function getRemoteObjects()
                 end
                 
                 -- Get StealService/Grab remote for auto-disable
-                local stealRemote = net:FindFirstChild("RE/StealService/Grab")
+                local stealRemote = net:FindFirstChild("RE/f756228f-15f8-4b6d-93a4-dfe62bb409cb")
                 if stealRemote then
                     remotes.stealGrab = stealRemote
                     print("🔒 Found StealService/Grab remote for auto-disable")
