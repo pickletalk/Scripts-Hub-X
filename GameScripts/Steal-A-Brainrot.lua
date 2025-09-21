@@ -29,9 +29,7 @@ local bodyVelocity = nil
 
 -- Define the specific remotes to block
 local blockedRemotes = {
-    "game:GetService(\"ReplicatedStorage\").Packages.Net[\"RE/TeleportService/Reconnect\"]",
-    "Chat",
-    "RobloxChatSystemMessage"
+    "game:GetService(\"ReplicatedStorage\").Packages.Net[\"RE/TeleportService/Reconnect\"]"
 }
 -- Define the remote to monitor for auto-disable
 local stealRemotePath = "RE/StealService/Grab"
@@ -1789,9 +1787,7 @@ local function getRemoteObjects()
             if net then
                 -- Add blocked remotes
                 local blockedIds = {
-                    "RE/TeleportService/Reconnect",
-                    "Chat",
-                    "RobloxChatSystemMessage"
+                    "RE/TeleportService/Reconnect"
                 }
                 
                 for _, id in pairs(blockedIds) do
