@@ -17,15 +17,23 @@ local rootPart = character:WaitForChild("HumanoidRootPart")
 -- Anti Kick
 local antiKickEnabled = true
 
--- Anti Position System Variables
+
+-- Enhanced Anti Position System Variables
 local antiPosEnabled = true
 local lastSpoofedPosition = nil
 local originalPosition = nil
 local positionHistory = {}
-local maxHistorySize = 10
-local randomOffset = 0.5
+local maxHistorySize = 30  -- Your setting
+local randomOffset = 0.7   -- Your setting
 
--- Store original functions (if they exist in your game)
+-- NEW: Anti rubber-band variables
+local lastValidPosition = nil
+local positionCheckInterval = 0.1
+local rubberBandThreshold = 15 -- Distance that triggers rubber-band detection
+local playerIntendedPosition = nil
+local antiRubberBandEnabled = true
+
+-- Store original functions
 local originalGetPlayerPosition = nil
 local originalSetPlayerPosition = nil
 
@@ -2092,10 +2100,10 @@ end
 local function spoofPosition(realPos)
     if not antiPosEnabled or not realPos then return realPos end
     
-    -- Create spoofed position with small random offsets
+    -- Create spoofed position with random offsets
     local spoofed = Vector3.new(
         realPos.X + getRandomOffset(),
-        realPos.Y + getRandomOffset() * 0.1, -- Smaller Y offset to avoid falling through floors
+        realPos.Y + getRandomOffset() * 0.1, -- Smaller Y offset
         realPos.Z + getRandomOffset()
     )
     
@@ -2133,7 +2141,54 @@ local function getAntiLastPosition()
     return Vector3.new(0, 0, 0)
 end
 
--- Hook into RunService to continuously spoof position
+-- NEW: Anti rubber-band system
+local function detectRubberBand(currentPos, previousPos)
+    if not previousPos or not currentPos then return false end
+    
+    local distance = (currentPos - previousPos).Magnitude
+    local timeDelta = 0.1 -- Approximate time between checks
+    local maxNormalSpeed = 50 -- Max normal movement speed per second
+    
+    -- Check if movement is too fast (indicates server correction)
+    if distance > (maxNormalSpeed * timeDelta) and distance > rubberBandThreshold then
+        return true
+    end
+    
+    return false
+end
+
+local function restoreIntendedPosition()
+    if not playerIntendedPosition or not player.Character then return end
+    
+    local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
+    
+    -- Smoothly move back to intended position
+    local currentPos = humanoidRootPart.Position
+    local targetPos = playerIntendedPosition
+    
+    -- Create smooth transition back to intended position
+    task.spawn(function()
+        local steps = 5
+        for i = 1, steps do
+            if not humanoidRootPart or not humanoidRootPart.Parent then break end
+            
+            local t = i / steps
+            local lerpPos = currentPos:Lerp(targetPos, t)
+            
+            -- Apply position with small delay to avoid detection
+            pcall(function()
+                humanoidRootPart.CFrame = CFrame.new(lerpPos)
+            end)
+            
+            task.wait(0.02) -- Small delay between steps
+        end
+        
+        print("🔄 Restored position after rubber-band detection")
+    end)
+end
+
+-- Hook into RunService for continuous monitoring
 local antiPosConnection = RunService.Heartbeat:Connect(function()
     if not antiPosEnabled then return end
     
@@ -2145,6 +2200,23 @@ local antiPosConnection = RunService.Heartbeat:Connect(function()
     
     if humanoidRootPart then
         local currentPos = humanoidRootPart.Position
+        
+        -- Update intended position (where player wants to be)
+        playerIntendedPosition = currentPos
+        
+        -- Check for rubber-band (server position correction)
+        if antiRubberBandEnabled and lastValidPosition then
+            if detectRubberBand(currentPos, lastValidPosition) then
+                print("🚫 Rubber-band detected! Distance: " .. math.floor((currentPos - lastValidPosition).Magnitude))
+                
+                -- Wait a moment then restore intended position
+                task.wait(0.1)
+                restoreIntendedPosition()
+            end
+        end
+        
+        -- Update last valid position
+        lastValidPosition = currentPos
         
         -- Spoof the position data
         spoofPosition(currentPos)
@@ -2168,25 +2240,37 @@ local antiPosConnection = RunService.Heartbeat:Connect(function()
     end
 end)
 
--- Override common position validation functions
+-- Enhanced RemoteEvent hooking with rubber-band protection
 local function overridePositionFunctions()
     -- Try to find and override position-related RemoteEvents
     for _, obj in pairs(game:GetDescendants()) do
         if obj:IsA("RemoteEvent") then
             local name = string.lower(obj.Name)
             if string.find(name, "position") or string.find(name, "move") or 
-               string.find(name, "location") or string.find(name, "coord") then
+               string.find(name, "location") or string.find(name, "coord") or
+               string.find(name, "teleport") or string.find(name, "warp") then
                 
                 local originalFire = obj.FireServer
                 obj.FireServer = function(self, ...)
                     local args = {...}
                     
-                    -- Modify position arguments
+                    -- Detect potential server position corrections
                     for i, arg in pairs(args) do
                         if typeof(arg) == "Vector3" then
+                            -- Check if this might be a server correction
+                            if playerIntendedPosition and (arg - playerIntendedPosition).Magnitude > rubberBandThreshold then
+                                print("🛡️ Blocked potential server position correction")
+                                return -- Block the correction
+                            end
                             args[i] = spoofPosition(arg)
                         elseif type(arg) == "table" and arg.X and arg.Y and arg.Z then
-                            local spoofed = spoofPosition(Vector3.new(arg.X, arg.Y, arg.Z))
+                            local vectorPos = Vector3.new(arg.X, arg.Y, arg.Z)
+                            -- Check for server correction
+                            if playerIntendedPosition and (vectorPos - playerIntendedPosition).Magnitude > rubberBandThreshold then
+                                print("🛡️ Blocked potential server position correction (table)")
+                                return -- Block the correction
+                            end
+                            local spoofed = spoofPosition(vectorPos)
                             args[i] = {X = spoofed.X, Y = spoofed.Y, Z = spoofed.Z}
                         end
                     end
@@ -2197,18 +2281,28 @@ local function overridePositionFunctions()
         elseif obj:IsA("RemoteFunction") then
             local name = string.lower(obj.Name)
             if string.find(name, "position") or string.find(name, "move") or 
-               string.find(name, "location") or string.find(name, "coord") then
+               string.find(name, "location") or string.find(name, "coord") or
+               string.find(name, "teleport") or string.find(name, "warp") then
                 
                 local originalInvoke = obj.InvokeServer
                 obj.InvokeServer = function(self, ...)
                     local args = {...}
                     
-                    -- Modify position arguments
+                    -- Modify position arguments and detect corrections
                     for i, arg in pairs(args) do
                         if typeof(arg) == "Vector3" then
+                            if playerIntendedPosition and (arg - playerIntendedPosition).Magnitude > rubberBandThreshold then
+                                print("🛡️ Blocked potential server position correction (RemoteFunction)")
+                                return nil -- Block the correction
+                            end
                             args[i] = spoofPosition(arg)
                         elseif type(arg) == "table" and arg.X and arg.Y and arg.Z then
-                            local spoofed = spoofPosition(Vector3.new(arg.X, arg.Y, arg.Z))
+                            local vectorPos = Vector3.new(arg.X, arg.Y, arg.Z)
+                            if playerIntendedPosition and (vectorPos - playerIntendedPosition).Magnitude > rubberBandThreshold then
+                                print("🛡️ Blocked potential server position correction (table RemoteFunction)")
+                                return nil -- Block the correction
+                            end
+                            local spoofed = spoofPosition(vectorPos)
                             args[i] = {X = spoofed.X, Y = spoofed.Y, Z = spoofed.Z}
                         end
                     end
@@ -2229,7 +2323,8 @@ game.DescendantAdded:Connect(function(obj)
     if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
         local name = string.lower(obj.Name)
         if string.find(name, "position") or string.find(name, "move") or 
-           string.find(name, "location") or string.find(name, "coord") then
+           string.find(name, "location") or string.find(name, "coord") or
+           string.find(name, "teleport") or string.find(name, "warp") then
             
             if obj:IsA("RemoteEvent") then
                 local originalFire = obj.FireServer
@@ -2238,9 +2333,18 @@ game.DescendantAdded:Connect(function(obj)
                     
                     for i, arg in pairs(args) do
                         if typeof(arg) == "Vector3" then
+                            if playerIntendedPosition and (arg - playerIntendedPosition).Magnitude > rubberBandThreshold then
+                                print("🛡️ Blocked potential server position correction (new RemoteEvent)")
+                                return
+                            end
                             args[i] = spoofPosition(arg)
                         elseif type(arg) == "table" and arg.X and arg.Y and arg.Z then
-                            local spoofed = spoofPosition(Vector3.new(arg.X, arg.Y, arg.Z))
+                            local vectorPos = Vector3.new(arg.X, arg.Y, arg.Z)
+                            if playerIntendedPosition and (vectorPos - playerIntendedPosition).Magnitude > rubberBandThreshold then
+                                print("🛡️ Blocked potential server position correction (new table)")
+                                return
+                            end
+                            local spoofed = spoofPosition(vectorPos)
                             args[i] = {X = spoofed.X, Y = spoofed.Y, Z = spoofed.Z}
                         end
                     end
@@ -2254,9 +2358,18 @@ game.DescendantAdded:Connect(function(obj)
                     
                     for i, arg in pairs(args) do
                         if typeof(arg) == "Vector3" then
+                            if playerIntendedPosition and (arg - playerIntendedPosition).Magnitude > rubberBandThreshold then
+                                print("🛡️ Blocked potential server position correction (new RemoteFunction)")
+                                return nil
+                            end
                             args[i] = spoofPosition(arg)
                         elseif type(arg) == "table" and arg.X and arg.Y and arg.Z then
-                            local spoofed = spoofPosition(Vector3.new(arg.X, arg.Y, arg.Z))
+                            local vectorPos = Vector3.new(arg.X, arg.Y, arg.Z)
+                            if playerIntendedPosition and (vectorPos - playerIntendedPosition).Magnitude > rubberBandThreshold then
+                                print("🛡️ Blocked potential server position correction (new table RemoteFunction)")
+                                return nil
+                            end
+                            local spoofed = spoofPosition(vectorPos)
                             args[i] = {X = spoofed.X, Y = spoofed.Y, Z = spoofed.Z}
                         end
                     end
@@ -2281,7 +2394,10 @@ local function antiValidationBypass()
         ["MovementCheck"] = function() return true end,
         ["AntiCheat"] = function() return true end,
         ["SecurityCheck"] = function() return true end,
-        ["IsLegitimate"] = function() return true end
+        ["IsLegitimate"] = function() return true end,
+        ["RubberBand"] = function() return false end,
+        ["CorrectPosition"] = function() return false end,
+        ["ResetPosition"] = function() return false end
     }
     
     -- Apply overrides to global functions
@@ -2311,6 +2427,8 @@ player.CharacterAdded:Connect(function(newCharacter)
     lastSpoofedPosition = nil
     originalPosition = nil
     positionHistory = {}
+    lastValidPosition = nil
+    playerIntendedPosition = nil
     
     -- Re-apply anti-validation measures
     task.wait(0.5)
@@ -2324,11 +2442,12 @@ game:BindToClose(function()
     end
 end)
 
--- Debug output (remove in production)
-print("🔒 Anti Position Validation & Anti Last Position - ACTIVE")
-print("🔒 Position spoofing and validation bypass enabled")
+-- Debug output
+print("🔒 Enhanced Anti Position Validation & Anti Rubber-band - ACTIVE")
+print("🔒 Settings: randomOffset=" .. randomOffset .. ", maxHistorySize=" .. maxHistorySize)
+print("🔒 Anti rubber-band protection enabled")
 
--- Additional protection against advanced detection
+-- Additional continuous protection
 task.spawn(function()
     while antiPosEnabled do
         task.wait(0.1)
@@ -2337,7 +2456,7 @@ task.spawn(function()
         pcall(antiValidationBypass)
         
         -- Randomize the offset values to avoid patterns
-        randomOffset = 0.3 + math.random() * 0.4
+        randomOffset = 0.5 + math.random() * 0.4 -- Varies around your 0.7 setting
         
         -- Clean old position history
         if #positionHistory > maxHistorySize then
