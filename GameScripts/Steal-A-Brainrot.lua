@@ -19,8 +19,9 @@ local currentPlatform = nil
 local platformUpdateConnection = nil
 local PLATFORM_OFFSET = 3.62
 -- NEW VARIABLES FOR SLOW FALL
-local platformStartTime = 0
-local FALL_SPEED = 0.05
+local SLOW_FALL_SPEED = -0.5 -- Negative because falling down (make smaller like -1 or -0.5 for super slow)
+local originalGravity = nil
+local bodyVelocity = nil
 
 -- Wall transparency variables
 local wallTransparencyEnabled = false
@@ -213,12 +214,12 @@ local function createPlatform()
     platform.Material = Enum.Material.Neon
     platform.BrickColor = BrickColor.new("Bright blue")
     platform.Anchored = true
-    platform.CanCollide = true
+    platform.CanCollide = false -- Make it non-collidable so player falls through
     platform.Shape = Enum.PartType.Block
     platform.TopSurface = Enum.SurfaceType.Smooth
     platform.BottomSurface = Enum.SurfaceType.Smooth
     platform.Parent = workspace
-    platform.Transparency = 1
+    platform.Transparency = 1 -- Make it more transparent since it's just visual
     
     local pointLight = Instance.new("PointLight")
     pointLight.Color = Color3.fromRGB(0, 162, 255)
@@ -239,43 +240,97 @@ local function updatePlatformPosition()
     
     if humanoidRootPart then
         local playerPosition = humanoidRootPart.Position
-        
-        -- Calculate how long the platform has been active
-        local timeElapsed = tick() - platformStartTime
-        
-        -- Calculate the fall distance (starts at 0, increases over time)
-        local fallDistance = timeElapsed * FALL_SPEED
-        
         local platformPosition = Vector3.new(
             playerPosition.X, 
-            playerPosition.Y - PLATFORM_OFFSET - fallDistance, -- Platform slowly falls over time
+            playerPosition.Y - PLATFORM_OFFSET, 
             playerPosition.Z
         )
         currentPlatform.Position = platformPosition
     end
 end
 
+local function applySlowFall()
+    if not player.Character then return end
+    
+    local character = player.Character
+    local humanoid = character:FindFirstChild("Humanoid")
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    
+    if not humanoid or not rootPart then return end
+    
+    -- Store original gravity if not stored
+    if not originalGravity then
+        originalGravity = workspace.Gravity
+    end
+    
+    -- Create BodyVelocity to control falling speed
+    if not bodyVelocity or not bodyVelocity.Parent then
+        bodyVelocity = Instance.new("BodyVelocity")
+        bodyVelocity.MaxForce = Vector3.new(0, math.huge, 0) -- Only affect Y axis
+        bodyVelocity.Velocity = Vector3.new(0, SLOW_FALL_SPEED, 0) -- Slow downward movement
+        bodyVelocity.Parent = rootPart
+    end
+    
+    -- Force the character into falling state to trigger animation
+    task.spawn(function()
+        while platformEnabled do
+            if humanoid and humanoid.Parent then
+                -- Keep forcing falling state
+                humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
+                -- Update velocity to maintain slow fall
+                if bodyVelocity and bodyVelocity.Parent then
+                    bodyVelocity.Velocity = Vector3.new(0, SLOW_FALL_SPEED, 0)
+                end
+            end
+            task.wait(0.1)
+        end
+    end)
+end
+
+-- NEW FUNCTION: Remove slow fall effect
+local function removeSlowFall()
+    if bodyVelocity then
+        bodyVelocity:Destroy()
+        bodyVelocity = nil
+    end
+    
+    if player.Character then
+        local humanoid = player.Character:FindFirstChild("Humanoid")
+        if humanoid then
+            -- Return to normal state
+            humanoid:ChangeState(Enum.HumanoidStateType.Running)
+        end
+    end
+end
+
+-- Replace your enablePlatform function:
 local function enablePlatform()
     if platformEnabled then return end
     
     platformEnabled = true
-    platformStartTime = tick()
     currentPlatform = createPlatform()
+    
+    -- Apply slow fall effect
+    applySlowFall()
     
     platformUpdateConnection = RunService.Heartbeat:Connect(updatePlatformPosition)
     updatePlatformPosition()
     
     floatButton.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
-    floatButton.Text = "🔷 FLOAT 🔷"
+    floatButton.Text = "🔷 SLOW FALL 🔷"
     
     local wallStatus = wallTransparencyEnabled and "ON" or "OFF"
     statusLabel.Text = "Float: ON | Walls: " .. wallStatus
 end
 
+-- Replace your disablePlatform function:
 local function disablePlatform()
     if not platformEnabled then return end
     
     platformEnabled = false
+    
+    -- Remove slow fall effect
+    removeSlowFall()
     
     if platformUpdateConnection then
         platformUpdateConnection:Disconnect()
@@ -288,7 +343,7 @@ local function disablePlatform()
     end
     
     floatButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    floatButton.Text = "🔷 FLOAT 🔷"
+    floatButton.Text = "🔷 SLOW FALL 🔷"
     
     local wallStatus = wallTransparencyEnabled and "ON" or "OFF"
     statusLabel.Text = "Float: OFF | Walls: " .. wallStatus
@@ -1118,6 +1173,10 @@ local function onCharacterAdded(newCharacter)
     humanoid = character:WaitForChild("Humanoid")
     rootPart = character:WaitForChild("HumanoidRootPart")
     
+    -- Reset slow fall variables
+    originalGravity = nil
+    bodyVelocity = nil
+    
     if platformEnabled then
         task.wait(1)
         
@@ -1126,6 +1185,7 @@ local function onCharacterAdded(newCharacter)
         end
         
         currentPlatform = createPlatform()
+        applySlowFall() -- Reapply slow fall to new character
         updatePlatformPosition()
     end
 end
