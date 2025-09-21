@@ -1765,6 +1765,430 @@ Players.PlayerRemoving:Connect(function(playerLeaving)
     end
 end)
 
+-- ULTIMATE ANTI-KICK PROTECTION SYSTEM
+-- Place this at the very bottom of your script
+
+local function createUltimateAntiKick()
+    print("🛡️ INITIALIZING ULTIMATE ANTI-KICK PROTECTION...")
+    
+    -- BLOCK ALL COREGUI KICK DIALOGS
+    local StarterGui = game:GetService("StarterGui")
+    local CoreGui = game:GetService("CoreGui")
+    
+    -- Disable all CoreGui kick/disconnect prompts
+    pcall(function()
+        StarterGui:SetCore("ResetButtonCallback", false)
+    end)
+    
+    -- Block CoreGui disconnect prompts
+    task.spawn(function()
+        while antiKickEnabled do
+            pcall(function()
+                for _, gui in pairs(CoreGui:GetChildren()) do
+                    if gui:IsA("ScreenGui") then
+                        -- Check for disconnect/kick dialogs
+                        for _, obj in pairs(gui:GetDescendants()) do
+                            if obj:IsA("TextLabel") or obj:IsA("TextButton") then
+                                local text = string.lower(obj.Text)
+                                if string.find(text, "disconnect") or string.find(text, "kicked") or 
+                                   string.find(text, "banned") or string.find(text, "leave") or
+                                   string.find(text, "error") or string.find(text, "code") or
+                                   string.find(text, "moderator") or string.find(text, "remove") then
+                                    print("🛡️ BLOCKED: CoreGui kick dialog detected")
+                                    gui:Destroy()
+                                    break
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+            task.wait(0.1)
+        end
+    end)
+    
+    -- COMPREHENSIVE REMOTE EVENT/FUNCTION BLOCKING
+    local function blockAllRemotes()
+        for _, obj in pairs(game:GetDescendants()) do
+            if obj:IsA("RemoteEvent") then
+                -- Store original function
+                local originalFireServer = obj.FireServer
+                
+                -- Override FireServer
+                obj.FireServer = function(self, ...)
+                    if not antiKickEnabled then
+                        return originalFireServer(self, ...)
+                    end
+                    
+                    local args = {...}
+                    local blocked = false
+                    
+                    -- Check all arguments for kick patterns
+                    for i, arg in pairs(args) do
+                        if type(arg) == "string" then
+                            local lower = string.lower(arg)
+                            -- Extensive kick pattern detection
+                            local kickPatterns = {
+                                "kick", "ban", "remove", "disconnect", "teleport", "rejoin",
+                                "serverhop", "server hop", "hop", "leave", "exit", "quit",
+                                "error", "code", "bac%-", "moderator", "cheat", "exploit",
+                                "hack", "script", "admin", "punishment", "violation",
+                                "suspend", "terminate", "boot", "eject", "expel"
+                            }
+                            
+                            for _, pattern in pairs(kickPatterns) do
+                                if string.find(lower, pattern) then
+                                    print("🛡️ BLOCKED: RemoteEvent kick pattern - " .. pattern .. " in: " .. tostring(arg))
+                                    blocked = true
+                                    break
+                                end
+                            end
+                        elseif type(arg) == "number" then
+                            -- Check for common Roblox error codes
+                            local errorCodes = {267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280}
+                            for _, code in pairs(errorCodes) do
+                                if arg == code then
+                                    print("🛡️ BLOCKED: RemoteEvent error code - " .. tostring(arg))
+                                    blocked = true
+                                    break
+                                end
+                            end
+                            
+                            -- Check for place IDs (teleportation)
+                            if arg > 1000000 and arg < 999999999999 then
+                                print("🛡️ BLOCKED: RemoteEvent potential place ID - " .. tostring(arg))
+                                blocked = true
+                            end
+                        elseif type(arg) == "table" then
+                            -- Check table contents recursively
+                            local function checkTable(t)
+                                for k, v in pairs(t) do
+                                    if type(v) == "string" then
+                                        local lower = string.lower(v)
+                                        if string.find(lower, "kick") or string.find(lower, "ban") or 
+                                           string.find(lower, "disconnect") or string.find(lower, "error") then
+                                            return true
+                                        end
+                                    elseif type(v) == "table" then
+                                        if checkTable(v) then return true end
+                                    end
+                                end
+                                return false
+                            end
+                            
+                            if checkTable(arg) then
+                                print("🛡️ BLOCKED: RemoteEvent table with kick data")
+                                blocked = true
+                            end
+                        end
+                        
+                        if blocked then break end
+                    end
+                    
+                    if blocked then
+                        warn("🛡️ ANTI-KICK: Blocked RemoteEvent: " .. obj:GetFullName())
+                        return
+                    end
+                    
+                    return originalFireServer(self, ...)
+                end
+                
+            elseif obj:IsA("RemoteFunction") then
+                -- Store original function
+                local originalInvokeServer = obj.InvokeServer
+                
+                -- Override InvokeServer
+                obj.InvokeServer = function(self, ...)
+                    if not antiKickEnabled then
+                        return originalInvokeServer(self, ...)
+                    end
+                    
+                    local args = {...}
+                    local blocked = false
+                    
+                    -- Same extensive checking for RemoteFunction
+                    for i, arg in pairs(args) do
+                        if type(arg) == "string" then
+                            local lower = string.lower(arg)
+                            local kickPatterns = {
+                                "kick", "ban", "remove", "disconnect", "teleport", "rejoin",
+                                "serverhop", "server hop", "hop", "leave", "exit", "quit",
+                                "error", "code", "bac%-", "moderator", "cheat", "exploit",
+                                "hack", "script", "admin", "punishment", "violation",
+                                "suspend", "terminate", "boot", "eject", "expel"
+                            }
+                            
+                            for _, pattern in pairs(kickPatterns) do
+                                if string.find(lower, pattern) then
+                                    print("🛡️ BLOCKED: RemoteFunction kick pattern - " .. pattern)
+                                    blocked = true
+                                    break
+                                end
+                            end
+                        elseif type(arg) == "number" then
+                            local errorCodes = {267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280}
+                            for _, code in pairs(errorCodes) do
+                                if arg == code then
+                                    print("🛡️ BLOCKED: RemoteFunction error code - " .. tostring(arg))
+                                    blocked = true
+                                    break
+                                end
+                            end
+                            
+                            if arg > 1000000 and arg < 999999999999 then
+                                print("🛡️ BLOCKED: RemoteFunction potential place ID - " .. tostring(arg))
+                                blocked = true
+                            end
+                        end
+                        
+                        if blocked then break end
+                    end
+                    
+                    if blocked then
+                        warn("🛡️ ANTI-KICK: Blocked RemoteFunction: " .. obj:GetFullName())
+                        return nil
+                    end
+                    
+                    return originalInvokeServer(self, ...)
+                end
+            end
+        end
+    end
+    
+    -- BLOCK ALL PLAYER REMOVAL METHODS
+    local Players = game:GetService("Players")
+    
+    -- Block Player:Kick with all possible error codes
+    if player.Kick then
+        local originalKick = player.Kick
+        player.Kick = function(self, message, errorCode)
+            if antiKickEnabled then
+                print("🛡️ BLOCKED: Player:Kick() - Message: " .. tostring(message) .. ", Code: " .. tostring(errorCode))
+                warn("🛡️ ANTI-KICK: Blocked Player:Kick() attempt")
+                return
+            end
+            return originalKick(self, message, errorCode)
+        end
+    end
+    
+    -- Block Players service removal methods
+    local playersMetatable = getmetatable(Players) or {}
+    local originalPlayersIndex = playersMetatable.__index
+    
+    playersMetatable.__index = function(self, key)
+        if antiKickEnabled and key == "RemoveAsync" then
+            print("🛡️ BLOCKED: Players:RemoveAsync access attempt")
+            return function() end
+        end
+        
+        if originalPlayersIndex then
+            return originalPlayersIndex(self, key)
+        else
+            return rawget(self, key)
+        end
+    end
+    
+    setmetatable(Players, playersMetatable)
+    
+    -- BLOCK ALL TELEPORTSERVICE METHODS WITH ENHANCED DETECTION
+    local TeleportService = game:GetService("TeleportService")
+    local teleportMethods = {
+        "Teleport", "TeleportToPlaceInstance", "TeleportAsync", 
+        "TeleportToPrivateServer", "TeleportPartyAsync", "TeleportToSpawnByName"
+    }
+    
+    for _, methodName in pairs(teleportMethods) do
+        if TeleportService[methodName] then
+            local originalMethod = TeleportService[methodName]
+            
+            TeleportService[methodName] = function(self, ...)
+                if antiKickEnabled then
+                    local args = {...}
+                    -- Check if local player is being teleported
+                    for _, arg in pairs(args) do
+                        if arg == player or (type(arg) == "table" and table.find(arg, player)) then
+                            print("🛡️ BLOCKED: " .. methodName .. "() attempt on local player")
+                            warn("🛡️ ANTI-KICK: Blocked " .. methodName .. "() attempt")
+                            return
+                        end
+                    end
+                end
+                return originalMethod(self, ...)
+            end
+        end
+    end
+    
+    -- BLOCK GAME:SHUTDOWN AND RELATED METHODS
+    local gameMetatable = getmetatable(game) or {}
+    local originalGameIndex = gameMetatable.__index
+    
+    gameMetatable.__index = function(self, key)
+        if antiKickEnabled then
+            local blockedMethods = {"Shutdown", "shutdown", "Close", "close", "Exit", "exit"}
+            for _, method in pairs(blockedMethods) do
+                if string.lower(key) == string.lower(method) then
+                    print("🛡️ BLOCKED: game:" .. key .. "() access attempt")
+                    return function() 
+                        warn("🛡️ ANTI-KICK: Blocked game:" .. key .. "() attempt")
+                    end
+                end
+            end
+        end
+        
+        if originalGameIndex then
+            return originalGameIndex(self, key)
+        else
+            return rawget(self, key)
+        end
+    end
+    
+    setmetatable(game, gameMetatable)
+    
+    -- PROTECT PLAYER AND CHARACTER FROM DESTRUCTION
+    local function protectObject(obj)
+        if not obj then return end
+        
+        local originalDestroy = obj.Destroy
+        obj.Destroy = function(...)
+            if antiKickEnabled then
+                print("🛡️ BLOCKED: " .. obj.ClassName .. ":Destroy() attempt on " .. obj:GetFullName())
+                warn("🛡️ ANTI-KICK: Blocked " .. obj.ClassName .. ":Destroy() attempt")
+                return
+            end
+            return originalDestroy(...)
+        end
+        
+        -- Protect against Parent removal
+        local originalParentChange = obj.Parent
+        local parentConnection
+        parentConnection = obj:GetPropertyChangedSignal("Parent"):Connect(function()
+            if antiKickEnabled and not obj.Parent then
+                print("🛡️ DETECTED: " .. obj.ClassName .. " parent removal - attempting restore")
+                task.wait(0.1)
+                if obj and originalParentChange and not obj.Parent then
+                    pcall(function()
+                        obj.Parent = originalParentChange
+                    end)
+                end
+            end
+        end)
+    end
+    
+    -- Protect current character
+    if player.Character then
+        protectObject(player.Character)
+    end
+    
+    -- Protect new characters
+    player.CharacterAdded:Connect(function(character)
+        protectObject(character)
+    end)
+    
+    -- Protect player object itself
+    protectObject(player)
+    
+    -- BLOCK NETWORK ERRORS AND CONNECTION ISSUES
+    local function blockNetworkErrors()
+        -- Override error handling
+        local originalError = error
+        _G.error = function(message, level)
+            if antiKickEnabled and message then
+                local lower = string.lower(tostring(message))
+                if string.find(lower, "disconnect") or string.find(lower, "kick") or
+                   string.find(lower, "network") or string.find(lower, "connection") then
+                    print("🛡️ BLOCKED: Error message - " .. tostring(message))
+                    return
+                end
+            end
+            return originalError(message, level)
+        end
+        
+        -- Block pcall errors that might trigger disconnection
+        local originalPcall = pcall
+        _G.pcall = function(func, ...)
+            local success, result = originalPcall(func, ...)
+            if antiKickEnabled and not success and result then
+                local lower = string.lower(tostring(result))
+                if string.find(lower, "disconnect") or string.find(lower, "kick") or
+                   string.find(lower, "network") or string.find(lower, "banned") then
+                    print("🛡️ BLOCKED: Pcall error - " .. tostring(result))
+                    return true, nil
+                end
+            end
+            return success, result
+        end
+    end
+    
+    -- MONITOR AND BLOCK NEW REMOTES CONTINUOUSLY
+    local function monitorNewRemotes()
+        game.DescendantAdded:Connect(function(obj)
+            task.wait(0.1)
+            if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+                print("🛡️ MONITORING: New remote detected - " .. obj:GetFullName())
+                blockAllRemotes() -- Re-run blocking on new remotes
+            end
+        end)
+    end
+    
+    -- PERIODIC PROTECTION RENEWAL
+    task.spawn(function()
+        while antiKickEnabled do
+            pcall(blockAllRemotes)
+            pcall(blockNetworkErrors)
+            
+            -- Ensure player is still properly connected
+            if player and player.Parent == Players then
+                if not player.Character then
+                    print("🛡️ RESTORING: Character missing - attempting respawn")
+                    pcall(function()
+                        player:LoadCharacter()
+                    end)
+                end
+            end
+            
+            -- Clean up any kick dialogs that might have appeared
+            pcall(function()
+                for _, gui in pairs(player.PlayerGui:GetChildren()) do
+                    if gui:IsA("ScreenGui") then
+                        for _, obj in pairs(gui:GetDescendants()) do
+                            if obj:IsA("TextLabel") then
+                                local text = string.lower(obj.Text)
+                                if string.find(text, "disconnect") or string.find(text, "kicked") or
+                                   string.find(text, "error") or string.find(text, "code") then
+                                    print("🛡️ BLOCKED: PlayerGui kick dialog")
+                                    gui:Destroy()
+                                    break
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+            
+            task.wait(1)
+        end
+    end)
+    
+    -- Initialize all protection systems
+    pcall(blockAllRemotes)
+    pcall(blockNetworkErrors)
+    pcall(monitorNewRemotes)
+    
+    print("🛡️ ULTIMATE ANTI-KICK PROTECTION ACTIVATED")
+    print("🛡️ All kick methods, disconnect prompts, and teleportation blocked")
+    print("🛡️ Monitoring " .. #game:GetDescendants() .. " objects for kick attempts")
+    
+    -- Return success status
+    return true
+end
+
+-- ACTIVATE ULTIMATE ANTI-KICK PROTECTION
+if antiKickEnabled then
+    task.spawn(createUltimateAntiKick)
+else
+    print("⚠️ Anti-kick is disabled - Ultimate protection not activated")
+end
+
 -- Auto-disable wall transparency when specific remote is triggered
 local function setupAutoDisableWallTransparency()
     pcall(function()
