@@ -35,7 +35,8 @@ local blockedRemotes = {
     "RE/5aa39ea1-0c65-4fcf-aff9-b18a7ef277c3",
     "RE/TeleportService/Reconnect",
     "RobloxChatSystemMessage",
-    "RE/Tools/Cooldown"
+    "RE/Tools/Cooldown",
+    "Chat"
 }
 
 -- Define the remote to monitor for auto-disable
