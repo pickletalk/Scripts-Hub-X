@@ -26,6 +26,13 @@ local PLATFORM_OFFSET = 3.62
 local SLOW_FALL_SPEED = -0.5 -- Negative because falling down (make smaller like -1 or -0.5 for super slow)
 local originalGravity = nil
 local bodyVelocity = nil
+local floatingEffects = {
+    particles = nil,
+    textGui = nil,
+    leftRing = nil,
+    rightRing = nil,
+    effectsEnabled = false
+}
 
 -- Wall transparency variables
 local wallTransparencyEnabled = false
@@ -211,6 +218,209 @@ titleBar.InputChanged:Connect(function(input)
     end
 end)
 
+local function createFloatingEffects()
+    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+        return
+    end
+    
+    local rootPart = player.Character.HumanoidRootPart
+    
+    -- Create blue particles
+    local attachment = Instance.new("Attachment")
+    attachment.Name = "FloatingParticleAttachment"
+    attachment.Parent = rootPart
+    
+    local particles = Instance.new("ParticleEmitter")
+    particles.Name = "FloatingParticles"
+    particles.Parent = attachment
+    particles.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+    particles.Color = ColorSequence.new(Color3.fromRGB(0, 162, 255))
+    particles.Size = NumberSequence.new{
+        NumberSequenceKeypoint.new(0, 0.5),
+        NumberSequenceKeypoint.new(0.5, 1),
+        NumberSequenceKeypoint.new(1, 0.5)
+    }
+    particles.Lifetime = NumberRange.new(1.0, 2.0)
+    particles.Rate = 50
+    particles.SpreadAngle = Vector2.new(45, 45)
+    particles.Speed = NumberRange.new(2, 5)
+    particles.Acceleration = Vector3.new(0, 2, 0)
+    particles.Transparency = NumberSequence.new{
+        NumberSequenceKeypoint.new(0, 0.3),
+        NumberSequenceKeypoint.new(0.5, 0.1),
+        NumberSequenceKeypoint.new(1, 1.0)
+    }
+    particles.LightEmission = 0.8
+    particles.LightInfluence = 0.2
+    
+    -- Create "FLOATING" text above player
+    local textGui = Instance.new("BillboardGui")
+    textGui.Name = "FloatingText"
+    textGui.Parent = rootPart
+    textGui.Size = UDim2.new(0, 200, 0, 50)
+    textGui.StudsOffset = Vector3.new(0, 4, 0)
+    textGui.AlwaysOnTop = true
+    
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Parent = textGui
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = "FLOATING"
+    textLabel.TextColor3 = Color3.fromRGB(0, 162, 255)
+    textLabel.TextScaled = true
+    textLabel.TextStrokeTransparency = 0
+    textLabel.TextStrokeColor3 = Color3.fromRGB(0, 50, 100)
+    textLabel.Font = Enum.Font.GothamBold
+    
+    -- Glow effect for text
+    local textGlow = textLabel:Clone()
+    textGlow.Parent = textGui
+    textGlow.TextTransparency = 0.5
+    textGlow.TextStrokeTransparency = 0.3
+    textGlow.Size = UDim2.new(1.1, 0, 1.1, 0)
+    textGlow.Position = UDim2.new(-0.05, 0, -0.05, 0)
+    textGlow.ZIndex = textLabel.ZIndex - 1
+    
+    -- Create left ring (half circle)
+    local leftRing = Instance.new("Part")
+    leftRing.Name = "LeftFloatingRing"
+    leftRing.Parent = workspace
+    leftRing.Size = Vector3.new(0.2, 6, 6)
+    leftRing.Material = Enum.Material.Neon
+    leftRing.BrickColor = BrickColor.new("Bright blue")
+    leftRing.Color = Color3.fromRGB(0, 162, 255)
+    leftRing.Anchored = true
+    leftRing.CanCollide = false
+    leftRing.Shape = Enum.PartType.Cylinder
+    leftRing.TopSurface = Enum.SurfaceType.Smooth
+    leftRing.BottomSurface = Enum.SurfaceType.Smooth
+    leftRing.Transparency = 0.2
+    
+    -- Make it a half ring by using a negative part
+    local leftCutter = Instance.new("Part")
+    leftCutter.Parent = leftRing
+    leftCutter.Size = Vector3.new(0.3, 7, 3.5)
+    leftCutter.Position = leftRing.Position + Vector3.new(0, 0, 1.75)
+    leftCutter.Material = Enum.Material.Neon
+    leftCutter.Transparency = 1
+    leftCutter.Anchored = true
+    leftCutter.CanCollide = false
+    
+    local leftSubtract = Instance.new("SubtractOperation")
+    leftSubtract.Parent = workspace
+    leftSubtract.UsePartColor = true
+    
+    -- Create right ring (half circle)
+    local rightRing = Instance.new("Part")
+    rightRing.Name = "RightFloatingRing"
+    rightRing.Parent = workspace
+    rightRing.Size = Vector3.new(0.2, 6, 6)
+    rightRing.Material = Enum.Material.Neon
+    rightRing.BrickColor = BrickColor.new("Bright blue")
+    rightRing.Color = Color3.fromRGB(0, 162, 255)
+    rightRing.Anchored = true
+    rightRing.CanCollide = false
+    rightRing.Shape = Enum.PartType.Cylinder
+    rightRing.TopSurface = Enum.SurfaceType.Smooth
+    rightRing.BottomSurface = Enum.SurfaceType.Smooth
+    rightRing.Transparency = 0.2
+    
+    -- Make it a half ring
+    local rightCutter = Instance.new("Part")
+    rightCutter.Parent = rightRing
+    rightCutter.Size = Vector3.new(0.3, 7, 3.5)
+    rightCutter.Position = rightRing.Position + Vector3.new(0, 0, -1.75)
+    rightCutter.Material = Enum.Material.Neon
+    rightCutter.Transparency = 1
+    rightCutter.Anchored = true
+    rightCutter.CanCollide = false
+    
+    local rightSubtract = Instance.new("SubtractOperation")
+    rightSubtract.Parent = workspace
+    rightSubtract.UsePartColor = true
+    
+    -- Add glow effects to rings
+    local leftGlow = Instance.new("PointLight")
+    leftGlow.Color = Color3.fromRGB(0, 162, 255)
+    leftGlow.Brightness = 2
+    leftGlow.Range = 10
+    leftGlow.Parent = leftRing
+    
+    local rightGlow = Instance.new("PointLight")
+    rightGlow.Color = Color3.fromRGB(0, 162, 255)
+    rightGlow.Brightness = 2
+    rightGlow.Range = 10
+    rightGlow.Parent = rightRing
+    
+    -- Store references
+    floatingEffects.particles = attachment
+    floatingEffects.textGui = textGui
+    floatingEffects.leftRing = leftRing
+    floatingEffects.rightRing = rightRing
+    floatingEffects.effectsEnabled = true
+    
+    -- Start ring animation and positioning
+    local ringUpdateConnection
+    ringUpdateConnection = RunService.Heartbeat:Connect(function()
+        if not floatingEffects.effectsEnabled or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+            if ringUpdateConnection then
+                ringUpdateConnection:Disconnect()
+            end
+            return
+        end
+        
+        local currentRootPart = player.Character.HumanoidRootPart
+        local time = tick() * 2 -- Rotation speed
+        
+        -- Update left ring position (orbiting)
+        if leftRing and leftRing.Parent then
+            local leftOffset = Vector3.new(
+                math.cos(time) * 4,
+                math.sin(time * 0.5) * 1,
+                math.sin(time) * 4
+            )
+            leftRing.Position = currentRootPart.Position + leftOffset
+            leftRing.Rotation = Vector3.new(0, math.deg(time), 90)
+        end
+        
+        -- Update right ring position (counter-orbiting)
+        if rightRing and rightRing.Parent then
+            local rightOffset = Vector3.new(
+                math.cos(-time) * 4,
+                math.sin(-time * 0.5) * 1,
+                math.sin(-time) * 4
+            )
+            rightRing.Position = currentRootPart.Position + rightOffset
+            rightRing.Rotation = Vector3.new(0, math.deg(-time), 90)
+        end
+    end)
+end
+
+-- Add this function to remove floating effects
+local function removeFloatingEffects()
+    floatingEffects.effectsEnabled = false
+    
+    if floatingEffects.particles then
+        floatingEffects.particles:Destroy()
+        floatingEffects.particles = nil
+    end
+    
+    if floatingEffects.textGui then
+        floatingEffects.textGui:Destroy()
+        floatingEffects.textGui = nil
+    end
+    
+    if floatingEffects.leftRing then
+        floatingEffects.leftRing:Destroy()
+        floatingEffects.leftRing = nil
+    end
+    
+    if floatingEffects.rightRing then
+        floatingEffects.rightRing:Destroy()
+        floatingEffects.rightRing = nil
+    end
+end
+
 local function createPlatform()
     local platform = Instance.new("Part")
     platform.Name = "PlayerPlatform"
@@ -319,6 +529,8 @@ local function enablePlatform()
     
     platformUpdateConnection = RunService.Heartbeat:Connect(updatePlatformPosition)
     updatePlatformPosition()
+
+    createFloatingEffects()
     
     floatButton.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
     floatButton.Text = "🔷 FLOAT 🔷"
@@ -330,6 +542,8 @@ end
 -- Replace your disablePlatform function:
 local function disablePlatform()
     if not platformEnabled then return end
+
+    removeFloatingEffects()
     
     platformEnabled = false
     
@@ -358,7 +572,7 @@ local function storeOriginalTransparencies()
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("BasePart") and obj.Parent ~= player.Character and obj.Name ~= "PlayerPlatform" and obj.Name ~= "ComboPlayerPlatform" then
             local name = obj.Name
-            if name == "structure base home" then
+            if name == "structure base home" or name == "Hitbox" then
                 originalTransparencies[obj] = {
                     transparency = obj.Transparency,
                     canCollide = obj.CanCollide
@@ -1180,13 +1394,7 @@ local function onCharacterAdded(newCharacter)
     originalGravity = nil
     bodyVelocity = nil
     elevationBodyVelocity = nil
-    
-    -- Disconnect any existing elevation animation loop
-    if elevationAnimationLoop then
-        elevationAnimationLoop:Disconnect()
-        elevationAnimationLoop = nil
-    end
-    
+
     if platformEnabled then
         task.wait(1)
         
@@ -1197,6 +1405,10 @@ local function onCharacterAdded(newCharacter)
         currentPlatform = createPlatform()
         applySlowFall() -- Reapply slow fall to new character
         updatePlatformPosition()
+        
+        -- ADD THESE LINES HERE:
+        task.wait(0.5) -- Wait for character to fully load
+        createFloatingEffects()
     end
 end
 
