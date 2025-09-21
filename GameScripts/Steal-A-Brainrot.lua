@@ -229,6 +229,7 @@ local function createFloatingEffects()
     removeFloatingEffects()
     
     local rootPart = player.Character.HumanoidRootPart
+    print("Creating floating effects for", player.Name)
     
     -- Create enhanced blue particles (tearing effect)
     local attachment = Instance.new("Attachment")
@@ -238,38 +239,40 @@ local function createFloatingEffects()
     local particles = Instance.new("ParticleEmitter")
     particles.Name = "FloatingParticles"
     particles.Parent = attachment
-    particles.Texture = "rbxasset://textures/particles/fire_main.dds" -- More dramatic texture
+    particles.Texture = "rbxasset://textures/particles/sparkles_main.dds" -- Working texture
     particles.Color = ColorSequence.new{
         ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 100, 255)),
         ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 162, 255)),
         ColorSequenceKeypoint.new(1, Color3.fromRGB(100, 200, 255))
     }
     particles.Size = NumberSequence.new{
-        NumberSequenceKeypoint.new(0, 0.8),
-        NumberSequenceKeypoint.new(0.3, 1.5),
-        NumberSequenceKeypoint.new(1, 0.2)
+        NumberSequenceKeypoint.new(0, 1.0),
+        NumberSequenceKeypoint.new(0.5, 2.0),
+        NumberSequenceKeypoint.new(1, 0.5)
     }
-    particles.Lifetime = NumberRange.new(0.8, 1.5)
-    particles.Rate = 80
-    particles.SpreadAngle = Vector2.new(360, 360) -- Full circle spread
-    particles.Speed = NumberRange.new(3, 8)
-    particles.Acceleration = Vector3.new(0, -5, 0) -- Pull downward for tearing effect
+    particles.Lifetime = NumberRange.new(1.0, 2.5)
+    particles.Rate = 100
+    particles.SpreadAngle = Vector2.new(360, 360)
+    particles.Speed = NumberRange.new(5, 12)
+    particles.Acceleration = Vector3.new(0, -10, 0) -- Strong downward pull
     particles.Transparency = NumberSequence.new{
-        NumberSequenceKeypoint.new(0, 0.2),
-        NumberSequenceKeypoint.new(0.3, 0.0),
-        NumberSequenceKeypoint.new(0.7, 0.3),
-        NumberSequenceKeypoint.new(1, 1.0)
+        ColorSequenceKeypoint.new(0, 0.0),
+        ColorSequenceKeypoint.new(0.3, 0.2),
+        ColorSequenceKeypoint.new(0.7, 0.5),
+        ColorSequenceKeypoint.new(1, 1.0)
     }
-    particles.LightEmission = 1.0 -- Full glow
+    particles.LightEmission = 1.0
     particles.LightInfluence = 0.0
-    particles.VelocityInheritance = 0.5
+    particles.Enabled = true -- Make sure it's enabled
+    
+    print("Created particles with rate:", particles.Rate)
     
     -- Create smaller "FLOATING" text above player
     local textGui = Instance.new("BillboardGui")
     textGui.Name = "FloatingText"
     textGui.Parent = rootPart
-    textGui.Size = UDim2.new(0, 120, 0, 30) -- Made smaller
-    textGui.StudsOffset = Vector3.new(0, 3.5, 0)
+    textGui.Size = UDim2.new(0, 120, 0, 30)
+    textGui.StudsOffset = Vector3.new(0, 4, 0)
     textGui.AlwaysOnTop = true
     
     local textLabel = Instance.new("TextLabel")
@@ -283,84 +286,98 @@ local function createFloatingEffects()
     textLabel.TextStrokeColor3 = Color3.fromRGB(0, 50, 100)
     textLabel.Font = Enum.Font.GothamBold
     
-    -- Create left rusted/torn ring
+    print("Created floating text")
+    
+    -- Create left torn ring using UnionOperation for better control
     local leftRing = Instance.new("Part")
     leftRing.Name = "LeftFloatingRing"
     leftRing.Parent = workspace
-    leftRing.Size = Vector3.new(0.3, 8, 8)
-    leftRing.Material = Enum.Material.Neon
+    leftRing.Size = Vector3.new(0.4, 8, 8)
+    leftRing.Material = Enum.Material.ForceField
     leftRing.Color = Color3.fromRGB(0, 150, 255)
     leftRing.Anchored = true
     leftRing.CanCollide = false
     leftRing.Shape = Enum.PartType.Cylinder
-    leftRing.Transparency = 0.1
+    leftRing.Transparency = 0.3
+    leftRing.Position = rootPart.Position + Vector3.new(5, 0, 0)
     
-    -- Create mesh for torn/rusted effect
-    local leftMesh = Instance.new("SpecialMesh")
-    leftMesh.Parent = leftRing
-    leftMesh.MeshType = Enum.MeshType.Cylinder
-    leftMesh.Scale = Vector3.new(1, 1, 1)
+    -- Create torn sections by making the ring look damaged
+    local leftHole1 = Instance.new("Part")
+    leftHole1.Name = "LeftHole1"
+    leftHole1.Parent = workspace
+    leftHole1.Size = Vector3.new(0.5, 3, 3)
+    leftHole1.Material = Enum.Material.Neon
+    leftHole1.Color = Color3.fromRGB(0, 100, 200)
+    leftHole1.Anchored = true
+    leftHole1.CanCollide = false
+    leftHole1.Shape = Enum.PartType.Block
+    leftHole1.Transparency = 0.2
+    leftHole1.Position = leftRing.Position + Vector3.new(0, 2, 2)
     
-    -- Multiple cuts to create torn effect
-    local leftCutter1 = Instance.new("Part")
-    leftCutter1.Parent = workspace
-    leftCutter1.Size = Vector3.new(0.4, 9, 4)
-    leftCutter1.Anchored = true
-    leftCutter1.CanCollide = false
-    leftCutter1.Transparency = 1
+    local leftHole2 = Instance.new("Part")
+    leftHole2.Name = "LeftHole2"
+    leftHole2.Parent = workspace
+    leftHole2.Size = Vector3.new(0.5, 2, 4)
+    leftHole2.Material = Enum.Material.Neon
+    leftHole2.Color = Color3.fromRGB(0, 100, 200)
+    leftHole2.Anchored = true
+    leftHole2.CanCollide = false
+    leftHole2.Shape = Enum.PartType.Block
+    leftHole2.Transparency = 0.2
+    leftHole2.Position = leftRing.Position + Vector3.new(0, -2.5, -1)
     
-    local leftCutter2 = Instance.new("Part")
-    leftCutter2.Parent = workspace
-    leftCutter2.Size = Vector3.new(0.4, 5, 9)
-    leftCutter2.Anchored = true
-    leftCutter2.CanCollide = false
-    leftCutter2.Transparency = 1
-    
-    -- Create right rusted/torn ring
+    -- Create right torn ring
     local rightRing = Instance.new("Part")
     rightRing.Name = "RightFloatingRing"
     rightRing.Parent = workspace
-    rightRing.Size = Vector3.new(0.3, 6, 6)
-    rightRing.Material = Enum.Material.Neon
+    rightRing.Size = Vector3.new(0.4, 6, 6)
+    rightRing.Material = Enum.Material.ForceField
     rightRing.Color = Color3.fromRGB(0, 150, 255)
     rightRing.Anchored = true
     rightRing.CanCollide = false
     rightRing.Shape = Enum.PartType.Cylinder
-    rightRing.Transparency = 0.1
+    rightRing.Transparency = 0.3
+    rightRing.Position = rootPart.Position + Vector3.new(-4, 0, 0)
     
-    -- Create mesh for torn/rusted effect
-    local rightMesh = Instance.new("SpecialMesh")
-    rightMesh.Parent = rightRing
-    rightMesh.MeshType = Enum.MeshType.Cylinder
-    rightMesh.Scale = Vector3.new(1, 1, 1)
+    -- Create torn sections for right ring
+    local rightHole1 = Instance.new("Part")
+    rightHole1.Name = "RightHole1"
+    rightHole1.Parent = workspace
+    rightHole1.Size = Vector3.new(0.5, 2, 2.5)
+    rightHole1.Material = Enum.Material.Neon
+    rightHole1.Color = Color3.fromRGB(0, 100, 200)
+    rightHole1.Anchored = true
+    rightHole1.CanCollide = false
+    rightHole1.Shape = Enum.PartType.Block
+    rightHole1.Transparency = 0.2
+    rightHole1.Position = rightRing.Position + Vector3.new(0, 1.5, 1.5)
     
-    -- Multiple cuts for right ring
-    local rightCutter1 = Instance.new("Part")
-    rightCutter1.Parent = workspace
-    rightCutter1.Size = Vector3.new(0.4, 7, 3)
-    rightCutter1.Anchored = true
-    rightCutter1.CanCollide = false
-    rightCutter1.Transparency = 1
+    local rightHole2 = Instance.new("Part")
+    rightHole2.Name = "RightHole2"
+    rightRing.Parent = workspace
+    rightHole2.Size = Vector3.new(0.5, 3, 1.5)
+    rightHole2.Material = Enum.Material.Neon
+    rightHole2.Color = Color3.fromRGB(0, 100, 200)
+    rightHole2.Anchored = true
+    rightHole2.CanCollide = false
+    rightHole2.Shape = Enum.PartType.Block
+    rightHole2.Transparency = 0.2
+    rightHole2.Position = rightRing.Position + Vector3.new(0, -1, -2)
     
-    local rightCutter2 = Instance.new("Part")
-    rightCutter2.Parent = workspace
-    rightCutter2.Size = Vector3.new(0.4, 3, 7)
-    rightCutter2.Anchored = true
-    rightCutter2.CanCollide = false
-    rightCutter2.Transparency = 1
-    
-    -- Add intense glow effects
+    -- Add strong glow effects
     local leftGlow = Instance.new("PointLight")
     leftGlow.Color = Color3.fromRGB(0, 162, 255)
-    leftGlow.Brightness = 3
-    leftGlow.Range = 15
+    leftGlow.Brightness = 5
+    leftGlow.Range = 20
     leftGlow.Parent = leftRing
     
     local rightGlow = Instance.new("PointLight")
     rightGlow.Color = Color3.fromRGB(0, 162, 255)
-    rightGlow.Brightness = 3
-    rightGlow.Range = 15
+    rightGlow.Brightness = 5
+    rightGlow.Range = 20
     rightGlow.Parent = rightRing
+    
+    print("Created rings and holes")
     
     -- Store references
     floatingEffects.particles = attachment
@@ -369,79 +386,71 @@ local function createFloatingEffects()
     floatingEffects.rightRing = rightRing
     floatingEffects.effectsEnabled = true
     
-    -- Start ring animation and positioning with irregular movement
+    -- Start ring animation and positioning
     floatingEffects.ringConnection = RunService.Heartbeat:Connect(function()
         if not floatingEffects.effectsEnabled or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
             return
         end
         
         local currentRootPart = player.Character.HumanoidRootPart
-        local time = tick() * 3 -- Faster rotation
+        local time = tick() * 2 -- Rotation speed
         
-        -- Update left ring with irregular spinning (torn effect simulation)
+        -- Update left ring with irregular movement
         if leftRing and leftRing.Parent then
             local leftOffset = Vector3.new(
-                math.cos(time) * 5 + math.sin(time * 2) * 0.5, -- Irregular orbit
-                math.sin(time * 0.7) * 1.5 + math.cos(time * 1.3) * 0.3,
-                math.sin(time) * 5 + math.cos(time * 1.5) * 0.5
+                math.cos(time) * 6 + math.sin(time * 2) * 1,
+                math.sin(time * 0.5) * 2,
+                math.sin(time) * 6 + math.cos(time * 1.5) * 1
             )
             leftRing.Position = currentRootPart.Position + leftOffset
-            leftRing.Rotation = Vector3.new(
-                math.sin(time * 1.2) * 15,
-                math.deg(time * 1.5),
-                90 + math.cos(time * 0.8) * 10
-            )
+            leftRing.Rotation = Vector3.new(0, math.deg(time * 1.5), 90)
             
-            -- Update cutters for left ring
-            leftCutter1.Position = leftRing.Position + Vector3.new(0, 2, 1)
-            leftCutter2.Position = leftRing.Position + Vector3.new(0, -1, 2)
-            leftCutter1.Rotation = leftRing.Rotation + Vector3.new(15, 0, 0)
-            leftCutter2.Rotation = leftRing.Rotation + Vector3.new(-20, 45, 0)
+            -- Update holes to follow the ring
+            if leftHole1 and leftHole1.Parent then
+                leftHole1.Position = leftRing.Position + Vector3.new(0, 2, 2)
+                leftHole1.Rotation = leftRing.Rotation + Vector3.new(15, 0, 0)
+            end
+            if leftHole2 and leftHole2.Parent then
+                leftHole2.Position = leftRing.Position + Vector3.new(0, -2.5, -1)
+                leftHole2.Rotation = leftRing.Rotation + Vector3.new(-20, 0, 0)
+            end
         end
         
-        -- Update right ring with different irregular pattern
+        -- Update right ring with different pattern
         if rightRing and rightRing.Parent then
             local rightOffset = Vector3.new(
-                math.cos(-time * 1.3) * 4 + math.sin(-time * 2.5) * 0.7,
-                math.sin(-time * 0.9) * 1.2 + math.cos(-time * 1.7) * 0.4,
-                math.sin(-time * 1.1) * 4 + math.cos(-time * 1.8) * 0.6
+                math.cos(-time * 1.2) * 4 + math.sin(-time * 2.2) * 1,
+                math.sin(-time * 0.7) * 1.5,
+                math.sin(-time * 1.1) * 4 + math.cos(-time * 1.8) * 1
             )
             rightRing.Position = currentRootPart.Position + rightOffset
-            rightRing.Rotation = Vector3.new(
-                math.sin(-time * 1.1) * 12,
-                math.deg(-time * 1.8),
-                90 + math.cos(-time * 0.6) * 8
-            )
+            rightRing.Rotation = Vector3.new(0, math.deg(-time * 1.8), 90)
             
-            -- Update cutters for right ring
-            rightCutter1.Position = rightRing.Position + Vector3.new(0, 1.5, -1.5)
-            rightCutter2.Position = rightRing.Position + Vector3.new(0, -1.5, 1)
-            rightCutter1.Rotation = rightRing.Rotation + Vector3.new(-10, 30, 0)
-            rightCutter2.Rotation = rightRing.Rotation + Vector3.new(25, -15, 0)
+            -- Update holes to follow the ring
+            if rightHole1 and rightHole1.Parent then
+                rightHole1.Position = rightRing.Position + Vector3.new(0, 1.5, 1.5)
+                rightHole1.Rotation = rightRing.Rotation + Vector3.new(10, 0, 0)
+            end
+            if rightHole2 and rightHole2.Parent then
+                rightHole2.Position = rightRing.Position + Vector3.new(0, -1, -2)
+                rightHole2.Rotation = rightRing.Rotation + Vector3.new(-15, 0, 0)
+            end
         end
     end)
     
-    -- Enhanced particle effect that follows the rings
-    floatingEffects.particleConnection = RunService.Heartbeat:Connect(function()
-        if not floatingEffects.effectsEnabled or not particles.Parent then
-            return
-        end
-        
-        -- Make particles more dynamic
-        local time = tick()
-        particles.Rate = 60 + math.sin(time * 2) * 20 -- Pulsing particle rate
-        particles.Speed = NumberRange.new(2 + math.sin(time) * 2, 6 + math.cos(time * 1.5) * 3)
-    end)
+    print("Started animation connections")
 end
 
--- Add this function to remove floating effects
+-- Enhanced removal function with proper cleanup
 local function removeFloatingEffects()
     floatingEffects.effectsEnabled = false
+    print("Removing floating effects...")
     
     -- Disconnect connections first
     if floatingEffects.ringConnection then
         floatingEffects.ringConnection:Disconnect()
         floatingEffects.ringConnection = nil
+        print("Disconnected ring connection")
     end
     
     if floatingEffects.particleConnection then
@@ -454,49 +463,55 @@ local function removeFloatingEffects()
         local particleEmitter = floatingEffects.particles:FindFirstChild("FloatingParticles")
         if particleEmitter then
             particleEmitter.Enabled = false
+            task.wait(0.1)
             particleEmitter:Destroy()
         end
         floatingEffects.particles:Destroy()
         floatingEffects.particles = nil
+        print("Removed particles")
     end
     
     -- Remove text GUI
     if floatingEffects.textGui then
         floatingEffects.textGui:Destroy()
         floatingEffects.textGui = nil
+        print("Removed text GUI")
     end
     
-    -- Remove rings and their cutters
+    -- Remove rings
     if floatingEffects.leftRing then
         floatingEffects.leftRing:Destroy()
         floatingEffects.leftRing = nil
+        print("Removed left ring")
     end
     
     if floatingEffects.rightRing then
         floatingEffects.rightRing:Destroy()
         floatingEffects.rightRing = nil
+        print("Removed right ring")
     end
     
-    -- Clean up any leftover cutters in workspace
+    -- Clean up any leftover parts in workspace
     for _, obj in pairs(workspace:GetChildren()) do
-        if obj.Name and (string.find(obj.Name, "Cutter") or string.find(obj.Name, "FloatingRing")) then
+        if obj.Name and (string.find(obj.Name, "Hole") or string.find(obj.Name, "FloatingRing")) then
             obj:Destroy()
+            print("Cleaned up leftover part:", obj.Name)
         end
     end
     
-    -- Extra cleanup - find any remaining floating effects
+    -- Extra cleanup on character
     if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
         local rootPart = player.Character.HumanoidRootPart
         
-        -- Remove any leftover attachments
         for _, child in pairs(rootPart:GetChildren()) do
             if child.Name == "FloatingParticleAttachment" or child.Name == "FloatingText" then
                 child:Destroy()
+                print("Cleaned up character attachment:", child.Name)
             end
         end
     end
     
-    print("🧹 Cleaned up all floating effects")
+    print("✅ All floating effects cleaned up")
 end
 
 local function createPlatform()
@@ -650,7 +665,7 @@ local function storeOriginalTransparencies()
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("BasePart") and obj.Parent ~= player.Character and obj.Name ~= "PlayerPlatform" and obj.Name ~= "ComboPlayerPlatform" then
             local name = obj.Name
-            if name == "structure base home" or name == "Hitbox" then
+            if name == "structure base home" then
                 originalTransparencies[obj] = {
                     transparency = obj.Transparency,
                     canCollide = obj.CanCollide
@@ -668,7 +683,6 @@ local function makeWallsTransparent(transparent)
             if transparent then
                 obj.Transparency = TRANSPARENCY_LEVEL
                 obj.CanCollide = false
-                obj.CastShadow = false
                 count = count + 1
             else
                 obj.Transparency = data.transparency
