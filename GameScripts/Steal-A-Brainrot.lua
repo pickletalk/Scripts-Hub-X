@@ -317,7 +317,7 @@ local function enablePlatform()
     updatePlatformPosition()
     
     floatButton.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
-    floatButton.Text = "🔷 SLOW FALL 🔷"
+    floatButton.Text = "🔷 FLOAT 🔷"
     
     local wallStatus = wallTransparencyEnabled and "ON" or "OFF"
     statusLabel.Text = "Float: ON | Walls: " .. wallStatus
@@ -343,7 +343,7 @@ local function disablePlatform()
     end
     
     floatButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    floatButton.Text = "🔷 SLOW FALL 🔷"
+    floatButton.Text = "🔷 FLOAT 🔷"
     
     local wallStatus = wallTransparencyEnabled and "ON" or "OFF"
     statusLabel.Text = "Float: OFF | Walls: " .. wallStatus
