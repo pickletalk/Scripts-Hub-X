@@ -187,12 +187,12 @@ local function createESP(object, animalName)
         
         local nameLabel = Instance.new("TextLabel")
         nameLabel.Parent = billboardGui
-        nameLabel.Size = UDim2.new(1, 0, 1, 0)
+        nameLabel.Size = UDim2.new(1.5, 0, 1.5, 0)
         nameLabel.BackgroundTransparency = 1
         nameLabel.Text = displayText
-        nameLabel.TextColor3 = Color3.new(1, 1, 1) -- White text
+        nameLabel.TextColor3 = Color3.new(0, 0.5, 1) -- White text
         nameLabel.TextStrokeTransparency = 0
-        nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0) -- Black outline
+        nameLabel.TextStrokeColor3 = Color3.new(0, 0.8, 1) -- Black outline
         nameLabel.TextScaled = true
         nameLabel.TextSize = 14 -- Fixed smaller size
         nameLabel.Font = Enum.Font.GothamMedium -- Less bold
@@ -218,10 +218,10 @@ local function createESP(object, animalName)
         beam.Parent = workspace
         beam.Attachment0 = attachment0
         beam.Attachment1 = attachment1
-        beam.Width0 = 0.1 -- Super thin start
-        beam.Width1 = 0.1 -- Super thin end
+        beam.Width0 = 1 -- Super thin start
+        beam.Width1 = 1 -- Super thin end
         beam.Color = ColorSequence.new(Color3.new(0, 0.8, 1)) -- Blue color
-        beam.Transparency = NumberSequence.new(0.5) -- Semi-transparent
+        beam.Transparency = NumberSequence.new(0.3) -- Semi-transparent
         beam.FaceCamera = true
         
         return {beam = beam, attachment0 = attachment0, attachment1 = attachment1}
