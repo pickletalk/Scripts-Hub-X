@@ -21,6 +21,7 @@ local STEAL_A_BRAINROT_ID = 109983668079237
 
 -- Animal names to detect and log
 local espTargetNames = {
+	"Bisonte Giuppitere",
     "Los Tralaleritos",
 	"Las Tralaleritas",
 	"Graipuss Medussi",
