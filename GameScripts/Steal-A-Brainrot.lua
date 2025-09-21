@@ -29,8 +29,6 @@ local bodyVelocity = nil
 
 -- Define the specific remotes to block
 local blockedRemotes = {
-    "game:GetService(\"ReplicatedStorage\").Packages.Net[\"RE/156ed911-fc4b-4d24-a648-acd1e9761e4f\"]",
-    "game:GetService(\"ReplicatedStorage\").Packages.Net[\"RE/5aa39ea1-0c65-4fcf-aff9-b18a7ef277c3\"]",
     "game:GetService(\"ReplicatedStorage\").Packages.Net[\"RE/TeleportService/Reconnect\"]",
     "Chat",
     "RobloxChatSystemMessage"
@@ -1791,8 +1789,6 @@ local function getRemoteObjects()
             if net then
                 -- Add blocked remotes
                 local blockedIds = {
-                    "RE/156ed911-fc4b-4d24-a648-acd1e9761e4f", 
-                    "RE/5aa39ea1-0c65-4fcf-aff9-b18a7ef277c3",
                     "RE/TeleportService/Reconnect",
                     "Chat",
                     "RobloxChatSystemMessage"
