@@ -243,7 +243,7 @@ local comboFloatEnabled = false
 local comboCurrentPlatform = nil
 local comboPlatformUpdateConnection = nil
 local comboPlayerCollisionConnection = nil
-local COMBO_PLATFORM_OFFSET = 3.57
+local COMBO_PLATFORM_OFFSET = 3.7
 
 -- ESP variables
 local plotDisplays = {}
