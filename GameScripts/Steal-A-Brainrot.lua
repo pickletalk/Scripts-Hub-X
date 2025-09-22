@@ -422,7 +422,7 @@ local function enablePlatform()
     if not grappleHookConnection then
         grappleHookConnection = task.spawn(function()
             while platformEnabled do
-                task.wait(1)
+                task.wait(3)
                 equipAndFire()
             end
         end)
@@ -455,12 +455,49 @@ local function disablePlatform()
         currentPlatform:Destroy()
         currentPlatform = nil
     end
+
+    local function equipGrappleHook()
+        local backpack = player:FindFirstChild("Backpack")
+        local character = player.Character
+        
+        if backpack and character then
+            local grappleHook = backpack:FindFirstChild("Grapple Hook")
+            if grappleHook and grappleHook:IsA("Tool") then
+                local humanoid = character:FindFirstChild("Humanoid")
+                if humanoid then
+                    humanoid:EquipTool(grappleHook)
+                end
+            end
+        end
+    end
+    
+    -- Fire grapple hook function
+    local function fireGrappleHook()
+        local args = {0.08707536856333414}
+        
+        local success, error = pcall(function()
+            ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"):WaitForChild("RE/UseItem"):FireServer(unpack(args))
+        end)
+        
+        if not success then
+            warn("Failed to fire grapple hook: " .. tostring(error))
+        end
+    end
+
+    -- Combined function that equips and fires
+    local function equipAndFire()
+        fireGrappleHook()
+        equipGrappleHook()
+    end
     
     -- STOP GRAPPLE HOOK LOOP
     if grappleHookConnection then
         task.cancel(grappleHookConnection)
         grappleHookConnection = nil
         print("🎣 Grapple Hook fire loop stopped!")
+        equipAndFire()
+        wait(0.5)
+        equipAndFire()
     end
     
     floatButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -623,7 +660,7 @@ local function enableWallTransparency()
     if not grappleHookConnection then
         grappleHookConnection = task.spawn(function()
             while wallTransparencyEnabled do -- FIXED: Changed from platformEnabled to wallTransparencyEnabled
-                task.wait(1)
+                task.wait(1.5)
                 equipAndFire()
             end
         end)
