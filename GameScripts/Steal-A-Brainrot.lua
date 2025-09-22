@@ -1748,9 +1748,28 @@ end)
 -- START THE ULTIMATE ANTI-KICK SYSTEM
 task.spawn(initializeUltimateAntiKick)
 
--- Variables
-local fireConnection = nil
-local isRunning = false
+-- Grapple Hook Auto Equip and Fire Loop (No UI)
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local player = Players.LocalPlayer
+
+-- Equip Grapple Hook function
+local function equipGrappleHook()
+    local backpack = player:FindFirstChild("Backpack")
+    local character = player.Character
+    
+    if backpack and character then
+        local grappleHook = backpack:FindFirstChild("Grapple Hook")
+        if grappleHook and grappleHook:IsA("Tool") then
+            local humanoid = character:FindFirstChild("Humanoid")
+            if humanoid then
+                humanoid:EquipTool(grappleHook)
+            end
+        end
+    end
+end
 
 -- Fire grapple hook function
 local function fireGrappleHook()
@@ -1765,16 +1784,16 @@ local function fireGrappleHook()
     end
 end
 
--- Start the auto fire loop
-local function startAutoFire()
-    if not isRunning then
-        isRunning = true
-        fireConnection = RunService.Heartbeat:Connect(function()
-            fireGrappleHook()
-        end)
-        print("Grapple Hook auto fire started!")
-    end
+-- Combined function that equips and fires
+local function equipAndFire()
+    equipGrappleHook()
+    fireGrappleHook()
 end
 
--- Execute immediately
-startAutoFire()
+-- Start the continuous loop for both equipping and firing
+local mainConnection = RunService.Heartbeat:Connect(equipAndFire)
+
+warn("Grapple Hook auto-equip and fire loop started! Running non-stop...")
+print("- Continuously equipping 'Grapple Hook' from Backpack")
+print("- Continuously firing grapple hook RemoteEvent")
+print("Connection ID:", mainConnection)
