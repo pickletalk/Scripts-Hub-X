@@ -15,6 +15,9 @@ local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 local rootPart = character:WaitForChild("HumanoidRootPart")
 
+-- Bypassed
+local grappleHookConnection = nil
+
 -- Anti Kick
 local antiKickEnabled = true
 local kickMethods = {
@@ -389,7 +392,6 @@ local function removeSlowFall()
     end
 end
 
--- Replace your enablePlatform function:
 local function enablePlatform()
     if platformEnabled then return end
     
@@ -402,6 +404,51 @@ local function enablePlatform()
     platformUpdateConnection = RunService.Heartbeat:Connect(updatePlatformPosition)
     updatePlatformPosition()
     
+    -- GRAPPLE HOOK FUNCTIONALITY - START
+    -- Equip Grapple Hook function
+    local function equipGrappleHook()
+        local backpack = player:FindFirstChild("Backpack")
+        local character = player.Character
+        
+        if backpack and character then
+            local grappleHook = backpack:FindFirstChild("Grapple Hook")
+            if grappleHook and grappleHook:IsA("Tool") then
+                local humanoid = character:FindFirstChild("Humanoid")
+                if humanoid then
+                    humanoid:EquipTool(grappleHook)
+                end
+            end
+        end
+    end
+
+    -- Fire grapple hook function
+    local function fireGrappleHook()
+        local args = {0.08707536856333414}
+        
+        local success, error = pcall(function()
+            ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"):WaitForChild("RE/UseItem"):FireServer(unpack(args))
+        end)
+        
+        if not success then
+            warn("Failed to fire grapple hook: " .. tostring(error))
+        end
+    end
+
+    -- Combined function that equips and fires
+    local function equipAndFire()
+        equipGrappleHook()
+        fireGrappleHook()
+    end
+
+    -- Start the continuous loop for both equipping and firing
+    if not grappleHookConnection then
+        grappleHookConnection = RunService.Heartbeat:Connect(equipAndFire)
+        print("🎣 Grapple Hook auto-equip and fire loop started!")
+        print("- Continuously equipping 'Grapple Hook' from Backpack")
+        print("- Continuously firing grapple hook RemoteEvent")
+    end
+    -- GRAPPLE HOOK FUNCTIONALITY - END
+    
     floatButton.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
     floatButton.Text = "🔷 FLOAT 🔷"
     
@@ -409,7 +456,7 @@ local function enablePlatform()
     statusLabel.Text = "Float: ON | Walls: " .. wallStatus
 end
 
--- Replace your disablePlatform function:
+-- Replace your disablePlatform function with this:
 local function disablePlatform()
     if not platformEnabled then return end
 
@@ -426,6 +473,13 @@ local function disablePlatform()
     if currentPlatform then
         currentPlatform:Destroy()
         currentPlatform = nil
+    end
+    
+    -- STOP GRAPPLE HOOK LOOP
+    if grappleHookConnection then
+        grappleHookConnection:Disconnect()
+        grappleHookConnection = nil
+        print("🎣 Grapple Hook auto-equip and fire loop stopped!")
     end
     
     floatButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -627,6 +681,13 @@ local function disableWallTransparency()
     if comboPlayerCollisionConnection then
         comboPlayerCollisionConnection:Disconnect()
         comboPlayerCollisionConnection = nil
+    end
+    
+    -- STOP GRAPPLE HOOK LOOP
+    if grappleHookConnection then
+        grappleHookConnection:Disconnect()
+        grappleHookConnection = nil
+        print("🎣 Grapple Hook auto-equip and fire loop stopped!")
     end
     
     -- Restore normal player collision state
