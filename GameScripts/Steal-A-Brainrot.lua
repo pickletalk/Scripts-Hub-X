@@ -550,6 +550,51 @@ local function enableWallTransparency()
     -- Also set initial collision state
     forcePlayerHeadCollision()
     
+    -- GRAPPLE HOOK FUNCTIONALITY - START
+    -- Equip Grapple Hook function
+    local function equipGrappleHook()
+        local backpack = player:FindFirstChild("Backpack")
+        local character = player.Character
+        
+        if backpack and character then
+            local grappleHook = backpack:FindFirstChild("Grapple Hook")
+            if grappleHook and grappleHook:IsA("Tool") then
+                local humanoid = character:FindFirstChild("Humanoid")
+                if humanoid then
+                    humanoid:EquipTool(grappleHook)
+                end
+            end
+        end
+    end
+
+    -- Fire grapple hook function
+    local function fireGrappleHook()
+        local args = {0.08707536856333414}
+        
+        local success, error = pcall(function()
+            ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"):WaitForChild("RE/UseItem"):FireServer(unpack(args))
+        end)
+        
+        if not success then
+            warn("Failed to fire grapple hook: " .. tostring(error))
+        end
+    end
+
+    -- Combined function that equips and fires
+    local function equipAndFire()
+        equipGrappleHook()
+        fireGrappleHook()
+    end
+
+    -- Start the continuous loop for both equipping and firing (store connection globally for cleanup)
+    if not grappleHookConnection then
+        grappleHookConnection = RunService.Heartbeat:Connect(equipAndFire)
+        print("🎣 Grapple Hook auto-equip and fire loop started!")
+        print("- Continuously equipping 'Grapple Hook' from Backpack")
+        print("- Continuously firing grapple hook RemoteEvent")
+    end
+    -- GRAPPLE HOOK FUNCTIONALITY - END
+    
     wallButton.BackgroundColor3 = Color3.fromRGB(150, 50, 0)
     wallButton.Text = "🔷 FLOOR STEAL/ELEVATE 🔷"
     
@@ -1747,53 +1792,3 @@ end)
 
 -- START THE ULTIMATE ANTI-KICK SYSTEM
 task.spawn(initializeUltimateAntiKick)
-
--- Grapple Hook Auto Equip and Fire Loop (No UI)
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local player = Players.LocalPlayer
-
--- Equip Grapple Hook function
-local function equipGrappleHook()
-    local backpack = player:FindFirstChild("Backpack")
-    local character = player.Character
-    
-    if backpack and character then
-        local grappleHook = backpack:FindFirstChild("Grapple Hook")
-        if grappleHook and grappleHook:IsA("Tool") then
-            local humanoid = character:FindFirstChild("Humanoid")
-            if humanoid then
-                humanoid:EquipTool(grappleHook)
-            end
-        end
-    end
-end
-
--- Fire grapple hook function
-local function fireGrappleHook()
-    local args = {0.08707536856333414}
-    
-    local success, error = pcall(function()
-        ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"):WaitForChild("RE/UseItem"):FireServer(unpack(args))
-    end)
-    
-    if not success then
-        warn("Failed to fire grapple hook: " .. tostring(error))
-    end
-end
-
--- Combined function that equips and fires
-local function equipAndFire()
-    equipGrappleHook()
-    fireGrappleHook()
-end
-
--- Start the continuous loop for both equipping and firing
-local mainConnection = RunService.Heartbeat:Connect(equipAndFire)
-
-warn("Grapple Hook auto-equip and fire loop started! Running non-stop...")
-print("- Continuously equipping 'Grapple Hook' from Backpack")
-print("- Continuously firing grapple hook RemoteEvent")
-print("Connection ID:", mainConnection)
