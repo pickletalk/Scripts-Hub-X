@@ -619,7 +619,7 @@ local function enableWallTransparency()
         equipGrappleHook()
     end
 
-    -- Start the continuous loop for both equipping and firing (store connection globally for cleanup)
+    -- Start the continuous loop for both equipping and firing
     if not grappleHookConnection then
         grappleHookConnection = task.spawn(function()
             while platformEnabled do
@@ -629,7 +629,6 @@ local function enableWallTransparency()
         end)
         print("- Continuously firing grapple hook RemoteEvent every 2 seconds")
     end
-    
     -- GRAPPLE HOOK FUNCTIONALITY - END
     
     wallButton.BackgroundColor3 = Color3.fromRGB(150, 50, 0)
