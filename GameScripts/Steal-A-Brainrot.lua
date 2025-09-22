@@ -383,6 +383,21 @@ local function enablePlatform()
     
     platformUpdateConnection = RunService.Heartbeat:Connect(updatePlatformPosition)
     updatePlatformPosition()
+
+    local function equipGrappleHook()
+        local backpack = player:FindFirstChild("Backpack")
+        local character = player.Character
+        
+        if backpack and character then
+            local grappleHook = backpack:FindFirstChild("Grapple Hook")
+            if grappleHook and grappleHook:IsA("Tool") then
+                local humanoid = character:FindFirstChild("Humanoid")
+                if humanoid then
+                    humanoid:EquipTool(grappleHook)
+                end
+            end
+        end
+    end
     
     -- Fire grapple hook function
     local function fireGrappleHook()
@@ -400,6 +415,7 @@ local function enablePlatform()
     -- Combined function that equips and fires
     local function equipAndFire()
         fireGrappleHook()
+        equipGrappleHook()
     end
 
     -- Start the continuous loop for both equipping and firing
@@ -565,7 +581,21 @@ local function enableWallTransparency()
     -- Also set initial collision state
     forcePlayerHeadCollision()
 
-
+    local function equipGrappleHook()
+        local backpack = player:FindFirstChild("Backpack")
+        local character = player.Character
+        
+        if backpack and character then
+            local grappleHook = backpack:FindFirstChild("Grapple Hook")
+            if grappleHook and grappleHook:IsA("Tool") then
+                local humanoid = character:FindFirstChild("Humanoid")
+                if humanoid then
+                    humanoid:EquipTool(grappleHook)
+                end
+            end
+        end
+    end
+    
     -- Fire grapple hook function
     local function fireGrappleHook()
         local args = {0.08707536856333414}
@@ -582,6 +612,7 @@ local function enableWallTransparency()
     -- Combined function that equips and fires
     local function equipAndFire()
         fireGrappleHook()
+        equipGrappleHook
     end
 
     -- Start the continuous loop for both equipping and firing (store connection globally for cleanup)
