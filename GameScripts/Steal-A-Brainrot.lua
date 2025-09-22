@@ -423,7 +423,7 @@ local function enablePlatform()
         grappleHookConnection = task.spawn(function()
             while platformEnabled do
                 equipAndFire()
-                task.wait(2) -- Wait 2 seconds between each cycle
+                task.wait(2.5) -- Wait 2 seconds between each cycle
             end
         end)
         print("- Continuously firing grapple hook RemoteEvent every 2 seconds")
@@ -624,11 +624,12 @@ local function enableWallTransparency()
         grappleHookConnection = task.spawn(function()
             while platformEnabled do
                 equipAndFire()
-                task.wait(2) -- Wait 2 seconds between each cycle
+                task.wait(2.5) -- Wait 2 seconds between each cycle
             end
         end)
         print("- Continuously firing grapple hook RemoteEvent every 2 seconds")
     end
+    
     -- GRAPPLE HOOK FUNCTIONALITY - END
     
     wallButton.BackgroundColor3 = Color3.fromRGB(150, 50, 0)
