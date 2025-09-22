@@ -424,8 +424,6 @@ local function enablePlatform()
             while platformEnabled do
                 task.wait(1)
                 equipAndFire()
-                task.wait(1.5)
-                equipAndFire()
             end
         end)
         print("- Continuously firing grapple hook RemoteEvent every 2 seconds")
