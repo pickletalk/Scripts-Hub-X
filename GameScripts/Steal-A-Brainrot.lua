@@ -1,290 +1,371 @@
--- Obfuscated service references
-local function getService(name)
-    return game:FindService(name) or game:GetService(name)
-end
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
+local StarterPlayer = game:GetService("StarterPlayer")
+local CoreGui = game:GetService("CoreGui")
+local GuiService = game:GetService("GuiService")
+local TeleportService = game:GetService("TeleportService")
 
-local Players = getService("Players")
-local TweenService = getService("TweenService")
-local RunService = getService("RunService")
-local ReplicatedStorage = getService("ReplicatedStorage")
-local UserInputService = getService("UserInputService")
-local HttpService = getService("HttpService")
-local CoreGui = getService("CoreGui")
-local TeleportService = getService("TeleportService")
+local player = Players.LocalPlayer
+local LocalPlayer = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local rootPart = character:WaitForChild("HumanoidRootPart")
 
--- Randomized variable names
-local plr = Players.LocalPlayer
-local char = plr.Character or plr.CharacterAdded:Wait()
-local hum = char:WaitForChild("Humanoid")
-local hrp = char:WaitForChild("HumanoidRootPart")
+-- Anti Kick
+local antiKickEnabled = true
+local kickMethods = {
+    -- === STANDARD PLAYER KICK METHODS ===
+    "kick", "Kick", "KICK", "KickPlayer", "kickplayer", "kick_player", "kickClient", "KickClient",
+    "PlayerKick", "player_kick", "PLAYER_KICK", "kickUser", "KickUser", "kick_user",
+    "clientKick", "ClientKick", "CLIENT_KICK", "userKick", "UserKick", "USER_KICK",
 
--- Obfuscated configuration
-local cfg = {
-    ak = true, -- anti kick
-    pf = false, -- platform enabled
-    wt = false, -- wall transparency
-    cf = false, -- combo float
-    po = 3.62, -- platform offset
-    sf = -0.45, -- slow fall speed
-    tl = 0.6, -- transparency level
-    co = 3.7 -- combo offset
+    -- === REMOVE/DISCONNECT METHODS ===
+    "remove", "Remove", "REMOVE", "RemovePlayer", "removeplayer", "remove_player",
+    "disconnect", "Disconnect", "DISCONNECT", "DisconnectPlayer", "disconnectplayer",
+    "disconnect_player", "PlayerDisconnect", "player_disconnect", "PLAYER_DISCONNECT",
+    "RemoveClient", "removeclient", "remove_client", "REMOVE_CLIENT",
+    "clientDisconnect", "ClientDisconnect", "CLIENT_DISCONNECT", "userRemove", "UserRemove",
+    "destroy", "Destroy", "DESTROY", "DestroyPlayer", "destroyplayer", "destroy_player",
+    "delete", "Delete", "DELETE", "DeletePlayer", "deleteplayer", "delete_player",
+    
+    -- === TELEPORT/SERVER HOP METHODS ===
+    "teleport", "Teleport", "TELEPORT", "TeleportPlayer", "teleportplayer", "teleport_player",
+    "TeleportClient", "teleportclient", "teleport_client", "TELEPORT_CLIENT",
+    "ServerHop", "serverhop", "server_hop", "SERVER_HOP", "rejoin", "Rejoin", "REJOIN",
+    "ReconnectPlayer", "reconnectplayer", "reconnect_player", "RECONNECT_PLAYER",
+    "TeleportToSpawnByName", "TeleportToPrivateServer", "TeleportAsync", "TeleportPartyAsync",
+    "TeleportToPlaceInstance", "serverSwitch", "ServerSwitch", "SERVER_SWITCH",
+    "changeServer", "ChangeServer", "CHANGE_SERVER", "switchServer", "SwitchServer",
+    "migrate", "Migrate", "MIGRATE", "MigratePlayer", "migrateplayer", "migrate_player",
+
+    -- === PUNISHMENT METHODS ===
+    "punish", "Punish", "PUNISH", "PunishPlayer", "punishplayer", "punish_player",
+    "suspend", "Suspend", "SUSPEND", "SuspendPlayer", "suspendplayer", "suspend_player",
+    "terminate", "Terminate", "TERMINATE", "TerminatePlayer", "terminateplayer", "terminate_player",
+    "boot", "Boot", "BOOT", "BootPlayer", "bootplayer", "boot_player",
+    "eject", "Eject", "EJECT", "EjectPlayer", "ejectplayer", "eject_player",
+    "expel", "Expel", "EXPEL", "ExpelPlayer", "expelplayer", "expel_player",
+    "exile", "Exile", "EXILE", "ExilePlayer", "exileplayer", "exile_player",
+    "isolate", "Isolate", "ISOLATE", "IsolatePlayer", "isolateplayer", "isolate_player",
+    "SIGNATURE_INVALID", "certificate_error", "CertificateError", "CERTIFICATE_ERROR"
 }
 
--- Essential kick methods only (reduced to avoid detection)
-local km = {
-    "kick", "Kick", "ban", "Ban", "remove", "Remove", "disconnect", "Disconnect",
-    "teleport", "Teleport", "leave", "Leave", "punish", "Punish",
-    "FireServer", "InvokeServer", "Removed", "Reconnect"
+-- SPECIFIC REMOTES TO BLOCK (from your request and additional strict anti-cheat)
+local specificRemotesToBlock = {
+    "Removed", "removed", "REMOVED",
+    "Reconnect", "reconnect", "RECONNECT",
+    "RE/TeleportService/Reconnect",
+    "TeleportService/Reconnect", "teleportservice/reconnect",
+    "Replion", "replion", "REPLION",
+    "Packages", "packages", "PACKAGES",
+    "Net", "net", "NET",
+    -- Additional common anti-cheat remote names
+    "AntiCheat", "anticheat", "ANTICHEAT",
+    "AC", "ac", "SecurityCheck", "securitycheck",
+    "Validate", "validate", "VALIDATE",
+    "CheckClient", "checkclient", "CHECK_CLIENT",
+    "VerifyClient", "verifyclient", "VERIFY_CLIENT"
 }
 
--- Essential patterns only
-local kp = {
-    "kick", "ban", "remove", "disconnect", "teleport", "leave", "punish",
-    "267", "268", "269", "529", "610"
+-- KICK PATTERN STRINGS TO DETECT IN ARGUMENTS (COMPREHENSIVE)
+local kickPatterns = {
+    -- Standard patterns
+    "kick", "ban", "remove", "disconnect", "teleport", "rejoin", "serverhop", "server hop",
+    "hop", "leave", "exit", "quit", "punish", "suspend", "terminate", "boot", "eject",
+    "expel", "exile", "admin", "moderator", "mod", "staff", "owner", "anticheat", "cheat",
+    "exploit", "hack", "script", "violation", "error", "crash", "freeze", "lag", "timeout",
+    "eliminated", "disqualified", "blacklisted", "restricted", "blocked", "denied", "rejected",
+    "shutdown", "restart", "reboot", "filtering", "localscript", "clientside", "security",
+    "auto", "system", "network", "connection", "ping", "latency", "game", "match", "room",
+    "lobby", "server", "instance", "fe", "client", "user", "player", "destroyplayer",
+
+    -- Common kick messages
+    "you have been kicked", "banned from", "disconnected", "connection lost", "timed out",
+    "cheat detected", "exploit detected", "script detected", "violation detected", "unauthorized",
+    "access denied", "permission denied", "invalid client", "client verification failed",
+    "anti-cheat violation", "security breach", "suspicious activity", "abnormal behavior"
 }
 
--- Essential error codes
-local kec = {267, 268, 269, 529, 610}
+-- Error codes that cause kicks (COMPREHENSIVE LIST)
+local kickErrorCodes = {
+    267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 
+    529, 610, 611, 612, 613, 614, 615, 616, 617, 618, 619, 620,
+    -- Additional error codes from strict games
+    1001, 1002, 1003, 1004, 1005, 2001, 2002, 2003, 3001, 3002,
+    4001, 4002, 4003, 5001, 5002, 6001, 6002, 7001, 7002, 8001, 8002
+}
 
--- Obfuscated remotes to block
-local rb = {"Removed", "Reconnect", "Replion", "Net"}
+-- Platform variables
+local platformEnabled = false
+local currentPlatform = nil
+local platformUpdateConnection = nil
+local PLATFORM_OFFSET = 3.62
+-- NEW VARIABLES FOR SLOW FALL
+local SLOW_FALL_SPEED = -0.45 -- Negative because falling down (make smaller like -1 or -0.5 for super slow)
+local originalGravity = nil
+local bodyVelocity = nil
 
--- Core variables
-local cp = nil -- current platform
-local puc = nil -- platform update connection
-local ot = {} -- original transparencies
-local og = nil -- original gravity
-local bv = nil -- body velocity
-local ccp = nil -- combo current platform
-local cpuc = nil -- combo platform update connection
-local cpcc = nil -- combo player collision connection
+-- Wall transparency variables
+local wallTransparencyEnabled = false
+local originalTransparencies = {}
+local TRANSPARENCY_LEVEL = 0.6
+local playerCollisionConnection = nil
 
--- ESP variables (keeping only plot ESP, removing animal ESP)
-local pd = {} -- plot displays
-local pbn = plr.DisplayName .. "'s Base" -- player base name
-local pbtw = false -- player base time warning
-local ag = nil -- alert gui
+-- Combo Float + Wall variables
+local comboFloatEnabled = false
+local comboCurrentPlatform = nil
+local comboPlatformUpdateConnection = nil
+local comboPlayerCollisionConnection = nil
+local COMBO_PLATFORM_OFFSET = 3.7
 
--- UI variables
-local pg = plr:WaitForChild("PlayerGui")
-local sg, mf, tb, tt, cb, fb, wb, sl, cl
+-- ESP variables
+local plotDisplays = {}
+local playerBaseName = LocalPlayer.DisplayName .. "'s Base"
+local playerBaseTimeWarning = false
+local alertGui = nil
 
--- Obfuscated function names
-local function csg() -- create screen gui
-    sg = Instance.new("ScreenGui")
-    sg.Name = HttpService:GenerateGUID(false):sub(1, 8)
-    sg.Parent = pg
-    sg.ResetOnSpawn = false
-    return sg
+-- Animal ESP variables
+local espTargetNames = {
+    "Noobini Pizzanini", "Los Tralaleritos", "Las Tralaleritas", "Graipuss Medussi",
+    "La Grande Combinasion", "Nuclearo Dinossauro", "Garama and Madundung", "Pot Hotspot",
+    "Las Vaquitas Saturnitas", "Chicleteira Bicicleteira", "Dragon Cannelloni", "Los Combinasionas",
+    "Karkerkar Kurkur", "Los Hotspotsitos", "Esok Sekolah", "Blackhole Goat", "Dul Dul Dul",
+    "Tortuginni Dragonfruitini", "Chimpanzini Spiderini", "Los Matteos", "Nooo My Hotspot",
+    "Sammyini Spyderini", "La Supreme Combinasion", "Ketupat Kepat", "Los Orcalitos",
+    "Urubini Flamenguini", "Tralalita Tralala", "Orcalero Orcala", "Bulbito Bandito Traktorito",
+    "Piccione Macchina", "Trippi Troppi Troppa Trippa", "Los Tungtungtungcitos"
+}
+
+local espTargetLookup = {}
+for _, name in pairs(espTargetNames) do
+    espTargetLookup[name] = true
 end
 
-local function cmf() -- create main frame
-    mf = Instance.new("Frame")
-    mf.Name = HttpService:GenerateGUID(false):sub(1, 6)
-    mf.Size = UDim2.new(0, 280, 0, 150)
-    mf.Position = UDim2.new(1, -290, 0, 140)
-    mf.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-    mf.BorderSizePixel = 0
-    mf.Parent = sg
-    
-    local mc = Instance.new("UICorner")
-    mc.CornerRadius = UDim.new(0, 8)
-    mc.Parent = mf
+local animalESPDisplays = {}
+local animalESPEnabled = true
+
+local playerGui = player:WaitForChild("PlayerGui")
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "PlatformUI"
+screenGui.Parent = playerGui
+screenGui.ResetOnSpawn = false
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 280, 0, 150)
+mainFrame.Position = UDim2.new(1, -290, 0, 140)
+mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = screenGui
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 8)
+mainCorner.Parent = mainFrame
+
+local titleBar = Instance.new("Frame")
+titleBar.Name = "TitleBar"
+titleBar.Size = UDim2.new(1, 0, 0, 30)
+titleBar.Position = UDim2.new(0, 0, 0, 0)
+titleBar.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+titleBar.BorderSizePixel = 0
+titleBar.Parent = mainFrame
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 8)
+titleCorner.Parent = titleBar
+
+local titleText = Instance.new("TextLabel")
+titleText.Name = "TitleText"
+titleText.Size = UDim2.new(1, -30, 1, 0)
+titleText.Position = UDim2.new(0, 5, 0, 0)
+titleText.BackgroundTransparency = 1
+titleText.Text = "🔷 FLOAT + FLOOR STEAL 🔷"
+titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleText.TextScaled = true
+titleText.Font = Enum.Font.GothamBold
+titleText.Parent = titleBar
+
+local closeButton = Instance.new("TextButton")
+closeButton.Name = "CloseButton"
+closeButton.Size = UDim2.new(0, 25, 0, 25)
+closeButton.Position = UDim2.new(1, -27, 0, 2)
+closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+closeButton.Text = "X"
+closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.TextScaled = true
+closeButton.Font = Enum.Font.GothamBold
+closeButton.BorderSizePixel = 0
+closeButton.Parent = titleBar
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 4)
+closeCorner.Parent = closeButton
+
+local floatButton = Instance.new("TextButton")
+floatButton.Name = "FloatButton"
+floatButton.Size = UDim2.new(0, 130, 0, 35)
+floatButton.Position = UDim2.new(0, 10, 0, 45)
+floatButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+floatButton.Text = "🔷 FLOAT 🔷"
+floatButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+floatButton.TextScaled = true
+floatButton.Font = Enum.Font.GothamBold
+floatButton.BorderSizePixel = 0
+floatButton.Parent = mainFrame
+
+local floatCorner = Instance.new("UICorner")
+floatCorner.CornerRadius = UDim.new(0, 6)
+floatCorner.Parent = floatButton
+
+local wallButton = Instance.new("TextButton")
+wallButton.Name = "WallButton"
+wallButton.Size = UDim2.new(0, 130, 0, 35)
+wallButton.Position = UDim2.new(0, 150, 0, 45)
+wallButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+wallButton.Text = "🔷 FLOOR STEAL/ELEVATE 🔷"
+wallButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+wallButton.TextScaled = true
+wallButton.Font = Enum.Font.GothamBold
+wallButton.BorderSizePixel = 0
+wallButton.Parent = mainFrame
+
+local wallCorner = Instance.new("UICorner")
+wallCorner.CornerRadius = UDim.new(0, 6)
+wallCorner.Parent = wallButton
+
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Name = "StatusLabel"
+statusLabel.Size = UDim2.new(1, -20, 0, 25)
+statusLabel.Position = UDim2.new(0, 10, 0, 90)
+statusLabel.BackgroundTransparency = 1
+statusLabel.Text = "Float: OFF | Walls: OFF"
+statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+statusLabel.TextScaled = true
+statusLabel.Font = Enum.Font.Gotham
+statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+statusLabel.Parent = mainFrame
+
+local creditLabel = Instance.new("TextLabel")
+creditLabel.Name = "CreditLabel"
+creditLabel.Size = UDim2.new(1, -20, 0, 20)
+creditLabel.Position = UDim2.new(0, 10, 0, 120)
+creditLabel.BackgroundTransparency = 1
+creditLabel.Text = "by PickleTalk"
+creditLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+creditLabel.TextScaled = true
+creditLabel.Font = Enum.Font.Gotham
+creditLabel.TextXAlignment = Enum.TextXAlignment.Left
+creditLabel.Parent = mainFrame
+
+local dragging = false
+local dragStart = nil
+local startPos = nil
+
+local function updateDrag(input)
+    local delta = input.Position - dragStart
+    mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 end
 
-local function ctb() -- create title bar
-    tb = Instance.new("Frame")
-    tb.Name = HttpService:GenerateGUID(false):sub(1, 5)
-    tb.Size = UDim2.new(1, 0, 0, 30)
-    tb.Position = UDim2.new(0, 0, 0, 0)
-    tb.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-    tb.BorderSizePixel = 0
-    tb.Parent = mf
-    
-    local tc = Instance.new("UICorner")
-    tc.CornerRadius = UDim.new(0, 8)
-    tc.Parent = tb
-    
-    tt = Instance.new("TextLabel")
-    tt.Name = HttpService:GenerateGUID(false):sub(1, 4)
-    tt.Size = UDim2.new(1, -30, 1, 0)
-    tt.Position = UDim2.new(0, 5, 0, 0)
-    tt.BackgroundTransparency = 1
-    tt.Text = "🔷 FLOAT + FLOOR STEAL 🔷"
-    tt.TextColor3 = Color3.fromRGB(255, 255, 255)
-    tt.TextScaled = true
-    tt.Font = Enum.Font.GothamBold
-    tt.Parent = tb
-    
-    cb = Instance.new("TextButton")
-    cb.Name = HttpService:GenerateGUID(false):sub(1, 4)
-    cb.Size = UDim2.new(0, 25, 0, 25)
-    cb.Position = UDim2.new(1, -27, 0, 2)
-    cb.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-    cb.Text = "X"
-    cb.TextColor3 = Color3.fromRGB(255, 255, 255)
-    cb.TextScaled = true
-    cb.Font = Enum.Font.GothamBold
-    cb.BorderSizePixel = 0
-    cb.Parent = tb
-    
-    local cc = Instance.new("UICorner")
-    cc.CornerRadius = UDim.new(0, 4)
-    cc.Parent = cb
-end
+titleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
 
-local function cbs() -- create buttons
-    fb = Instance.new("TextButton")
-    fb.Name = HttpService:GenerateGUID(false):sub(1, 6)
-    fb.Size = UDim2.new(0, 130, 0, 35)
-    fb.Position = UDim2.new(0, 10, 0, 45)
-    fb.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    fb.Text = "🔷 FLOAT 🔷"
-    fb.TextColor3 = Color3.fromRGB(255, 255, 255)
-    fb.TextScaled = true
-    fb.Font = Enum.Font.GothamBold
-    fb.BorderSizePixel = 0
-    fb.Parent = mf
-    
-    local fc = Instance.new("UICorner")
-    fc.CornerRadius = UDim.new(0, 6)
-    fc.Parent = fb
-    
-    wb = Instance.new("TextButton")
-    wb.Name = HttpService:GenerateGUID(false):sub(1, 6)
-    wb.Size = UDim2.new(0, 130, 0, 35)
-    wb.Position = UDim2.new(0, 150, 0, 45)
-    wb.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    wb.Text = "🔷 FLOOR STEAL/ELEVATE 🔷"
-    wb.TextColor3 = Color3.fromRGB(255, 255, 255)
-    wb.TextScaled = true
-    wb.Font = Enum.Font.GothamBold
-    wb.BorderSizePixel = 0
-    wb.Parent = mf
-    
-    local wc = Instance.new("UICorner")
-    wc.CornerRadius = UDim.new(0, 6)
-    wc.Parent = wb
-end
-
-local function cls() -- create labels
-    sl = Instance.new("TextLabel")
-    sl.Name = HttpService:GenerateGUID(false):sub(1, 5)
-    sl.Size = UDim2.new(1, -20, 0, 25)
-    sl.Position = UDim2.new(0, 10, 0, 90)
-    sl.BackgroundTransparency = 1
-    sl.Text = "Float: OFF | Walls: OFF"
-    sl.TextColor3 = Color3.fromRGB(200, 200, 200)
-    sl.TextScaled = true
-    sl.Font = Enum.Font.Gotham
-    sl.TextXAlignment = Enum.TextXAlignment.Left
-    sl.Parent = mf
-    
-    cl = Instance.new("TextLabel")
-    cl.Name = HttpService:GenerateGUID(false):sub(1, 5)
-    cl.Size = UDim2.new(1, -20, 0, 20)
-    cl.Position = UDim2.new(0, 10, 0, 120)
-    cl.BackgroundTransparency = 1
-    cl.Text = "by PickleTalk"
-    cl.TextColor3 = Color3.fromRGB(150, 150, 150)
-    cl.TextScaled = true
-    cl.Font = Enum.Font.Gotham
-    cl.TextXAlignment = Enum.TextXAlignment.Left
-    cl.Parent = mf
-end
-
--- Obfuscated dragging functionality
-local dr, ds, sp = false, nil, nil
-
-local function ud(i) -- update drag
-    local d = i.Position - ds
-    mf.Position = UDim2.new(sp.X.Scale, sp.X.Offset + d.X, sp.Y.Scale, sp.Y.Offset + d.Y)
-end
-
-local function sd() -- setup dragging
-    tb.InputBegan:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
-            dr = true
-            ds = i.Position
-            sp = mf.Position
-            
-            i.Changed:Connect(function()
-                if i.UserInputState == Enum.UserInputState.End then
-                    dr = false
-                end
-            end)
+titleBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        if dragging then
+            updateDrag(input)
         end
-    end)
+    end
+end)
+
+local function createPlatform()
+    local platform = Instance.new("Part")
+    platform.Name = "PlayerPlatform"
+    platform.Size = Vector3.new(8, 0.5, 8)
+    platform.Material = Enum.Material.Neon
+    platform.BrickColor = BrickColor.new("Bright blue")
+    platform.Anchored = true
+    platform.CanCollide = false -- Make it non-collidable so player falls through
+    platform.Shape = Enum.PartType.Block
+    platform.TopSurface = Enum.SurfaceType.Smooth
+    platform.BottomSurface = Enum.SurfaceType.Smooth
+    platform.Parent = workspace
+    platform.Transparency = 1 -- Make it more transparent since it's just visual
     
-    tb.InputChanged:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch then
-            if dr then ud(i) end
-        end
-    end)
+    local pointLight = Instance.new("PointLight")
+    pointLight.Color = Color3.fromRGB(0, 162, 255)
+    pointLight.Brightness = 1
+    pointLight.Range = 10
+    pointLight.Parent = platform
+    
+    return platform
 end
 
--- Obfuscated platform creation
-local function cpl() -- create platform
-    local p = Instance.new("Part")
-    p.Name = HttpService:GenerateGUID(false):sub(1, 8)
-    p.Size = Vector3.new(8, 0.5, 8)
-    p.Material = Enum.Material.Neon
-    p.BrickColor = BrickColor.new("Bright blue")
-    p.Anchored = true
-    p.CanCollide = false
-    p.Shape = Enum.PartType.Block
-    p.TopSurface = Enum.SurfaceType.Smooth
-    p.BottomSurface = Enum.SurfaceType.Smooth
-    p.Parent = workspace
-    p.Transparency = 1
+local function updatePlatformPosition()
+    if not platformEnabled or not currentPlatform or not player.Character then
+        return
+    end
     
-    local pl = Instance.new("PointLight")
-    pl.Color = Color3.fromRGB(0, 162, 255)
-    pl.Brightness = 1
-    pl.Range = 10
-    pl.Parent = p
+    local character = player.Character
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
     
-    return p
-end
-
--- Obfuscated platform position update
-local function upp() -- update platform position
-    if not cfg.pf or not cp or not plr.Character then return end
-    
-    local c = plr.Character
-    local h = c:FindFirstChild("HumanoidRootPart")
-    
-    if h then
-        local pp = h.Position
-        cp.Position = Vector3.new(pp.X, pp.Y - cfg.po, pp.Z)
+    if humanoidRootPart then
+        local playerPosition = humanoidRootPart.Position
+        local platformPosition = Vector3.new(
+            playerPosition.X, 
+            playerPosition.Y - PLATFORM_OFFSET, 
+            playerPosition.Z
+        )
+        currentPlatform.Position = platformPosition
     end
 end
 
--- Obfuscated slow fall
-local function asf() -- apply slow fall
-    if not plr.Character then return end
+local function applySlowFall()
+    if not player.Character then return end
     
-    local c = plr.Character
-    local h = c:FindFirstChild("Humanoid")
-    local r = c:FindFirstChild("HumanoidRootPart")
+    local character = player.Character
+    local humanoid = character:FindFirstChild("Humanoid")
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
     
-    if not h or not r then return end
+    if not humanoid or not rootPart then return end
     
-    if not og then og = workspace.Gravity end
-    
-    if not bv or not bv.Parent then
-        bv = Instance.new("BodyVelocity")
-        bv.MaxForce = Vector3.new(0, math.huge, 0)
-        bv.Velocity = Vector3.new(0, cfg.sf, 0)
-        bv.Parent = r
+    -- Store original gravity if not stored
+    if not originalGravity then
+        originalGravity = workspace.Gravity
     end
     
+    -- Create BodyVelocity to control falling speed
+    if not bodyVelocity or not bodyVelocity.Parent then
+        bodyVelocity = Instance.new("BodyVelocity")
+        bodyVelocity.MaxForce = Vector3.new(0, math.huge, 0) -- Only affect Y axis
+        bodyVelocity.Velocity = Vector3.new(0, SLOW_FALL_SPEED, 0) -- Slow downward movement
+        bodyVelocity.Parent = rootPart
+    end
+    
+    -- Force the character into falling state to trigger animation
     task.spawn(function()
-        while cfg.pf do
-            if h and h.Parent then
-                h:ChangeState(Enum.HumanoidStateType.Freefall)
-                if bv and bv.Parent then
-                    bv.Velocity = Vector3.new(0, cfg.sf, 0)
+        while platformEnabled do
+            if humanoid and humanoid.Parent then
+                -- Keep forcing falling state
+                humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
+                -- Update velocity to maintain slow fall
+                if bodyVelocity and bodyVelocity.Parent then
+                    bodyVelocity.Velocity = Vector3.new(0, SLOW_FALL_SPEED, 0)
                 end
             end
             task.wait(0.1)
@@ -292,591 +373,1266 @@ local function asf() -- apply slow fall
     end)
 end
 
-local function rsf() -- remove slow fall
-    if bv then
-        bv:Destroy()
-        bv = nil
+-- NEW FUNCTION: Remove slow fall effect
+local function removeSlowFall()
+    if bodyVelocity then
+        bodyVelocity:Destroy()
+        bodyVelocity = nil
     end
     
-    if plr.Character then
-        local h = plr.Character:FindFirstChild("Humanoid")
-        if h then h:ChangeState(Enum.HumanoidStateType.Running) end
-    end
-end
-
--- Platform enable/disable functions
-local function ep() -- enable platform
-    if cfg.pf then return end
-    
-    cfg.pf = true
-    cp = cpl()
-    asf()
-    
-    puc = RunService.Heartbeat:Connect(upp)
-    upp()
-    
-    fb.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
-    local ws = cfg.wt and "ON" or "OFF"
-    sl.Text = "Float: ON | Walls: " .. ws
-end
-
-local function dp() -- disable platform
-    if not cfg.pf then return end
-    
-    cfg.pf = false
-    rsf()
-    
-    if puc then
-        puc:Disconnect()
-        puc = nil
-    end
-    
-    if cp then
-        cp:Destroy()
-        cp = nil
-    end
-    
-    fb.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    local ws = cfg.wt and "ON" or "OFF"
-    sl.Text = "Float: OFF | Walls: " .. ws
-end
-
--- Wall transparency functions
-local function sot() -- store original transparencies
-    ot = {}
-    for _, o in pairs(workspace:GetDescendants()) do
-        if o:IsA("BasePart") and o.Parent ~= plr.Character and not string.find(o.Name, HttpService:GenerateGUID(false):sub(1, 4)) then
-            if o.Name == "structure base home" then
-                ot[o] = {transparency = o.Transparency, canCollide = o.CanCollide}
-            end
+    if player.Character then
+        local humanoid = player.Character:FindFirstChild("Humanoid")
+        if humanoid then
+            -- Return to normal state
+            humanoid:ChangeState(Enum.HumanoidStateType.Running)
         end
     end
 end
 
-local function mwt(t) -- make walls transparent
-    for o, d in pairs(ot) do
-        if o and o.Parent and d then
-            if t then
-                o.Transparency = cfg.tl
-                o.CanCollide = false
+-- Replace your enablePlatform function:
+local function enablePlatform()
+    if platformEnabled then return end
+    
+    platformEnabled = true
+    currentPlatform = createPlatform()
+    
+    -- Apply slow fall effect
+    applySlowFall()
+    
+    platformUpdateConnection = RunService.Heartbeat:Connect(updatePlatformPosition)
+    updatePlatformPosition()
+    
+    floatButton.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
+    floatButton.Text = "🔷 FLOAT 🔷"
+    
+    local wallStatus = wallTransparencyEnabled and "ON" or "OFF"
+    statusLabel.Text = "Float: ON | Walls: " .. wallStatus
+end
+
+-- Replace your disablePlatform function:
+local function disablePlatform()
+    if not platformEnabled then return end
+
+    platformEnabled = false
+    
+    -- Remove slow fall effect
+    removeSlowFall()
+    
+    if platformUpdateConnection then
+        platformUpdateConnection:Disconnect()
+        platformUpdateConnection = nil
+    end
+    
+    if currentPlatform then
+        currentPlatform:Destroy()
+        currentPlatform = nil
+    end
+    
+    floatButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    floatButton.Text = "🔷 FLOAT 🔷"
+    
+    local wallStatus = wallTransparencyEnabled and "ON" or "OFF"
+    statusLabel.Text = "Float: OFF | Walls: " .. wallStatus
+end
+
+local function storeOriginalTransparencies()
+    originalTransparencies = {}
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and obj.Parent ~= player.Character and obj.Name ~= "PlayerPlatform" and obj.Name ~= "ComboPlayerPlatform" then
+            local name = obj.Name
+            if name == "structure base home" then
+                originalTransparencies[obj] = {
+                    transparency = obj.Transparency,
+                    canCollide = obj.CanCollide
+                }
+            end
+        end
+    end
+    print("Stored transparency for " .. #originalTransparencies .. " parts")
+end
+
+local function makeWallsTransparent(transparent)
+    local count = 0
+    for obj, data in pairs(originalTransparencies) do
+        if obj and obj.Parent and data then
+            if transparent then
+                obj.Transparency = TRANSPARENCY_LEVEL
+                obj.CanCollide = false
+                count = count + 1
             else
-                o.Transparency = d.transparency
-                o.CanCollide = d.canCollide
+                obj.Transparency = data.transparency
+                obj.CanCollide = data.canCollide
             end
+        end
+    end
+    print((transparent and "Made transparent: " or "Restored: ") .. count .. " parts")
+end
+local function createComboPlatform()
+    local platform = Instance.new("Part")
+    platform.Name = "ComboPlayerPlatform"
+    platform.Size = Vector3.new(8, 1.5, 8)
+    platform.Material = Enum.Material.Neon
+    platform.BrickColor = BrickColor.new("Bright blue")
+    platform.Anchored = true
+    platform.CanCollide = true
+    platform.Shape = Enum.PartType.Block
+    platform.TopSurface = Enum.SurfaceType.Smooth
+    platform.BottomSurface = Enum.SurfaceType.Smooth
+    platform.Parent = workspace
+    platform.Transparency = 1
+    
+    local pointLight = Instance.new("PointLight")
+    pointLight.Color = Color3.fromRGB(0, 162, 255)
+    pointLight.Brightness = 1
+    pointLight.Range = 15
+    pointLight.Parent = platform
+    
+    return platform
+end
+
+local function updateComboPlatformPosition()
+    if not comboFloatEnabled or not comboCurrentPlatform or not player.Character then
+        return
+    end
+    
+    local character = player.Character
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    
+    if humanoidRootPart then
+        local playerPosition = humanoidRootPart.Position
+        local platformPosition = Vector3.new(
+            playerPosition.X, 
+            playerPosition.Y - COMBO_PLATFORM_OFFSET, 
+            playerPosition.Z
+        )
+        comboCurrentPlatform.Position = platformPosition
+    end
+end
+
+local function forcePlayerHeadCollision()
+    if player.Character then
+        local head = player.Character:FindFirstChild("Head")
+        if head then
+            head.CanCollide = true
+        end
+        -- Also ensure other body parts maintain collision
+        local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
+        if humanoidRootPart then
+            humanoidRootPart.CanCollide = true
+        end
+        local torso = player.Character:FindFirstChild("Torso") or player.Character:FindFirstChild("UpperTorso")
+        if torso then
+            torso.CanCollide = true
         end
     end
 end
 
-local function ccpl() -- create combo platform
-    local p = Instance.new("Part")
-    p.Name = HttpService:GenerateGUID(false):sub(1, 10)
-    p.Size = Vector3.new(8, 1.5, 8)
-    p.Material = Enum.Material.Neon
-    p.BrickColor = BrickColor.new("Bright blue")
-    p.Anchored = true
-    p.CanCollide = true
-    p.Shape = Enum.PartType.Block
-    p.TopSurface = Enum.SurfaceType.Smooth
-    p.BottomSurface = Enum.SurfaceType.Smooth
-    p.Parent = workspace
-    p.Transparency = 1
+local function enableWallTransparency()
+    if wallTransparencyEnabled then return end
     
-    local pl = Instance.new("PointLight")
-    pl.Color = Color3.fromRGB(0, 162, 255)
-    pl.Brightness = 1
-    pl.Range = 15
-    pl.Parent = p
+    print("Enabling wall transparency...")
+    wallTransparencyEnabled = true
+    comboFloatEnabled = true
     
-    return p
-end
-
-local function ucpp() -- update combo platform position
-    if not cfg.cf or not ccp or not plr.Character then return end
+    storeOriginalTransparencies()
+    makeWallsTransparent(true)
     
-    local c = plr.Character
-    local h = c:FindFirstChild("HumanoidRootPart")
+    -- Create and manage platform
+    comboCurrentPlatform = createComboPlatform()
+    comboPlatformUpdateConnection = RunService.Heartbeat:Connect(updateComboPlatformPosition)
+    updateComboPlatformPosition()
     
-    if h then
-        local pp = h.Position
-        ccp.Position = Vector3.new(pp.X, pp.Y - cfg.co, pp.Z)
-    end
-end
-
-local function fphc() -- force player head collision
-    if plr.Character then
-        local hd = plr.Character:FindFirstChild("Head")
-        if hd then hd.CanCollide = true end
-        local hr = plr.Character:FindFirstChild("HumanoidRootPart")
-        if hr then hr.CanCollide = true end
-        local tr = plr.Character:FindFirstChild("Torso") or plr.Character:FindFirstChild("UpperTorso")
-        if tr then tr.CanCollide = true end
-    end
-end
-
-local function ewt() -- enable wall transparency
-    if cfg.wt then return end
-    
-    cfg.wt = true
-    cfg.cf = true
-    
-    sot()
-    mwt(true)
-    
-    ccp = ccpl()
-    cpuc = RunService.Heartbeat:Connect(ucpp)
-    ucpp()
-    
-    cpcc = RunService.Heartbeat:Connect(function()
-        fphc()
+    -- Force player collision more aggressively
+    comboPlayerCollisionConnection = RunService.Heartbeat:Connect(function()
+        forcePlayerHeadCollision()
     end)
     
-    fphc()
+    -- Also set initial collision state
+    forcePlayerHeadCollision()
     
-    wb.BackgroundColor3 = Color3.fromRGB(150, 50, 0)
-    local fs = cfg.pf and "ON" or "OFF"
-    sl.Text = "Float: " .. fs .. " | Walls: ON"
+    wallButton.BackgroundColor3 = Color3.fromRGB(150, 50, 0)
+    wallButton.Text = "🔷 FLOOR STEAL/ELEVATE 🔷"
+    
+    local floatStatus = platformEnabled and "ON" or "OFF"
+    statusLabel.Text = "Float: " .. floatStatus .. " | Walls: ON"
 end
 
-local function dwt() -- disable wall transparency
-    if not cfg.wt then return end
+local function disableWallTransparency()
+    if not wallTransparencyEnabled then return end
     
-    cfg.wt = false
-    cfg.cf = false
+    print("Disabling wall transparency...")
+    wallTransparencyEnabled = false
+    comboFloatEnabled = false
     
-    mwt(false)
-    ot = {}
+    makeWallsTransparent(false)
+    originalTransparencies = {}
     
-    if cpuc then
-        cpuc:Disconnect()
-        cpuc = nil
+    -- Stop platform updates and remove platform
+    if comboPlatformUpdateConnection then
+        comboPlatformUpdateConnection:Disconnect()
+        comboPlatformUpdateConnection = nil
     end
     
-    if ccp then
-        ccp:Destroy()
-        ccp = nil
+    if comboCurrentPlatform then
+        comboCurrentPlatform:Destroy()
+        comboCurrentPlatform = nil
     end
     
-    if cpcc then
-        cpcc:Disconnect()
-        cpcc = nil
+    -- Stop head collision enforcement
+    if comboPlayerCollisionConnection then
+        comboPlayerCollisionConnection:Disconnect()
+        comboPlayerCollisionConnection = nil
     end
     
-    if plr.Character then
-        local hd = plr.Character:FindFirstChild("Head")
-        if hd then hd.CanCollide = false end
+    -- Restore normal player collision state
+    if player.Character then
+        local head = player.Character:FindFirstChild("Head")
+        if head then
+            head.CanCollide = false -- Default Roblox state for head
+        end
     end
     
-    wb.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    local fs = cfg.pf and "ON" or "OFF"
-    sl.Text = "Float: " .. fs .. " | Walls: OFF"
+    wallButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    wallButton.Text = "🔷 FLOOR STEAL/ELEVATE 🔷"
+    
+    local floatStatus = platformEnabled and "ON" or "OFF"
+    statusLabel.Text = "Float: " .. floatStatus .. " | Walls: OFF"
 end
 
--- Alert GUI for base time warnings
-local function cag() -- create alert gui
-    if ag then return end
+local function createAlertGui()
+    if alertGui then return end
     
-    local sg2 = Instance.new("ScreenGui")
-    sg2.Parent = plr:WaitForChild("PlayerGui")
-    sg2.Name = HttpService:GenerateGUID(false):sub(1, 8)
-    sg2.ResetOnSpawn = false
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+    screenGui.Name = "BaseTimeAlert"
+    screenGui.ResetOnSpawn = false
     
-    local fr = Instance.new("Frame")
-    fr.Parent = sg2
-    fr.Size = UDim2.new(0, 300, 0, 80)
-    fr.Position = UDim2.new(0.5, -150, 0.1, 0)
-    fr.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-    fr.BorderSizePixel = 0
+    local frame = Instance.new("Frame")
+    frame.Parent = screenGui
+    frame.Size = UDim2.new(0, 300, 0, 80)
+    frame.Position = UDim2.new(0.5, -150, 0.1, 0)
+    frame.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    frame.BorderSizePixel = 0
     
-    local co = Instance.new("UICorner")
-    co.Parent = fr
-    co.CornerRadius = UDim.new(0, 8)
+    local corner = Instance.new("UICorner")
+    corner.Parent = frame
+    corner.CornerRadius = UDim.new(0, 8)
     
-    local tl = Instance.new("TextLabel")
-    tl.Parent = fr
-    tl.Size = UDim2.new(1, -10, 1, -10)
-    tl.Position = UDim2.new(0, 5, 0, 5)
-    tl.BackgroundTransparency = 1
-    tl.Text = "⚠️ BASE TIME WARNING ⚠️"
-    tl.TextColor3 = Color3.fromRGB(255, 255, 255)
-    tl.TextScaled = true
-    tl.TextStrokeTransparency = 0
-    tl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-    tl.Font = Enum.Font.SourceSansBold
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Parent = frame
+    textLabel.Size = UDim2.new(1, -10, 1, -10)
+    textLabel.Position = UDim2.new(0, 5, 0, 5)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = "⚠️ BASE TIME WARNING ⚠️"
+    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    textLabel.TextScaled = true
+    textLabel.TextStrokeTransparency = 0
+    textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    textLabel.Font = Enum.Font.SourceSansBold
     
-    local tw = TweenService:Create(fr, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {BackgroundColor3 = Color3.fromRGB(150, 0, 0)})
-    tw:Play()
+    local tween = TweenService:Create(
+        frame,
+        TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+        {BackgroundColor3 = Color3.fromRGB(150, 0, 0)}
+    )
+    tween:Play()
     
-    ag = {screenGui = sg2, textLabel = tl, tween = tw}
+    alertGui = {
+        screenGui = screenGui,
+        textLabel = textLabel,
+        tween = tween
+    }
 end
 
-local function uag(tt) -- update alert gui
-    if not ag then return end
-    ag.textLabel.Text = "⚠️ BASE UNLOCKING IN " .. tt .. " ⚠️"
+local function updateAlertGui(timeText)
+    if not alertGui then return end
+    alertGui.textLabel.Text = "⚠️ BASE UNLOCKING IN " .. timeText .. " ⚠️"
 end
 
-local function rag() -- remove alert gui
-    if ag then
-        if ag.tween then ag.tween:Cancel() end
-        ag.screenGui:Destroy()
-        ag = nil
-        pbtw = false
+local function removeAlertGui()
+    if alertGui then
+        if alertGui.tween then
+            alertGui.tween:Cancel()
+        end
+        alertGui.screenGui:Destroy()
+        alertGui = nil
+        playerBaseTimeWarning = false
     end
 end
 
-local function pts(tt) -- parse time to seconds
-    if not tt or tt == "" then return nil end
+local function parseTimeToSeconds(timeText)
+    if not timeText or timeText == "" then return nil end
     
-    local m, s = tt:match("(%d+):(%d+)")
-    if m and s then return tonumber(m) * 60 + tonumber(s) end
+    local minutes, seconds = timeText:match("(%d+):(%d+)")
+    if minutes and seconds then
+        return tonumber(minutes) * 60 + tonumber(seconds)
+    end
     
-    local so = tt:match("(%d+)s")
-    if so then return tonumber(so) end
+    local secondsOnly = timeText:match("(%d+)s")
+    if secondsOnly then
+        return tonumber(secondsOnly)
+    end
     
-    local mo = tt:match("(%d+)m")
-    if mo then return tonumber(mo) * 60 end
+    local minutesOnly = timeText:match("(%d+)m")
+    if minutesOnly then
+        return tonumber(minutesOnly) * 60
+    end
     
     return nil
 end
 
--- ESP for players
-local function cpe(p, h) -- create player esp
-    local eg = h:FindFirstChild(HttpService:GenerateGUID(false):sub(1, 6))
-    if eg then eg:Destroy() end
+function createPlayerESP(player, head)
+    local existingGui = head:FindFirstChild("PlayerESP")
+    if existingGui then
+        existingGui:Destroy()
+    end
     
-    local bg = Instance.new("BillboardGui")
-    bg.Name = HttpService:GenerateGUID(false):sub(1, 6)
-    bg.Parent = h
-    bg.Size = UDim2.new(0, 90, 0, 33)
-    bg.StudsOffset = Vector3.new(0, 2, 0)
-    bg.AlwaysOnTop = true
+    local billboardGui = Instance.new("BillboardGui")
+    billboardGui.Name = "PlayerESP"
+    billboardGui.Parent = head
+    billboardGui.Size = UDim2.new(0, 90, 0, 33)
+    billboardGui.StudsOffset = Vector3.new(0, 2, 0)
+    billboardGui.AlwaysOnTop = true
     
-    local tl = Instance.new("TextLabel")
-    tl.Parent = bg
-    tl.Size = UDim2.new(1, 0, 1, 0)
-    tl.BackgroundTransparency = 1
-    tl.Text = p.DisplayName
-    tl.TextColor3 = Color3.fromRGB(255, 255, 255)
-    tl.TextScaled = true
-    tl.TextStrokeTransparency = 0.3
-    tl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-    tl.Font = Enum.Font.SourceSans
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Parent = billboardGui
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = player.DisplayName
+    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    textLabel.TextScaled = true
+    textLabel.TextStrokeTransparency = 0.3
+    textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    textLabel.Font = Enum.Font.SourceSans
 end
 
-local function cpd(p) -- create player display
-    if p == plr then return end
+local function createPlayerDisplay(player)
+    if player == LocalPlayer then return end
     
-    local c = p.Character
-    if not c then
-        p.CharacterAdded:Connect(function(ch)
-            c = ch
+    local character = player.Character
+    if not character then
+        player.CharacterAdded:Connect(function(char)
+            character = char
             task.wait(0.5)
-            local h = c:FindFirstChild("Head")
-            if h then cpe(p, h) end
+            local head = character:FindFirstChild("Head")
+            if head then
+                createPlayerESP(player, head)
+            end
         end)
         return
     end
     
-    local h = c:FindFirstChild("Head")
-    if h then
-        cpe(p, h)
+    local head = character:FindFirstChild("Head")
+    if head then
+        createPlayerESP(player, head)
     else
-        c.ChildAdded:Connect(function(ch)
-            if ch.Name == "Head" then cpe(p, ch) end
+        character.ChildAdded:Connect(function(child)
+            if child.Name == "Head" then
+                createPlayerESP(player, child)
+            end
         end)
     end
 end
 
--- Plot ESP
-local function coupd(pl) -- create or update plot display
-    if not pl or not pl.Parent then return end
+local function createOrUpdatePlotDisplay(plot)
+    if not plot or not plot.Parent then return end
     
-    local pn = pl.Name
-    local pst = ""
+    local plotName = plot.Name
     
-    local sp = pl:FindFirstChild("PlotSign")
-    if sp and sp:FindFirstChild("SurfaceGui") then
-        local sg = sp.SurfaceGui
-        if sg:FindFirstChild("Frame") and sg.Frame:FindFirstChild("TextLabel") then
-            pst = sg.Frame.TextLabel.Text
+    local plotSignText = ""
+    local signPath = plot:FindFirstChild("PlotSign")
+    if signPath and signPath:FindFirstChild("SurfaceGui") then
+        local surfaceGui = signPath.SurfaceGui
+        if surfaceGui:FindFirstChild("Frame") and surfaceGui.Frame:FindFirstChild("TextLabel") then
+            plotSignText = surfaceGui.Frame.TextLabel.Text
         end
     end
     
-    if pst == "Empty Base" or pst == "" or pst == "Empty's Base" then
-        if pd[pn] and pd[pn].gui then
-            pd[pn].gui:Destroy()
-            pd[pn] = nil
+    if plotSignText == "Empty Base" or plotSignText == "" or plotSignText == "Empty's Base" then
+        if plotDisplays[plotName] and plotDisplays[plotName].gui then
+            plotDisplays[plotName].gui:Destroy()
+            plotDisplays[plotName] = nil
         end
         return
     end
     
-    local ptt = ""
-    local pp = pl:FindFirstChild("Purchases")
-    if pp and pp:FindFirstChild("PlotBlock") then
-        local pb = pp.PlotBlock
-        if pb:FindFirstChild("Main") and pb.Main:FindFirstChild("BillboardGui") then
-            local bg = pb.Main.BillboardGui
-            if bg:FindFirstChild("RemainingTime") then
-                ptt = bg.RemainingTime.Text
+    local plotTimeText = ""
+    local purchasesPath = plot:FindFirstChild("Purchases")
+    if purchasesPath and purchasesPath:FindFirstChild("PlotBlock") then
+        local plotBlock = purchasesPath.PlotBlock
+        if plotBlock:FindFirstChild("Main") and plotBlock.Main:FindFirstChild("BillboardGui") then
+            local billboardGui = plotBlock.Main.BillboardGui
+            if billboardGui:FindFirstChild("RemainingTime") then
+                plotTimeText = billboardGui.RemainingTime.Text
             end
         end
     end
     
-    if pst == pbn then
-        local rs = pts(ptt)
+    if plotSignText == playerBaseName then
+        local remainingSeconds = parseTimeToSeconds(plotTimeText)
         
-        if rs and rs <= 10 and rs > 0 then
-            if not pbtw then
-                cag()
-                pbtw = true
+        if remainingSeconds and remainingSeconds <= 10 and remainingSeconds > 0 then
+            if not playerBaseTimeWarning then
+                createAlertGui()
+                playerBaseTimeWarning = true
             end
-            uag(ptt)
-        elseif rs and rs > 10 then
-            if pbtw then rag() end
-        elseif not rs or rs <= 0 then
-            if pbtw then rag() end
+            updateAlertGui(plotTimeText)
+        elseif remainingSeconds and remainingSeconds > 10 then
+            if playerBaseTimeWarning then
+                removeAlertGui()
+            end
+        elseif not remainingSeconds or remainingSeconds <= 0 then
+            if playerBaseTimeWarning then
+                removeAlertGui()
+            end
         end
     end
     
-    local dp = pl:FindFirstChild("PlotSign")
-    if not dp then
-        for _, ch in pairs(pl:GetChildren()) do
-            if ch:IsA("Part") or ch:IsA("MeshPart") then
-                dp = ch
+    local displayPart = plot:FindFirstChild("PlotSign")
+    if not displayPart then
+        for _, child in pairs(plot:GetChildren()) do
+            if child:IsA("Part") or child:IsA("MeshPart") then
+                displayPart = child
                 break
             end
         end
     end
     
-    if not dp then return end
+    if not displayPart then return end
     
-    if not pd[pn] then
-        local eb = dp:FindFirstChild(HttpService:GenerateGUID(false):sub(1, 6))
-        if eb then eb:Destroy() end
+    if not plotDisplays[plotName] then
+        local existingBillboard = displayPart:FindFirstChild("PlotESP")
+        if existingBillboard then
+            existingBillboard:Destroy()
+        end
         
-        local bg = Instance.new("BillboardGui")
-        bg.Name = HttpService:GenerateGUID(false):sub(1, 6)
-        bg.Parent = dp
-        bg.Size = UDim2.new(0, 150, 0, 60)
-        bg.StudsOffset = Vector3.new(0, 8, 0)
-        bg.AlwaysOnTop = true
+        local billboardGui = Instance.new("BillboardGui")
+        billboardGui.Name = "PlotESP"
+        billboardGui.Parent = displayPart
+        billboardGui.Size = UDim2.new(0, 150, 0, 60)
+        billboardGui.StudsOffset = Vector3.new(0, 8, 0)
+        billboardGui.AlwaysOnTop = true
         
-        local fr = Instance.new("Frame")
-        fr.Parent = bg
-        fr.Size = UDim2.new(1, 0, 1, 0)
-        fr.BackgroundTransparency = 0.7
-        fr.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        fr.BorderSizePixel = 0
+        local frame = Instance.new("Frame")
+        frame.Parent = billboardGui
+        frame.Size = UDim2.new(1, 0, 1, 0)
+        frame.BackgroundTransparency = 0.7
+        frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        frame.BorderSizePixel = 0
         
-        local co = Instance.new("UICorner")
-        co.Parent = fr
-        co.CornerRadius = UDim.new(0, 4)
+        local corner = Instance.new("UICorner")
+        corner.Parent = frame
+        corner.CornerRadius = UDim.new(0, 4)
         
-        local stl = Instance.new("TextLabel")
-        stl.Parent = fr
-        stl.Size = UDim2.new(1, -4, 0.6, 0)
-        stl.Position = UDim2.new(0, 2, 0, 2)
-        stl.BackgroundTransparency = 1
-        stl.Text = pst
-        stl.TextColor3 = Color3.fromRGB(0, 255, 0)
-        stl.TextScaled = true
-        stl.TextStrokeTransparency = 0.3
-        stl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-        stl.Font = Enum.Font.SourceSansBold
+        local signLabel = Instance.new("TextLabel")
+        signLabel.Parent = frame
+        signLabel.Size = UDim2.new(1, -4, 0.6, 0)
+        signLabel.Position = UDim2.new(0, 2, 0, 2)
+        signLabel.BackgroundTransparency = 1
+        signLabel.Text = plotSignText
+        signLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+        signLabel.TextScaled = true
+        signLabel.TextStrokeTransparency = 0.3
+        signLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        signLabel.Font = Enum.Font.SourceSansBold
         
-        local ttl = Instance.new("TextLabel")
-        ttl.Parent = fr
-        ttl.Size = UDim2.new(1, -4, 0.4, 0)
-        ttl.Position = UDim2.new(0, 2, 0.6, 0)
-        ttl.BackgroundTransparency = 1
-        ttl.Text = ptt
-        ttl.TextColor3 = Color3.fromRGB(255, 255, 0)
-        ttl.TextScaled = true
-        ttl.TextStrokeTransparency = 0.3
-        ttl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-        ttl.Font = Enum.Font.SourceSans
+        local timeLabel = Instance.new("TextLabel")
+        timeLabel.Parent = frame
+        timeLabel.Size = UDim2.new(1, -4, 0.4, 0)
+        timeLabel.Position = UDim2.new(0, 2, 0.6, 0)
+        timeLabel.BackgroundTransparency = 1
+        timeLabel.Text = plotTimeText
+        timeLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+        timeLabel.TextScaled = true
+        timeLabel.TextStrokeTransparency = 0.3
+        timeLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        timeLabel.Font = Enum.Font.SourceSans
         
-        pd[pn] = {gui = bg, signLabel = stl, timeLabel = ttl, plot = pl}
+        plotDisplays[plotName] = {
+            gui = billboardGui,
+            signLabel = signLabel,
+            timeLabel = timeLabel,
+            plot = plot
+        }
     else
-        if pd[pn].signLabel then pd[pn].signLabel.Text = pst end
-        if pd[pn].timeLabel then pd[pn].timeLabel.Text = ptt end
-    end
-end
-
-local function uap() -- update all plots
-    local pls = workspace:FindFirstChild("Plots")
-    if not pls then return end
-    
-    for _, pl in pairs(pls:GetChildren()) do
-        if pl:IsA("Model") or pl:IsA("Folder") then
-            pcall(function() coupd(pl) end)
+        if plotDisplays[plotName].signLabel then
+            plotDisplays[plotName].signLabel.Text = plotSignText
         end
-    end
-    
-    for pn, d in pairs(pd) do
-        if not pls:FindFirstChild(pn) then
-            if d.gui then d.gui:Destroy() end
-            pd[pn] = nil
+        if plotDisplays[plotName].timeLabel then
+            plotDisplays[plotName].timeLabel.Text = plotTimeText
         end
     end
 end
 
--- Jump delay removal
-local jdc = {} -- jump delay connections
-
-local function cjdc(c) -- cleanup jump delay connections
-    if jdc[c] then
-        for _, conn in pairs(jdc[c]) do
-            if conn and conn.Connected then conn:Disconnect() end
+local function updateAllPlots()
+    local plots = workspace:FindFirstChild("Plots")
+    if not plots then return end
+    
+    for _, plot in pairs(plots:GetChildren()) do
+        if plot:IsA("Model") or plot:IsA("Folder") then
+            pcall(function()
+                createOrUpdatePlotDisplay(plot)
+            end)
         end
-        jdc[c] = nil
+    end
+    
+    for plotName, display in pairs(plotDisplays) do
+        if not plots:FindFirstChild(plotName) then
+            if display.gui then
+                display.gui:Destroy()
+            end
+            plotDisplays[plotName] = nil
+        end
     end
 end
 
-local function snjd(c) -- setup no jump delay
-    cjdc(c)
+local function createAnimalESP(object, name)
+    if not object or not object.Parent or not animalESPEnabled then return end
     
-    local h = c:WaitForChild("Humanoid")
-    if not h then return end
+    for _, child in pairs(object:GetChildren()) do
+        if child.Name == "AnimalESP" then
+            child:Destroy()
+        end
+    end
     
-    jdc[c] = {}
+    local billboardGui = Instance.new("BillboardGui")
+    billboardGui.Name = "AnimalESP"
+    billboardGui.Parent = object
+    billboardGui.Size = UDim2.new(0, 120, 0, 35)
+    billboardGui.StudsOffset = Vector3.new(0, 5, 0)
+    billboardGui.AlwaysOnTop = true
     
-    local sc = h.StateChanged:Connect(function(os, ns)
-        if ns == Enum.HumanoidStateType.Landed then
-            task.spawn(function()
-                task.wait()
-                if h and h.Parent then h:ChangeState(Enum.HumanoidStateType.Running) end
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Parent = billboardGui
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = name
+    textLabel.TextColor3 = Color3.fromRGB(255, 100, 255)
+    textLabel.TextScaled = true
+    textLabel.TextStrokeTransparency = 0
+    textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    textLabel.Font = Enum.Font.SourceSansBold
+    
+    return billboardGui
+end
+
+-- Replace the existing animal ESP functions with these modified versions
+
+local function scanForTargetAnimals()
+    -- Clear existing displays that no longer exist
+    for objId, display in pairs(animalESPDisplays) do
+        if not display.object or not display.object.Parent or not display.part or not display.part.Parent then
+            if display.gui then
+                display.gui:Destroy()
+            end
+            animalESPDisplays[objId] = nil
+        end
+    end
+    
+    -- Scan workspace.Plots folder
+    local plots = workspace:FindFirstChild("Plots")
+    if plots then
+        -- Check each randomly named plot model
+        for _, plot in pairs(plots:GetChildren()) do
+            if plot:IsA("Model") then
+                -- Check direct children of this plot for target animals
+                for _, child in pairs(plot:GetChildren()) do
+                    if child:IsA("Model") and espTargetLookup[child.Name] then
+                        local objId = tostring(child)
+                        
+                        if not animalESPDisplays[objId] then
+                            local targetPart = child:FindFirstChild("RootPart") or 
+                                             child:FindFirstChild("FakeRootPart")
+                            
+                            if targetPart then
+                                local espGui = createAnimalESP(targetPart, child.Name)
+                                if espGui then
+                                    animalESPDisplays[objId] = {
+                                        gui = espGui,
+                                        object = child,
+                                        part = targetPart,
+                                        plotParent = plot,
+                                        source = "Plots"
+                                    }
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Scan workspace.RenderedMovingAnimals folder
+    local renderedAnimals = workspace:FindFirstChild("RenderedMovingAnimals")
+    if renderedAnimals then
+        -- Check direct children for target animals
+        for _, child in pairs(renderedAnimals:GetChildren()) do
+            if child:IsA("Model") and espTargetLookup[child.Name] then
+                local objId = tostring(child)
+                
+                if not animalESPDisplays[objId] then
+                    local targetPart = child:FindFirstChild("RootPart") or 
+                                     child:FindFirstChild("FakeRootPart")
+                    
+                    if targetPart then
+                        local espGui = createAnimalESP(targetPart, child.Name)
+                        if espGui then
+                            animalESPDisplays[objId] = {
+                                gui = espGui,
+                                object = child,
+                                part = targetPart,
+                                plotParent = renderedAnimals,
+                                source = "RenderedMovingAnimals"
+                            }
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+local function initializeAnimalESP()
+    task.wait(2)
+    scanForTargetAnimals()
+    
+    -- Monitor workspace.Plots for new plots
+    local plots = workspace:FindFirstChild("Plots")
+    if plots then
+        plots.ChildAdded:Connect(function(newPlot)
+            if newPlot:IsA("Model") then
+                task.wait(0.5) -- Wait for the plot to fully load
+                
+                -- Scan the new plot's direct children for target animals
+                for _, child in pairs(newPlot:GetChildren()) do
+                    if child:IsA("Model") and espTargetLookup[child.Name] then
+                        local objId = tostring(child)
+                        
+                        if not animalESPDisplays[objId] then
+                            local targetPart = child:FindFirstChild("VfxInstance") or 
+                                             child:FindFirstChild("RootPart") or 
+                                             child:FindFirstChild("FakeRootPart") or
+                                             child:FindFirstChildOfClass("Part") or
+                                             child:FindFirstChildOfClass("MeshPart")
+                            
+                            if targetPart then
+                                local espGui = createAnimalESP(targetPart, child.Name)
+                                if espGui then
+                                    animalESPDisplays[objId] = {
+                                        gui = espGui,
+                                        object = child,
+                                        part = targetPart,
+                                        plotParent = newPlot,
+                                        source = "Plots"
+                                    }
+                                end
+                            end
+                        end
+                    end
+                end
+                
+                -- Monitor when new animals are added directly to this plot
+                newPlot.ChildAdded:Connect(function(child)
+                    if child:IsA("Model") and espTargetLookup[child.Name] then
+                        task.wait(0.5)
+                        
+                        local objId = tostring(child)
+                        if not animalESPDisplays[objId] then
+                            local targetPart = child:FindFirstChild("VfxInstance") or 
+                                             child:FindFirstChild("RootPart") or 
+                                             child:FindFirstChild("FakeRootPart") or
+                                             child:FindFirstChildOfClass("Part") or
+                                             child:FindFirstChildOfClass("MeshPart")
+                            
+                            if targetPart then
+                                local espGui = createAnimalESP(targetPart, child.Name)
+                                if espGui then
+                                    animalESPDisplays[objId] = {
+                                        gui = espGui,
+                                        object = child,
+                                        part = targetPart,
+                                        plotParent = newPlot,
+                                        source = "Plots"
+                                    }
+                                end
+                            end
+                        end
+                    end
+                end)
+            end
+        end)
+        
+        -- Monitor for plots being removed
+        plots.ChildRemoved:Connect(function(removedPlot)
+            -- Clean up ESP displays for animals that were in the removed plot
+            for objId, display in pairs(animalESPDisplays) do
+                if display.plotParent == removedPlot and display.source == "Plots" then
+                    if display.gui then
+                        display.gui:Destroy()
+                    end
+                    animalESPDisplays[objId] = nil
+                end
+            end
+        end)
+    end
+    
+    -- Monitor workspace.RenderedMovingAnimals for new animals
+    local renderedAnimals = workspace:FindFirstChild("RenderedMovingAnimals")
+    if renderedAnimals then
+        renderedAnimals.ChildAdded:Connect(function(child)
+            if child:IsA("Model") and espTargetLookup[child.Name] then
+                task.wait(0.5)
+                
+                local objId = tostring(child)
+                if not animalESPDisplays[objId] then
+                    local targetPart = child:FindFirstChild("HumanoidRootPart") or 
+                                     child:FindFirstChild("Torso") or 
+                                     child:FindFirstChild("Head") or
+                                     child:FindFirstChildOfClass("Part") or
+                                     child:FindFirstChildOfClass("MeshPart")
+                    
+                    if targetPart then
+                        local espGui = createAnimalESP(targetPart, child.Name)
+                        if espGui then
+                            animalESPDisplays[objId] = {
+                                gui = espGui,
+                                object = child,
+                                part = targetPart,
+                                plotParent = renderedAnimals,
+                                source = "RenderedMovingAnimals"
+                            }
+                        end
+                    end
+                end
+            end
+        end)
+        
+        -- Monitor for animals being removed from RenderedMovingAnimals
+        renderedAnimals.ChildRemoved:Connect(function(removedChild)
+            for objId, display in pairs(animalESPDisplays) do
+                if display.object == removedChild and display.source == "RenderedMovingAnimals" then
+                    if display.gui then
+                        display.gui:Destroy()
+                    end
+                    animalESPDisplays[objId] = nil
+                end
+            end
+        end)
+    end
+    
+    -- Monitor if RenderedMovingAnimals folder gets created later
+    workspace.ChildAdded:Connect(function(child)
+        if child.Name == "RenderedMovingAnimals" and child:IsA("Folder") then
+            task.wait(0.5)
+            -- Scan existing animals in the new folder
+            for _, animal in pairs(child:GetChildren()) do
+                if animal:IsA("Model") and espTargetLookup[animal.Name] then
+                    local objId = tostring(animal)
+                    
+                    if not animalESPDisplays[objId] then
+                        local targetPart = animal:FindFirstChild("VfxInstance") or 
+                                         animal:FindFirstChild("RootPart") or 
+                                         animal:FindFirstChild("FakeRootPart") or
+                                         animal:FindFirstChildOfClass("Part") or
+                                         animal:FindFirstChildOfClass("MeshPart")
+                        
+                        if targetPart then
+                            local espGui = createAnimalESP(targetPart, animal.Name)
+                            if espGui then
+                                animalESPDisplays[objId] = {
+                                    gui = espGui,
+                                    object = animal,
+                                    part = targetPart,
+                                    plotParent = child,
+                                    source = "RenderedMovingAnimals"
+                                }
+                            end
+                        end
+                    end
+                end
+            end
+            
+            -- Set up monitoring for this new folder
+            child.ChildAdded:Connect(function(animal)
+                if animal:IsA("Model") and espTargetLookup[animal.Name] then
+                    task.wait(0.5)
+                    
+                    local objId = tostring(animal)
+                    if not animalESPDisplays[objId] then
+                        local targetPart = animal:FindFirstChild("VfxInstance") or 
+                                         animal:FindFirstChild("RootPart") or 
+                                         animal:FindFirstChild("FakeRootPart") or
+                                         animal:FindFirstChildOfClass("Part") or
+                                         animal:FindFirstChildOfClass("MeshPart")
+                        
+                        if targetPart then
+                            local espGui = createAnimalESP(targetPart, animal.Name)
+                            if espGui then
+                                animalESPDisplays[objId] = {
+                                    gui = espGui,
+                                    object = animal,
+                                    part = targetPart,
+                                    plotParent = child,
+                                    source = "RenderedMovingAnimals"
+                                }
+                            end
+                        end
+                    end
+                end
             end)
         end
     end)
     
-    jdc[c][#jdc[c] + 1] = cc
-end
-
-local function rjd() -- remove jump delay
-    if plr.Character and plr.Character.Parent then snjd(plr.Character) end
-    
-    local cac = plr.CharacterAdded:Connect(function(c)
-        task.wait(0.5)
-        if c and c.Parent then snjd(c) end
-    end)
-    
-    local crc = plr.CharacterRemoving:Connect(function(c)
-        cjdc(c)
+    -- Periodic cleanup and rescan
+    task.spawn(function()
+        while animalESPEnabled do
+            task.wait(5)
+            pcall(scanForTargetAnimals)
+        end
     end)
 end
 
--- Character handling
-local function oca(nc) -- on character added
-    char = nc
-    hum = char:WaitForChild("Humanoid")
-    hrp = char:WaitForChild("HumanoidRootPart")
-    
-    og = nil
-    bv = nil
-    
-    if cfg.pf then
-        task.wait(1)
-        if cp then cp:Destroy() end
-        cp = cpl()
-        asf()
-        upp()
-        task.wait(0.5)
+local jumpDelayConnections = {}
+
+local function cleanupJumpDelayConnections(character)
+    if jumpDelayConnections[character] then
+        for _, connection in pairs(jumpDelayConnections[character]) do
+            if connection and connection.Connected then
+                connection:Disconnect()
+            end
+        end
+        jumpDelayConnections[character] = nil
     end
 end
 
--- Anti-kick system (simplified and obfuscated)
-local function bsr() -- block specific remotes
-    local function hr(r) -- hook remote
-        if not r or not r:IsA("RemoteEvent") and not r:IsA("RemoteFunction") then return end
+local function setupNoJumpDelay(character)
+    cleanupJumpDelayConnections(character)
+    
+    local humanoid = character:WaitForChild("Humanoid")
+    if not humanoid then return end
+    
+    jumpDelayConnections[character] = {}
+
+    local stateConnection = humanoid.StateChanged:Connect(function(oldState, newState)
+        if newState == Enum.HumanoidStateType.Landed then
+            task.spawn(function()
+                task.wait()
+                if humanoid and humanoid.Parent then
+                    humanoid:ChangeState(Enum.HumanoidStateType.Running)
+                end
+            end)
+        end
+    end)
+    
+    jumpDelayConnections[character][#jumpDelayConnections[character] + 1] = stateConnection
+    
+    local cleanupConnection = character.AncestryChanged:Connect(function()
+        if not character.Parent then
+            cleanupJumpDelayConnections(character)
+        end
+    end)
+    
+    jumpDelayConnections[character][#jumpDelayConnections[character] + 1] = cleanupConnection
+end
+
+local function removeJumpDelay()
+    if player.Character and player.Character.Parent then
+        setupNoJumpDelay(player.Character)
+    end
+    
+    local characterAddedConnection = player.CharacterAdded:Connect(function(character)
+        task.wait(0.5)
+        if character and character.Parent then
+            setupNoJumpDelay(character)
+        end
+    end)
+    
+    local characterRemovingConnection = player.CharacterRemoving:Connect(function(character)
+        cleanupJumpDelayConnections(character)
+    end)
+end
+
+local function onCharacterAdded(newCharacter)
+    character = newCharacter
+    humanoid = character:WaitForChild("Humanoid")
+    rootPart = character:WaitForChild("HumanoidRootPart")
+    
+    -- Reset all velocity variables
+    originalGravity = nil
+    bodyVelocity = nil
+    elevationBodyVelocity = nil
+
+    if platformEnabled then
+        task.wait(1)
         
-        local on = hookmetamethod(game, '__namecall', function(s, ...)
-            if s == r and (getnamecallmethod() == "FireServer" or getnamecallmethod() == "InvokeServer") then
-                if cfg.ak then return nil end
-            end
-            return on(s, ...)
+        if currentPlatform then
+            currentPlatform:Destroy()
+        end
+        
+        currentPlatform = createPlatform()
+        applySlowFall() -- Reapply slow fall to new character
+        updatePlatformPosition()
+        
+        -- ADD THESE LINES HERE:
+        task.wait(0.5) -- Wait for character to fully load
+        createFloatingEffects()
+    end
+end
+
+player.CharacterAdded:Connect(onCharacterAdded)
+
+for _, playerObj in pairs(Players:GetPlayers()) do
+    if playerObj ~= LocalPlayer then
+        createPlayerDisplay(playerObj)
+        playerObj.CharacterAdded:Connect(function()
+            task.wait(0.5)
+            createPlayerDisplay(playerObj)
         end)
     end
-    
-    -- Hook existing remotes
-    local rs = ReplicatedStorage:FindFirstChild("Packages")
-    if rs then
-        local rp = rs:FindFirstChild("Replion")
-        if rp then
-            local rr = rp:FindFirstChild("Remotes")
-            if rr then
-                local rm = rr:FindFirstChild("Removed")
-                if rm then hr(rm) end
-            end
+end
+
+Players.PlayerAdded:Connect(function(playerObj)
+    if playerObj ~= LocalPlayer then
+        createPlayerDisplay(playerObj)
+        playerObj.CharacterAdded:Connect(function()
+            task.wait(0.5)
+            createPlayerDisplay(playerObj)
+        end)
+    end
+end)
+
+updateAllPlots()
+
+local plots = workspace:FindFirstChild("Plots")
+if plots then
+    plots.ChildAdded:Connect(function(child)
+        if child:IsA("Model") or child:IsA("Folder") then
+            task.wait(0.5)
+            createOrUpdatePlotDisplay(child)
         end
-        
-        local nt = rs:FindFirstChild("Net")
-        if nt then
-            local tr = nt:FindFirstChild("RE/TeleportService/Reconnect")
-            if tr then hr(tr) end
+    end)
+end
+
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+        pcall(updateAllPlots)
+    end
+end)
+
+floatButton.MouseButton1Click:Connect(function()
+    local originalSize = floatButton.Size
+    local clickTween = TweenService:Create(floatButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 125, 0, 33)})
+    local releaseTween = TweenService:Create(floatButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = originalSize})
+    
+    clickTween:Play()
+    clickTween.Completed:Connect(function()
+        releaseTween:Play()
+    end)
+    
+    if platformEnabled then
+        disablePlatform()
+    else
+        enablePlatform()
+    end
+end)
+
+wallButton.MouseButton1Click:Connect(function()
+    local originalSize = wallButton.Size
+    local clickTween = TweenService:Create(wallButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 125, 0, 33)})
+    local releaseTween = TweenService:Create(wallButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = originalSize})
+    
+    clickTween:Play()
+    clickTween.Completed:Connect(function()
+        releaseTween:Play()
+    end)
+    
+    if wallTransparencyEnabled then
+        disableWallTransparency()
+    else
+        enableWallTransparency()
+    end
+end)
+
+closeButton.MouseButton1Click:Connect(function()
+    if platformEnabled then
+        disablePlatform()
+    end
+    if wallTransparencyEnabled then
+        disableWallTransparency()
+    end
+    if alertGui then
+        removeAlertGui()
+    end
+    screenGui:Destroy()
+end)
+
+local function addHoverEffect(button, hoverColor, originalColor)
+    button.MouseEnter:Connect(function()
+        if button == floatButton then
+            if platformEnabled then
+                button.BackgroundColor3 = Color3.fromRGB(50, 180, 80)
+            else
+                button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+            end
+        elseif button == wallButton then
+            if wallTransparencyEnabled then
+                button.BackgroundColor3 = Color3.fromRGB(180, 80, 30)
+            else
+                button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+            end
+        else
+            button.BackgroundColor3 = hoverColor
+        end
+    end)
+    
+    button.MouseLeave:Connect(function()
+        if button == floatButton then
+            if platformEnabled then
+                button.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
+            else
+                button.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+            end
+        elseif button == wallButton then
+            if wallTransparencyEnabled then
+                button.BackgroundColor3 = Color3.fromRGB(150, 50, 0)
+            else
+                button.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+            end
+        else
+            button.BackgroundColor3 = originalColo        end
+    end)
+end
+
+addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
+addHoverEffect(floatButton, Color3.fromRGB(30, 30, 30), Color3.fromRGB(0, 0, 0))
+addHoverEffect(wallButton, Color3.fromRGB(30, 30, 30), Color3.fromRGB(0, 0, 0))
+
+game:BindToClose(function()
+    if wallTransparencyEnabled then
+        disableWallTransparency()
+    end
+    if alertGui then
+        removeAlertGui()
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(playerObj)
+    if playerObj == LocalPlayer then
+        removeAlertGui()
+    end
+end)
+
+task.spawn(initializeAnimalESP)
+removeJumpDelay()
+
+local function blockSpecificRemotes()
+    -- Block game:GetService("ReplicatedStorage").Packages.Replion.Remotes.Removed
+    local remote = game:GetService('ReplicatedStorage'):FindFirstChild('Packages')
+    if remote then
+        remote = remote:FindFirstChild('Replion')
+        if remote then
+            remote = remote:FindFirstChild('Remotes')
+            if remote then
+                remote = remote:FindFirstChild('Removed')
+                if remote then
+                    local old = hookmetamethod(game, '__namecall', function(self, ...)
+                        if self == remote and getnamecallmethod() == "FireServer" then
+                            if antiKickEnabled then
+                                print("🛡️ BLOCKED: Replion.Remotes.Removed FireServer attempt")
+                                warn("blocked the kick!")
+                                return nil
+                            end
+                        end
+                        return old(self, ...)
+                    end)
+                    print("🛡️ Successfully hooked: ReplicatedStorage.Packages.Replion.Remotes.Removed")
+                end
+            end
         end
     end
     
-    -- Monitor new remotes
-    game.DescendantAdded:Connect(function(o)
-        if o:IsA("RemoteEvent") or o:IsA("RemoteFunction") then
+    -- Block game:GetService("ReplicatedStorage").Packages.Net["RE/TeleportService/Reconnect"]
+    local netRemote = game:GetService('ReplicatedStorage'):FindFirstChild('Packages')
+    if netRemote then
+        netRemote = netRemote:FindFirstChild('Net')
+        if netRemote then
+            netRemote = netRemote:FindFirstChild('RE/TeleportService/Reconnect')
+            if netRemote then
+                local old = hookmetamethod(game, '__namecall', function(self, ...)
+                    if self == netRemote and getnamecallmethod() == "FireServer" then
+                        if antiKickEnabled then
+                            print("🛡️ BLOCKED: Net RE/TeleportService/Reconnect FireServer attempt")
+                            warn("blocked the kick!")
+                            return nil
+                        end
+                    end
+                    return old(self, ...)
+                end)
+                print("🛡️ Successfully hooked: ReplicatedStorage.Packages.Net[RE/TeleportService/Reconnect]")
+            end
+        end
+    end
+    
+    -- Monitor for these remotes being added later
+    game.DescendantAdded:Connect(function(obj)
+        if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
             task.wait(0.1)
-            local fn = o:GetFullName()
-            for _, br in pairs(rb) do
-                if string.find(fn, br) then
-                    hr(o)
-                    break
-                end
+            local fullName = obj:GetFullName()
+            
+            if string.find(fullName, "Replion") and string.find(fullName, "Removed") then
+                local old = hookmetamethod(game, '__namecall', function(self, ...)
+                    if self == obj and (getnamecallmethod() == "FireServer" or getnamecallmethod() == "InvokeServer") then
+                        if antiKickEnabled then
+                            print("🛡️ BLOCKED: New Replion.Removed remote attempt")
+                            warn("blocked the kick!")
+                            return nil
+                        end
+                    end
+                    return old(self, ...)
+                end)
+                print("🛡️ Hooked new Replion remote:", fullName)
+                
+            elseif string.find(fullName, "TeleportService") and string.find(fullName, "Reconnect") then
+                local old = hookmetamethod(game, '__namecall', function(self, ...)
+                    if self == obj and (getnamecallmethod() == "FireServer" or getnamecallmethod() == "InvokeServer") then
+                        if antiKickEnabled then
+                            print("🛡️ BLOCKED: New TeleportService/Reconnect remote attempt")
+                            warn("blocked the kick!")
+                            return nil
+                        end
+                    end
+                    return old(self, ...)
+                end)
+                print("🛡️ Hooked new TeleportService remote:", fullName)
             end
         end
     end)
 end
 
-local function hkm() -- hook kick methods
-    local on = hookmetamethod(game, "__namecall", function(s, ...)
-        local m = getnamecallmethod()
-        local a = {...}
+-- ULTIMATE KICK METHOD HOOKING (COMPREHENSIVE)
+local function hookAllKickMethods()
+    local old = hookmetamethod(game, "__namecall", function(self, ...)
+        local method = getnamecallmethod()
+        local args = {...}
         
-        if not cfg.ak then return on(s, ...) end
-        
-        -- Check method names
-        for _, km in pairs(km) do
-            if m == km then return nil end
+        if not antiKickEnabled then
+            return old(self, ...)
         end
         
-        -- Check for player kick
-        if m == "Kick" and s == plr then return nil end
+        -- Check if method is in our comprehensive kick list
+        for _, kickMethod in pairs(kickMethods) do
+            if method == kickMethod then
+                print("🛡️ BLOCKED: " .. method .. " method blocked on", self.Name or tostring(self))
+                warn("blocked the kick!")
+                return nil
+            end
+        end
         
-        -- Check remote calls
-        if m == "FireServer" or m == "InvokeServer" then
-            local rn = s.Name or ""
-            local rfn = s:GetFullName() or ""
+        -- Special handling for Player:Kick specifically
+        if method == "Kick" and self == player then
+            print("🛡️ BLOCKED: Player:Kick() attempt on local player")
+            warn("blocked the kick!")
+            return nil
+        end
+        
+        -- Check for RemoteEvent/RemoteFunction kick attempts
+        if method == "FireServer" or method == "InvokeServer" then
+            -- Check remote name against specific blocked remotes
+            local remoteName = self.Name or ""
+            local remoteFullName = self:GetFullName() or ""
             
-            for _, br in pairs(rb) do
-                if string.find(rn, br) or string.find(rfn, br) then return nil end
+            for _, blockedRemote in pairs(specificRemotesToBlock) do
+                if string.find(remoteName, blockedRemote) or string.find(remoteFullName, blockedRemote) then
+                    print("🛡️ BLOCKED: Blocked remote detected - " .. blockedRemote .. " in " .. remoteFullName)
+                    warn("blocked the kick!")
+                    return nil
+                end
             end
             
-            -- Check arguments
-            for _, arg in pairs(a) do
+            -- Check arguments for kick patterns
+            for i, arg in pairs(args) do
                 if type(arg) == "string" then
-                    local l = string.lower(arg)
-                    for _, p in pairs(kp) do
-                        if string.find(l, string.lower(p)) then return nil end
+                    local lower = string.lower(arg)
+                    
+                    -- Check against all kick patterns
+                    for _, pattern in pairs(kickPatterns) do
+                        if string.find(lower, string.lower(pattern)) then
+                            print("🛡️ BLOCKED: " .. method .. " with kick pattern: " .. pattern .. " in argument: " .. tostring(arg))
+                            warn("blocked the kick!")
+                            return nil
+                        end
                     end
+                    
                 elseif type(arg) == "number" then
-                    for _, ec in pairs(kec) do
-                        if arg == ec then return nil end
+                    -- Check for kick error codes
+                    for _, errorCode in pairs(kickErrorCodes) do
+                        if arg == errorCode then
+                            print("🛡️ BLOCKED: " .. method .. " with kick error code: " .. tostring(arg))
+                            warn("blocked the kick!")
+                            return nil
+                        end
+                    end
+                    
+                    -- Check for place IDs (potential teleportation)
+                    if arg > 1000000 and arg < 999999999999 then
+                        print("🛡️ BLOCKED: " .. method .. " with potential place ID: " .. tostring(arg))
+                        warn("blocked the kick!")
+                        return nil
+                    end
+                    
+                elseif type(arg) == "table" then
+                    -- Check table contents recursively
+                    local function checkTable(t, depth)
+                        if depth > 10 then return false end -- Prevent infinite recursion
+                        
+                        for k, v in pairs(t) do
+                            if type(v) == "string" then
+                                local lower = string.lower(v)
+                                for _, pattern in pairs(kickPatterns) do
+                                    if string.find(lower, string.lower(pattern)) then
+                                        return true
+                                    end
+                                end
+                            elseif type(v) == "number" then
+                                for _, errorCode in pairs(kickErrorCodes) do
+                                    if v == errorCode then
+                                        return true
+                                    end
+                                end
+                            elseif type(v) == "table" then
+                                if checkTable(v, depth + 1) then 
+                                    return true 
+                                end
+                            end
+                        end
+                        return false
+                    end
+                    
+                    if checkTable(arg, 0) then
+                        print("🛡️ BLOCKED: " .. method .. " with table containing kick data")
+                        warn("blocked the kick!")
+                        return nil
                     end
                 end
             end
         end
         
-        -- Check teleport service
-        if s == TeleportService then
-            local tm = {"Teleport", "TeleportAsync", "TeleportToPlaceInstance", "TeleportToPrivateServer"}
-            for _, tm in pairs(tm) do
-                if m == tm then
-                    for _, arg in pairs(a) do
-                        if arg == plr or (type(arg) == "table" and table.find(arg, plr)) then
+        -- Block TeleportService methods
+        if self == TeleportService then
+            local teleportMethods = {
+                "Teleport", "TeleportAsync", "TeleportToPlaceInstance", 
+                "TeleportToPrivateServer", "TeleportPartyAsync", "TeleportToSpawnByName"
+            }
+            
+            for _, teleMethod in pairs(teleportMethods) do
+                if method == teleMethod then
+                    -- Check if local player is being teleported
+                    for _, arg in pairs(args) do
+                        if arg == player or (type(arg) == "table" and table.find(arg, player)) then
+                            print("🛡️ BLOCKED: TeleportService." .. method .. " attempt on local player")
+                            warn("blocked the kick!")
                             return nil
                         end
                     end
@@ -884,163 +1640,110 @@ local function hkm() -- hook kick methods
             end
         end
         
-        return on(s, ...)
-    end)
-end
-
-local function iak() -- initialize anti kick
-    if not cfg.ak then return end
-    pcall(bsr)
-    pcall(hkm)
-end
-
--- Hover effects
-local function ahe(b, hc, oc) -- add hover effect
-    b.MouseEnter:Connect(function()
-        if b == fb then
-            b.BackgroundColor3 = cfg.pf and Color3.fromRGB(50, 180, 80) or Color3.fromRGB(30, 30, 30)
-        elseif b == wb then
-            b.BackgroundColor3 = cfg.wt and Color3.fromRGB(180, 80, 30) or Color3.fromRGB(30, 30, 30)
-        else
-            b.BackgroundColor3 = hc
+        -- Block game shutdown methods
+        if self == game and (method == "Shutdown" or method == "shutdown") then
+            print("🛡️ BLOCKED: game:Shutdown() attempt")
+            warn("blocked the kick!")
+            return nil
         end
-    end)
-    
-    b.MouseLeave:Connect(function()
-        if b == fb then
-            b.BackgroundColor3 = cfg.pf and Color3.fromRGB(0, 150, 50) or Color3.fromRGB(0, 0, 0)
-        elseif b == wb then
-            b.BackgroundColor3 = cfg.wt and Color3.fromRGB(150, 50, 0) or Color3.fromRGB(0, 0, 0)
-        else
-            b.BackgroundColor3 = oc
-        end
+        
+        return old(self, ...)
     end)
 end
 
--- Initialize everything
-local function init() -- initialize
-    csg()
-    cmf()
-    ctb()
-    cbs()
-    cls()
-    sd()
-    
-    -- Button connections
-    fb.MouseButton1Click:Connect(function()
-        local os = fb.Size
-        local ct = TweenService:Create(fb, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 125, 0, 33)})
-        local rt = TweenService:Create(fb, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = os})
+-- MONITOR AND PROTECT AGAINST CHARACTER/PLAYER DESTRUCTION
+local function protectPlayerAndCharacter()
+    -- Protect player object
+    if player then
+        local playerMetatable = getmetatable(player) or {}
+        local originalDestroy = player.Destroy
         
-        ct:Play()
-        ct.Completed:Connect(function() rt:Play() end)
-        
-        if cfg.pf then dp() else ep() end
-    end)
-    
-    wb.MouseButton1Click:Connect(function()
-        local os = wb.Size
-        local ct = TweenService:Create(wb, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 125, 0, 33)})
-        local rt = TweenService:Create(wb, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = os})
-        
-        ct:Play()
-        ct.Completed:Connect(function() rt:Play() end)
-        
-        if cfg.wt then dwt() else ewt() end
-    end)
-    
-    cb.MouseButton1Click:Connect(function()
-        if cfg.pf then dp() end
-        if cfg.wt then dwt() end
-        if ag then rag() end
-        sg:Destroy()
-    end)
-    
-    -- Add hover effects
-    ahe(cb, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
-    ahe(fb, Color3.fromRGB(30, 30, 30), Color3.fromRGB(0, 0, 0))
-    ahe(wb, Color3.fromRGB(30, 30, 30), Color3.fromRGB(0, 0, 0))
-    
-    -- Character handling
-    plr.CharacterAdded:Connect(oca)
-    
-    -- Player ESP
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= plr then
-            cpd(p)
-            p.CharacterAdded:Connect(function()
-                task.wait(0.5)
-                cpd(p)
-            end)
+        player.Destroy = function(...)
+            if antiKickEnabled then
+                print("🛡️ BLOCKED: Player:Destroy() attempt")
+                warn("blocked the kick!")
+                return
+            end
+            return originalDestroy(...)
         end
     end
     
-    Players.PlayerAdded:Connect(function(p)
-        if p ~= plr then
-            cpd(p)
-            p.CharacterAdded:Connect(function()
-                task.wait(0.5)
-                cpd(p)
-            end)
-        end
-    end)
-    
-    -- Plot ESP
-    uap()
-    local pls = workspace:FindFirstChild("Plots")
-    if pls then
-        pls.ChildAdded:Connect(function(ch)
-            if ch:IsA("Model") or ch:IsA("Folder") then
-                task.wait(0.5)
-                coupd(ch)
+    -- Protect character
+    local function protectCharacter(character)
+        if character then
+            local originalDestroy = character.Destroy
+            character.Destroy = function(...)
+                if antiKickEnabled then
+                    print("🛡️ BLOCKED: Character:Destroy() attempt")
+                    warn("blocked the kick!")
+                    return
+                end
+                return originalDestroy(...)
             end
-        end)
+        end
     end
     
-    task.spawn(function()
-        while true do
-            task.wait(0.5)
-            pcall(uap)
-        end
-    end)
+    if player.Character then
+        protectCharacter(player.Character)
+    end
     
-    -- Cleanup on leave
-    game:BindToClose(function()
-        if cfg.wt then dwt() end
-        if ag then rag() end
-    end)
-    
-    Players.PlayerRemoving:Connect(function(p)
-        if p == plr then rag() end
-    end)
-    
-    -- Initialize systems
-    rjd()
-    iak()
-    
-    -- Maintain anti-kick protection
-    task.spawn(function()
-        while cfg.ak do
-            if not plr or not plr.Parent or plr.Parent ~= Players then break end
-            if not plr.Character and plr.Parent == Players then
-                pcall(function() plr:LoadCharacter() end)
-            end
-            if math.random(1, 30) == 1 then
-                pcall(function()
-                    hkm()
-                    bsr()
-                end)
-            end
-            task.wait(1)
-        end
-    end)
+    player.CharacterAdded:Connect(protectCharacter)
 end
 
--- Start the script
-init() = sc
+-- INITIALIZE ULTIMATE ANTI-KICK SYSTEM
+local function initializeUltimateAntiKick()
+    if not antiKickEnabled then 
+        print("⚠️ Anti-kick is disabled")
+        return 
+    end
     
-    local cc = c.AncestryChanged:Connect(function()
-        if not c.Parent then cjdc(c) end
-    end)
+    print("🛡️ Initializing ULTIMATE Anti-Kick System...")
+    print("🛡️ Loading " .. #kickMethods .. " kick methods to block...")
+    print("🛡️ Loading " .. #kickPatterns .. " kick patterns to detect...")
+    print("🛡️ Loading " .. #kickErrorCodes .. " error codes to block...")
     
-    jdc[c][#jdc[c] + 1]
+    -- Apply all protection systems
+    pcall(hookAllKickMethods)
+    pcall(blockSpecificRemotes)
+    pcall(protectPlayerAndCharacter)
+    
+    print("🛡️ ULTIMATE Anti-Kick System Activated Successfully!")
+    print("🛡️ All kick methods, remotes, and patterns are now monitored")
+    print("🛡️ Specific remotes blocked:")
+    print("   • ReplicatedStorage.Packages.Replion.Remotes.Removed")
+    print("   • ReplicatedStorage.Packages.Net[RE/TeleportService/Reconnect]")
+    print("🛡️ System ready to block ALL kick attempts!")
+end
+
+-- MAINTAIN PROTECTION WITH ADVANCED MONITORING
+task.spawn(function()
+    while antiKickEnabled do
+        -- Ensure player is still connected
+        if not player or not player.Parent or player.Parent ~= Players then
+            print("⚠️ Player disconnection detected - anti-kick may have failed")
+            break
+        end
+        
+        -- Check for character
+        if not player.Character and player.Parent == Players then
+            print("🛡️ Character missing - attempting restoration...")
+            pcall(function()
+                player:LoadCharacter()
+            end)
+        end
+        
+        -- Periodic re-initialization (every 30 seconds)
+        if math.random(1, 30) == 1 then
+            pcall(function()
+                hookAllKickMethods()
+                blockSpecificRemotes()
+                print("🛡️ Anti-kick protection renewed")
+            end)
+        end
+        
+        task.wait(1)
+    end
+end)
+
+-- START THE ULTIMATE ANTI-KICK SYSTEM
+task.spawn(initializeUltimateAntiKick)
