@@ -278,7 +278,7 @@ end)
 
 local function createPlatform()
     local platform = Instance.new("Part")
-    platform.Name = "PlayerPlatform"
+    platform.Name = "😆"
     platform.Size = Vector3.new(8, 0.5, 8)
     platform.Material = Enum.Material.Neon
     platform.BrickColor = BrickColor.new("Bright blue")
@@ -504,7 +504,7 @@ local function makeWallsTransparent(transparent)
 end
 local function createComboPlatform()
     local platform = Instance.new("Part")
-    platform.Name = "ComboPlayerPlatform"
+    platform.Name = "😆"
     platform.Size = Vector3.new(8, 1.5, 8)
     platform.Material = Enum.Material.Neon
     platform.BrickColor = BrickColor.new("Bright blue")
@@ -692,7 +692,7 @@ local function createAlertGui()
     
     local screenGui = Instance.new("ScreenGui")
     screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-    screenGui.Name = "BaseTimeAlert"
+    screenGui.Name = "😆"
     screenGui.ResetOnSpawn = false
     
     local frame = Instance.new("Frame")
@@ -776,7 +776,7 @@ function createPlayerESP(player, head)
     end
     
     local billboardGui = Instance.new("BillboardGui")
-    billboardGui.Name = "PlayerESP"
+    billboardGui.Name = "😆"
     billboardGui.Parent = head
     billboardGui.Size = UDim2.new(0, 90, 0, 33)
     billboardGui.StudsOffset = Vector3.new(0, 2, 0)
@@ -895,7 +895,7 @@ local function createOrUpdatePlotDisplay(plot)
         end
         
         local billboardGui = Instance.new("BillboardGui")
-        billboardGui.Name = "PlotESP"
+        billboardGui.Name = "😆"
         billboardGui.Parent = displayPart
         billboardGui.Size = UDim2.new(0, 150, 0, 60)
         billboardGui.StudsOffset = Vector3.new(0, 8, 0)
@@ -1472,31 +1472,6 @@ local function protectPlayerAndCharacter()
     player.CharacterAdded:Connect(protectCharacter)
 end
 
--- INITIALIZE ULTIMATE ANTI-KICK SYSTEM
-local function initializeUltimateAntiKick()
-    if not antiKickEnabled then 
-        print("⚠️ Anti-kick is disabled")
-        return 
-    end
-    
-    print("🛡️ Initializing ULTIMATE Anti-Kick System...")
-    print("🛡️ Loading " .. #kickMethods .. " kick methods to block...")
-    print("🛡️ Loading " .. #kickPatterns .. " kick patterns to detect...")
-    print("🛡️ Loading " .. #kickErrorCodes .. " error codes to block...")
-    
-    -- Apply all protection systems
-    pcall(hookAllKickMethods)
-    pcall(blockSpecificRemotes)
-    pcall(protectPlayerAndCharacter)
-    
-    print("🛡️ ULTIMATE Anti-Kick System Activated Successfully!")
-    print("🛡️ All kick methods, remotes, and patterns are now monitored")
-    print("🛡️ Specific remotes blocked:")
-    print("   • ReplicatedStorage.Packages.Replion.Remotes.Removed")
-    print("   • ReplicatedStorage.Packages.Net[RE/TeleportService/Reconnect]")
-    print("🛡️ System ready to block ALL kick attempts!")
-end
-
 -- MAINTAIN PROTECTION WITH ADVANCED MONITORING
 task.spawn(function()
     while antiKickEnabled do
@@ -1527,5 +1502,6 @@ task.spawn(function()
     end
 end)
 
--- START THE ULTIMATE ANTI-KICK SYSTEM
-task.spawn(initializeUltimateAntiKick)
+pcall(hookAllKickMethods)
+pcall(blockSpecificRemotes)
+pcall(protectPlayerAndCharacter)
