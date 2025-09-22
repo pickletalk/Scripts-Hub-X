@@ -134,12 +134,12 @@ local alertGui = nil
 local playerGui = player:WaitForChild("PlayerGui")
 
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "PlatformUI"
+screenGui.Name = "im"
 screenGui.Parent = playerGui
 screenGui.ResetOnSpawn = false
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Name = "MainFrame"
+mainFrame.Name = "the"
 mainFrame.Size = UDim2.new(0, 280, 0, 150)
 mainFrame.Position = UDim2.new(1, -290, 0, 140)
 mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
@@ -151,7 +151,7 @@ mainCorner.CornerRadius = UDim.new(0, 8)
 mainCorner.Parent = mainFrame
 
 local titleBar = Instance.new("Frame")
-titleBar.Name = "TitleBar"
+titleBar.Name = "best"
 titleBar.Size = UDim2.new(1, 0, 0, 30)
 titleBar.Position = UDim2.new(0, 0, 0, 0)
 titleBar.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
@@ -163,7 +163,7 @@ titleCorner.CornerRadius = UDim.new(0, 8)
 titleCorner.Parent = titleBar
 
 local titleText = Instance.new("TextLabel")
-titleText.Name = "TitleText"
+titleText.Name = "ever"
 titleText.Size = UDim2.new(1, -30, 1, 0)
 titleText.Position = UDim2.new(0, 5, 0, 0)
 titleText.BackgroundTransparency = 1
@@ -174,7 +174,7 @@ titleText.Font = Enum.Font.GothamBold
 titleText.Parent = titleBar
 
 local closeButton = Instance.new("TextButton")
-closeButton.Name = "CloseButton"
+closeButton.Name = "lol"
 closeButton.Size = UDim2.new(0, 25, 0, 25)
 closeButton.Position = UDim2.new(1, -27, 0, 2)
 closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
@@ -190,7 +190,7 @@ closeCorner.CornerRadius = UDim.new(0, 4)
 closeCorner.Parent = closeButton
 
 local floatButton = Instance.new("TextButton")
-floatButton.Name = "FloatButton"
+floatButton.Name = "can't"
 floatButton.Size = UDim2.new(0, 130, 0, 35)
 floatButton.Position = UDim2.new(0, 10, 0, 45)
 floatButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -206,7 +206,7 @@ floatCorner.CornerRadius = UDim.new(0, 6)
 floatCorner.Parent = floatButton
 
 local wallButton = Instance.new("TextButton")
-wallButton.Name = "WallButton"
+wallButton.Name = "detect"
 wallButton.Size = UDim2.new(0, 130, 0, 35)
 wallButton.Position = UDim2.new(0, 150, 0, 45)
 wallButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -222,7 +222,7 @@ wallCorner.CornerRadius = UDim.new(0, 6)
 wallCorner.Parent = wallButton
 
 local statusLabel = Instance.new("TextLabel")
-statusLabel.Name = "StatusLabel"
+statusLabel.Name = "us"
 statusLabel.Size = UDim2.new(1, -20, 0, 25)
 statusLabel.Position = UDim2.new(0, 10, 0, 90)
 statusLabel.BackgroundTransparency = 1
@@ -234,7 +234,7 @@ statusLabel.TextXAlignment = Enum.TextXAlignment.Left
 statusLabel.Parent = mainFrame
 
 local creditLabel = Instance.new("TextLabel")
-creditLabel.Name = "CreditLabel"
+creditLabel.Name = "😆"
 creditLabel.Size = UDim2.new(1, -20, 0, 20)
 creditLabel.Position = UDim2.new(0, 10, 0, 120)
 creditLabel.BackgroundTransparency = 1
