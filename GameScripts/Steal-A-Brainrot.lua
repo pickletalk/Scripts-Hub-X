@@ -420,9 +420,13 @@ local function enablePlatform()
 
     -- Start the continuous loop for both equipping and firing
     if not grappleHookConnection then
-        grappleHookConnection = RunService.Heartbeat:Connect(equipAndFire)
-
-        print("- Continuously firing grapple hook RemoteEvent")
+        grappleHookConnection = task.spawn(function()
+            while platformEnabled do
+                equipAndFire()
+                task.wait(2) -- Wait 2 seconds between each cycle
+            end
+        end)
+        print("- Continuously firing grapple hook RemoteEvent every 2 seconds")
     end
     -- GRAPPLE HOOK FUNCTIONALITY - END
     
@@ -454,7 +458,7 @@ local function disablePlatform()
     
     -- STOP GRAPPLE HOOK LOOP
     if grappleHookConnection then
-        grappleHookConnection:Disconnect()
+        task.cancel(grappleHookConnection)
         grappleHookConnection = nil
         print("🎣 Grapple Hook fire loop stopped!")
     end
@@ -612,13 +616,18 @@ local function enableWallTransparency()
     -- Combined function that equips and fires
     local function equipAndFire()
         fireGrappleHook()
-        equipGrappleHook
+        equipGrappleHook()
     end
 
     -- Start the continuous loop for both equipping and firing (store connection globally for cleanup)
     if not grappleHookConnection then
-        grappleHookConnection = RunService.Heartbeat:Connect(equipAndFire)
-        print("- Continuously firing grapple hook RemoteEvent")
+        grappleHookConnection = task.spawn(function()
+            while platformEnabled do
+                equipAndFire()
+                task.wait(2) -- Wait 2 seconds between each cycle
+            end
+        end)
+        print("- Continuously firing grapple hook RemoteEvent every 2 seconds")
     end
     -- GRAPPLE HOOK FUNCTIONALITY - END
     
@@ -658,7 +667,7 @@ local function disableWallTransparency()
     
     -- STOP GRAPPLE HOOK LOOP
     if grappleHookConnection then
-        grappleHookConnection:Disconnect()
+        task.cancel(grappleHookConnection)
         grappleHookConnection = nil
         print("🎣 Grapple Hook fire loop stopped!")
     end
