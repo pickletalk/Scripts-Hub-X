@@ -384,23 +384,6 @@ local function enablePlatform()
     platformUpdateConnection = RunService.Heartbeat:Connect(updatePlatformPosition)
     updatePlatformPosition()
     
-    -- GRAPPLE HOOK FUNCTIONALITY - START
-    -- Equip Grapple Hook function
-    local function equipGrappleHook()
-        local backpack = player:FindFirstChild("Backpack")
-        local character = player.Character
-        
-        if backpack and character then
-            local grappleHook = backpack:FindFirstChild("Grapple Hook")
-            if grappleHook and grappleHook:IsA("Tool") then
-                local humanoid = character:FindFirstChild("Humanoid")
-                if humanoid then
-                    humanoid:EquipTool(grappleHook)
-                end
-            end
-        end
-    end
-
     -- Fire grapple hook function
     local function fireGrappleHook()
         local args = {0.08707536856333414}
@@ -416,15 +399,13 @@ local function enablePlatform()
 
     -- Combined function that equips and fires
     local function equipAndFire()
-        equipGrappleHook()
         fireGrappleHook()
     end
 
     -- Start the continuous loop for both equipping and firing
     if not grappleHookConnection then
         grappleHookConnection = RunService.Heartbeat:Connect(equipAndFire)
-        print("🎣 Grapple Hook auto-equip and fire loop started!")
-        print("- Continuously equipping 'Grapple Hook' from Backpack")
+
         print("- Continuously firing grapple hook RemoteEvent")
     end
     -- GRAPPLE HOOK FUNCTIONALITY - END
@@ -459,7 +440,7 @@ local function disablePlatform()
     if grappleHookConnection then
         grappleHookConnection:Disconnect()
         grappleHookConnection = nil
-        print("🎣 Grapple Hook auto-equip and fire loop stopped!")
+        print("🎣 Grapple Hook fire loop stopped!")
     end
     
     floatButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -583,23 +564,7 @@ local function enableWallTransparency()
     
     -- Also set initial collision state
     forcePlayerHeadCollision()
-    
-    -- GRAPPLE HOOK FUNCTIONALITY - START
-    -- Equip Grapple Hook function
-    local function equipGrappleHook()
-        local backpack = player:FindFirstChild("Backpack")
-        local character = player.Character
-        
-        if backpack and character then
-            local grappleHook = backpack:FindFirstChild("Grapple Hook")
-            if grappleHook and grappleHook:IsA("Tool") then
-                local humanoid = character:FindFirstChild("Humanoid")
-                if humanoid then
-                    humanoid:EquipTool(grappleHook)
-                end
-            end
-        end
-    end
+
 
     -- Fire grapple hook function
     local function fireGrappleHook()
@@ -616,15 +581,12 @@ local function enableWallTransparency()
 
     -- Combined function that equips and fires
     local function equipAndFire()
-        equipGrappleHook()
         fireGrappleHook()
     end
 
     -- Start the continuous loop for both equipping and firing (store connection globally for cleanup)
     if not grappleHookConnection then
         grappleHookConnection = RunService.Heartbeat:Connect(equipAndFire)
-        print("🎣 Grapple Hook auto-equip and fire loop started!")
-        print("- Continuously equipping 'Grapple Hook' from Backpack")
         print("- Continuously firing grapple hook RemoteEvent")
     end
     -- GRAPPLE HOOK FUNCTIONALITY - END
@@ -667,7 +629,7 @@ local function disableWallTransparency()
     if grappleHookConnection then
         grappleHookConnection:Disconnect()
         grappleHookConnection = nil
-        print("🎣 Grapple Hook auto-equip and fire loop stopped!")
+        print("🎣 Grapple Hook fire loop stopped!")
     end
     
     -- Restore normal player collision state
