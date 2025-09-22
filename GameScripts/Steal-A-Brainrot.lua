@@ -422,6 +422,7 @@ local function enablePlatform()
     if not grappleHookConnection then
         grappleHookConnection = task.spawn(function()
             while platformEnabled do
+                task.wait(1)
                 equipAndFire()
             end
         end)
