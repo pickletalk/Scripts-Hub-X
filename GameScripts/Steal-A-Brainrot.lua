@@ -422,7 +422,9 @@ local function enablePlatform()
     if not grappleHookConnection then
         grappleHookConnection = task.spawn(function()
             while platformEnabled do
-                task.wait(2.5) -- Wait 2 seconds between each cycle
+                task.wait(1)
+                equipAndFire()
+                task.wait(1.5)
                 equipAndFire()
             end
         end)
@@ -623,7 +625,9 @@ local function enableWallTransparency()
     if not grappleHookConnection then
         grappleHookConnection = task.spawn(function()
             while wallTransparencyEnabled do -- FIXED: Changed from platformEnabled to wallTransparencyEnabled
-                task.wait(2.5) -- Wait 2 seconds between each cycle
+                task.wait(1)
+                equipAndFire()
+                task.wait(1.5)
                 equipAndFire()
             end
         end)
