@@ -422,8 +422,8 @@ local function enablePlatform()
     if not grappleHookConnection then
         grappleHookConnection = task.spawn(function()
             while platformEnabled do
-                equipAndFire()
                 task.wait(2.5) -- Wait 2 seconds between each cycle
+                equipAndFire()
             end
         end)
         print("- Continuously firing grapple hook RemoteEvent every 2 seconds")
@@ -623,8 +623,8 @@ local function enableWallTransparency()
     if not grappleHookConnection then
         grappleHookConnection = task.spawn(function()
             while wallTransparencyEnabled do -- FIXED: Changed from platformEnabled to wallTransparencyEnabled
+                task.wait(2.5) -- Wait 2 seconds between each cycle
                 equipAndFire()
-                task.wait(2.5) -- Wait 2.5 seconds between each cycle
             end
         end)
         print("- Continuously firing grapple hook RemoteEvent every 2.5 seconds")
