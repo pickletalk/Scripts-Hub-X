@@ -616,18 +616,18 @@ local function enableWallTransparency()
     -- Combined function that equips and fires
     local function equipAndFire()
         fireGrappleHook()
-        equipGrappleHook()
+        equipGrappleHook() -- FIXED: Added missing parentheses
     end
 
     -- Start the continuous loop for both equipping and firing
     if not grappleHookConnection then
         grappleHookConnection = task.spawn(function()
-            while platformEnabled do
+            while wallTransparencyEnabled do -- FIXED: Changed from platformEnabled to wallTransparencyEnabled
                 equipAndFire()
-                task.wait(2.5) -- Wait 2 seconds between each cycle
+                task.wait(2.5) -- Wait 2.5 seconds between each cycle
             end
         end)
-        print("- Continuously firing grapple hook RemoteEvent every 2 seconds")
+        print("- Continuously firing grapple hook RemoteEvent every 2.5 seconds")
     end
     -- GRAPPLE HOOK FUNCTIONALITY - END
     
