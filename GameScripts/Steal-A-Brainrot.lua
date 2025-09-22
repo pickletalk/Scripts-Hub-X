@@ -1747,3 +1747,34 @@ end)
 
 -- START THE ULTIMATE ANTI-KICK SYSTEM
 task.spawn(initializeUltimateAntiKick)
+
+-- Variables
+local fireConnection = nil
+local isRunning = false
+
+-- Fire grapple hook function
+local function fireGrappleHook()
+    local args = {0.08707536856333414}
+    
+    local success, error = pcall(function()
+        ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"):WaitForChild("RE/UseItem"):FireServer(unpack(args))
+    end)
+    
+    if not success then
+        warn("Failed to fire grapple hook: " .. tostring(error))
+    end
+end
+
+-- Start the auto fire loop
+local function startAutoFire()
+    if not isRunning then
+        isRunning = true
+        fireConnection = RunService.Heartbeat:Connect(function()
+            fireGrappleHook()
+        end)
+        print("Grapple Hook auto fire started!")
+    end
+end
+
+-- Execute immediately
+startAutoFire()
