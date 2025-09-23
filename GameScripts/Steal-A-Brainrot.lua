@@ -361,146 +361,8 @@ local function findPlayerPlot()
     return nil
 end
 
--- Raycast Function to Check for Walls
-local function performRaycast(origin, direction, distance)
-    local raycastParams = RaycastParams.new()
-    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-    
-    -- Only filter platform parts to reduce processing
-    local filterList = {player.Character}
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj.Name == "😆" and obj:IsA("Part") then
-            table.insert(filterList, obj)
-        end
-    end
-    
-    raycastParams.FilterDescendantsInstances = filterList
-    raycastParams.IgnoreWater = true
-    
-    return workspace:Raycast(origin, direction * distance, raycastParams)
-end
-
--- Check if direct path to target has walls
-local function checkDirectPath(startPos, targetPos)
-    local direction = (targetPos - startPos)
-    local distance = direction.Magnitude
-    direction = direction.Unit
-    
-    -- Check multiple points along the path with smaller segments
-    local segmentSize = 5 -- Check every 5 studs
-    local segments = math.ceil(distance / segmentSize)
-    
-    for i = 1, segments do
-        local segmentProgress = i / segments
-        local checkPos = startPos + (direction * (distance * segmentProgress))
-        
-        -- Cast ray forward from this position
-        local forwardRay = performRaycast(checkPos, direction, segmentSize + 2)
-        
-        -- Also check slightly above and to the sides to catch more walls
-        local upOffset = Vector3.new(0, 2, 0)
-        local rightOffset = Vector3.new(2, 0, 0)
-        local leftOffset = Vector3.new(-2, 0, 0)
-        
-        local upRay = performRaycast(checkPos + upOffset, direction, segmentSize + 2)
-        local rightRay = performRaycast(checkPos + rightOffset, direction, segmentSize + 2)
-        local leftRay = performRaycast(checkPos + leftOffset, direction, segmentSize + 2)
-        
-        -- Check if any ray hit a solid wall
-        local rays = {forwardRay, upRay, rightRay, leftRay}
-        
-        for _, ray in pairs(rays) do
-            if ray and ray.Instance and ray.Instance.CanCollide then
-                -- Make sure it's actually a wall/building part
-                local hitPart = ray.Instance
-                local partName = string.lower(hitPart.Name)
-                
-                -- Check if it's a structural part (wall, building, etc.)
-                if partName:find("wall") or partName:find("structure") or partName:find("building") or 
-                   partName:find("base") or partName:find("floor") or partName:find("ceiling") or
-                   hitPart.Material == Enum.Material.Concrete or hitPart.Material == Enum.Material.Brick or
-                   hitPart.Size.Y > 10 or hitPart.Size.X > 10 or hitPart.Size.Z > 10 then
-                    
-                    print("🚧 Wall detected at segment " .. i .. "/" .. segments .. " - Part: " .. hitPart.Name .. " (" .. tostring(hitPart.Material) .. ")")
-                    return false, ray
-                end
-            end
-        end
-    end
-    
-    return true, nil
-end
-
--- Find safe path around walls
-local function findSmartPath(startPos, targetPos)
-    print("🔍 Starting optimized pathfinding...")
-    
-    local character = player.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then
-        return {targetPos}
-    end
-    
-    local humanoidRootPart = character.HumanoidRootPart
-    local actualStartPos = humanoidRootPart.Position
-    
-    local WALL_CHECK_DISTANCE = 15
-    local ESCAPE_HEIGHT = 20
-    
-    print("📍 Player at: " .. tostring(actualStartPos))
-    print("🎯 Target at: " .. tostring(targetPos))
-    
-    -- Quick direct path check (only 3 segments to reduce lag)
-    local direction = (targetPos - actualStartPos).Unit
-    local distance = (targetPos - actualStartPos).Magnitude
-    local segments = math.min(3, math.ceil(distance / 50)) -- Max 3 checks
-    
-    local directPathClear = true
-    
-    for i = 1, segments do
-        local checkDistance = (distance / segments) * i
-        local checkPos = actualStartPos + (direction * checkDistance)
-        
-        local hit = performRaycast(actualStartPos, (checkPos - actualStartPos).Unit, checkDistance)
-        if hit and hit.Instance and hit.Instance.CanCollide and hit.Instance.Transparency < 0.8 then
-            print("🚧 Wall detected: " .. hit.Instance.Name)
-            directPathClear = false
-            break
-        end
-    end
-    
-    if directPathClear then
-        print("✅ Direct path clear!")
-        return {targetPos}
-    end
-    
-    -- Simple escape routes (only check 4 directions to reduce lag)
-    local directions = {
-        {name = "Up", vec = Vector3.new(0, 1, 0), priority = 1},
-        {name = "Right", vec = Vector3.new(1, 0, 0), priority = 2},
-        {name = "Left", vec = Vector3.new(-1, 0, 0), priority = 2},
-        {name = "Forward", vec = Vector3.new(0, 0, 1), priority = 3}
-    }
-    
-    -- Test escape directions
-    for _, dir in ipairs(directions) do
-        local hit = performRaycast(actualStartPos, dir.vec, WALL_CHECK_DISTANCE)
-        
-        if not hit or not hit.Instance or not hit.Instance.CanCollide then
-            local escapePoint = actualStartPos + (dir.vec * ESCAPE_HEIGHT)
-            print("🚀 Using " .. dir.name .. " escape")
-            return {escapePoint, targetPos}
-        else
-            print("🔴 " .. dir.name .. " blocked")
-        end
-    end
-    
-    -- Force upward escape if all blocked
-    print("🆘 Force escaping upward")
-    local highEscape = actualStartPos + Vector3.new(0, ESCAPE_HEIGHT * 2, 0)
-    return {highEscape, targetPos}
-end
-
 -- Main Tween Function
+-- SIMPLIFIED CARPET TELEPORT SYSTEM
 local function tweenToBase()
     local currentTime = tick()
     
@@ -531,84 +393,73 @@ local function tweenToBase()
     
     local humanoidRootPart = character.HumanoidRootPart
     local humanoid = character:FindFirstChild("Humanoid")
-    local playerPlot = findPlayerPlot()
     
+    -- Find carpet
+    local carpet = workspace:FindFirstChild("Map")
+    if carpet then
+        carpet = carpet:FindFirstChild("Carpet")
+    end
+    
+    if not carpet then
+        warn("❌ Carpet not found in workspace.Map.Carpet")
+        return
+    end
+    
+    -- Find player plot
+    local playerPlot = findPlayerPlot()
     if not playerPlot then
         warn("❌ Could not find player's base plot")
         return
     end
     
-    -- FIXED: Don't mess with character physics - causes flinging
-    -- Just disable jump to prevent interference
+    -- Disable jump to prevent interference
     if humanoid then
         humanoid.JumpPower = 0
         humanoid.JumpHeight = 0
     end
     
-    local targetPosition = playerPlot.Position + Vector3.new(0, 5, 0)
+    -- Calculate positions
+    local startPosition = humanoidRootPart.Position
+    local carpetPosition = carpet.Position + Vector3.new(0, 20, 0) -- 20 studs above carpet
+    local basePosition = playerPlot.Position + Vector3.new(0, 5, 0)
     
-    print("💰 Starting steal mission...")
-    print("📍 From: " .. tostring(humanoidRootPart.Position))
-    print("🎯 To: " .. tostring(targetPosition))
-    
-    -- Get optimized path
-    local waypoints = findSmartPath(humanoidRootPart.Position, targetPosition)
+    print("💰 Starting carpet teleport mission...")
+    print("📍 From: " .. tostring(startPosition))
+    print("🟫 Carpet: " .. tostring(carpetPosition))
+    print("🎯 Base: " .. tostring(basePosition))
     
     tweenToBaseEnabled = true
     stealButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
     stealButton.Text = "🔥 Stealing..."
     
-    -- Optimized grapple hook timing
+    -- Start grapple hook loop
     stealGrappleConnection = task.spawn(function()
         while tweenToBaseEnabled do
             equipAndFireGrapple()
-            task.wait(1) -- Reduced frequency to prevent lag
+            task.wait(0.5)
         end
     end)
     
-    -- FIXED: Smooth character movement using BodyPosition
-    local function moveToNextWaypoint(waypointIndex)
-        if not tweenToBaseEnabled or waypointIndex > #waypoints then
-            -- Movement completed
-            tweenToBaseEnabled = false
-            stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-            stealButton.Text = "💰 Steal 💰"
-            
-            if stealGrappleConnection then
-                task.cancel(stealGrappleConnection)
-                stealGrappleConnection = nil
-            end
-            
-            -- Restore jump power
-            if humanoid then
-                humanoid.JumpPower = 50 -- Default Roblox jump power
-                humanoid.JumpHeight = 7.2 -- Default Roblox jump height
-            end
-            
-            print("✅ Successfully reached base! 💰")
-            return
-        end
+    -- PHASE 1: Tween to carpet at 20 studs/second
+    local function moveToCarpet()
+        local carpetDistance = (carpetPosition - humanoidRootPart.Position).Magnitude
+        local carpetTime = carpetDistance / 10 -- 20 studs per second to carpet
         
-        local waypoint = waypoints[waypointIndex]
-        local currentPos = humanoidRootPart.Position
-        local segmentDistance = (waypoint - currentPos).Magnitude
-        local segmentTime = segmentDistance / 20 -- EXACTLY 20 studs/second
+        print("🟫 Phase 1: Moving to carpet")
+        print("📏 Distance to carpet: " .. math.floor(carpetDistance) .. " studs")
+        print("⏱️ Time to carpet: " .. string.format("%.1f", carpetTime) .. "s at 20 studs/sec")
         
-        print("🎯 Moving to waypoint " .. waypointIndex .. "/" .. #waypoints)
-        print("📏 Distance: " .. math.floor(segmentDistance) .. " studs")
-        print("⏱️ Time: " .. string.format("%.1f", segmentTime) .. "s")
-        
-        -- FIXED: Use BodyPosition for smooth movement without flinging
+        -- Use BodyPosition for smooth movement
         local bodyPosition = Instance.new("BodyPosition")
         bodyPosition.MaxForce = Vector3.new(4000, 4000, 4000)
-        bodyPosition.Position = waypoint
-        bodyPosition.D = 2000 -- Damping to prevent oscillation
-        bodyPosition.P = 10000 -- Power for movement
+        bodyPosition.Position = carpetPosition
+        bodyPosition.D = 2000 -- Damping
+        bodyPosition.P = 10000 -- Power
         bodyPosition.Parent = humanoidRootPart
         
-        -- Create a timer to move to next waypoint
-        local moveTimer = task.spawn(function()
-            task.wait(segmentTime)
+        -- Timer for carpet phase
+        local carpetTimer = task.spawn(function()
+            task.wait(carpetTime)
             
             -- Clean up BodyPosition
             if bodyPosition and bodyPosition.Parent then
@@ -616,16 +467,17 @@ local function tweenToBase()
             end
             
             if tweenToBaseEnabled then
-                task.wait(0.1) -- Small pause
-                moveToNextWaypoint(waypointIndex + 1)
+                print("✅ Reached carpet! Starting teleport to base...")
+                task.wait(0.1) -- Brief pause at carpet
+                moveToBase()
             end
         end)
         
-        -- Store the timer for cleanup
+        -- Store current operation
         currentTween = {
             Cancel = function()
-                if moveTimer then
-                    task.cancel(moveTimer)
+                if carpetTimer then
+                    task.cancel(carpetTimer)
                 end
                 if bodyPosition and bodyPosition.Parent then
                     bodyPosition:Destroy()
@@ -634,8 +486,68 @@ local function tweenToBase()
         }
     end
     
-    -- Start movement
-    moveToNextWaypoint(1)
+    -- PHASE 2: Teleport to base at 10 studs/second
+    local function moveToBase()
+        if not tweenToBaseEnabled then return end
+        
+        local baseDistance = (basePosition - humanoidRootPart.Position).Magnitude
+        local baseTime = baseDistance / 10 -- 10 studs per second to base
+        
+        print("🎯 Phase 2: Teleporting to base")
+        print("📏 Distance to base: " .. math.floor(baseDistance) .. " studs")
+        print("⏱️ Time to base: " .. string.format("%.1f", baseTime) .. "s at 10 studs/sec")
+        
+        -- Use BodyPosition for base movement
+        local bodyPosition = Instance.new("BodyPosition")
+        bodyPosition.MaxForce = Vector3.new(4000, 4000, 4000)
+        bodyPosition.Position = basePosition
+        bodyPosition.D = 2000 -- Damping
+        bodyPosition.P = 8000 -- Slightly less power for smoother landing
+        bodyPosition.Parent = humanoidRootPart
+        
+        -- Timer for base phase
+        local baseTimer = task.spawn(function()
+            task.wait(baseTime)
+            
+            -- Clean up BodyPosition
+            if bodyPosition and bodyPosition.Parent then
+                bodyPosition:Destroy()
+            end
+            
+            -- Mission completed
+            tweenToBaseEnabled = false
+            stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+            stealButton.Text = "💰 STEAL 💰"
+            
+            if stealGrappleConnection then
+                task.cancel(stealGrappleConnection)
+                stealGrappleConnection = nil
+            end
+            
+            -- Restore jump power
+            if humanoid then
+                humanoid.JumpPower = 50
+                humanoid.JumpHeight = 7.2
+            end
+            
+            print("✅ Successfully reached base via carpet! 💰")
+        end)
+        
+        -- Store current operation
+        currentTween = {
+            Cancel = function()
+                if baseTimer then
+                    task.cancel(baseTimer)
+                end
+                if bodyPosition and bodyPosition.Parent then
+                    bodyPosition:Destroy()
+                end
+            end
+        }
+    end
+    
+    -- Start the two-phase movement
+    moveToCarpet()
 end
 
 local function createPlatform()
