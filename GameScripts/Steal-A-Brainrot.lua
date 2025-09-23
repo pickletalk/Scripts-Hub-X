@@ -361,8 +361,7 @@ local function findPlayerPlot()
     return nil
 end
 
--- Main Tween Function
--- SIMPLIFIED CARPET TELEPORT SYSTEM
+-- FIXED CARPET TELEPORT SYSTEM
 local function tweenToBase()
     local currentTime = tick()
     
@@ -411,6 +410,9 @@ local function tweenToBase()
         warn("❌ Could not find player's base plot")
         return
     end
+
+    local originalJumpPower = humanoid.JumpPower
+    local originalJumpHeight = humanoid.JumpHeight
     
     -- Disable jump to prevent interference
     if humanoid then
@@ -436,114 +438,98 @@ local function tweenToBase()
     stealGrappleConnection = task.spawn(function()
         while tweenToBaseEnabled do
             equipAndFireGrapple()
-            task.wait(0.5)
+            task.wait(0.3)
         end
     end)
     
-    -- PHASE 1: Tween to carpet at 20 studs/second
+    -- PHASE 1: Tween to carpet at 10 studs/second (FIXED SPEED)
     local function moveToCarpet()
         local carpetDistance = (carpetPosition - humanoidRootPart.Position).Magnitude
-        local carpetTime = carpetDistance / 10 -- 20 studs per second to carpet
+        local carpetTime = carpetDistance / 10 -- FIXED: 10 studs per second to carpet
         
         print("🟫 Phase 1: Moving to carpet")
         print("📏 Distance to carpet: " .. math.floor(carpetDistance) .. " studs")
-        print("⏱️ Time to carpet: " .. string.format("%.1f", carpetTime) .. "s at 20 studs/sec")
+        print("⏱️ Time to carpet: " .. string.format("%.1f", carpetTime) .. "s at 10 studs/sec")
         
-        -- Use BodyPosition for smooth movement
-        local bodyPosition = Instance.new("BodyPosition")
-        bodyPosition.MaxForce = Vector3.new(4000, 4000, 4000)
-        bodyPosition.Position = carpetPosition
-        bodyPosition.D = 2000 -- Damping
-        bodyPosition.P = 10000 -- Power
-        bodyPosition.Parent = humanoidRootPart
+        -- FIXED: Use proper TweenService instead of BodyPosition
+        local tweenInfo = TweenInfo.new(
+            carpetTime,                     -- Exact time for 10 studs/second
+            Enum.EasingStyle.Linear,        -- Constant speed
+            Enum.EasingDirection.InOut,
+            0,
+            false,
+            0
+        )
         
-        -- Timer for carpet phase
-        local carpetTimer = task.spawn(function()
-            task.wait(carpetTime)
-            
-            -- Clean up BodyPosition
-            if bodyPosition and bodyPosition.Parent then
-                bodyPosition:Destroy()
-            end
-            
-            if tweenToBaseEnabled then
+        currentTween = TweenService:Create(
+            humanoidRootPart,
+            tweenInfo,
+            {Position = carpetPosition}
+        )
+        
+        currentTween:Play()
+        
+        currentTween.Completed:Connect(function(playbackState)
+            if playbackState == Enum.PlaybackState.Completed and tweenToBaseEnabled then
                 print("✅ Reached carpet! Starting teleport to base...")
                 task.wait(0.1) -- Brief pause at carpet
                 moveToBase()
             end
         end)
-        
-        -- Store current operation
-        currentTween = {
-            Cancel = function()
-                if carpetTimer then
-                    task.cancel(carpetTimer)
-                end
-                if bodyPosition and bodyPosition.Parent then
-                    bodyPosition:Destroy()
-                end
-            end
-        }
     end
     
     -- PHASE 2: Teleport to base at 10 studs/second
     local function moveToBase()
         if not tweenToBaseEnabled then return end
         
-        local baseDistance = (basePosition - humanoidRootPart.Position).Magnitude
+        -- Update position in case character moved slightly
+        local currentPos = humanoidRootPart.Position
+        local baseDistance = (basePosition - currentPos).Magnitude
         local baseTime = baseDistance / 10 -- 10 studs per second to base
         
         print("🎯 Phase 2: Teleporting to base")
         print("📏 Distance to base: " .. math.floor(baseDistance) .. " studs")
         print("⏱️ Time to base: " .. string.format("%.1f", baseTime) .. "s at 10 studs/sec")
         
-        -- Use BodyPosition for base movement
-        local bodyPosition = Instance.new("BodyPosition")
-        bodyPosition.MaxForce = Vector3.new(4000, 4000, 4000)
-        bodyPosition.Position = basePosition
-        bodyPosition.D = 2000 -- Damping
-        bodyPosition.P = 8000 -- Slightly less power for smoother landing
-        bodyPosition.Parent = humanoidRootPart
+        -- FIXED: Use proper TweenService for base movement too
+        local tweenInfo = TweenInfo.new(
+            baseTime,                       -- Exact time for 10 studs/second
+            Enum.EasingStyle.Linear,        -- Constant speed
+            Enum.EasingDirection.InOut,
+            0,
+            false,
+            0
+        )
         
-        -- Timer for base phase
-        local baseTimer = task.spawn(function()
-            task.wait(baseTime)
-            
-            -- Clean up BodyPosition
-            if bodyPosition and bodyPosition.Parent then
-                bodyPosition:Destroy()
+        currentTween = TweenService:Create(
+            humanoidRootPart,
+            tweenInfo,
+            {Position = basePosition}
+        )
+        
+        currentTween:Play()
+        
+        currentTween.Completed:Connect(function(playbackState)
+            if playbackState == Enum.PlaybackState.Completed and tweenToBaseEnabled then
+                -- Mission completed
+                tweenToBaseEnabled = false
+                stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+                stealButton.Text = "💰 Steal 💰"
+                
+                if stealGrappleConnection then
+                    task.cancel(stealGrappleConnection)
+                    stealGrappleConnection = nil
+                end
+                
+                -- Restore jump power
+                if humanoid then
+                    humanoid.JumpPower = originalJumpPower
+                    humanoid.JumpHeight = originalJumpHeight
+                end
+                
+                print("✅ Successfully reached base via carpet! 💰")
             end
-            
-            -- Mission completed
-            tweenToBaseEnabled = false
-            stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-            stealButton.Text = "💰 STEAL 💰"
-            
-            if stealGrappleConnection then
-                task.cancel(stealGrappleConnection)
-                stealGrappleConnection = nil
-            end
-            
-            -- Restore jump power
-            if humanoid then
-                humanoid.JumpPower = 50
-                humanoid.JumpHeight = 7.2
-            end
-            
-            print("✅ Successfully reached base via carpet! 💰")
         end)
-        
-        -- Store current operation
-        currentTween = {
-            Cancel = function()
-                if baseTimer then
-                    task.cancel(baseTimer)
-                end
-                if bodyPosition and bodyPosition.Parent then
-                    bodyPosition:Destroy()
-                end
-            end
-        }
     end
     
     -- Start the two-phase movement
