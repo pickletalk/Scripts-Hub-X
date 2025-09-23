@@ -366,8 +366,8 @@ local function performRaycast(origin, direction, distance)
     local raycastParams = RaycastParams.new()
     raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
     
-    -- Only filter out our platform parts, NOT the character
-    local filterList = {}
+    -- Only filter platform parts to reduce processing
+    local filterList = {player.Character}
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj.Name == "😆" and obj:IsA("Part") then
             table.insert(filterList, obj)
@@ -377,8 +377,7 @@ local function performRaycast(origin, direction, distance)
     raycastParams.FilterDescendantsInstances = filterList
     raycastParams.IgnoreWater = true
     
-    local raycastResult = workspace:Raycast(origin, direction * distance, raycastParams)
-    return raycastResult
+    return workspace:Raycast(origin, direction * distance, raycastParams)
 end
 
 -- Check if direct path to target has walls
@@ -434,7 +433,7 @@ end
 
 -- Find safe path around walls
 local function findSmartPath(startPos, targetPos)
-    print("🔍 Starting smart pathfinding from player position...")
+    print("🔍 Starting optimized pathfinding...")
     
     local character = player.Character
     if not character or not character:FindFirstChild("HumanoidRootPart") then
@@ -442,111 +441,62 @@ local function findSmartPath(startPos, targetPos)
     end
     
     local humanoidRootPart = character.HumanoidRootPart
-    local actualStartPos = humanoidRootPart.Position -- Use actual player position
+    local actualStartPos = humanoidRootPart.Position
     
-    local WALL_CHECK_DISTANCE = 8
-    local ESCAPE_STEP = 6
-    local MAX_ESCAPE_HEIGHT = 50
+    local WALL_CHECK_DISTANCE = 15
+    local ESCAPE_HEIGHT = 20
     
     print("📍 Player at: " .. tostring(actualStartPos))
     print("🎯 Target at: " .. tostring(targetPos))
     
-    -- Check direct path from current player position
-    local direction = (targetPos - actualStartPos)
-    local distance = direction.Magnitude
-    direction = direction.Unit
+    -- Quick direct path check (only 3 segments to reduce lag)
+    local direction = (targetPos - actualStartPos).Unit
+    local distance = (targetPos - actualStartPos).Magnitude
+    local segments = math.min(3, math.ceil(distance / 50)) -- Max 3 checks
     
-    -- Test direct path in small segments
-    local segmentCount = math.ceil(distance / WALL_CHECK_DISTANCE)
     local directPathClear = true
     
-    for i = 1, segmentCount do
-        local checkPos = actualStartPos + (direction * (WALL_CHECK_DISTANCE * i))
-        local segmentDirection = (checkPos - actualStartPos).Unit
-        local segmentDistance = (checkPos - actualStartPos).Magnitude
+    for i = 1, segments do
+        local checkDistance = (distance / segments) * i
+        local checkPos = actualStartPos + (direction * checkDistance)
         
-        local hit = performRaycast(actualStartPos, segmentDirection, segmentDistance)
-        if hit and hit.Instance and hit.Instance.CanCollide and hit.Instance.Transparency < 0.9 then
-            print("🚧 Wall detected at segment " .. i .. ": " .. hit.Instance.Name)
+        local hit = performRaycast(actualStartPos, (checkPos - actualStartPos).Unit, checkDistance)
+        if hit and hit.Instance and hit.Instance.CanCollide and hit.Instance.Transparency < 0.8 then
+            print("🚧 Wall detected: " .. hit.Instance.Name)
             directPathClear = false
             break
         end
     end
     
     if directPathClear then
-        print("✅ Direct path is clear!")
+        print("✅ Direct path clear!")
         return {targetPos}
     end
     
-    print("🔄 Direct path blocked, checking escape routes...")
-    
-    -- Check all directions around player like you requested
+    -- Simple escape routes (only check 4 directions to reduce lag)
     local directions = {
-        {name = "Right", vec = Vector3.new(1, 0, 0)},
-        {name = "Left", vec = Vector3.new(-1, 0, 0)},
-        {name = "Forward", vec = Vector3.new(0, 0, 1)},
-        {name = "Backward", vec = Vector3.new(0, 0, -1)},
-        {name = "Up", vec = Vector3.new(0, 1, 0)},
-        {name = "Forward-Right", vec = Vector3.new(1, 0, 1).Unit},
-        {name = "Forward-Left", vec = Vector3.new(-1, 0, 1).Unit},
-        {name = "Backward-Right", vec = Vector3.new(1, 0, -1).Unit},
-        {name = "Backward-Left", vec = Vector3.new(-1, 0, -1).Unit}
+        {name = "Up", vec = Vector3.new(0, 1, 0), priority = 1},
+        {name = "Right", vec = Vector3.new(1, 0, 0), priority = 2},
+        {name = "Left", vec = Vector3.new(-1, 0, 0), priority = 2},
+        {name = "Forward", vec = Vector3.new(0, 0, 1), priority = 3}
     }
     
-    local escapeRoutes = {}
-    
-    -- Test each direction as you described
+    -- Test escape directions
     for _, dir in ipairs(directions) do
         local hit = performRaycast(actualStartPos, dir.vec, WALL_CHECK_DISTANCE)
         
-        if hit and hit.Instance and hit.Instance.CanCollide and hit.Instance.Transparency < 0.9 then
-            local wallDistance = hit.Distance or 0
-            print("🔴 " .. dir.name .. " blocked at " .. math.floor(wallDistance) .. " studs")
+        if not hit or not hit.Instance or not hit.Instance.CanCollide then
+            local escapePoint = actualStartPos + (dir.vec * ESCAPE_HEIGHT)
+            print("🚀 Using " .. dir.name .. " escape")
+            return {escapePoint, targetPos}
         else
-            print("🟢 " .. dir.name .. " is open!")
-            table.insert(escapeRoutes, {
-                name = dir.name,
-                direction = dir.vec,
-                priority = dir.name == "Up" and 1 or 2 -- Prioritize upward
-            })
+            print("🔴 " .. dir.name .. " blocked")
         end
     end
     
-    -- Sort by priority (Up first, then others)
-    table.sort(escapeRoutes, function(a, b) return a.priority < b.priority end)
-    
-    if #escapeRoutes > 0 then
-        local bestRoute = escapeRoutes[1]
-        local escapePoint = actualStartPos + (bestRoute.direction * ESCAPE_STEP)
-        
-        print("🚀 Using " .. bestRoute.name .. " escape route")
-        
-        -- If going up, go higher to clear obstacles
-        if bestRoute.name == "Up" then
-            escapePoint = actualStartPos + Vector3.new(0, 15, 0)
-        end
-        
-        return {escapePoint, targetPos}
-    end
-    
-    -- If all directions blocked, player is inside something - escape upward
-    print("🆘 Player trapped inside structure, escaping vertically...")
-    
-    for height = 10, MAX_ESCAPE_HEIGHT, 5 do
-        local testPoint = actualStartPos + Vector3.new(0, height, 0)
-        local upHit = performRaycast(actualStartPos, Vector3.new(0, 1, 0), height)
-        
-        if not upHit or not upHit.Instance or not upHit.Instance.CanCollide then
-            print("✨ Found escape at height: " .. height)
-            return {testPoint, targetPos}
-        else
-            print("🔴 Ceiling detected at height: " .. height)
-        end
-    end
-    
-    -- Last resort - force high escape
-    print("🔥 Force escaping above all obstacles!")
-    local highEscape = actualStartPos + Vector3.new(0, MAX_ESCAPE_HEIGHT, 0)
+    -- Force upward escape if all blocked
+    print("🆘 Force escaping upward")
+    local highEscape = actualStartPos + Vector3.new(0, ESCAPE_HEIGHT * 2, 0)
     return {highEscape, targetPos}
 end
 
@@ -556,13 +506,13 @@ local function tweenToBase()
     
     -- Double click prevention
     if currentTime - lastClickTime < DOUBLE_CLICK_PREVENTION_TIME then
-        print("⏳ Please wait " .. math.ceil(DOUBLE_CLICK_PREVENTION_TIME - (currentTime - lastClickTime)) .. " seconds before stealing again")
+        print("⏳ Please wait " .. math.ceil(DOUBLE_CLICK_PREVENTION_TIME - (currentTime - lastClickTime)) .. " seconds")
         return
     end
     
     lastClickTime = currentTime
     
-    -- Stop any existing tween
+    -- Stop existing tween
     if currentTween then
         currentTween:Cancel()
         tweenToBaseEnabled = false
@@ -588,16 +538,11 @@ local function tweenToBase()
         return
     end
     
-    -- Disable character physics to prevent conflicts
+    -- FIXED: Don't mess with character physics - causes flinging
+    -- Just disable jump to prevent interference
     if humanoid then
-        humanoid.PlatformStand = true
-    end
-    
-    -- Set character collision for better movement
-    for _, part in pairs(character:GetChildren()) do
-        if part:IsA("BasePart") and part ~= humanoidRootPart then
-            part.CanCollide = false
-        end
+        humanoid.JumpPower = 0
+        humanoid.JumpHeight = 0
     end
     
     local targetPosition = playerPlot.Position + Vector3.new(0, 5, 0)
@@ -606,25 +551,25 @@ local function tweenToBase()
     print("📍 From: " .. tostring(humanoidRootPart.Position))
     print("🎯 To: " .. tostring(targetPosition))
     
-    -- Get smart path from current position
+    -- Get optimized path
     local waypoints = findSmartPath(humanoidRootPart.Position, targetPosition)
     
     tweenToBaseEnabled = true
     stealButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
     stealButton.Text = "🔥 Stealing..."
     
-    -- Grapple hook with proper timing
+    -- Optimized grapple hook timing
     stealGrappleConnection = task.spawn(function()
         while tweenToBaseEnabled do
             equipAndFireGrapple()
-            task.wait(0.5) -- Balanced timing
+            task.wait(1) -- Reduced frequency to prevent lag
         end
     end)
     
-    -- FIXED: Character movement with Vector3 Position
+    -- FIXED: Smooth character movement using BodyPosition
     local function moveToNextWaypoint(waypointIndex)
         if not tweenToBaseEnabled or waypointIndex > #waypoints then
-            -- Movement completed - restore character
+            -- Movement completed
             tweenToBaseEnabled = false
             stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
             stealButton.Text = "💰 Steal 💰"
@@ -634,17 +579,10 @@ local function tweenToBase()
                 stealGrappleConnection = nil
             end
             
-            -- Restore character physics
+            -- Restore jump power
             if humanoid then
-                humanoid.PlatformStand = false
-            end
-            
-            for _, part in pairs(character:GetChildren()) do
-                if part:IsA("BasePart") and part ~= humanoidRootPart then
-                    if part.Name ~= "Head" then
-                        part.CanCollide = true
-                    end
-                end
+                humanoid.JumpPower = 50 -- Default Roblox jump power
+                humanoid.JumpHeight = 7.2 -- Default Roblox jump height
             end
             
             print("✅ Successfully reached base! 💰")
@@ -658,36 +596,45 @@ local function tweenToBase()
         
         print("🎯 Moving to waypoint " .. waypointIndex .. "/" .. #waypoints)
         print("📏 Distance: " .. math.floor(segmentDistance) .. " studs")
-        print("⏱️ Time: " .. string.format("%.1f", segmentTime) .. "s at 20 studs/sec")
+        print("⏱️ Time: " .. string.format("%.1f", segmentTime) .. "s")
         
-        -- FIXED: Move HumanoidRootPart with exact speed control
-        local tweenInfo = TweenInfo.new(
-            segmentTime,                    -- Exact time for 20 studs/second
-            Enum.EasingStyle.Linear,        -- Constant speed
-            Enum.EasingDirection.InOut,
-            0,
-            false,
-            0
-        )
+        -- FIXED: Use BodyPosition for smooth movement without flinging
+        local bodyPosition = Instance.new("BodyPosition")
+        bodyPosition.MaxForce = Vector3.new(4000, 4000, 4000)
+        bodyPosition.Position = waypoint
+        bodyPosition.D = 2000 -- Damping to prevent oscillation
+        bodyPosition.P = 10000 -- Power for movement
+        bodyPosition.Parent = humanoidRootPart
         
-        -- Tween the character's HumanoidRootPart Position (Vector3)
-        currentTween = TweenService:Create(
-            humanoidRootPart,
-            tweenInfo,
-            {Position = waypoint}
-        )
-        
-        currentTween:Play()
-        
-        currentTween.Completed:Connect(function(playbackState)
-            if playbackState == Enum.PlaybackState.Completed and tweenToBaseEnabled then
-                task.wait(0.1) -- Small pause between waypoints
+        -- Create a timer to move to next waypoint
+        local moveTimer = task.spawn(function()
+            task.wait(segmentTime)
+            
+            -- Clean up BodyPosition
+            if bodyPosition and bodyPosition.Parent then
+                bodyPosition:Destroy()
+            end
+            
+            if tweenToBaseEnabled then
+                task.wait(0.1) -- Small pause
                 moveToNextWaypoint(waypointIndex + 1)
             end
         end)
+        
+        -- Store the timer for cleanup
+        currentTween = {
+            Cancel = function()
+                if moveTimer then
+                    task.cancel(moveTimer)
+                end
+                if bodyPosition and bodyPosition.Parent then
+                    bodyPosition:Destroy()
+                end
+            end
+        }
     end
     
-    -- Start character movement
+    -- Start movement
     moveToNextWaypoint(1)
 end
 
