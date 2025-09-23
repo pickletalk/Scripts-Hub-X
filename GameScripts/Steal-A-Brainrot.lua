@@ -388,12 +388,15 @@ local function applySlowFall()
                 if platformEnabled and humanoid and bodyVelocity and bodyVelocity.Parent then
                     -- Force jump
                     humanoid.Jump = true
+                    equipAndFireGrapple()
                     bodyVelocity.Velocity = Vector3.new(0, 40, 0) -- Jump velocity
+                    equipAndFireGrapple()
                     
                     -- Reset to slow fall after a brief moment
                     task.wait(0.5)
                     if platformEnabled and bodyVelocity and bodyVelocity.Parent then
                         bodyVelocity.Velocity = Vector3.new(0, SLOW_FALL_SPEED, 0)
+                        equipAndFireGrapple()
                     end
                 end
             end)
