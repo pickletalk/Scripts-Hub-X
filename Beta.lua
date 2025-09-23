@@ -1,123 +1,118 @@
+-- Enhanced Steal-A-Brainrot UI System
+-- Made by PickleTalk for Scripts Hub X
+
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
+local StarterPlayer = game:GetService("StarterPlayer")
+local CoreGui = game:GetService("CoreGui")
+local GuiService = game:GetService("GuiService")
+local TeleportService = game:GetService("TeleportService")
 
 local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
+local LocalPlayer = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local rootPart = character:WaitForChild("HumanoidRootPart")
 
--- Configuration system
-local CONFIG_FILE_NAME = "StealBrainrotConfig.json"
+-- Import existing functions from original script
+local grappleHookConnection = nil
+local antiKickEnabled = true
+
+-- Configuration System
+local CONFIG_FILE_NAME = "StealBrainrotConfig"
 local defaultConfig = {
     tweenToBase = false,
     floorSteal = false,
-    espToggle = false,
+    grappleSpeed = false,
+    esp = false,
     baseTimeAlert = false,
-    grappleSpeed = false
+    uiPosition = {0.5, -200, 0.2, 0},
+    theme = "neon_blue"
 }
 
-local currentConfig = table.clone(defaultConfig)
+local currentConfig = {}
 
--- UI Configuration
-local UI_CONFIG = {
-    primaryColor = Color3.fromRGB(0, 162, 255),
-    secondaryColor = Color3.fromRGB(25, 25, 35),
-    backgroundColor = Color3.fromRGB(15, 15, 20),
-    textColor = Color3.fromRGB(255, 255, 255),
-    accentColor = Color3.fromRGB(0, 200, 255),
-    successColor = Color3.fromRGB(0, 255, 100),
-    errorColor = Color3.fromRGB(255, 50, 50),
-    
-    windowSize = UDim2.new(0, 450, 0, 350),
-    buttonSize = UDim2.new(1, -20, 0, 35),
-    toggleSize = UDim2.new(0, 50, 0, 25),
-    
-    animations = {
-        fast = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-        normal = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-        slow = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-    }
+-- UI State Management
+local UIManager = {
+    mainUI = nil,
+    tweenUI = nil,
+    floorStealUI = nil,
+    grappleSpeedUI = nil,
+    notifications = {},
+    connections = {},
+    tweens = {}
 }
 
--- Configuration Management
+-- Color Theme
+local Theme = {
+    primary = Color3.fromRGB(0, 150, 255),      -- Neon Blue
+    secondary = Color3.fromRGB(15, 25, 35),     -- Dark Background
+    accent = Color3.fromRGB(0, 200, 255),       -- Bright Accent
+    success = Color3.fromRGB(0, 255, 150),      -- Success Green
+    warning = Color3.fromRGB(255, 200, 0),      -- Warning Yellow
+    error = Color3.fromRGB(255, 100, 100),      -- Error Red
+    text = Color3.fromRGB(255, 255, 255),       -- White Text
+    textSecondary = Color3.fromRGB(180, 180, 180) -- Gray Text
+}
+
+-- Configuration Functions
 local function saveConfig()
     local success, result = pcall(function()
-        return HttpService:JSONEncode(currentConfig)
+        writefile(CONFIG_FILE_NAME .. ".json", HttpService:JSONEncode(currentConfig))
     end)
-    
-    if success then
-        if writefile then
-            writefile(CONFIG_FILE_NAME, result)
-        end
+    if not success then
+        warn("Failed to save config: " .. tostring(result))
     end
 end
 
 local function loadConfig()
-    if readfile and isfile and isfile(CONFIG_FILE_NAME) then
-        local success, result = pcall(function()
-            local data = readfile(CONFIG_FILE_NAME)
+    local success, result = pcall(function()
+        if isfile(CONFIG_FILE_NAME .. ".json") then
+            local data = readfile(CONFIG_FILE_NAME .. ".json")
             return HttpService:JSONDecode(data)
-        end)
-        
-        if success and type(result) == "table" then
-            for key, value in pairs(result) do
-                if defaultConfig[key] ~= nil then
-                    currentConfig[key] = value
-                end
+        end
+        return nil
+    end)
+    
+    if success and result then
+        currentConfig = result
+        -- Merge with defaults for missing keys
+        for key, value in pairs(defaultConfig) do
+            if currentConfig[key] == nil then
+                currentConfig[key] = value
             end
         end
+    else
+        currentConfig = table.clone(defaultConfig)
     end
+    saveConfig()
+end
+
+local function updateConfig(key, value)
+    currentConfig[key] = value
+    saveConfig()
 end
 
 -- Notification System
-local notificationQueue = {}
-local activeNotifications = {}
-
-local function createNotification(text, notifType, duration)
+local function createNotification(text, duration, notificationType)
     duration = duration or 3
-    notifType = notifType or "info"
+    notificationType = notificationType or "info"
     
-    local colors = {
-        info = UI_CONFIG.primaryColor,
-        success = UI_CONFIG.successColor,
-        error = UI_CONFIG.errorColor
-    }
+    local playerGui = player:WaitForChild("PlayerGui")
     
-    local notification = {
-        text = text,
-        type = notifType,
-        color = colors[notifType] or UI_CONFIG.primaryColor,
-        duration = duration,
-        id = tick()
-    }
-    
-    table.insert(notificationQueue, notification)
-    
-    if #activeNotifications == 0 then
-        showNextNotification()
-    end
-end
-
-local function showNextNotification()
-    if #notificationQueue == 0 then return end
-    
-    local notification = table.remove(notificationQueue, 1)
-    table.insert(activeNotifications, notification)
-    
-    -- Create notification GUI
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "StealBrainrotNotification"
     screenGui.Parent = playerGui
     screenGui.ResetOnSpawn = false
-    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     
     local frame = Instance.new("Frame")
-    frame.Name = "NotificationFrame"
     frame.Size = UDim2.new(0, 300, 0, 60)
-    frame.Position = UDim2.new(1, 320, 0, 100 + (#activeNotifications - 1) * 70)
-    frame.BackgroundColor3 = UI_CONFIG.backgroundColor
+    frame.Position = UDim2.new(1, -320, 1, -80 - (#UIManager.notifications * 70))
+    frame.BackgroundColor3 = Theme.secondary
     frame.BorderSizePixel = 0
     frame.Parent = screenGui
     
@@ -125,1041 +120,930 @@ local function showNextNotification()
     corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = frame
     
-    local accent = Instance.new("Frame")
-    accent.Name = "Accent"
-    accent.Size = UDim2.new(0, 4, 1, 0)
-    accent.Position = UDim2.new(0, 0, 0, 0)
-    accent.BackgroundColor3 = notification.color
-    accent.BorderSizePixel = 0
-    accent.Parent = frame
+    local accentBar = Instance.new("Frame")
+    accentBar.Size = UDim2.new(0, 4, 1, 0)
+    accentBar.Position = UDim2.new(0, 0, 0, 0)
+    accentBar.BorderSizePixel = 0
+    accentBar.Parent = frame
+    
+    local accentColor = Theme.primary
+    if notificationType == "success" then
+        accentColor = Theme.success
+    elseif notificationType == "warning" then
+        accentColor = Theme.warning
+    elseif notificationType == "error" then
+        accentColor = Theme.error
+    end
+    accentBar.BackgroundColor3 = accentColor
     
     local accentCorner = Instance.new("UICorner")
     accentCorner.CornerRadius = UDim.new(0, 8)
-    accentCorner.Parent = accent
+    accentCorner.Parent = accentBar
     
     local textLabel = Instance.new("TextLabel")
-    textLabel.Name = "Text"
-    textLabel.Size = UDim2.new(1, -20, 1, -10)
-    textLabel.Position = UDim2.new(0, 15, 0, 5)
+    textLabel.Size = UDim2.new(1, -20, 1, 0)
+    textLabel.Position = UDim2.new(0, 15, 0, 0)
     textLabel.BackgroundTransparency = 1
-    textLabel.Text = notification.text
-    textLabel.TextColor3 = UI_CONFIG.textColor
+    textLabel.Text = text
+    textLabel.TextColor3 = Theme.text
     textLabel.TextScaled = true
-    textLabel.Font = Enum.Font.GothamMedium
+    textLabel.Font = Enum.Font.GothamBold
     textLabel.TextXAlignment = Enum.TextXAlignment.Left
     textLabel.Parent = frame
     
     -- Slide in animation
-    local slideIn = TweenService:Create(frame, UI_CONFIG.animations.normal, {
-        Position = UDim2.new(1, -310, 0, 100 + (#activeNotifications - 1) * 70)
-    })
-    
+    frame.Position = UDim2.new(1, 20, frame.Position.Y.Scale, frame.Position.Y.Offset)
+    local slideIn = TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), 
+        {Position = UDim2.new(1, -320, frame.Position.Y.Scale, frame.Position.Y.Offset)})
     slideIn:Play()
     
-    -- Auto-remove after duration
+    table.insert(UIManager.notifications, {gui = screenGui, frame = frame})
+    
+    -- Auto remove after duration
     task.spawn(function()
-        task.wait(notification.duration)
-        
-        local slideOut = TweenService:Create(frame, UI_CONFIG.animations.normal, {
-            Position = UDim2.new(1, 320, 0, 100 + (#activeNotifications - 1) * 70)
-        })
-        
+        task.wait(duration)
+        local slideOut = TweenService:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), 
+            {Position = UDim2.new(1, 20, frame.Position.Y.Scale, frame.Position.Y.Offset), BackgroundTransparency = 1})
         slideOut:Play()
+        
         slideOut.Completed:Connect(function()
-            screenGui:Destroy()
-            
-            -- Remove from active notifications
-            for i, notif in ipairs(activeNotifications) do
-                if notif.id == notification.id then
-                    table.remove(activeNotifications, i)
+            for i, notif in ipairs(UIManager.notifications) do
+                if notif.gui == screenGui then
+                    table.remove(UIManager.notifications, i)
                     break
                 end
             end
-            
-            -- Show next notification if any
-            if #notificationQueue > 0 then
-                task.wait(0.1)
-                showNextNotification()
-            end
+            screenGui:Destroy()
         end)
     end)
 end
 
--- UI Creation System
-local UIManager = {}
-UIManager.windows = {}
-UIManager.popups = {}
-
-function UIManager:CreateWindow(config)
-    local window = {
-        name = config.name or "Window",
-        size = config.size or UI_CONFIG.windowSize,
-        sections = {},
-        tabs = {},
-        currentTab = nil,
-        gui = nil,
-        frame = nil,
-        content = nil,
-        minimized = false
-    }
+-- Import existing functions from the original script
+local function equipGrappleHook()
+    local backpack = player:FindFirstChild("Backpack")
+    local character = player.Character
     
-    -- Create ScreenGui
-    window.gui = Instance.new("ScreenGui")
-    window.gui.Name = "StealBrainrot_" .. window.name
-    window.gui.Parent = playerGui
-    window.gui.ResetOnSpawn = false
-    window.gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    
-    -- Main Frame
-    window.frame = Instance.new("Frame")
-    window.frame.Name = "MainFrame"
-    window.frame.Size = window.size
-    window.frame.Position = UDim2.new(0.5, -window.size.X.Offset/2, 0.5, -window.size.Y.Offset/2)
-    window.frame.BackgroundColor3 = UI_CONFIG.backgroundColor
-    window.frame.BorderSizePixel = 0
-    window.frame.Parent = window.gui
-    
-    local mainCorner = Instance.new("UICorner")
-    mainCorner.CornerRadius = UDim.new(0, 10)
-    mainCorner.Parent = window.frame
-    
-    -- Title Bar
-    local titleBar = Instance.new("Frame")
-    titleBar.Name = "TitleBar"
-    titleBar.Size = UDim2.new(1, 0, 0, 40)
-    titleBar.BackgroundColor3 = UI_CONFIG.primaryColor
-    titleBar.BorderSizePixel = 0
-    titleBar.Parent = window.frame
-    
-    local titleCorner = Instance.new("UICorner")
-    titleCorner.CornerRadius = UDim.new(0, 10)
-    titleCorner.Parent = titleBar
-    
-    -- Fix corners for title bar
-    local titleFix = Instance.new("Frame")
-    titleFix.Size = UDim2.new(1, 0, 0, 10)
-    titleFix.Position = UDim2.new(0, 0, 1, -10)
-    titleFix.BackgroundColor3 = UI_CONFIG.primaryColor
-    titleFix.BorderSizePixel = 0
-    titleFix.Parent = titleBar
-    
-    -- Title Text
-    local titleText = Instance.new("TextLabel")
-    titleText.Name = "Title"
-    titleText.Size = UDim2.new(1, -100, 1, 0)
-    titleText.Position = UDim2.new(0, 10, 0, 0)
-    titleText.BackgroundTransparency = 1
-    titleText.Text = "💰 " .. window.name .. " 💰"
-    titleText.TextColor3 = UI_CONFIG.textColor
-    titleText.TextScaled = true
-    titleText.Font = Enum.Font.GothamBold
-    titleText.TextXAlignment = Enum.TextXAlignment.Left
-    titleText.Parent = titleBar
-    
-    -- Minimize Button
-    local minimizeBtn = Instance.new("TextButton")
-    minimizeBtn.Name = "MinimizeButton"
-    minimizeBtn.Size = UDim2.new(0, 30, 0, 30)
-    minimizeBtn.Position = UDim2.new(1, -70, 0, 5)
-    minimizeBtn.BackgroundColor3 = Color3.fromRGB(255, 193, 7)
-    minimizeBtn.Text = "–"
-    minimizeBtn.TextColor3 = UI_CONFIG.textColor
-    minimizeBtn.TextScaled = true
-    minimizeBtn.Font = Enum.Font.GothamBold
-    minimizeBtn.BorderSizePixel = 0
-    minimizeBtn.Parent = titleBar
-    
-    local minCorner = Instance.new("UICorner")
-    minCorner.CornerRadius = UDim.new(0, 6)
-    minCorner.Parent = minimizeBtn
-    
-    -- Close Button
-    local closeBtn = Instance.new("TextButton")
-    closeBtn.Name = "CloseButton"
-    closeBtn.Size = UDim2.new(0, 30, 0, 30)
-    closeBtn.Position = UDim2.new(1, -35, 0, 5)
-    closeBtn.BackgroundColor3 = UI_CONFIG.errorColor
-    closeBtn.Text = "✕"
-    closeBtn.TextColor3 = UI_CONFIG.textColor
-    closeBtn.TextScaled = true
-    closeBtn.Font = Enum.Font.GothamBold
-    closeBtn.BorderSizePixel = 0
-    closeBtn.Parent = titleBar
-    
-    local closeCorner = Instance.new("UICorner")
-    closeCorner.CornerRadius = UDim.new(0, 6)
-    closeCorner.Parent = closeBtn
-    
-    -- Content Area
-    window.content = Instance.new("ScrollingFrame")
-    window.content.Name = "Content"
-    window.content.Size = UDim2.new(1, -20, 1, -60)
-    window.content.Position = UDim2.new(0, 10, 0, 50)
-    window.content.BackgroundTransparency = 1
-    window.content.BorderSizePixel = 0
-    window.content.ScrollBarThickness = 6
-    window.content.ScrollBarImageColor3 = UI_CONFIG.primaryColor
-    window.content.Parent = window.frame
-    
-    -- Make window draggable
-    local dragging = false
-    local dragStart = nil
-    local startPos = nil
-    
-    local function updateDrag(input)
-        local delta = input.Position - dragStart
-        window.frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-    
-    titleBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = window.frame.Position
-            
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
-            end)
-        end
-    end)
-    
-    titleBar.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            if dragging then
-                updateDrag(input)
+    if backpack and character then
+        local grappleHook = backpack:FindFirstChild("Grapple Hook")
+        if grappleHook and grappleHook:IsA("Tool") then
+            local humanoid = character:FindFirstChild("Humanoid")
+            if humanoid then
+                humanoid:EquipTool(grappleHook)
             end
         end
-    end)
-    
-    -- Minimize functionality
-    minimizeBtn.MouseButton1Click:Connect(function()
-        window.minimized = not window.minimized
-        
-        local targetSize = window.minimized and UDim2.new(window.size.X.Scale, window.size.X.Offset, 0, 40) or window.size
-        local minimizeTween = TweenService:Create(window.frame, UI_CONFIG.animations.normal, {Size = targetSize})
-        
-        minimizeTween:Play()
-        minimizeBtn.Text = window.minimized and "+" or "–"
-        
-        createNotification("Window " .. (window.minimized and "minimized" or "restored"), "info", 1)
-    end)
-    
-    -- Close functionality
-    closeBtn.MouseButton1Click:Connect(function()
-        self:ShowCloseConfirmation(window)
-    end)
-    
-    -- Add button hover effects
-    self:AddButtonHoverEffect(minimizeBtn, Color3.fromRGB(255, 213, 27))
-    self:AddButtonHoverEffect(closeBtn, Color3.fromRGB(255, 70, 70))
-    
-    table.insert(self.windows, window)
-    return window
+    end
 end
 
-function UIManager:ShowCloseConfirmation(window)
-    -- Create confirmation popup
-    local confirmGui = Instance.new("ScreenGui")
-    confirmGui.Name = "CloseConfirmation"
-    confirmGui.Parent = playerGui
-    confirmGui.ResetOnSpawn = false
+local function fireGrappleHook()
+    local args = {0.08707536856333414}
     
-    local overlay = Instance.new("Frame")
-    overlay.Size = UDim2.new(1, 0, 1, 0)
-    overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    overlay.BackgroundTransparency = 0.5
-    overlay.BorderSizePixel = 0
-    overlay.Parent = confirmGui
-    
-    local confirmFrame = Instance.new("Frame")
-    confirmFrame.Size = UDim2.new(0, 300, 0, 150)
-    confirmFrame.Position = UDim2.new(0.5, -150, 0.5, -75)
-    confirmFrame.BackgroundColor3 = UI_CONFIG.backgroundColor
-    confirmFrame.BorderSizePixel = 0
-    confirmFrame.Parent = confirmGui
-    
-    local confirmCorner = Instance.new("UICorner")
-    confirmCorner.CornerRadius = UDim.new(0, 10)
-    confirmCorner.Parent = confirmFrame
-    
-    local confirmText = Instance.new("TextLabel")
-    confirmText.Size = UDim2.new(1, -20, 0.6, 0)
-    confirmText.Position = UDim2.new(0, 10, 0, 10)
-    confirmText.BackgroundTransparency = 1
-    confirmText.Text = "Are you sure you want to close?"
-    confirmText.TextColor3 = UI_CONFIG.textColor
-    confirmText.TextScaled = true
-    confirmText.Font = Enum.Font.Gotham
-    confirmText.Parent = confirmFrame
-    
-    local yesBtn = Instance.new("TextButton")
-    yesBtn.Size = UDim2.new(0, 80, 0, 30)
-    yesBtn.Position = UDim2.new(0.5, -85, 0.7, 0)
-    yesBtn.BackgroundColor3 = UI_CONFIG.errorColor
-    yesBtn.Text = "Yes"
-    yesBtn.TextColor3 = UI_CONFIG.textColor
-    yesBtn.TextScaled = true
-    yesBtn.Font = Enum.Font.GothamBold
-    yesBtn.BorderSizePixel = 0
-    yesBtn.Parent = confirmFrame
-    
-    local yesCorner = Instance.new("UICorner")
-    yesCorner.CornerRadius = UDim.new(0, 6)
-    yesCorner.Parent = yesBtn
-    
-    local noBtn = Instance.new("TextButton")
-    noBtn.Size = UDim2.new(0, 80, 0, 30)
-    noBtn.Position = UDim2.new(0.5, 5, 0.7, 0)
-    noBtn.BackgroundColor3 = UI_CONFIG.primaryColor
-    noBtn.Text = "No"
-    noBtn.TextColor3 = UI_CONFIG.textColor
-    noBtn.TextScaled = true
-    noBtn.Font = Enum.Font.GothamBold
-    noBtn.BorderSizePixel = 0
-    noBtn.Parent = confirmFrame
-    
-    local noCorner = Instance.new("UICorner")
-    noCorner.CornerRadius = UDim.new(0, 6)
-    noCorner.Parent = noBtn
-    
-    -- Fade in animation
-    confirmFrame.Size = UDim2.new(0, 0, 0, 0)
-    local fadeIn = TweenService:Create(confirmFrame, UI_CONFIG.animations.normal, {
-        Size = UDim2.new(0, 300, 0, 150)
-    })
-    fadeIn:Play()
-    
-    yesBtn.MouseButton1Click:Connect(function()
-        self:CloseWindow(window)
-        confirmGui:Destroy()
+    local success, error = pcall(function()
+        ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"):WaitForChild("RE/UseItem"):FireServer(unpack(args))
     end)
     
-    noBtn.MouseButton1Click:Connect(function()
-        confirmGui:Destroy()
-    end)
-    
-    self:AddButtonHoverEffect(yesBtn, Color3.fromRGB(255, 70, 70))
-    self:AddButtonHoverEffect(noBtn, Color3.fromRGB(0, 182, 255))
+    if not success then
+        warn("Failed to fire grapple hook: " .. tostring(error))
+    end
 end
 
-function UIManager:CloseWindow(window)
-    -- Cleanup any active functions/connections
-    if window.name == "Steal A Brainrot" then
-        -- Cleanup main window functions
-        self:CleanupMainFeatures()
-    end
-    
-    -- Remove from windows list
-    for i, w in ipairs(self.windows) do
-        if w == window then
-            table.remove(self.windows, i)
-            break
-        end
-    end
-    
-    -- Destroy GUI
-    if window.gui then
-        window.gui:Destroy()
-    end
-    
-    createNotification("Window closed", "info", 2)
+local function equipAndFireGrapple()
+    fireGrappleHook()
+    equipGrappleHook()
 end
 
-function UIManager:AddButtonHoverEffect(button, hoverColor)
-    local originalColor = button.BackgroundColor3
+-- UI Creation Functions
+local function createUIElement(elementType, properties, parent)
+    local element = Instance.new(elementType)
+    for prop, value in pairs(properties) do
+        element[prop] = value
+    end
+    if parent then
+        element.Parent = parent
+    end
+    return element
+end
+
+local function createButton(parent, text, size, position, callback)
+    local button = createUIElement("TextButton", {
+        Size = size or UDim2.new(0, 120, 0, 35),
+        Position = position or UDim2.new(0, 0, 0, 0),
+        BackgroundColor3 = Theme.primary,
+        Text = text,
+        TextColor3 = Theme.text,
+        TextScaled = true,
+        Font = Enum.Font.GothamBold,
+        BorderSizePixel = 0
+    }, parent)
     
+    local corner = createUIElement("UICorner", {
+        CornerRadius = UDim.new(0, 6)
+    }, button)
+    
+    -- Button animations
     button.MouseEnter:Connect(function()
-        local hoverTween = TweenService:Create(button, UI_CONFIG.animations.fast, {
-            BackgroundColor3 = hoverColor
-        })
-        hoverTween:Play()
+        TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = Theme.accent}):Play()
     end)
     
     button.MouseLeave:Connect(function()
-        local leaveTween = TweenService:Create(button, UI_CONFIG.animations.fast, {
-            BackgroundColor3 = originalColor
-        })
-        leaveTween:Play()
-    end)
-end
-
-function UIManager:CreateSection(window, name)
-    local section = {
-        name = name,
-        elements = {},
-        frame = nil,
-        yPos = 0
-    }
-    
-    -- Calculate position for section
-    local currentY = 0
-    for _, existingSection in pairs(window.sections) do
-        currentY = currentY + existingSection.frame.Size.Y.Offset + 10
-    end
-    
-    section.frame = Instance.new("Frame")
-    section.frame.Name = name .. "Section"
-    section.frame.Size = UDim2.new(1, -20, 0, 40) -- Start with header height
-    section.frame.Position = UDim2.new(0, 10, 0, currentY)
-    section.frame.BackgroundColor3 = UI_CONFIG.secondaryColor
-    section.frame.BorderSizePixel = 0
-    section.frame.Parent = window.content
-    
-    local sectionCorner = Instance.new("UICorner")
-    sectionCorner.CornerRadius = UDim.new(0, 8)
-    sectionCorner.Parent = section.frame
-    
-    -- Section Header
-    local header = Instance.new("TextLabel")
-    header.Name = "Header"
-    header.Size = UDim2.new(1, -10, 0, 30)
-    header.Position = UDim2.new(0, 5, 0, 5)
-    header.BackgroundTransparency = 1
-    header.Text = name
-    header.TextColor3 = UI_CONFIG.primaryColor
-    header.TextScaled = true
-    header.Font = Enum.Font.GothamBold
-    header.TextXAlignment = Enum.TextXAlignment.Left
-    header.Parent = section.frame
-    
-    section.yPos = 40 -- Start below header
-    
-    window.sections[name] = section
-    self:UpdateContentSize(window)
-    
-    return section
-end
-
-function UIManager:CreateTab(section, name, isDefault)
-    local tab = {
-        name = name,
-        elements = {},
-        button = nil,
-        content = nil,
-        active = isDefault or false
-    }
-    
-    -- Create tab button
-    local tabCount = 0
-    for _ in pairs(section.elements) do
-        tabCount = tabCount + 1
-    end
-    
-    tab.button = Instance.new("TextButton")
-    tab.button.Name = name .. "Tab"
-    tab.button.Size = UDim2.new(0, 100, 0, 30)
-    tab.button.Position = UDim2.new(0, 10 + (tabCount * 105), 0, section.yPos)
-    tab.button.BackgroundColor3 = tab.active and UI_CONFIG.primaryColor or UI_CONFIG.backgroundColor
-    tab.button.Text = name
-    tab.button.TextColor3 = UI_CONFIG.textColor
-    tab.button.TextScaled = true
-    tab.button.Font = Enum.Font.GothamMedium
-    tab.button.BorderSizePixel = 0
-    tab.button.Parent = section.frame
-    
-    local tabCorner = Instance.new("UICorner")
-    tabCorner.CornerRadius = UDim.new(0, 6)
-    tabCorner.Parent = tab.button
-    
-    -- Create tab content frame
-    tab.content = Instance.new("Frame")
-    tab.content.Name = name .. "Content"
-    tab.content.Size = UDim2.new(1, -20, 0, 0) -- Will be resized as elements are added
-    tab.content.Position = UDim2.new(0, 10, 0, section.yPos + 40)
-    tab.content.BackgroundTransparency = 1
-    tab.content.BorderSizePixel = 0
-    tab.content.Visible = tab.active
-    tab.content.Parent = section.frame
-    
-    tab.yPos = 10 -- Start position for elements in tab
-    
-    -- Tab switching functionality
-    tab.button.MouseButton1Click:Connect(function()
-        self:SwitchTab(section, name)
+        TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = Theme.primary}):Play()
     end)
     
-    self:AddButtonHoverEffect(tab.button, tab.active and Color3.fromRGB(0, 182, 255) or Color3.fromRGB(35, 35, 45))
-    
-    section.elements[name] = tab
-    
-    if tab.active then
-        section.activeTab = name
+    if callback then
+        button.MouseButton1Click:Connect(callback)
     end
-    
-    self:UpdateSectionSize(section)
-    
-    return tab
-end
-
-function UIManager:SwitchTab(section, tabName)
-    -- Hide all tabs
-    for name, tab in pairs(section.elements) do
-        tab.active = false
-        tab.content.Visible = false
-        tab.button.BackgroundColor3 = UI_CONFIG.backgroundColor
-    end
-    
-    -- Show selected tab
-    local selectedTab = section.elements[tabName]
-    if selectedTab then
-        selectedTab.active = true
-        selectedTab.content.Visible = true
-        selectedTab.button.BackgroundColor3 = UI_CONFIG.primaryColor
-        section.activeTab = tabName
-        
-        createNotification("Switched to " .. tabName, "info", 1)
-    end
-end
-
-function UIManager:CreateToggle(tab, name, configKey, callback)
-    local toggle = {
-        name = name,
-        state = currentConfig[configKey] or false,
-        configKey = configKey,
-        callback = callback,
-        frame = nil,
-        switch = nil,
-        popup = nil
-    }
-    
-    -- Create toggle frame
-    toggle.frame = Instance.new("Frame")
-    toggle.frame.Name = name .. "Toggle"
-    toggle.frame.Size = UDim2.new(1, -20, 0, 40)
-    toggle.frame.Position = UDim2.new(0, 10, 0, tab.yPos)
-    toggle.frame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-    toggle.frame.BorderSizePixel = 0
-    toggle.frame.Parent = tab.content
-    
-    local toggleCorner = Instance.new("UICorner")
-    toggleCorner.CornerRadius = UDim.new(0, 6)
-    toggleCorner.Parent = toggle.frame
-    
-    -- Toggle label
-    local label = Instance.new("TextLabel")
-    label.Name = "Label"
-    label.Size = UDim2.new(1, -80, 1, -10)
-    label.Position = UDim2.new(0, 10, 0, 5)
-    label.BackgroundTransparency = 1
-    label.Text = name
-    label.TextColor3 = UI_CONFIG.textColor
-    label.TextScaled = true
-    label.Font = Enum.Font.Gotham
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = toggle.frame
-    
-    -- Toggle switch container
-    local switchContainer = Instance.new("Frame")
-    switchContainer.Name = "SwitchContainer"
-    switchContainer.Size = UDim2.new(0, 60, 0, 25)
-    switchContainer.Position = UDim2.new(1, -70, 0.5, -12.5)
-    switchContainer.BackgroundColor3 = toggle.state and UI_CONFIG.primaryColor or Color3.fromRGB(60, 60, 70)
-    switchContainer.BorderSizePixel = 0
-    switchContainer.Parent = toggle.frame
-    
-    local switchCorner = Instance.new("UICorner")
-    switchCorner.CornerRadius = UDim.new(0, 12.5)
-    switchCorner.Parent = switchContainer
-    
-    -- Toggle switch circle
-    toggle.switch = Instance.new("Frame")
-    toggle.switch.Name = "Switch"
-    toggle.switch.Size = UDim2.new(0, 20, 0, 20)
-    toggle.switch.Position = toggle.state and UDim2.new(1, -22.5, 0.5, -10) or UDim2.new(0, 2.5, 0.5, -10)
-    toggle.switch.BackgroundColor3 = UI_CONFIG.textColor
-    toggle.switch.BorderSizePixel = 0
-    toggle.switch.Parent = switchContainer
-    
-    local switchCircle = Instance.new("UICorner")
-    switchCircle.CornerRadius = UDim.new(0, 10)
-    switchCircle.Parent = toggle.switch
-    
-    -- Toggle functionality
-    local function toggleState()
-        toggle.state = not toggle.state
-        currentConfig[configKey] = toggle.state
-        
-        local containerTween = TweenService:Create(switchContainer, UI_CONFIG.animations.fast, {
-            BackgroundColor3 = toggle.state and UI_CONFIG.primaryColor or Color3.fromRGB(60, 60, 70)
-        })
-        
-        local switchTween = TweenService:Create(toggle.switch, UI_CONFIG.animations.fast, {
-            Position = toggle.state and UDim2.new(1, -22.5, 0.5, -10) or UDim2.new(0, 2.5, 0.5, -10)
-        })
-        
-        containerTween:Play()
-        switchTween:Play()
-        
-        -- Show/hide popup UI if toggle has one
-        if toggle.state and callback and type(callback) == "function" then
-            callback(toggle.state, toggle)
-        elseif not toggle.state and callback and type(callback) == "function" then
-            callback(toggle.state, toggle)
-        end
-        
-        saveConfig()
-        createNotification(name .. " " .. (toggle.state and "enabled" or "disabled"), "success", 2)
-    end
-    
-    switchContainer.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            toggleState()
-        end
-    end)
-    
-    tab.yPos = tab.yPos + 50
-    self:UpdateTabSize(tab)
-    
-    return toggle
-end
-
-function UIManager:CreateButton(tab, name, callback)
-    local button = Instance.new("TextButton")
-    button.Name = name .. "Button"
-    button.Size = UDim2.new(1, -20, 0, 35)
-    button.Position = UDim2.new(0, 10, 0, tab.yPos)
-    button.BackgroundColor3 = UI_CONFIG.primaryColor
-    button.Text = name
-    button.TextColor3 = UI_CONFIG.textColor
-    button.TextScaled = true
-    button.Font = Enum.Font.GothamMedium
-    button.BorderSizePixel = 0
-    button.Parent = tab.content
-    
-    local buttonCorner = Instance.new("UICorner")
-    buttonCorner.CornerRadius = UDim.new(0, 6)
-    buttonCorner.Parent = button
-    
-    button.MouseButton1Click:Connect(function()
-        local clickTween = TweenService:Create(button, TweenInfo.new(0.1), {Size = UDim2.new(1, -25, 0, 32)})
-        local releaseTween = TweenService:Create(button, TweenInfo.new(0.1), {Size = UDim2.new(1, -20, 0, 35)})
-        
-        clickTween:Play()
-        clickTween.Completed:Connect(function()
-            releaseTween:Play()
-        end)
-        
-        if callback then
-            callback()
-        end
-    end)
-    
-    self:AddButtonHoverEffect(button, Color3.fromRGB(0, 182, 255))
-    
-    tab.yPos = tab.yPos + 45
-    self:UpdateTabSize(tab)
     
     return button
 end
 
-function UIManager:CreatePopupUI(toggle, config)
-    if toggle.popup then
-        toggle.popup:Destroy()
-        toggle.popup = nil
-        return
+local function createToggle(parent, text, size, position, defaultState, callback)
+    local toggleFrame = createUIElement("Frame", {
+        Size = size or UDim2.new(0, 200, 0, 40),
+        Position = position or UDim2.new(0, 0, 0, 0),
+        BackgroundTransparency = 1
+    }, parent)
+    
+    local label = createUIElement("TextLabel", {
+        Size = UDim2.new(0.7, 0, 1, 0),
+        Position = UDim2.new(0, 0, 0, 0),
+        BackgroundTransparency = 1,
+        Text = text,
+        TextColor3 = Theme.text,
+        TextScaled = true,
+        Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Left
+    }, toggleFrame)
+    
+    local toggleButton = createUIElement("Frame", {
+        Size = UDim2.new(0, 50, 0, 25),
+        Position = UDim2.new(1, -50, 0.5, -12.5),
+        BackgroundColor3 = defaultState and Theme.success or Theme.secondary,
+        BorderSizePixel = 0
+    }, toggleFrame)
+    
+    local toggleCorner = createUIElement("UICorner", {
+        CornerRadius = UDim.new(0, 12.5)
+    }, toggleButton)
+    
+    local toggleCircle = createUIElement("Frame", {
+        Size = UDim2.new(0, 19, 0, 19),
+        Position = defaultState and UDim2.new(0, 28, 0, 3) or UDim2.new(0, 3, 0, 3),
+        BackgroundColor3 = Theme.text,
+        BorderSizePixel = 0
+    }, toggleButton)
+    
+    local circleCorner = createUIElement("UICorner", {
+        CornerRadius = UDim.new(0, 9.5)
+    }, toggleCircle)
+    
+    local clickDetector = createUIElement("TextButton", {
+        Size = UDim2.new(1, 0, 1, 0),
+        Position = UDim2.new(0, 0, 0, 0),
+        BackgroundTransparency = 1,
+        Text = ""
+    }, toggleButton)
+    
+    local state = defaultState or false
+    
+    local function updateToggle()
+        local bgColor = state and Theme.success or Theme.secondary
+        local circlePos = state and UDim2.new(0, 28, 0, 3) or UDim2.new(0, 3, 0, 3)
+        
+        TweenService:Create(toggleButton, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {BackgroundColor3 = bgColor}):Play()
+        TweenService:Create(toggleCircle, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Position = circlePos}):Play()
     end
     
-    local popup = Instance.new("ScreenGui")
-    popup.Name = "Popup_" .. toggle.name
-    popup.Parent = playerGui
-    popup.ResetOnSpawn = false
+    clickDetector.MouseButton1Click:Connect(function()
+        state = not state
+        updateToggle()
+        if callback then
+            callback(state)
+        end
+    end)
     
-    local frame = Instance.new("Frame")
-    frame.Name = "PopupFrame"
-    frame.Size = config.size or UDim2.new(0, 250, 0, 200)
-    frame.Position = UDim2.new(1, -260, 0, 200)
-    frame.BackgroundColor3 = UI_CONFIG.backgroundColor
-    frame.BorderSizePixel = 0
-    frame.Parent = popup
+    updateToggle()
+    return toggleFrame, state
+end
+
+local function createSeparateUI(title, size, features)
+    local screenGui = createUIElement("ScreenGui", {
+        Name = "StealBrainrot" .. title:gsub(" ", ""),
+        ResetOnSpawn = false
+    }, player.PlayerGui)
     
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 8)
-    corner.Parent = frame
+    local mainFrame = createUIElement("Frame", {
+        Size = size or UDim2.new(0, 300, 0, 200),
+        Position = UDim2.new(0.5, -150, 0.5, -100),
+        BackgroundColor3 = Theme.secondary,
+        BorderSizePixel = 0
+    }, screenGui)
     
-    local titleBar = Instance.new("Frame")
-    titleBar.Name = "TitleBar"
-    titleBar.Size = UDim2.new(1, 0, 0, 30)
-    titleBar.BackgroundColor3 = UI_CONFIG.primaryColor
-    titleBar.BorderSizePixel = 0
-    titleBar.Parent = frame
+    local corner = createUIElement("UICorner", {
+        CornerRadius = UDim.new(0, 10)
+    }, mainFrame)
     
-    local titleCorner = Instance.new("UICorner")
-    titleCorner.CornerRadius = UDim.new(0, 8)
-    titleCorner.Parent = titleBar
+    -- Make draggable
+    local dragging, dragStart, startPos = false, nil, nil
     
-    local titleFix = Instance.new("Frame")
-    titleFix.Size = UDim2.new(1, 0, 0, 8)
-    titleFix.Position = UDim2.new(0, 0, 1, -8)
-    titleFix.BackgroundColor3 = UI_CONFIG.primaryColor
-    titleFix.BorderSizePixel = 0
-    titleFix.Parent = titleBar
-    
-    local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, -35, 1, 0)
-    title.Position = UDim2.new(0, 5, 0, 0)
-    title.BackgroundTransparency = 1
-    title.Text = toggle.name
-    title.TextColor3 = UI_CONFIG.textColor
-    title.TextScaled = true
-    title.Font = Enum.Font.GothamBold
-    title.TextXAlignment = Enum.TextXAlignment.Left
-    title.Parent = titleBar
-    
-    local closeBtn = Instance.new("TextButton")
-    closeBtn.Size = UDim2.new(0, 25, 0, 25)
-    closeBtn.Position = UDim2.new(1, -27, 0, 2.5)
-    closeBtn.BackgroundColor3 = UI_CONFIG.errorColor
-    closeBtn.Text = "✕"
-    closeBtn.TextColor3 = UI_CONFIG.textColor
-    closeBtn.TextScaled = true
-    closeBtn.Font = Enum.Font.GothamBold
-    closeBtn.BorderSizePixel = 0
-    closeBtn.Parent = titleBar
-    
-    local closeBtnCorner = Instance.new("UICorner")
-    closeBtnCorner.CornerRadius = UDim.new(0, 4)
-    closeBtnCorner.Parent = closeBtn
-    
-    local content = Instance.new("ScrollingFrame")
-    content.Name = "Content"
-    content.Size = UDim2.new(1, -10, 1, -40)
-    content.Position = UDim2.new(0, 5, 0, 35)
-    content.BackgroundTransparency = 1
-    content.BorderSizePixel = 0
-    content.ScrollBarThickness = 4
-    content.ScrollBarImageColor3 = UI_CONFIG.primaryColor
-    content.Parent = frame
-    
-    -- Make popup draggable
-    local dragging = false
-    local dragStart = nil
-    local startPos = nil
-    
-    titleBar.InputBegan:Connect(function(input)
+    mainFrame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
             dragStart = input.Position
-            startPos = frame.Position
-            
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
-            end)
+            startPos = mainFrame.Position
         end
     end)
     
-    titleBar.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement then
-            if dragging then
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+    
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+    
+    -- Title bar
+    local titleBar = createUIElement("Frame", {
+        Size = UDim2.new(1, 0, 0, 40),
+        Position = UDim2.new(0, 0, 0, 0),
+        BackgroundColor3 = Theme.primary,
+        BorderSizePixel = 0
+    }, mainFrame)
+    
+    local titleCorner = createUIElement("UICorner", {
+        CornerRadius = UDim.new(0, 10)
+    }, titleBar)
+    
+    local titleLabel = createUIElement("TextLabel", {
+        Size = UDim2.new(1, -40, 1, 0),
+        Position = UDim2.new(0, 10, 0, 0),
+        BackgroundTransparency = 1,
+        Text = title,
+        TextColor3 = Theme.text,
+        TextScaled = true,
+        Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Left
+    }, titleBar)
+    
+    local closeButton = createButton(titleBar, "×", UDim2.new(0, 30, 0, 30), UDim2.new(1, -35, 0, 5), function()
+        local closeTween = TweenService:Create(mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), 
+            {Size = UDim2.new(0, 0, 0, 0), Position = UDim2.new(0.5, 0, 0.5, 0)})
+        closeTween:Play()
+        closeTween.Completed:Connect(function()
+            screenGui:Destroy()
+        end)
+    end)
+    closeButton.BackgroundColor3 = Theme.error
+    
+    -- Content area
+    local contentFrame = createUIElement("Frame", {
+        Size = UDim2.new(1, -20, 1, -60),
+        Position = UDim2.new(0, 10, 0, 50),
+        BackgroundTransparency = 1
+    }, mainFrame)
+    
+    -- Add features to content frame
+    if features then
+        features(contentFrame)
+    end
+    
+    -- Entrance animation
+    mainFrame.Size = UDim2.new(0, 0, 0, 0)
+    mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+    local openTween = TweenService:Create(mainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), 
+        {Size = size or UDim2.new(0, 300, 0, 200), Position = UDim2.new(0.5, -150, 0.5, -100)})
+    openTween:Play()
+    
+    return screenGui, mainFrame, contentFrame
+end
+
+-- Feature Functions
+local tweenToBaseEnabled = false
+local tweenConnection = nil
+
+local function toggleTweenToBase(enabled)
+    tweenToBaseEnabled = enabled
+    updateConfig("tweenToBase", enabled)
+    
+    if enabled then
+        UIManager.tweenUI = createSeparateUI("Tween To Base", UDim2.new(0, 350, 0, 250), function(content)
+            local statusLabel = createUIElement("TextLabel", {
+                Size = UDim2.new(1, 0, 0, 30),
+                Position = UDim2.new(0, 0, 0, 10),
+                BackgroundTransparency = 1,
+                Text = "Status: Ready",
+                TextColor3 = Theme.success,
+                TextScaled = true,
+                Font = Enum.Font.Gotham
+            }, content)
+            
+            local startButton = createButton(content, "Start Tweening", UDim2.new(0, 150, 0, 40), UDim2.new(0, 0, 0, 60), function()
+                createNotification("Tween to Base activated!", 2, "success")
+                statusLabel.Text = "Status: Tweening to base..."
+                statusLabel.TextColor3 = Theme.warning
+                -- Add tween logic here from original script
+            end)
+            
+            local stopButton = createButton(content, "Stop", UDim2.new(0, 150, 0, 40), UDim2.new(1, -150, 0, 60), function()
+                createNotification("Tween stopped", 2, "info")
+                statusLabel.Text = "Status: Ready"
+                statusLabel.TextColor3 = Theme.success
+            end)
+            stopButton.BackgroundColor3 = Theme.error
+        end)
+        createNotification("Tween to Base UI opened", 2, "info")
+    else
+        if UIManager.tweenUI then
+            UIManager.tweenUI:Destroy()
+            UIManager.tweenUI = nil
+            createNotification("Tween to Base UI closed", 2, "info")
+        end
+    end
+end
+
+local floorStealEnabled = false
+local function toggleFloorSteal(enabled)
+    floorStealEnabled = enabled
+    updateConfig("floorSteal", enabled)
+    
+    if enabled then
+        UIManager.floorStealUI = createSeparateUI("Floor Steal / Float", UDim2.new(0, 350, 0, 200), function(content)
+            local floatButton = createButton(content, "Enable Float", UDim2.new(0, 150, 0, 40), UDim2.new(0, 0, 0, 20), function()
+                createNotification("Float enabled!", 2, "success")
+                -- Add float logic here from original script
+            end)
+            
+            local stealButton = createButton(content, "Enable Floor Steal", UDim2.new(0, 150, 0, 40), UDim2.new(1, -150, 0, 20), function()
+                createNotification("Floor steal enabled!", 2, "success")
+                -- Add floor steal logic here from original script
+            end)
+        end)
+        createNotification("Floor Steal UI opened", 2, "info")
+    else
+        if UIManager.floorStealUI then
+            UIManager.floorStealUI:Destroy()
+            UIManager.floorStealUI = nil
+            createNotification("Floor Steal UI closed", 2, "info")
+        end
+    end
+end
+
+local grappleSpeedEnabled = false
+local grappleSpeedConnection = nil
+
+local function toggleGrappleSpeed(enabled)
+    grappleSpeedEnabled = enabled
+    updateConfig("grappleSpeed", enabled)
+    
+    if enabled then
+        -- Set player speed to 100
+        if player.Character and player.Character:FindFirstChild("Humanoid") then
+            player.Character.Humanoid.WalkSpeed = 100
+        end
+        
+        -- Create small draggable UI button
+        local screenGui = createUIElement("ScreenGui", {
+            Name = "GrappleSpeedUI",
+            ResetOnSpawn = false
+        }, player.PlayerGui)
+        
+        local button = createButton(screenGui, "🎣", UDim2.new(0, 60, 0, 60), UDim2.new(0, 100, 0, 100), nil)
+        button.TextScaled = true
+        
+        -- Make draggable
+        local dragging, dragStart, startPos = false, nil, nil
+        
+        button.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = true
+                dragStart = input.Position
+                startPos = button.Position
+            end
+        end)
+        
+        UserInputService.InputChanged:Connect(function(input)
+            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
                 local delta = input.Position - dragStart
-                frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+                button.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            end
+        end)
+        
+        UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = false
+            end
+        end)
+        
+        UIManager.grappleSpeedUI = screenGui
+        
+        -- Start grapple loop
+        grappleSpeedConnection = task.spawn(function()
+            while grappleSpeedEnabled do
+                equipAndFireGrapple()
+                task.wait(3.1)
+            end
+        end)
+        
+        -- Anti-respawn protection
+        local antiRespawnConnection = player.CharacterRemoving:Connect(function()
+            if grappleSpeedEnabled and player.Character and player.Character:FindFirstChild("Humanoid") then
+                local humanoid = player.Character.Humanoid
+                if humanoid.Health > 0 then
+                    -- Server is trying to kill/respawn without setting health to 0
+                    humanoid.Health = humanoid.MaxHealth
+                    createNotification("Anti-respawn activated!", 2, "warning")
+                end
+            end
+        end)
+        
+        table.insert(UIManager.connections, antiRespawnConnection)
+        createNotification("Grapple Speed enabled! Speed set to 100", 3, "success")
+    else
+        if UIManager.grappleSpeedUI then
+            UIManager.grappleSpeedUI:Destroy()
+            UIManager.grappleSpeedUI = nil
+        end
+        
+        if grappleSpeedConnection then
+            task.cancel(grappleSpeedConnection)
+            grappleSpeedConnection = nil
+        end
+        
+        -- Reset player speed
+        if player.Character and player.Character:FindFirstChild("Humanoid") then
+            player.Character.Humanoid.WalkSpeed = 16
+        end
+        
+        createNotification("Grapple Speed disabled", 2, "info")
+    end
+end
+
+local espEnabled = false
+local function toggleESP(enabled)
+    espEnabled = enabled
+    updateConfig("esp", enabled)
+    
+    if enabled then
+        createNotification("ESP enabled", 2, "success")
+        -- Add ESP logic from original script
+    else
+        createNotification("ESP disabled", 2, "info")
+        -- Remove ESP
+    end
+end
+
+local baseTimeAlertEnabled = false
+local function toggleBaseTimeAlert(enabled)
+    baseTimeAlertEnabled = enabled
+    updateConfig("baseTimeAlert", enabled)
+    
+    if enabled then
+        createNotification("Base time alerts enabled", 2, "success")
+        -- Add base time alert logic from original script
+    else
+        createNotification("Base time alerts disabled", 2, "info")
+        -- Remove alerts
+    end
+end
+
+-- Main UI Creation
+local function createMainUI()
+    local playerGui = player:WaitForChild("PlayerGui")
+    
+    local screenGui = createUIElement("ScreenGui", {
+        Name = "StealBrainrotMainUI",
+        ResetOnSpawn = false
+    }, playerGui)
+    
+    local mainFrame = createUIElement("Frame", {
+        Size = UDim2.new(0, 400, 0, 300),
+        Position = UDim2.new(currentConfig.uiPosition[1], currentConfig.uiPosition[2], currentConfig.uiPosition[3], currentConfig.uiPosition[4]),
+        BackgroundColor3 = Theme.secondary,
+        BorderSizePixel = 0
+    }, screenGui)
+    
+    local corner = createUIElement("UICorner", {
+        CornerRadius = UDim.new(0, 12)
+    }, mainFrame)
+    
+    -- Make draggable and save position
+    local dragging, dragStart, startPos = false, nil, nil
+    
+    local function updatePosition()
+        local pos = mainFrame.Position
+        updateConfig("uiPosition", {pos.X.Scale, pos.X.Offset, pos.Y.Scale, pos.Y.Offset})
+    end
+    
+    mainFrame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = mainFrame.Position
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+    
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if dragging then
+                dragging = false
+                updatePosition()
             end
         end
     end)
     
-    closeBtn.MouseButton1Click:Connect(function()
-        popup:Destroy()
-        toggle.popup = nil
+    -- Title bar
+    local titleBar = createUIElement("Frame", {
+        Size = UDim2.new(1, 0, 0, 50),
+        Position = UDim2.new(0, 0, 0, 0),
+        BackgroundColor3 = Theme.primary,
+        BorderSizePixel = 0
+    }, mainFrame)
+    
+    local titleCorner = createUIElement("UICorner", {
+        CornerRadius = UDim.new(0, 12)
+    }, titleBar)
+    
+    local titleText = createUIElement("TextLabel", {
+        Size = UDim2.new(1, -100, 1, 0),
+        Position = UDim2.new(0, 15, 0, 0),
+        BackgroundTransparency = 1,
+        Text = "💰 Steal A Brainrot",
+        TextColor3 = Theme.text,
+        TextScaled = true,
+        Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Left
+    }, titleBar)
+    
+    local minimizeButton = createButton(titleBar, "_", UDim2.new(0, 35, 0, 35), UDim2.new(1, -80, 0, 7.5), function()
+        local isMinimized = mainFrame.Size.Y.Offset <= 60
+        local targetSize = isMinimized and UDim2.new(0, 400, 0, 300) or UDim2.new(0, 400, 0, 50)
+        TweenService:Create(mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {Size = targetSize}):Play()
     end)
     
-    self:AddButtonHoverEffect(closeBtn, Color3.fromRGB(255, 70, 70))
-    
-    toggle.popup = popup
-    
-    -- Add elements to popup based on config
-    if config.elements then
-        local yPos = 10
-        for _, element in ipairs(config.elements) do
-            if element.type == "button" then
-                local btn = Instance.new("TextButton")
-                btn.Size = UDim2.new(1, -20, 0, 35)
-                btn.Position = UDim2.new(0, 10, 0, yPos)
-                btn.BackgroundColor3 = element.color or UI_CONFIG.primaryColor
-                btn.Text = element.text
-                btn.TextColor3 = UI_CONFIG.textColor
-                btn.TextScaled = true
-                btn.Font = Enum.Font.GothamMedium
-                btn.BorderSizePixel = 0
-                btn.Parent = content
-                
-                local btnCorner = Instance.new("UICorner")
-                btnCorner.CornerRadius = UDim.new(0, 6)
-                btnCorner.Parent = btn
-                
-                if element.callback then
-                    btn.MouseButton1Click:Connect(element.callback)
+    local closeButton = createButton(titleBar, "×", UDim2.new(0, 35, 0, 35), UDim2.new(1, -40, 0, 7.5), function()
+        -- Confirmation popup
+        local confirmGui = createUIElement("ScreenGui", {
+            Name = "ConfirmClose",
+            ResetOnSpawn = false
+        }, playerGui)
+        
+        local confirmFrame = createUIElement("Frame", {
+            Size = UDim2.new(0, 300, 0, 150),
+            Position = UDim2.new(0.5, -150, 0.5, -75),
+            BackgroundColor3 = Theme.secondary,
+            BorderSizePixel = 0
+        }, confirmGui)
+        
+        local confirmCorner = createUIElement("UICorner", {
+            CornerRadius = UDim.new(0, 10)
+        }, confirmFrame)
+        
+        local confirmText = createUIElement("TextLabel", {
+            Size = UDim2.new(1, -20, 0.6, 0),
+            Position = UDim2.new(0, 10, 0, 20),
+            BackgroundTransparency = 1,
+            Text = "Are you sure you want to close Steal A Brainrot?",
+            TextColor3 = Theme.text,
+            TextScaled = true,
+            Font = Enum.Font.Gotham
+        }, confirmFrame)
+        
+        local yesButton = createButton(confirmFrame, "Yes", UDim2.new(0, 80, 0, 35), UDim2.new(0, 50, 0.7, 0), function()
+            -- Cleanup all UIs and connections
+            for _, connection in pairs(UIManager.connections) do
+                if connection and connection.Connected then
+                    connection:Disconnect()
                 end
-                
-                self:AddButtonHoverEffect(btn, element.hoverColor or Color3.fromRGB(0, 182, 255))
-                yPos = yPos + 45
+            end
+            
+            if UIManager.tweenUI then UIManager.tweenUI:Destroy() end
+            if UIManager.floorStealUI then UIManager.floorStealUI:Destroy() end
+            if UIManager.grappleSpeedUI then UIManager.grappleSpeedUI:Destroy() end
+            
+            if grappleSpeedConnection then
+                task.cancel(grappleSpeedConnection)
+            end
+            
+            -- Close animation
+            local closeTween = TweenService:Create(mainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.In), 
+                {Size = UDim2.new(0, 0, 0, 0), Position = UDim2.new(0.5, 0, 0.5, 0)})
+            closeTween:Play()
+            closeTween.Completed:Connect(function()
+                screenGui:Destroy()
+                confirmGui:Destroy()
+                createNotification("Steal A Brainrot closed", 2, "info")
+            end)
+        end)
+        yesButton.BackgroundColor3 = Theme.error
+        
+        local noButton = createButton(confirmFrame, "No", UDim2.new(0, 80, 0, 35), UDim2.new(1, -130, 0.7, 0), function()
+            confirmGui:Destroy()
+        end)
+        
+        -- Popup animation
+        confirmFrame.Size = UDim2.new(0, 0, 0, 0)
+        local popupTween = TweenService:Create(confirmFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), 
+            {Size = UDim2.new(0, 300, 0, 150)})
+        popupTween:Play()
+    end)
+    closeButton.BackgroundColor3 = Theme.error
+    
+    -- Tab system
+    local tabFrame = createUIElement("Frame", {
+        Size = UDim2.new(1, -20, 0, 40),
+        Position = UDim2.new(0, 10, 0, 60),
+        BackgroundTransparency = 1
+    }, mainFrame)
+    
+    local mainTab = createButton(tabFrame, "Main", UDim2.new(0.33, -5, 1, 0), UDim2.new(0, 0, 0, 0), nil)
+    local visualTab = createButton(tabFrame, "Visual", UDim2.new(0.33, -5, 1, 0), UDim2.new(0.33, 2.5, 0, 0), nil)
+    local creditsTab = createButton(tabFrame, "Credits", UDim2.new(0.34, -5, 1, 0), UDim2.new(0.66, 5, 0, 0), nil)
+    
+    -- Content frames
+    local mainContent = createUIElement("ScrollingFrame", {
+        Size = UDim2.new(1, -20, 1, -120),
+        Position = UDim2.new(0, 10, 0, 110),
+        BackgroundTransparency = 1,
+        ScrollBarThickness = 6,
+        ScrollBarImageColor3 = Theme.primary,
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y
+    }, mainFrame)
+    
+    local visualContent = createUIElement("ScrollingFrame", {
+        Size = UDim2.new(1, -20, 1, -120),
+        Position = UDim2.new(0, 10, 0, 110),
+        BackgroundTransparency = 1,
+        ScrollBarThickness = 6,
+        ScrollBarImageColor3 = Theme.primary,
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        Visible = false
+    }, mainFrame)
+    
+    local creditsContent = createUIElement("ScrollingFrame", {
+        Size = UDim2.new(1, -20, 1, -120),
+        Position = UDim2.new(0, 10, 0, 110),
+        BackgroundTransparency = 1,
+        ScrollBarThickness = 6,
+        ScrollBarImageColor3 = Theme.primary,
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        Visible = false
+    }, mainFrame)
+    
+    -- Tab switching
+    local currentTab = "main"
+    local function switchTab(tabName)
+        currentTab = tabName
+        
+        -- Reset tab colors
+        mainTab.BackgroundColor3 = Theme.primary
+        visualTab.BackgroundColor3 = Theme.primary
+        creditsTab.BackgroundColor3 = Theme.primary
+        
+        -- Hide all content
+        mainContent.Visible = false
+        visualContent.Visible = false
+        creditsContent.Visible = false
+        
+        -- Show selected content and highlight tab
+        if tabName == "main" then
+            mainContent.Visible = true
+            mainTab.BackgroundColor3 = Theme.accent
+        elseif tabName == "visual" then
+            visualContent.Visible = true
+            visualTab.BackgroundColor3 = Theme.accent
+        elseif tabName == "credits" then
+            creditsContent.Visible = true
+            creditsTab.BackgroundColor3 = Theme.accent
+        end
+    end
+    
+    mainTab.MouseButton1Click:Connect(function() switchTab("main") end)
+    visualTab.MouseButton1Click:Connect(function() switchTab("visual") end)
+    creditsTab.MouseButton1Click:Connect(function() switchTab("credits") end)
+    
+    -- Main Tab Content
+    local stealHelperLabel = createUIElement("TextLabel", {
+        Size = UDim2.new(1, 0, 0, 30),
+        Position = UDim2.new(0, 0, 0, 10),
+        BackgroundTransparency = 1,
+        Text = "🎯 Steal Helper",
+        TextColor3 = Theme.primary,
+        TextScaled = true,
+        Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Left
+    }, mainContent)
+    
+    local tweenToggle, tweenState = createToggle(mainContent, "Tween To Base", UDim2.new(1, 0, 0, 40), UDim2.new(0, 0, 0, 50), 
+        currentConfig.tweenToBase, toggleTweenToBase)
+    
+    local floorToggle, floorState = createToggle(mainContent, "Floor Steal / Float", UDim2.new(1, 0, 0, 40), UDim2.new(0, 0, 0, 100), 
+        currentConfig.floorSteal, toggleFloorSteal)
+    
+    local grappleToggle, grappleState = createToggle(mainContent, "Grapple Speed", UDim2.new(1, 0, 0, 40), UDim2.new(0, 0, 0, 150), 
+        currentConfig.grappleSpeed, toggleGrappleSpeed)
+    
+    -- Visual Tab Content
+    local espToggle, espState = createToggle(visualContent, "ESP", UDim2.new(1, 0, 0, 40), UDim2.new(0, 0, 0, 20), 
+        currentConfig.esp, toggleESP)
+    
+    local alertToggle, alertState = createToggle(visualContent, "Base Time Alert", UDim2.new(1, 0, 0, 40), UDim2.new(0, 0, 0, 70), 
+        currentConfig.baseTimeAlert, toggleBaseTimeAlert)
+    
+    -- Credits Tab Content
+    local creditsLabel = createUIElement("TextLabel", {
+        Size = UDim2.new(1, 0, 0, 40),
+        Position = UDim2.new(0, 0, 0, 20),
+        BackgroundTransparency = 1,
+        Text = "Scripts Hub X | Official",
+        TextColor3 = Theme.text,
+        TextScaled = true,
+        Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Center
+    }, creditsContent)
+    
+    local madeByLabel = createUIElement("TextLabel", {
+        Size = UDim2.new(1, 0, 0, 30),
+        Position = UDim2.new(0, 0, 0, 70),
+        BackgroundTransparency = 1,
+        Text = "UI made by PickleTalk",
+        TextColor3 = Theme.textSecondary,
+        TextScaled = true,
+        Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Center
+    }, creditsContent)
+    
+    local discordButton = createButton(creditsContent, "Join Discord", UDim2.new(0, 200, 0, 45), UDim2.new(0.5, -100, 0, 120), function()
+        local success = pcall(function()
+            setclipboard("https://discord.gg/bpsNUH5sVb")
+        end)
+        if success then
+            createNotification("Discord invite copied to clipboard!", 3, "success")
+        else
+            createNotification("Failed to copy invite", 2, "error")
+        end
+    end)
+    discordButton.BackgroundColor3 = Color3.fromRGB(114, 137, 218) -- Discord blue
+    
+    -- Initialize with main tab
+    switchTab("main")
+    
+    UIManager.mainUI = screenGui
+    
+    -- Entrance animation
+    mainFrame.Size = UDim2.new(0, 0, 0, 0)
+    mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+    local openTween = TweenService:Create(mainFrame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), 
+        {Size = UDim2.new(0, 400, 0, 300), Position = UDim2.new(currentConfig.uiPosition[1], currentConfig.uiPosition[2], 
+         currentConfig.uiPosition[3], currentConfig.uiPosition[4])})
+    openTween:Play()
+    
+    createNotification("Steal A Brainrot loaded successfully! 💰", 4, "success")
+end
+
+-- Anti-kick and anti-respawn system
+local function initAntiSystems()
+    -- Anti-kick protection (simplified from original)
+    local oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+        local method = getnamecallmethod()
+        local args = {...}
+        
+        if method == "Kick" and self == player then
+            createNotification("🛡️ Kick attempt blocked!", 3, "warning")
+            return nil
+        end
+        
+        if method == "FireServer" or method == "InvokeServer" then
+            local remoteName = self.Name or ""
+            if string.find(string.lower(remoteName), "kick") or 
+               string.find(string.lower(remoteName), "ban") or 
+               string.find(string.lower(remoteName), "remove") then
+                createNotification("🛡️ Malicious remote blocked!", 3, "warning")
+                return nil
             end
         end
         
-        content.CanvasSize = UDim2.new(0, 0, 0, yPos)
+        return oldNamecall(self, ...)
+    end)
+    
+    -- Character respawn handling
+    player.CharacterAdded:Connect(function(newCharacter)
+        character = newCharacter
+        humanoid = newCharacter:WaitForChild("Humanoid")
+        rootPart = newCharacter:WaitForChild("HumanoidRootPart")
+        
+        -- Restore grapple speed if enabled
+        if grappleSpeedEnabled then
+            task.wait(1)
+            humanoid.WalkSpeed = 100
+            createNotification("Speed restored after respawn", 2, "info")
+        end
+    end)
+    
+    -- Health protection for anti-respawn
+    local healthConnection = RunService.Heartbeat:Connect(function()
+        if grappleSpeedEnabled and player.Character and player.Character:FindFirstChild("Humanoid") then
+            local humanoid = player.Character.Humanoid
+            if humanoid.Health <= 0 and humanoid.MaxHealth > 0 then
+                -- Unexpected death - restore health
+                humanoid.Health = humanoid.MaxHealth
+                createNotification("🛡️ Anti-respawn activated!", 2, "warning")
+            end
+        end
+    end)
+    
+    table.insert(UIManager.connections, healthConnection)
+end
+
+-- Initialize everything
+local function initialize()
+    loadConfig()
+    initAntiSystems()
+    
+    task.wait(1) -- Wait for player to load
+    
+    createMainUI()
+    
+    -- Auto-restore states from config
+    if currentConfig.tweenToBase then
+        toggleTweenToBase(true)
     end
-    
-    return popup
+    if currentConfig.floorSteal then
+        toggleFloorSteal(true)
+    end
+    if currentConfig.grappleSpeed then
+        toggleGrappleSpeed(true)
+    end
+    if currentConfig.esp then
+        toggleESP(true)
+    end
+    if currentConfig.baseTimeAlert then
+        toggleBaseTimeAlert(true)
+    end
 end
 
-function UIManager:UpdateTabSize(tab)
-    tab.content.Size = UDim2.new(1, -20, 0, tab.yPos + 10)
-    self:UpdateSectionSize(tab.parent)
-end
-
-function UIManager:UpdateSectionSize(section)
-    local maxHeight = 70 -- Header + tab buttons
-    
-    for _, tab in pairs(section.elements) do
-        if tab.active then
-            maxHeight = maxHeight + tab.content.Size.Y.Offset
+-- Cleanup function
+local function cleanup()
+    for _, connection in pairs(UIManager.connections) do
+        if connection and connection.Connected then
+            connection:Disconnect()
         end
     end
     
-    section.frame.Size = UDim2.new(1, -20, 0, maxHeight)
-    self:UpdateContentSize(section.window)
-end
-
-function UIManager:UpdateContentSize(window)
-    local totalHeight = 0
-    for _, section in pairs(window.sections) do
-        totalHeight = totalHeight + section.frame.Size.Y.Offset + 10
+    for _, tween in pairs(UIManager.tweens) do
+        if tween then
+            tween:Cancel()
+        end
     end
     
-    window.content.CanvasSize = UDim2.new(0, 0, 0, totalHeight + 20)
+    if grappleSpeedConnection then
+        task.cancel(grappleSpeedConnection)
+    end
+    
+    -- Reset player speed
+    if player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid.WalkSpeed = 16
+    end
 end
 
-function UIManager:CleanupMainFeatures()
-    -- Add cleanup code here for main features
-    -- This will be called when the main window is closed
+-- Handle player leaving
+game:BindToClose(cleanup)
+Players.PlayerRemoving:Connect(function(leavingPlayer)
+    if leavingPlayer == player then
+        cleanup()
+    end
+end)
+
+-- Error handling
+local success, error = pcall(initialize)
+if not success then
+    warn("Failed to initialize Steal A Brainrot UI: " .. tostring(error))
+    createNotification("Failed to load UI: " .. tostring(error), 5, "error")
 end
 
--- Load configuration on startup
-loadConfig()
+createNotification("Press Right Control(right ctrl) to toggle the ui", 3, "Toggle Ui")
 
--- Create main window
-local mainWindow = UIManager:CreateWindow({
-    name = "Steal A Brainrot",
-    size = UDim2.new(0, 450, 0, 400)
-})
-
--- Create Main section
-local mainSection = UIManager:CreateSection(mainWindow, "Main")
-
--- Create Steal Helper tab
-local stealHelperTab = UIManager:CreateTab(mainSection, "Steal Helper", true)
-
--- Create Visual tab
-local visualTab = UIManager:CreateTab(mainSection, "Visual", false)
-
--- Create Credit section
-local creditSection = UIManager:CreateSection(mainWindow, "Credit")
-
--- Add toggles to Steal Helper tab
-local tweenToggle = UIManager:CreateToggle(stealHelperTab, "Tween To Base", "tweenToBase", function(state, toggle)
-    if state then
-        UIManager:CreatePopupUI(toggle, {
-            size = UDim2.new(0, 280, 0, 200),
-            elements = {
-                {
-                    type = "button",
-                    text = "🚀 Start Tween",
-                    color = Color3.fromRGB(0, 255, 100),
-                    hoverColor = Color3.fromRGB(0, 255, 120),
-                    callback = function()
-                        createNotification("Tween to base started!", "success")
-                        -- Add tween functionality here
-                    end
-                },
-                {
-                    type = "button", 
-                    text = "🛑 Stop Tween",
-                    color = Color3.fromRGB(255, 50, 50),
-                    hoverColor = Color3.fromRGB(255, 70, 70),
-                    callback = function()
-                        createNotification("Tween stopped!", "info")
-                        -- Add stop functionality here
-                    end
-                },
-                {
-                    type = "button",
-                    text = "⚙️ Settings",
-                    color = Color3.fromRGB(100, 100, 100),
-                    hoverColor = Color3.fromRGB(120, 120, 120),
-                    callback = function()
-                        createNotification("Settings opened!", "info")
-                    end
-                }
-            }
-        })
-    else
-        if toggle.popup then
-            toggle.popup:Destroy()
-            toggle.popup = nil
+-- Key binding for quick toggle (Optional)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    
+    if input.KeyCode == Enum.KeyCode.RightControl then
+        if UIManager.mainUI then
+            local isVisible = UIManager.mainUI.Enabled
+            UIManager.mainUI.Enabled = not isVisible
+            createNotification(isVisible and "UI Hidden" or "UI Shown", 1, "info")
         end
     end
 end)
-
-local floorStealToggle = UIManager:CreateToggle(stealHelperTab, "Floor Steal/Float", "floorSteal", function(state, toggle)
-    if state then
-        UIManager:CreatePopupUI(toggle, {
-            size = UDim2.new(0, 280, 0, 180),
-            elements = {
-                {
-                    type = "button",
-                    text = "🚹 Enable Float",
-                    color = Color3.fromRGB(0, 162, 255),
-                    hoverColor = Color3.fromRGB(0, 182, 255),
-                    callback = function()
-                        createNotification("Float enabled!", "success")
-                        -- Add float functionality here
-                    end
-                },
-                {
-                    type = "button",
-                    text = "💰 Floor Steal",
-                    color = Color3.fromRGB(255, 215, 0),
-                    hoverColor = Color3.fromRGB(255, 235, 20),
-                    callback = function()
-                        createNotification("Floor steal activated!", "success")
-                        -- Add floor steal functionality here
-                    end
-                }
-            }
-        })
-    else
-        if toggle.popup then
-            toggle.popup:Destroy()
-            toggle.popup = nil
-        end
-    end
-end)
-
-local grappleSpeedToggle = UIManager:CreateToggle(stealHelperTab, "Grapple Speed", "grappleSpeed", function(state, toggle)
-    if state then
-        UIManager:CreatePopupUI(toggle, {
-            size = UDim2.new(0, 200, 0, 120),
-            elements = {
-                {
-                    type = "button",
-                    text = "🎣 Enable Grapple",
-                    color = Color3.fromRGB(255, 100, 255),
-                    hoverColor = Color3.fromRGB(255, 120, 255),
-                    callback = function()
-                        createNotification("Grapple speed enabled!", "success")
-                        player.Character.Humanoid.WalkSpeed = 120
-                        -- Add grapple loop here
-                        task.spawn(function()
-                            while currentConfig.grappleSpeed do
-                                -- equipAndFireGrapple() -- Add your function here
-                                task.wait(3.5)
-                            end
-                        end)
-                    end
-                }
-            }
-        })
-    else
-        if toggle.popup then
-            toggle.popup:Destroy()
-            toggle.popup = nil
-        end
-        player.Character.Humanoid.WalkSpeed = 16 -- Reset speed
-    end
-end)
-
--- Add toggles to Visual tab  
-local espToggle = UIManager:CreateToggle(visualTab, "ESP Toggle", "espToggle", function(state, toggle)
-    createNotification("ESP " .. (state and "enabled" or "disabled"), state and "success" or "info")
-    -- Add ESP functionality here
-end)
-
-local baseTimeAlertToggle = UIManager:CreateToggle(visualTab, "Base Time Alert", "baseTimeAlert", function(state, toggle)
-    createNotification("Base time alert " .. (state and "enabled" or "disabled"), state and "success" or "info")
-    -- Add base time alert functionality here
-end)
-
--- Create credit content
-local creditFrame = Instance.new("Frame")
-creditFrame.Name = "CreditContent"  
-creditFrame.Size = UDim2.new(1, -20, 0, 100)
-creditFrame.Position = UDim2.new(0, 10, 0, 40)
-creditFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-creditFrame.BorderSizePixel = 0
-creditFrame.Parent = creditSection.frame
-
-local creditCorner = Instance.new("UICorner")
-creditCorner.CornerRadius = UDim.new(0, 8)
-creditCorner.Parent = creditFrame
-
-local creditText = Instance.new("TextLabel")
-creditText.Size = UDim2.new(1, -20, 0, 40)
-creditText.Position = UDim2.new(0, 10, 0, 10)
-creditText.BackgroundTransparency = 1
-creditText.Text = "Scripts Hub X | Official - UI made by PickleTalk"
-creditText.TextColor3 = UI_CONFIG.textColor
-creditText.TextScaled = true
-creditText.Font = Enum.Font.Gotham
-creditText.TextXAlignment = Enum.TextXAlignment.Center
-creditText.Parent = creditFrame
-
-local discordBtn = Instance.new("TextButton")
-discordBtn.Size = UDim2.new(0, 200, 0, 35)
-discordBtn.Position = UDim2.new(0.5, -100, 0, 55)
-discordBtn.BackgroundColor3 = Color3.fromRGB(114, 137, 218)
-discordBtn.Text = "📋 Join Discord"
-discordBtn.TextColor3 = UI_CONFIG.textColor
-discordBtn.TextScaled = true
-discordBtn.Font = Enum.Font.GothamBold
-discordBtn.BorderSizePixel = 0
-discordBtn.Parent = creditFrame
-
-local discordCorner = Instance.new("UICorner")
-discordCorner.CornerRadius = UDim.new(0, 6)
-discordCorner.Parent = discordBtn
-
-discordBtn.MouseButton1Click:Connect(function()
-    if setclipboard then
-        setclipboard("https://discord.gg/bpsNUH5sVb")
-        createNotification("Discord link copied to clipboard!", "success")
-    else
-        createNotification("Discord: https://discord.gg/bpsNUH5sVb", "info", 5)
-    end
-end)
-
-UIManager:AddButtonHoverEffect(discordBtn, Color3.fromRGB(134, 157, 238))
-
--- Update section sizes
-creditSection.frame.Size = UDim2.new(1, -20, 0, 150)
-UIManager:UpdateContentSize(mainWindow)
-
--- Apply loaded configuration
-if currentConfig.tweenToBase then
-    -- Apply tween to base state
-end
-if currentConfig.floorSteal then
-    -- Apply floor steal state  
-end
-if currentConfig.espToggle then
-    -- Apply ESP state
-end
-if currentConfig.baseTimeAlert then
-    -- Apply base time alert state
-end
-
--- Show startup notification
-task.wait(0.5)
-createNotification("🚀 Steal A Brainrot loaded successfully!", "success", 3)
-createNotification("💎 UI by PickleTalk", "info", 2)
-
-print("🚀 Enhanced Steal-A-Brainrot UI loaded successfully!")
-print("📋 Features:")
-print("   • 🎨 Modern neon blue UI with premium animations")
-print("   • 💾 Auto-save configuration system")
-print("   • 🔔 Custom notification system")
-print("   • 📱 Draggable windows and popups")
-print("   • ⚙️ Modular toggle and button system")
-print("   • 🎯 Organized tabs and sections")
-print("⚡ Ready to dominate with style! ⚡")
