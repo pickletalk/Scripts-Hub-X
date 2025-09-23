@@ -1327,8 +1327,37 @@ end)
 
 -- STEAL BUTTON FUNCTIONALITY
 stealButton.MouseButton1Click:Connect(function()
-    print("💰 Steal button clicked")
-    tweenToBase()
+    if tweenToBaseEnabled then
+        if currentTween then
+            currentTween:Cancel()
+        end
+        
+        tweenToBaseEnabled = false
+        stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+        stealButton.Text = "💰 TWEEN TO BASE (BETA) 💰"
+        
+        if stealGrappleConnection then
+            task.cancel(stealGrappleConnection)
+            stealGrappleConnection = nil
+        end
+        
+        -- Restore character physics
+        local character = player.Character
+        if character then
+            local humanoid = character:FindFirstChild("Humanoid")
+            if humanoid then
+                humanoid.PlatformStand = false
+                humanoid.JumpPower = origJP -- Default value, adjust if needed
+                humanoid.JumpHeight = origHP -- Default value, adjust if needed
+            end
+        end
+        
+        print("✅ Tween stopped successfully")
+    else
+        -- Start tweening
+        print("💰 Steal button clicked - starting tween")
+        tweenToBase()
+    end
 end)
 
 -- Button hover effects
