@@ -443,53 +443,7 @@ local function tweenToBase()
             task.wait(0.3)
         end
     end)
-    
-    -- PHASE 1: Move to carpet at 15 studs/second
-    local function moveToCarpet()
-        if not tweenToBaseEnabled then return end
-        
-        local carpetDistance = (carpetPosition - humanoidRootPart.Position).Magnitude
-        local carpetTime = carpetDistance / 25 -- 15 studs per second to carpet
-        
-        print("🟫 Phase 1: Moving to carpet")
-        print("📏 Distance to carpet: " .. math.floor(carpetDistance) .. " studs")
-        print("⏱️ Time to carpet: " .. string.format("%.1f", carpetTime) .. "s at 15 studs/sec")
-        
-        -- FIXED: Use BodyVelocity for smooth physics-based movement
-        local bodyVelocity = Instance.new("BodyVelocity")
-        bodyVelocity.MaxForce = Vector3.new(4000, 4000, 4000)
-        
-        -- Calculate velocity direction for 15 studs/second
-        local direction = (carpetPosition - humanoidRootPart.Position).Unit
-        bodyVelocity.Velocity = direction * 25 -- 15 studs per second
-        bodyVelocity.Parent = humanoidRootPart
-        
-        -- Timer to stop movement and proceed to next phase
-        local carpetTimer = task.spawn(function()
-            task.wait(carpetTime)
-            
-            -- Stop movement
-            if bodyVelocity and bodyVelocity.Parent then
-                bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-                task.wait(0.1) -- Brief stop
-                bodyVelocity:Destroy()
-            end
-        end)
-        
-        -- Store current operation for cleanup
-        currentTween = {
-            Cancel = function()
-                if carpetTimer then
-                    task.cancel(carpetTimer)
-                end
-                if bodyVelocity and bodyVelocity.Parent then
-                    bodyVelocity:Destroy()
-                end
-            end
-        }
-        moveToBase()
-    end
-    
+
     -- PHASE 2: Move to base at 15 studs/second
     local function moveToBase()
         if not tweenToBaseEnabled then return end
@@ -526,7 +480,7 @@ local function tweenToBase()
             -- Mission completed
             tweenToBaseEnabled = false
             stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-            stealButton.Text = "💰 Steal 💰"
+            stealButton.Text = "💰 STEAL (BETA) 💰"
             
             if stealGrappleConnection then
                 task.cancel(stealGrappleConnection)
@@ -548,6 +502,57 @@ local function tweenToBase()
             Cancel = function()
                 if baseTimer then
                     task.cancel(baseTimer)
+                end
+                if bodyVelocity and bodyVelocity.Parent then
+                    bodyVelocity:Destroy()
+                end
+            end
+        }
+    end
+    
+    -- PHASE 1: Move to carpet at 15 studs/second
+    local function moveToCarpet()
+        if not tweenToBaseEnabled then return end
+        
+        local carpetDistance = (carpetPosition - humanoidRootPart.Position).Magnitude
+        local carpetTime = carpetDistance / 25 -- 15 studs per second to carpet
+        
+        print("🟫 Phase 1: Moving to carpet")
+        print("📏 Distance to carpet: " .. math.floor(carpetDistance) .. " studs")
+        print("⏱️ Time to carpet: " .. string.format("%.1f", carpetTime) .. "s at 15 studs/sec")
+        
+        -- FIXED: Use BodyVelocity for smooth physics-based movement
+        local bodyVelocity = Instance.new("BodyVelocity")
+        bodyVelocity.MaxForce = Vector3.new(4000, 4000, 4000)
+        
+        -- Calculate velocity direction for 15 studs/second
+        local direction = (carpetPosition - humanoidRootPart.Position).Unit
+        bodyVelocity.Velocity = direction * 25 -- 15 studs per second
+        bodyVelocity.Parent = humanoidRootPart
+        
+        -- Timer to stop movement and proceed to next phase
+        local carpetTimer = task.spawn(function()
+            task.wait(carpetTime)
+            
+            -- Stop movement
+            if bodyVelocity and bodyVelocity.Parent then
+                bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+                task.wait(0.1) -- Brief stop
+                bodyVelocity:Destroy()
+            end
+            
+            if tweenToBaseEnabled then
+                print("✅ Reached carpet! Starting teleport to base...")
+                task.wait(0.1) -- Brief pause at carpet
+                moveToBase()
+            end
+        end)
+        
+        -- Store current operation for cleanup
+        currentTween = {
+            Cancel = function()
+                if carpetTimer then
+                    task.cancel(carpetTimer)
                 end
                 if bodyVelocity and bodyVelocity.Parent then
                     bodyVelocity:Destroy()
