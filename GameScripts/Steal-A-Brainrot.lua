@@ -125,6 +125,16 @@ local comboPlatformUpdateConnection = nil
 local comboPlayerCollisionConnection = nil
 local COMBO_PLATFORM_OFFSET = 3.7
 
+-- Tween to base variables
+local tweenToBaseEnabled = false
+local currentTween = nil
+local stealGrappleConnection = nil
+local lastClickTime = 0
+local DOUBLE_CLICK_PREVENTION_TIME = 1.5
+local RAYCAST_DISTANCE = 30
+local TWEEN_SPEED = 40 -- 40 studs per second
+local WALL_AVOIDANCE_HEIGHT = 10
+
 -- ESP variables
 local plotDisplays = {}
 local playerBaseName = LocalPlayer.DisplayName .. "'s Base"
@@ -221,17 +231,22 @@ local wallCorner = Instance.new("UICorner")
 wallCorner.CornerRadius = UDim.new(0, 6)
 wallCorner.Parent = wallButton
 
-local statusLabel = Instance.new("TextLabel")
-statusLabel.Name = "us"
-statusLabel.Size = UDim2.new(1, -20, 0, 25)
-statusLabel.Position = UDim2.new(0, 10, 0, 90)
-statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "Float: OFF | Walls: OFF"
-statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-statusLabel.TextScaled = true
-statusLabel.Font = Enum.Font.Gotham
-statusLabel.TextXAlignment = Enum.TextXAlignment.Left
-statusLabel.Parent = mainFrame
+-- NEW STEAL BUTTON (replaces statusLabel)
+local stealButton = Instance.new("TextButton")
+stealButton.Name = "💰"
+stealButton.Size = UDim2.new(1, -20, 0, 25)
+stealButton.Position = UDim2.new(0, 10, 0, 90) -- Same position as statusLabel
+stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+stealButton.Text = "💰 STEAL 💰"
+stealButton.TextColor3 = Color3.fromRGB(0, 0, 0)
+stealButton.TextScaled = true
+stealButton.Font = Enum.Font.GothamBold
+stealButton.BorderSizePixel = 0
+stealButton.Parent = mainFrame
+
+local stealCorner = Instance.new("UICorner")
+stealCorner.CornerRadius = UDim.new(0, 6)
+stealCorner.Parent = stealButton
 
 local creditLabel = Instance.new("TextLabel")
 creditLabel.Name = "😆"
@@ -275,6 +290,298 @@ titleBar.InputChanged:Connect(function(input)
         end
     end
 end)
+
+-- Grapple Hook Functions (shared by all features)
+local function equipGrappleHook()
+    local backpack = player:FindFirstChild("Backpack")
+    local character = player.Character
+    
+    if backpack and character then
+        local grappleHook = backpack:FindFirstChild("Grapple Hook")
+        if grappleHook and grappleHook:IsA("Tool") then
+            local humanoid = character:FindFirstChild("Humanoid")
+            if humanoid then
+                humanoid:EquipTool(grappleHook)
+            end
+        end
+    end
+end
+
+local function fireGrappleHook()
+    local args = {0.08707536856333414}
+    
+    local success, error = pcall(function()
+        ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"):WaitForChild("RE/UseItem"):FireServer(unpack(args))
+    end)
+    
+    if not success then
+        warn("Failed to fire grapple hook: " .. tostring(error))
+    end
+end
+
+local function equipAndFireGrapple()
+    fireGrappleHook()
+    equipGrappleHook()
+end
+
+-- Find Player's Plot Function
+local function findPlayerPlot()
+    local plots = workspace:FindFirstChild("Plots")
+    if not plots then 
+        warn("❌ Plots folder not found in workspace")
+        return nil 
+    end
+    
+    for _, plot in pairs(plots:GetChildren()) do
+        if plot:IsA("Model") or plot:IsA("Folder") then
+            local plotSignText = ""
+            local signPath = plot:FindFirstChild("PlotSign")
+            
+            if signPath and signPath:FindFirstChild("SurfaceGui") then
+                local surfaceGui = signPath.SurfaceGui
+                if surfaceGui:FindFirstChild("Frame") and surfaceGui.Frame:FindFirstChild("TextLabel") then
+                    plotSignText = surfaceGui.Frame.TextLabel.Text
+                end
+            end
+            
+            if plotSignText == playerBaseName then
+                local deliveryHitbox = plot:FindFirstChild("DeliveryHitbox")
+                if deliveryHitbox then
+                    print("✅ Found player plot: " .. plot.Name)
+                    return deliveryHitbox
+                else
+                    warn("⚠️ Player plot found but DeliveryHitbox missing: " .. plot.Name)
+                end
+            end
+        end
+    end
+    
+    warn("❌ Player plot not found. Expected plot name: " .. playerBaseName)
+    return nil
+end
+
+-- Raycast Function to Check for Walls
+local function performRaycast(origin, direction, distance)
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+    raycastParams.FilterDescendantsInstances = {player.Character}
+    
+    local raycastResult = workspace:Raycast(origin, direction * distance, raycastParams)
+    return raycastResult
+end
+
+-- Check if direct path to target has walls
+local function checkDirectPath(startPos, targetPos)
+    local direction = (targetPos - startPos)
+    local distance = direction.Magnitude
+    direction = direction.Unit
+    
+    -- Check multiple points along the path
+    local segments = math.ceil(distance / 10) -- Check every 10 studs
+    
+    for i = 1, segments do
+        local checkPos = startPos + (direction * (distance * (i / segments)))
+        local raycast = performRaycast(checkPos, direction, 5)
+        
+        if raycast and raycast.Instance.CanCollide then
+            print("🚧 Wall detected at segment " .. i .. "/" .. segments)
+            return false, raycast
+        end
+    end
+    
+    return true, nil
+end
+
+-- Find safe path around walls
+local function findSafePath(startPos, targetPos)
+    -- Check direct path first
+    local directClear, wallHit = checkDirectPath(startPos, targetPos)
+    
+    if directClear then
+        print("✅ Direct path is clear")
+        return {targetPos}
+    end
+    
+    print("🔄 Direct path blocked, finding alternative...")
+    
+    -- Try going up and over obstacles
+    local highWaypoint = Vector3.new(
+        startPos.X + (targetPos.X - startPos.X) * 0.5,
+        math.max(startPos.Y, targetPos.Y) + WALL_AVOIDANCE_HEIGHT,
+        startPos.Z + (targetPos.Z - startPos.Z) * 0.5
+    )
+    
+    -- Check if we can go up
+    local upClear = not performRaycast(startPos, Vector3.new(0, 1, 0), WALL_AVOIDANCE_HEIGHT)
+    
+    if upClear then
+        print("⬆️ Using high path over obstacles")
+        return {highWaypoint, targetPos}
+    end
+    
+    -- Try side paths
+    local directions = {
+        Vector3.new(20, 0, 0),   -- Right
+        Vector3.new(-20, 0, 0),  -- Left
+        Vector3.new(0, 0, 20),   -- Forward
+        Vector3.new(0, 0, -20),  -- Backward
+        Vector3.new(15, 0, 15),  -- Forward-Right
+        Vector3.new(-15, 0, 15), -- Forward-Left
+        Vector3.new(15, 0, -15), -- Backward-Right
+        Vector3.new(-15, 0, -15) -- Backward-Left
+    }
+    
+    for _, offset in pairs(directions) do
+        local waypoint = startPos + offset
+        waypoint = Vector3.new(waypoint.X, startPos.Y, waypoint.Z) -- Keep same height
+        
+        -- Check if this direction is clear
+        local sideRaycast = performRaycast(startPos, offset.Unit, offset.Magnitude)
+        local toTargetClear = checkDirectPath(waypoint, targetPos)
+        
+        if (not sideRaycast or not sideRaycast.Instance.CanCollide) and toTargetClear then
+            print("↗️ Using side path via safe direction")
+            return {waypoint, targetPos}
+        end
+    end
+    
+    -- Last resort: try going around far
+    local farWaypoint = Vector3.new(
+        startPos.X + (targetPos.X > startPos.X and 40 or -40),
+        startPos.Y + 5,
+        startPos.Z + (targetPos.Z > startPos.Z and 40 or -40)
+    )
+    
+    print("🔄 Using far detour path")
+    return {farWaypoint, targetPos}
+end
+
+-- Main Tween Function
+local function tweenToBase()
+    local currentTime = tick()
+    
+    -- Double click prevention
+    if currentTime - lastClickTime < DOUBLE_CLICK_PREVENTION_TIME then
+        print("⏳ Please wait " .. math.ceil(DOUBLE_CLICK_PREVENTION_TIME - (currentTime - lastClickTime)) .. " seconds before stealing again")
+        return
+    end
+    
+    lastClickTime = currentTime
+    
+    -- Stop any existing tween
+    if currentTween then
+        currentTween:Cancel()
+        tweenToBaseEnabled = false
+    end
+    
+    if stealGrappleConnection then
+        task.cancel(stealGrappleConnection)
+        stealGrappleConnection = nil
+    end
+    
+    local character = player.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then
+        warn("❌ Character or HumanoidRootPart not found")
+        return
+    end
+    
+    local humanoidRootPart = character.HumanoidRootPart
+    local playerPlot = findPlayerPlot()
+    
+    if not playerPlot then
+        warn("❌ Could not find player's base plot")
+        return
+    end
+    
+    local startPosition = humanoidRootPart.Position
+    local targetPosition = playerPlot.Position + Vector3.new(0, 5, 0) -- Slightly above the hitbox
+    local totalDistance = (targetPosition - startPosition).Magnitude
+    
+    print("💰 Starting steal mission...")
+    print("📏 Distance: " .. math.floor(totalDistance) .. " studs")
+    print("⏱️ Speed: " .. TWEEN_SPEED .. " studs/second")
+    
+    -- Calculate safe path
+    local waypoints = findSafePath(startPosition, targetPosition)
+    
+    tweenToBaseEnabled = true
+    stealButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+    stealButton.Text = "🔄 Stealing..."
+    
+    -- Start grapple hook loop (every 0.1 seconds)
+    stealGrappleConnection = task.spawn(function()
+        while tweenToBaseEnabled do
+            equipAndFireGrapple()
+            task.wait(0.1)
+        end
+    end)
+    
+    -- Execute tween through waypoints
+    local function tweenToNextWaypoint(waypointIndex)
+        if not tweenToBaseEnabled or waypointIndex > #waypoints then
+            -- Tween completed
+            tweenToBaseEnabled = false
+            stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+            stealButton.Text = "💰 Steal 💰"
+            
+            if stealGrappleConnection then
+                task.cancel(stealGrappleConnection)
+                stealGrappleConnection = nil
+            end
+            
+            print("✅ Successfully reached base! 💰")
+            return
+        end
+        
+        local waypoint = waypoints[waypointIndex]
+        local currentPos = humanoidRootPart.Position
+        local segmentDistance = (waypoint - currentPos).Magnitude
+        local segmentTime = segmentDistance / TWEEN_SPEED
+        
+        -- Create tween for this segment using Vector3 position
+        local tweenInfo = TweenInfo.new(
+            segmentTime,
+            Enum.EasingStyle.Linear,
+            Enum.EasingDirection.InOut
+        )
+        
+        -- Create a temporary BodyPosition to move the player
+        local bodyPosition = Instance.new("BodyPosition")
+        bodyPosition.MaxForce = Vector3.new(4000, 4000, 4000)
+        bodyPosition.Position = waypoint
+        bodyPosition.Parent = humanoidRootPart
+        
+        -- Use a simple wait-based movement instead of TweenService
+        task.spawn(function()
+            local startTime = tick()
+            while tweenToBaseEnabled and tick() - startTime < segmentTime do
+                local elapsed = tick() - startTime
+                local alpha = elapsed / segmentTime
+                alpha = math.min(alpha, 1)
+                
+                local currentPosition = currentPos:lerp(waypoint, alpha)
+                bodyPosition.Position = currentPosition
+                
+                task.wait(0.03) -- 30 FPS update rate
+            end
+            
+            if bodyPosition then
+                bodyPosition:Destroy()
+            end
+            
+            if tweenToBaseEnabled then
+                -- Move to next waypoint
+                task.wait(0.1) -- Small delay between segments
+                tweenToNextWaypoint(waypointIndex + 1)
+            end
+        end)
+        
+        print("🎯 Moving to waypoint " .. waypointIndex .. "/" .. #waypoints .. " (Distance: " .. math.floor(segmentDistance) .. " studs)")
+    end
+    
+    -- Start tweening from first waypoint
+    tweenToNextWaypoint(1)
+end
 
 local function createPlatform()
     local platform = Instance.new("Part")
@@ -344,39 +651,6 @@ local function applySlowFall()
     local lastTapTime = 0
     local DOUBLE_TAP_DELAY = 0.3 -- 300ms for double tap
     
-    -- Grapple hook functions
-    local function equipGrappleHook()
-        local backpack = player:FindFirstChild("Backpack")
-        local character = player.Character
-        
-        if backpack and character then
-            local grappleHook = backpack:FindFirstChild("Grapple Hook")
-            if grappleHook and grappleHook:IsA("Tool") then
-                local humanoid = character:FindFirstChild("Humanoid")
-                if humanoid then
-                    humanoid:EquipTool(grappleHook)
-                end
-            end
-        end
-    end
-    
-    local function fireGrappleHook()
-        local args = {0.08707536856333414}
-        
-        local success, error = pcall(function()
-            ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"):WaitForChild("RE/UseItem"):FireServer(unpack(args))
-        end)
-        
-        if not success then
-            warn("Failed to fire grapple hook: " .. tostring(error))
-        end
-    end
-    
-    local function equipAndFireGrapple()
-        fireGrappleHook()
-        equipGrappleHook()
-    end
-    
     local function performJump()
         if humanoid and bodyVelocity and bodyVelocity.Parent then
             -- First equip and fire grapple hook
@@ -389,1249 +663,412 @@ local function applySlowFall()
                     -- Force jump
                     humanoid.Jump = true
                     equipAndFireGrapple()
-                    bodyVelocity.Velocity = CFrame.new(0, 40, 0) -- Jump velocity
-                    equipAndFireGrapple()
-                    
-                    -- Reset to slow fall after a brief moment
-                    task.wait(0.5)
-                    if platformEnabled and bodyVelocity and bodyVelocity.Parent then
-                        bodyVelocity.Velocity = Vector3.new(0, SLOW_FALL_SPEED, 0)
-                        equipAndFireGrapple()
-                    end
                 end
             end)
         end
     end
     
-    -- Handle jumping and falling states
-    task.spawn(function()
-        while platformEnabled do
-            if humanoid and humanoid.Parent and bodyVelocity and bodyVelocity.Parent then
-                local currentState = humanoid:GetState()
-                
-                -- If player is jumping, allow normal jump velocity
-                if currentState == Enum.HumanoidStateType.Jumping then
-                    bodyVelocity.Velocity = Vector3.new(0, 40, 0) -- Normal jump power
-                    -- Wait for jump to finish
-                    humanoid.StateChanged:Wait()
-                elseif rootPart.Velocity.Y < -1 then -- Only apply slow fall when actually falling fast
-                    humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
-                    bodyVelocity.Velocity = Vector3.new(0, SLOW_FALL_SPEED, 0)
-                end
-            end
-            task.wait(0.1)
-        end
-    end)
-    
-    -- Handle jump input for ALL devices with double-tap support
-    UserInputService.InputBegan:Connect(function(input, gameProcessed)
-        if gameProcessed or not platformEnabled then return end
+    -- Handle jump input (space bar)
+    UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+        if gameProcessedEvent then return end
         
-        local currentTime = tick()
-        local isJumpInput = false
-        
-        -- Check for jump inputs
-        if input.KeyCode == Enum.KeyCode.Space or input.KeyCode == Enum.KeyCode.ButtonA then
-            isJumpInput = true
-        elseif input.UserInputType == Enum.UserInputType.Touch then
-            -- Double tap detection for mobile
+        if input.KeyCode == Enum.KeyCode.Space and platformEnabled then
+            local currentTime = tick()
+            
+            -- Check for double tap
             if currentTime - lastTapTime <= DOUBLE_TAP_DELAY then
-                isJumpInput = true
-                print("🎯 Double tap detected - jumping!")
+                -- Double tap detected - perform enhanced jump with grapple
+                performJump()
             end
+            
             lastTapTime = currentTime
-        end
-        
-        -- Perform jump if input detected
-        if isJumpInput then
-            performJump()
         end
     end)
 end
 
--- NEW FUNCTION: Remove slow fall effect
 local function removeSlowFall()
-    if bodyVelocity then
+    -- Remove BodyVelocity
+    if bodyVelocity and bodyVelocity.Parent then
         bodyVelocity:Destroy()
         bodyVelocity = nil
     end
     
-    if player.Character then
-        local humanoid = player.Character:FindFirstChild("Humanoid")
-        if humanoid then
-            -- Return to normal state
-            humanoid:ChangeState(Enum.HumanoidStateType.Running)
-        end
+    -- Restore original gravity
+    if originalGravity then
+        workspace.Gravity = originalGravity
     end
 end
 
-local function enablePlatform()
-    if platformEnabled then return end
-    
-    platformEnabled = true
-    currentPlatform = createPlatform()
-    
-    -- Apply slow fall effect
-    applySlowFall()
-    
-    platformUpdateConnection = RunService.Heartbeat:Connect(updatePlatformPosition)
-    updatePlatformPosition()
-
-    local function equipGrappleHook()
-        local backpack = player:FindFirstChild("Backpack")
-        local character = player.Character
-        
-        if backpack and character then
-            local grappleHook = backpack:FindFirstChild("Grapple Hook")
-            if grappleHook and grappleHook:IsA("Tool") then
-                local humanoid = character:FindFirstChild("Humanoid")
-                if humanoid then
-                    humanoid:EquipTool(grappleHook)
-                end
-            end
-        end
-    end
-    
-    -- Fire grapple hook function
-    local function fireGrappleHook()
-        local args = {0.08707536856333414}
-        
-        local success, error = pcall(function()
-            ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"):WaitForChild("RE/UseItem"):FireServer(unpack(args))
-        end)
-        
-        if not success then
-            warn("Failed to fire grapple hook: " .. tostring(error))
-        end
-    end
-
-    -- Combined function that equips and fires
-    local function equipAndFire()
-        fireGrappleHook()
-        equipGrappleHook()
-    end
-
-    -- Start the continuous loop for both equipping and firing
-    if not grappleHookConnection then
-        grappleHookConnection = task.spawn(function()
-            while platformEnabled do
-                task.wait(3)
-                equipAndFire()
-            end
-        end)
-        print("- Continuously firing grapple hook RemoteEvent every 2 seconds")
-    end
-    -- GRAPPLE HOOK FUNCTIONALITY - END
-    
-    floatButton.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
-    floatButton.Text = "🔷 FLOAT 🔷"
-    
-    local wallStatus = wallTransparencyEnabled and "ON" or "OFF"
-    statusLabel.Text = "Float: ON | Walls: " .. wallStatus
-end
-
--- Replace your disablePlatform function with this:
-local function disablePlatform()
-    if not platformEnabled then return end
-
-    platformEnabled = false
-    
-    -- Remove slow fall effect
-    removeSlowFall()
-    
-    if platformUpdateConnection then
-        platformUpdateConnection:Disconnect()
-        platformUpdateConnection = nil
-    end
-    
-    if currentPlatform then
-        currentPlatform:Destroy()
-        currentPlatform = nil
-    end
-
-    local function equipGrappleHook()
-        local backpack = player:FindFirstChild("Backpack")
-        local character = player.Character
-        
-        if backpack and character then
-            local grappleHook = backpack:FindFirstChild("Grapple Hook")
-            if grappleHook and grappleHook:IsA("Tool") then
-                local humanoid = character:FindFirstChild("Humanoid")
-                if humanoid then
-                    humanoid:EquipTool(grappleHook)
-                end
-            end
-        end
-    end
-    
-    -- Fire grapple hook function
-    local function fireGrappleHook()
-        local args = {0.08707536856333414}
-        
-        local success, error = pcall(function()
-            ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"):WaitForChild("RE/UseItem"):FireServer(unpack(args))
-        end)
-        
-        if not success then
-            warn("Failed to fire grapple hook: " .. tostring(error))
-        end
-    end
-
-    -- Combined function that equips and fires
-    local function equipAndFire()
-        fireGrappleHook()
-        equipGrappleHook()
-    end
-    
-    -- STOP GRAPPLE HOOK LOOP
-    if grappleHookConnection then
-        task.cancel(grappleHookConnection)
-        grappleHookConnection = nil
-        print("🎣 Grapple Hook fire loop stopped!")
-        equipAndFire()
-        wait(0.5)
-        equipAndFire()
-    end
-    
-    floatButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    floatButton.Text = "🔷 FLOAT 🔷"
-    
-    local wallStatus = wallTransparencyEnabled and "ON" or "OFF"
-    statusLabel.Text = "Float: OFF | Walls: " .. wallStatus
-end
-
-local function storeOriginalTransparencies()
-    originalTransparencies = {}
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") and obj.Parent ~= player.Character and obj.Name ~= "PlayerPlatform" and obj.Name ~= "ComboPlayerPlatform" then
-            local name = obj.Name
-            if name == "structure base home" then
-                originalTransparencies[obj] = {
-                    transparency = obj.Transparency,
-                    canCollide = obj.CanCollide
-                }
-            end
-        end
-    end
-    print("Stored transparency for " .. #originalTransparencies .. " parts")
-end
-
-local function makeWallsTransparent(transparent)
-    local count = 0
-    for obj, data in pairs(originalTransparencies) do
-        if obj and obj.Parent and data then
-            if transparent then
-                obj.Transparency = TRANSPARENCY_LEVEL
-                obj.CanCollide = false
-                count = count + 1
-            else
-                obj.Transparency = data.transparency
-                obj.CanCollide = data.canCollide
-            end
-        end
-    end
-    print((transparent and "Made transparent: " or "Restored: ") .. count .. " parts")
-end
-local function createComboPlatform()
-    local platform = Instance.new("Part")
-    platform.Name = "😆"
-    platform.Size = Vector3.new(8, 1.5, 8)
-    platform.Material = Enum.Material.Neon
-    platform.BrickColor = BrickColor.new("Bright blue")
-    platform.Anchored = true
-    platform.CanCollide = true
-    platform.Shape = Enum.PartType.Block
-    platform.TopSurface = Enum.SurfaceType.Smooth
-    platform.BottomSurface = Enum.SurfaceType.Smooth
-    platform.Parent = workspace
-    platform.Transparency = 1
-    
-    local pointLight = Instance.new("PointLight")
-    pointLight.Color = Color3.fromRGB(0, 162, 255)
-    pointLight.Brightness = 1
-    pointLight.Range = 15
-    pointLight.Parent = platform
-    
-    return platform
-end
-
-local function updateComboPlatformPosition()
-    if not comboFloatEnabled or not comboCurrentPlatform or not player.Character then
-        return
-    end
+local function makeWallsTransparent()
+    if not player.Character then return end
     
     local character = player.Character
     local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
     
-    if humanoidRootPart then
-        local playerPosition = humanoidRootPart.Position
-        local platformPosition = Vector3.new(
-            playerPosition.X, 
-            playerPosition.Y - COMBO_PLATFORM_OFFSET, 
-            playerPosition.Z
-        )
-        comboCurrentPlatform.Position = platformPosition
-    end
-end
-
-local function forcePlayerHeadCollision()
-    if player.Character then
-        local head = player.Character:FindFirstChild("Head")
-        if head then
-            head.CanCollide = true
-        end
-        -- Also ensure other body parts maintain collision
-        local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
-        if humanoidRootPart then
-            humanoidRootPart.CanCollide = true
-        end
-        local torso = player.Character:FindFirstChild("Torso") or player.Character:FindFirstChild("UpperTorso")
-        if torso then
-            torso.CanCollide = true
-        end
-    end
-end
-
-local function enableWallTransparency()
-    if wallTransparencyEnabled then return end
+    if not humanoidRootPart then return end
     
-    print("Enabling wall transparency...")
-    wallTransparencyEnabled = true
-    comboFloatEnabled = true
-    
-    storeOriginalTransparencies()
-    makeWallsTransparent(true)
-    
-    -- Create and manage platform
-    comboCurrentPlatform = createComboPlatform()
-    comboPlatformUpdateConnection = RunService.Heartbeat:Connect(updateComboPlatformPosition)
-    updateComboPlatformPosition()
-    
-    -- Force player collision more aggressively
-    comboPlayerCollisionConnection = RunService.Heartbeat:Connect(function()
-        forcePlayerHeadCollision()
-    end)
-    
-    -- Also set initial collision state
-    forcePlayerHeadCollision()
-
-    local function equipGrappleHook()
-        local backpack = player:FindFirstChild("Backpack")
-        local character = player.Character
-        
-        if backpack and character then
-            local grappleHook = backpack:FindFirstChild("Grapple Hook")
-            if grappleHook and grappleHook:IsA("Tool") then
-                local humanoid = character:FindFirstChild("Humanoid")
-                if humanoid then
-                    humanoid:EquipTool(grappleHook)
+    -- Find all parts within a reasonable distance that could be walls
+    local function processNearbyParts()
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("BasePart") and obj ~= humanoidRootPart and obj.Parent ~= character then
+                local distance = (obj.Position - humanoidRootPart.Position).Magnitude
+                
+                -- Only process parts within 50 studs
+                if distance <= 50 then
+                    -- Check if it's likely a wall (vertical orientation, reasonable size)
+                    local size = obj.Size
+                    local isLikelyWall = (size.Y > 5 or size.X > 5 or size.Z > 5) and obj.CanCollide
+                    
+                    if isLikelyWall then
+                        -- Store original transparency if not stored
+                        if not originalTransparencies[obj] then
+                            originalTransparencies[obj] = obj.Transparency
+                        end
+                        
+                        -- Make transparent
+                        obj.Transparency = TRANSPARENCY_LEVEL
+                    end
                 end
             end
         end
     end
     
-    -- Fire grapple hook function
-    local function fireGrappleHook()
-        local args = {0.08707536856333414}
-        
-        local success, error = pcall(function()
-            ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"):WaitForChild("RE/UseItem"):FireServer(unpack(args))
-        end)
-        
-        if not success then
-            warn("Failed to fire grapple hook: " .. tostring(error))
+    -- Initial processing
+    processNearbyParts()
+    
+    -- Set up continuous processing
+    playerCollisionConnection = RunService.Heartbeat:Connect(function()
+        if wallTransparencyEnabled then
+            processNearbyParts()
         end
-    end
-
-    -- Combined function that equips and fires
-    local function equipAndFire()
-        fireGrappleHook()
-        equipGrappleHook() -- FIXED: Added missing parentheses
-    end
-
-    -- Start the continuous loop for both equipping and firing
-    if not grappleHookConnection then
-        grappleHookConnection = task.spawn(function()
-            while wallTransparencyEnabled do -- FIXED: Changed from platformEnabled to wallTransparencyEnabled
-                task.wait(1.5)
-                equipAndFire()
-            end
-        end)
-        print("- Continuously firing grapple hook RemoteEvent every 2.5 seconds")
-    end
-    -- GRAPPLE HOOK FUNCTIONALITY - END
-    
-    wallButton.BackgroundColor3 = Color3.fromRGB(150, 50, 0)
-    wallButton.Text = "🔷 FLOOR STEAL 🔷"
-    
-    local floatStatus = platformEnabled and "ON" or "OFF"
-    statusLabel.Text = "Float: " .. floatStatus .. " | Walls: ON"
+    end)
 end
 
-local function disableWallTransparency()
-    if not wallTransparencyEnabled then return end
-    
-    print("Disabling wall transparency...")
-    wallTransparencyEnabled = false
-    comboFloatEnabled = false
-    
-    makeWallsTransparent(false)
-    originalTransparencies = {}
-    
-    -- Stop platform updates and remove platform
-    if comboPlatformUpdateConnection then
-        comboPlatformUpdateConnection:Disconnect()
-        comboPlatformUpdateConnection = nil
+local function restoreWallTransparency()
+    -- Restore original transparencies
+    for part, originalTransparency in pairs(originalTransparencies) do
+        if part and part.Parent then
+            part.Transparency = originalTransparency
+        end
     end
     
+    -- Clear the stored transparencies
+    originalTransparencies = {}
+    
+    -- Disconnect the update connection
+    if playerCollisionConnection then
+        playerCollisionConnection:Disconnect()
+        playerCollisionConnection = nil
+    end
+end
+
+local function enableComboFloatWall()
+    if comboFloatEnabled then return end
+    
+    comboFloatEnabled = true
+    
+    -- Create platform
+    comboCurrentPlatform = createPlatform()
+    
+    -- Set up platform position updating
+    comboPlatformUpdateConnection = RunService.Heartbeat:Connect(function()
+        if comboFloatEnabled and comboCurrentPlatform and player.Character then
+            local character = player.Character
+            local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+            
+            if humanoidRootPart then
+                local playerPosition = humanoidRootPart.Position
+                local platformPosition = Vector3.new(
+                    playerPosition.X, 
+                    playerPosition.Y - COMBO_PLATFORM_OFFSET, 
+                    playerPosition.Z
+                )
+                comboCurrentPlatform.Position = platformPosition
+            end
+        end
+    end)
+    
+    -- Apply slow fall
+    applySlowFall()
+    
+    -- Make walls transparent
+    makeWallsTransparent()
+    
+    print("✅ Combo Float + Wall enabled")
+end
+
+local function disableComboFloatWall()
+    if not comboFloatEnabled then return end
+    
+    comboFloatEnabled = false
+    
+    -- Remove platform
     if comboCurrentPlatform then
         comboCurrentPlatform:Destroy()
         comboCurrentPlatform = nil
     end
     
-    -- Stop head collision enforcement
-    if comboPlayerCollisionConnection then
-        comboPlayerCollisionConnection:Disconnect()
-        comboPlayerCollisionConnection = nil
+    -- Disconnect platform updates
+    if comboPlatformUpdateConnection then
+        comboPlatformUpdateConnection:Disconnect()
+        comboPlatformUpdateConnection = nil
     end
     
-    -- STOP GRAPPLE HOOK LOOP
-    if grappleHookConnection then
-        task.cancel(grappleHookConnection)
-        grappleHookConnection = nil
-        print("🎣 Grapple Hook fire loop stopped!")
-    end
+    -- Remove slow fall
+    removeSlowFall()
     
-    -- Restore normal player collision state
-    if player.Character then
-        local head = player.Character:FindFirstChild("Head")
-        if head then
-            head.CanCollide = false -- Default Roblox state for head
-        end
-    end
+    -- Restore wall transparency
+    restoreWallTransparency()
     
-    wallButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    wallButton.Text = "🔷 FLOOR STEAL 🔷"
-    
-    local floatStatus = platformEnabled and "ON" or "OFF"
-    statusLabel.Text = "Float: " .. floatStatus .. " | Walls: OFF"
+    print("❌ Combo Float + Wall disabled")
 end
 
-local function createAlertGui()
-    if alertGui then return end
+-- Anti-kick functionality
+local function blockRemoteCall(remote, ...)
+    local remoteName = remote.Name:lower()
+    local args = {...}
     
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-    screenGui.Name = "😆"
-    screenGui.ResetOnSpawn = false
-    
-    local frame = Instance.new("Frame")
-    frame.Parent = screenGui
-    frame.Size = UDim2.new(0, 300, 0, 80)
-    frame.Position = UDim2.new(0.5, -150, 0.1, 0)
-    frame.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-    frame.BorderSizePixel = 0
-    
-    local corner = Instance.new("UICorner")
-    corner.Parent = frame
-    corner.CornerRadius = UDim.new(0, 8)
-    
-    local textLabel = Instance.new("TextLabel")
-    textLabel.Parent = frame
-    textLabel.Size = UDim2.new(1, -10, 1, -10)
-    textLabel.Position = UDim2.new(0, 5, 0, 5)
-    textLabel.BackgroundTransparency = 1
-    textLabel.Text = "⚠️ BASE TIME WARNING ⚠️"
-    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    textLabel.TextScaled = true
-    textLabel.TextStrokeTransparency = 0
-    textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-    textLabel.Font = Enum.Font.SourceSansBold
-    
-    local tween = TweenService:Create(
-        frame,
-        TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
-        {BackgroundColor3 = Color3.fromRGB(150, 0, 0)}
-    )
-    tween:Play()
-    
-    alertGui = {
-        screenGui = screenGui,
-        textLabel = textLabel,
-        tween = tween
-    }
-end
-
-local function updateAlertGui(timeText)
-    if not alertGui then return end
-    alertGui.textLabel.Text = "⚠️ BASE UNLOCKING IN " .. timeText .. " ⚠️"
-end
-
-local function removeAlertGui()
-    if alertGui then
-        if alertGui.tween then
-            alertGui.tween:Cancel()
-        end
-        alertGui.screenGui:Destroy()
-        alertGui = nil
-        playerBaseTimeWarning = false
-    end
-end
-
-local function parseTimeToSeconds(timeText)
-    if not timeText or timeText == "" then return nil end
-    
-    local minutes, seconds = timeText:match("(%d+):(%d+)")
-    if minutes and seconds then
-        return tonumber(minutes) * 60 + tonumber(seconds)
-    end
-    
-    local secondsOnly = timeText:match("(%d+)s")
-    if secondsOnly then
-        return tonumber(secondsOnly)
-    end
-    
-    local minutesOnly = timeText:match("(%d+)m")
-    if minutesOnly then
-        return tonumber(minutesOnly) * 60
-    end
-    
-    return nil
-end
-
-function createPlayerESP(player, head)
-    local existingGui = head:FindFirstChild("PlayerESP")
-    if existingGui then
-        existingGui:Destroy()
-    end
-    
-    local billboardGui = Instance.new("BillboardGui")
-    billboardGui.Name = "😆"
-    billboardGui.Parent = head
-    billboardGui.Size = UDim2.new(0, 90, 0, 33)
-    billboardGui.StudsOffset = Vector3.new(0, 2, 0)
-    billboardGui.AlwaysOnTop = true
-    
-    local textLabel = Instance.new("TextLabel")
-    textLabel.Parent = billboardGui
-    textLabel.Size = UDim2.new(1, 0, 1, 0)
-    textLabel.BackgroundTransparency = 1
-    textLabel.Text = player.DisplayName
-    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    textLabel.TextScaled = true
-    textLabel.TextStrokeTransparency = 0.3
-    textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-    textLabel.Font = Enum.Font.SourceSans
-end
-
-local function createPlayerDisplay(player)
-    if player == LocalPlayer then return end
-    
-    local character = player.Character
-    if not character then
-        player.CharacterAdded:Connect(function(char)
-            character = char
-            task.wait(0.5)
-            local head = character:FindFirstChild("Head")
-            if head then
-                createPlayerESP(player, head)
-            end
-        end)
-        return
-    end
-    
-    local head = character:FindFirstChild("Head")
-    if head then
-        createPlayerESP(player, head)
-    else
-        character.ChildAdded:Connect(function(child)
-            if child.Name == "Head" then
-                createPlayerESP(player, child)
-            end
-        end)
-    end
-end
-
-local function createOrUpdatePlotDisplay(plot)
-    if not plot or not plot.Parent then return end
-    
-    local plotName = plot.Name
-    
-    local plotSignText = ""
-    local signPath = plot:FindFirstChild("PlotSign")
-    if signPath and signPath:FindFirstChild("SurfaceGui") then
-        local surfaceGui = signPath.SurfaceGui
-        if surfaceGui:FindFirstChild("Frame") and surfaceGui.Frame:FindFirstChild("TextLabel") then
-            plotSignText = surfaceGui.Frame.TextLabel.Text
+    -- Check if remote name contains kick-related terms
+    for _, kickMethod in pairs(kickMethods) do
+        if remoteName:find(kickMethod:lower()) then
+            warn("🛡️ BLOCKED KICK ATTEMPT via remote: " .. remote.Name .. " (Method: " .. kickMethod .. ")")
+            return true
         end
     end
     
-    if plotSignText == "Empty Base" or plotSignText == "" or plotSignText == "Empty's Base" then
-        if plotDisplays[plotName] and plotDisplays[plotName].gui then
-            plotDisplays[plotName].gui:Destroy()
-            plotDisplays[plotName] = nil
-        end
-        return
-    end
-    
-    local plotTimeText = ""
-    local purchasesPath = plot:FindFirstChild("Purchases")
-    if purchasesPath and purchasesPath:FindFirstChild("PlotBlock") then
-        local plotBlock = purchasesPath.PlotBlock
-        if plotBlock:FindFirstChild("Main") and plotBlock.Main:FindFirstChild("BillboardGui") then
-            local billboardGui = plotBlock.Main.BillboardGui
-            if billboardGui:FindFirstChild("RemainingTime") then
-                plotTimeText = billboardGui.RemainingTime.Text
-            end
+    -- Check specific remotes to block
+    for _, blockedRemote in pairs(specificRemotesToBlock) do
+        if remoteName:find(blockedRemote:lower()) then
+            warn("🛡️ BLOCKED SUSPICIOUS REMOTE: " .. remote.Name)
+            return true
         end
     end
     
-    if plotSignText == playerBaseName then
-        local remainingSeconds = parseTimeToSeconds(plotTimeText)
-        
-        if remainingSeconds and remainingSeconds <= 10 and remainingSeconds > 0 then
-            if not playerBaseTimeWarning then
-                createAlertGui()
-                playerBaseTimeWarning = true
-            end
-            updateAlertGui(plotTimeText)
-        elseif remainingSeconds and remainingSeconds > 10 then
-            if playerBaseTimeWarning then
-                removeAlertGui()
-            end
-        elseif not remainingSeconds or remainingSeconds <= 0 then
-            if playerBaseTimeWarning then
-                removeAlertGui()
-            end
-        end
-    end
-    
-    local displayPart = plot:FindFirstChild("PlotSign")
-    if not displayPart then
-        for _, child in pairs(plot:GetChildren()) do
-            if child:IsA("Part") or child:IsA("MeshPart") then
-                displayPart = child
-                break
-            end
-        end
-    end
-    
-    if not displayPart then return end
-    
-    if not plotDisplays[plotName] then
-        local existingBillboard = displayPart:FindFirstChild("PlotESP")
-        if existingBillboard then
-            existingBillboard:Destroy()
-        end
-        
-        local billboardGui = Instance.new("BillboardGui")
-        billboardGui.Name = "😆"
-        billboardGui.Parent = displayPart
-        billboardGui.Size = UDim2.new(0, 150, 0, 60)
-        billboardGui.StudsOffset = Vector3.new(0, 8, 0)
-        billboardGui.AlwaysOnTop = true
-        
-        local frame = Instance.new("Frame")
-        frame.Parent = billboardGui
-        frame.Size = UDim2.new(1, 0, 1, 0)
-        frame.BackgroundTransparency = 0.7
-        frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        frame.BorderSizePixel = 0
-        
-        local corner = Instance.new("UICorner")
-        corner.Parent = frame
-        corner.CornerRadius = UDim.new(0, 4)
-        
-        local signLabel = Instance.new("TextLabel")
-        signLabel.Parent = frame
-        signLabel.Size = UDim2.new(1, -4, 0.6, 0)
-        signLabel.Position = UDim2.new(0, 2, 0, 2)
-        signLabel.BackgroundTransparency = 1
-        signLabel.Text = plotSignText
-        signLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-        signLabel.TextScaled = true
-        signLabel.TextStrokeTransparency = 0.3
-        signLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-        signLabel.Font = Enum.Font.SourceSansBold
-        
-        local timeLabel = Instance.new("TextLabel")
-        timeLabel.Parent = frame
-        timeLabel.Size = UDim2.new(1, -4, 0.4, 0)
-        timeLabel.Position = UDim2.new(0, 2, 0.6, 0)
-        timeLabel.BackgroundTransparency = 1
-        timeLabel.Text = plotTimeText
-        timeLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
-        timeLabel.TextScaled = true
-        timeLabel.TextStrokeTransparency = 0.3
-        timeLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-        timeLabel.Font = Enum.Font.SourceSans
-        
-        plotDisplays[plotName] = {
-            gui = billboardGui,
-            signLabel = signLabel,
-            timeLabel = timeLabel,
-            plot = plot
-        }
-    else
-        if plotDisplays[plotName].signLabel then
-            plotDisplays[plotName].signLabel.Text = plotSignText
-        end
-        if plotDisplays[plotName].timeLabel then
-            plotDisplays[plotName].timeLabel.Text = plotTimeText
-        end
-    end
-end
-
-local function updateAllPlots()
-    local plots = workspace:FindFirstChild("Plots")
-    if not plots then return end
-    
-    for _, plot in pairs(plots:GetChildren()) do
-        if plot:IsA("Model") or plot:IsA("Folder") then
-            pcall(function()
-                createOrUpdatePlotDisplay(plot)
-            end)
-        end
-    end
-    
-    for plotName, display in pairs(plotDisplays) do
-        if not plots:FindFirstChild(plotName) then
-            if display.gui then
-                display.gui:Destroy()
-            end
-            plotDisplays[plotName] = nil
-        end
-    end
-end
-
-
-local jumpDelayConnections = {}
-
-local function cleanupJumpDelayConnections(character)
-    if jumpDelayConnections[character] then
-        for _, connection in pairs(jumpDelayConnections[character]) do
-            if connection and connection.Connected then
-                connection:Disconnect()
-            end
-        end
-        jumpDelayConnections[character] = nil
-    end
-end
-
-local function setupNoJumpDelay(character)
-    cleanupJumpDelayConnections(character)
-    
-    local humanoid = character:WaitForChild("Humanoid")
-    if not humanoid then return end
-    
-    jumpDelayConnections[character] = {}
-
-    local stateConnection = humanoid.StateChanged:Connect(function(oldState, newState)
-        if newState == Enum.HumanoidStateType.Landed then
-            task.spawn(function()
-                task.wait()
-                if humanoid and humanoid.Parent then
-                    humanoid:ChangeState(Enum.HumanoidStateType.Running)
+    -- Check arguments for kick patterns
+    for _, arg in pairs(args) do
+        if type(arg) == "string" then
+            local argLower = arg:lower()
+            for _, pattern in pairs(kickPatterns) do
+                if argLower:find(pattern) then
+                    warn("🛡️ BLOCKED KICK ATTEMPT via argument pattern: " .. pattern .. " in remote: " .. remote.Name)
+                    return true
                 end
-            end)
+            end
+        elseif type(arg) == "number" then
+            -- Check for kick error codes
+            for _, code in pairs(kickErrorCodes) do
+                if arg == code then
+                    warn("🛡️ BLOCKED KICK ATTEMPT via error code: " .. code .. " in remote: " .. remote.Name)
+                    return true
+                end
+            end
         end
-    end)
-    
-    jumpDelayConnections[character][#jumpDelayConnections[character] + 1] = stateConnection
-    
-    local cleanupConnection = character.AncestryChanged:Connect(function()
-        if not character.Parent then
-            cleanupJumpDelayConnections(character)
-        end
-    end)
-    
-    jumpDelayConnections[character][#jumpDelayConnections[character] + 1] = cleanupConnection
-end
-
-local function removeJumpDelay()
-    if player.Character and player.Character.Parent then
-        setupNoJumpDelay(player.Character)
     end
     
-    local characterAddedConnection = player.CharacterAdded:Connect(function(character)
-        task.wait(0.5)
-        if character and character.Parent then
-            setupNoJumpDelay(character)
-        end
-    end)
-    
-    local characterRemovingConnection = player.CharacterRemoving:Connect(function(character)
-        cleanupJumpDelayConnections(character)
-    end)
+    return false
 end
 
-local function onCharacterAdded(newCharacter)
-    character = newCharacter
-    humanoid = character:WaitForChild("Humanoid")
-    rootPart = character:WaitForChild("HumanoidRootPart")
+-- Hook into RemoteEvent firing
+local function hookRemoteEvents()
+    local originalFireServer
+    originalFireServer = hookfunction(game.FindService(game, "ReplicatedStorage").RemoteEvent.FireServer, function(self, ...)
+        if antiKickEnabled and blockRemoteCall(self, ...) then
+            return -- Block the call
+        end
+        return originalFireServer(self, ...)
+    end)
     
-    -- Reset all velocity variables
-    originalGravity = nil
-    bodyVelocity = nil
-    elevationBodyVelocity = nil
+    local originalInvokeServer
+    originalInvokeServer = hookfunction(game.FindService(game, "ReplicatedStorage").RemoteFunction.InvokeServer, function(self, ...)
+        if antiKickEnabled and blockRemoteCall(self, ...) then
+            return -- Block the call
+        end
+        return originalInvokeServer(self, ...)
+    end)
+    
+    print("🛡️ Anti-kick system activated")
+end
 
-    if platformEnabled then
-        task.wait(1)
+-- Button Functions
+floatButton.MouseButton1Click:Connect(function()
+    if not platformEnabled then
+        platformEnabled = true
+        currentPlatform = createPlatform()
+        
+        platformUpdateConnection = RunService.Heartbeat:Connect(updatePlatformPosition)
+        applySlowFall()
+        
+        floatButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+        floatButton.Text = "🔷 FLOAT ON 🔷"
+        
+        if grappleHookConnection then
+            grappleHookConnection:Disconnect()
+        end
+        grappleHookConnection = task.spawn(function()
+            while platformEnabled do
+                equipAndFireGrapple()
+                task.wait(0.5)
+            end
+        end)
+        
+        print("✅ Float enabled")
+    else
+        platformEnabled = false
         
         if currentPlatform then
             currentPlatform:Destroy()
+            currentPlatform = nil
         end
         
-        currentPlatform = createPlatform()
-        applySlowFall() -- Reapply slow fall to new character
-        updatePlatformPosition()
-        
-        -- ADD THESE LINES HERE:
-        task.wait(0.5) -- Wait for character to fully load
-        createFloatingEffects()
-    end
-end
-
-player.CharacterAdded:Connect(onCharacterAdded)
-
-for _, playerObj in pairs(Players:GetPlayers()) do
-    if playerObj ~= LocalPlayer then
-        createPlayerDisplay(playerObj)
-        playerObj.CharacterAdded:Connect(function()
-            task.wait(0.5)
-            createPlayerDisplay(playerObj)
-        end)
-    end
-end
-
-Players.PlayerAdded:Connect(function(playerObj)
-    if playerObj ~= LocalPlayer then
-        createPlayerDisplay(playerObj)
-        playerObj.CharacterAdded:Connect(function()
-            task.wait(0.5)
-            createPlayerDisplay(playerObj)
-        end)
-    end
-end)
-
-updateAllPlots()
-
-local plots = workspace:FindFirstChild("Plots")
-if plots then
-    plots.ChildAdded:Connect(function(child)
-        if child:IsA("Model") or child:IsA("Folder") then
-            task.wait(0.5)
-            createOrUpdatePlotDisplay(child)
+        if platformUpdateConnection then
+            platformUpdateConnection:Disconnect()
+            platformUpdateConnection = nil
         end
-    end)
-end
-
-task.spawn(function()
-    while true do
-        task.wait(0.5)
-        pcall(updateAllPlots)
-    end
-end)
-
-floatButton.MouseButton1Click:Connect(function()
-    local originalSize = floatButton.Size
-    local clickTween = TweenService:Create(floatButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 125, 0, 33)})
-    local releaseTween = TweenService:Create(floatButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = originalSize})
-    
-    clickTween:Play()
-    clickTween.Completed:Connect(function()
-        releaseTween:Play()
-    end)
-    
-    if platformEnabled then
-        disablePlatform()
-    else
-        enablePlatform()
+        
+        removeSlowFall()
+        
+        floatButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        floatButton.Text = "🔷 FLOAT 🔷"
+        
+        if grappleHookConnection then
+            task.cancel(grappleHookConnection)
+            grappleHookConnection = nil
+        end
+        
+        print("❌ Float disabled")
     end
 end)
 
 wallButton.MouseButton1Click:Connect(function()
-    local originalSize = wallButton.Size
-    local clickTween = TweenService:Create(wallButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 125, 0, 33)})
-    local releaseTween = TweenService:Create(wallButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = originalSize})
-    
-    clickTween:Play()
-    clickTween.Completed:Connect(function()
-        releaseTween:Play()
-    end)
-    
-    if wallTransparencyEnabled then
-        disableWallTransparency()
+    if not wallTransparencyEnabled then
+        wallTransparencyEnabled = true
+        makeWallsTransparent()
+        
+        wallButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+        wallButton.Text = "🔷 FLOOR STEAL ON 🔷"
+        
+        print("✅ Floor steal enabled")
     else
-        enableWallTransparency()
+        wallTransparencyEnabled = false
+        restoreWallTransparency()
+        
+        wallButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        wallButton.Text = "🔷 FLOOR STEAL 🔷"
+        
+        print("❌ Floor steal disabled")
+    end
+end)
+
+-- NEW STEAL BUTTON FUNCTIONALITY
+stealButton.MouseButton1Click:Connect(function()
+    print("💰 Steal button clicked")
+    tweenToBase()
+end)
+
+-- Button hover effects
+stealButton.MouseEnter:Connect(function()
+    if not tweenToBaseEnabled then
+        stealButton.BackgroundColor3 = Color3.fromRGB(255, 235, 20)
+    end
+end)
+
+stealButton.MouseLeave:Connect(function()
+    if not tweenToBaseEnabled then
+        stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
     end
 end)
 
 closeButton.MouseButton1Click:Connect(function()
-    if platformEnabled then
-        disablePlatform()
-    end
-    if wallTransparencyEnabled then
-        disableWallTransparency()
-    end
-    if alertGui then
-        removeAlertGui()
-    end
     screenGui:Destroy()
+    
+    -- Clean up all connections and objects
+    if currentPlatform then currentPlatform:Destroy() end
+    if comboCurrentPlatform then comboCurrentPlatform:Destroy() end
+    if platformUpdateConnection then platformUpdateConnection:Disconnect() end
+    if comboPlatformUpdateConnection then comboPlatformUpdateConnection:Disconnect() end
+    if playerCollisionConnection then playerCollisionConnection:Disconnect() end
+    if grappleHookConnection then task.cancel(grappleHookConnection) end
+    if stealGrappleConnection then task.cancel(stealGrappleConnection) end
+    if currentTween then currentTween:Cancel() end
+    
+    removeSlowFall()
+    restoreWallTransparency()
+    
+    print("❌ Script closed and cleaned up")
 end)
 
-local function addHoverEffect(button, hoverColor, originalColor)
-    button.MouseEnter:Connect(function()
-        if button == floatButton then
-            if platformEnabled then
-                button.BackgroundColor3 = Color3.fromRGB(50, 180, 80)
-            else
-                button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-            end
-        elseif button == wallButton then
-            if wallTransparencyEnabled then
-                button.BackgroundColor3 = Color3.fromRGB(180, 80, 30)
-            else
-                button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-            end
-        else
-            button.BackgroundColor3 = hoverColor
-        end
-    end)
+-- Emergency stop function (press ESC while tweening)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
     
-    button.MouseLeave:Connect(function()
-        if button == floatButton then
-            if platformEnabled then
-                button.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
-            else
-                button.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-            end
-        elseif button == wallButton then
-            if wallTransparencyEnabled then
-                button.BackgroundColor3 = Color3.fromRGB(150, 50, 0)
-            else
-                button.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-            end
-        else
-            button.BackgroundColor3 = originalColo        end
-    end)
-end
-
-addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
-addHoverEffect(floatButton, Color3.fromRGB(30, 30, 30), Color3.fromRGB(0, 0, 0))
-addHoverEffect(wallButton, Color3.fromRGB(30, 30, 30), Color3.fromRGB(0, 0, 0))
-
-game:BindToClose(function()
-    if wallTransparencyEnabled then
-        disableWallTransparency()
-    end
-    if alertGui then
-        removeAlertGui()
+    if input.KeyCode == Enum.KeyCode.Escape and tweenToBaseEnabled then
+        print("🛑 Emergency stop activated!")
+        
+        if currentTween then
+            currentTween:Cancel()
+        end
+        
+        tweenToBaseEnabled = false
+        stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+        stealButton.Text = "💰 Steal 💰"
+        
+        if stealGrappleConnection then
+            task.cancel(stealGrappleConnection)
+            stealGrappleConnection = nil
+        end
     end
 end)
 
-Players.PlayerRemoving:Connect(function(playerObj)
-    if playerObj == LocalPlayer then
-        removeAlertGui()
-    end
+-- Character respawn handling
+player.CharacterRemoving:Connect(function()
+    platformEnabled = false
+    wallTransparencyEnabled = false
+    comboFloatEnabled = false
+    tweenToBaseEnabled = false
+    
+    if currentPlatform then currentPlatform:Destroy() end
+    if comboCurrentPlatform then comboCurrentPlatform:Destroy() end
+    if currentTween then currentTween:Cancel() end
+    if grappleHookConnection then task.cancel(grappleHookConnection) end
+    if stealGrappleConnection then task.cancel(stealGrappleConnection) end
+    
+    -- Reset button states
+    floatButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    floatButton.Text = "🔷 FLOAT 🔷"
+    wallButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    wallButton.Text = "🔷 FLOOR STEAL 🔷"
+    stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+    stealButton.Text = "💰 Steal 💰"
 end)
 
-task.spawn(initializeAnimalESP)
-removeJumpDelay()
-
-local function blockSpecificRemotes()
-    -- Block game:GetService("ReplicatedStorage").Packages.Replion.Remotes.Removed
-    local remote = game:GetService('ReplicatedStorage'):FindFirstChild('Packages')
-    if remote then
-        remote = remote:FindFirstChild('Replion')
-        if remote then
-            remote = remote:FindFirstChild('Remotes')
-            if remote then
-                remote = remote:FindFirstChild('Removed')
-                if remote then
-                    local old = hookmetamethod(game, '__namecall', function(self, ...)
-                        if self == remote and getnamecallmethod() == "FireServer" then
-                            if antiKickEnabled then
-                                print("🛡️ BLOCKED: Replion.Remotes.Removed FireServer attempt")
-                                warn("blocked the kick!")
-                                return nil
-                            end
-                        end
-                        return old(self, ...)
-                    end)
-                    print("🛡️ Successfully hooked: ReplicatedStorage.Packages.Replion.Remotes.Removed")
-                end
-            end
-        end
-    end
+player.CharacterAdded:Connect(function(newCharacter)
+    character = newCharacter
+    humanoid = character:WaitForChild("Humanoid")
+    rootPart = character:WaitForChild("HumanoidRootPart")
     
-    -- Block game:GetService("ReplicatedStorage").Packages.Net["RE/TeleportService/Reconnect"]
-    local netRemote = game:GetService('ReplicatedStorage'):FindFirstChild('Packages')
-    if netRemote then
-        netRemote = netRemote:FindFirstChild('Net')
-        if netRemote then
-            netRemote = netRemote:FindFirstChild('RE/TeleportService/Reconnect')
-            if netRemote then
-                local old = hookmetamethod(game, '__namecall', function(self, ...)
-                    if self == netRemote and getnamecallmethod() == "FireServer" then
-                        if antiKickEnabled then
-                            print("🛡️ BLOCKED: Net RE/TeleportService/Reconnect FireServer attempt")
-                            warn("blocked the kick!")
-                            return nil
-                        end
-                    end
-                    return old(self, ...)
-                end)
-                print("🛡️ Successfully hooked: ReplicatedStorage.Packages.Net[RE/TeleportService/Reconnect]")
-            end
-        end
-    end
-    
-    -- Monitor for these remotes being added later
-    game.DescendantAdded:Connect(function(obj)
-        if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
-            task.wait(0.1)
-            local fullName = obj:GetFullName()
-            
-            if string.find(fullName, "Replion") and string.find(fullName, "Removed") then
-                local old = hookmetamethod(game, '__namecall', function(self, ...)
-                    if self == obj and (getnamecallmethod() == "FireServer" or getnamecallmethod() == "InvokeServer") then
-                        if antiKickEnabled then
-                            print("🛡️ BLOCKED: New Replion.Removed remote attempt")
-                            warn("blocked the kick!")
-                            return nil
-                        end
-                    end
-                    return old(self, ...)
-                end)
-                print("🛡️ Hooked new Replion remote:", fullName)
-                
-            elseif string.find(fullName, "TeleportService") and string.find(fullName, "Reconnect") then
-                local old = hookmetamethod(game, '__namecall', function(self, ...)
-                    if self == obj and (getnamecallmethod() == "FireServer" or getnamecallmethod() == "InvokeServer") then
-                        if antiKickEnabled then
-                            print("🛡️ BLOCKED: New TeleportService/Reconnect remote attempt")
-                            warn("blocked the kick!")
-                            return nil
-                        end
-                    end
-                    return old(self, ...)
-                end)
-                print("🛡️ Hooked new TeleportService remote:", fullName)
-            end
-        end
-    end)
-end
-
--- ULTIMATE KICK METHOD HOOKING (COMPREHENSIVE)
-local function hookAllKickMethods()
-    local old = hookmetamethod(game, "__namecall", function(self, ...)
-        local method = getnamecallmethod()
-        local args = {...}
-        
-        if not antiKickEnabled then
-            return old(self, ...)
-        end
-        
-        -- Check if method is in our comprehensive kick list
-        for _, kickMethod in pairs(kickMethods) do
-            if method == kickMethod then
-                print("🛡️ BLOCKED: " .. method .. " method blocked on", self.Name or tostring(self))
-                warn("blocked the kick!")
-                return nil
-            end
-        end
-        
-        -- Special handling for Player:Kick specifically
-        if method == "Kick" and self == player then
-            print("🛡️ BLOCKED: Player:Kick() attempt on local player")
-            warn("blocked the kick!")
-            return nil
-        end
-        
-        -- Check for RemoteEvent/RemoteFunction kick attempts
-        if method == "FireServer" or method == "InvokeServer" then
-            -- Check remote name against specific blocked remotes
-            local remoteName = self.Name or ""
-            local remoteFullName = self:GetFullName() or ""
-            
-            for _, blockedRemote in pairs(specificRemotesToBlock) do
-                if string.find(remoteName, blockedRemote) or string.find(remoteFullName, blockedRemote) then
-                    print("🛡️ BLOCKED: Blocked remote detected - " .. blockedRemote .. " in " .. remoteFullName)
-                    warn("blocked the kick!")
-                    return nil
-                end
-            end
-            
-            -- Check arguments for kick patterns
-            for i, arg in pairs(args) do
-                if type(arg) == "string" then
-                    local lower = string.lower(arg)
-                    
-                    -- Check against all kick patterns
-                    for _, pattern in pairs(kickPatterns) do
-                        if string.find(lower, string.lower(pattern)) then
-                            print("🛡️ BLOCKED: " .. method .. " with kick pattern: " .. pattern .. " in argument: " .. tostring(arg))
-                            warn("blocked the kick!")
-                            return nil
-                        end
-                    end
-                    
-                elseif type(arg) == "number" then
-                    -- Check for kick error codes
-                    for _, errorCode in pairs(kickErrorCodes) do
-                        if arg == errorCode then
-                            print("🛡️ BLOCKED: " .. method .. " with kick error code: " .. tostring(arg))
-                            warn("blocked the kick!")
-                            return nil
-                        end
-                    end
-                    
-                    -- Check for place IDs (potential teleportation)
-                    if arg > 1000000 and arg < 999999999999 then
-                        print("🛡️ BLOCKED: " .. method .. " with potential place ID: " .. tostring(arg))
-                        warn("blocked the kick!")
-                        return nil
-                    end
-                    
-                elseif type(arg) == "table" then
-                    -- Check table contents recursively
-                    local function checkTable(t, depth)
-                        if depth > 10 then return false end -- Prevent infinite recursion
-                        
-                        for k, v in pairs(t) do
-                            if type(v) == "string" then
-                                local lower = string.lower(v)
-                                for _, pattern in pairs(kickPatterns) do
-                                    if string.find(lower, string.lower(pattern)) then
-                                        return true
-                                    end
-                                end
-                            elseif type(v) == "number" then
-                                for _, errorCode in pairs(kickErrorCodes) do
-                                    if v == errorCode then
-                                        return true
-                                    end
-                                end
-                            elseif type(v) == "table" then
-                                if checkTable(v, depth + 1) then 
-                                    return true 
-                                end
-                            end
-                        end
-                        return false
-                    end
-                    
-                    if checkTable(arg, 0) then
-                        print("🛡️ BLOCKED: " .. method .. " with table containing kick data")
-                        warn("blocked the kick!")
-                        return nil
-                    end
-                end
-            end
-        end
-        
-        -- Block TeleportService methods
-        if self == TeleportService then
-            local teleportMethods = {
-                "Teleport", "TeleportAsync", "TeleportToPlaceInstance", 
-                "TeleportToPrivateServer", "TeleportPartyAsync", "TeleportToSpawnByName"
-            }
-            
-            for _, teleMethod in pairs(teleportMethods) do
-                if method == teleMethod then
-                    -- Check if local player is being teleported
-                    for _, arg in pairs(args) do
-                        if arg == player or (type(arg) == "table" and table.find(arg, player)) then
-                            print("🛡️ BLOCKED: TeleportService." .. method .. " attempt on local player")
-                            warn("blocked the kick!")
-                            return nil
-                        end
-                    end
-                end
-            end
-        end
-        
-        -- Block game shutdown methods
-        if self == game and (method == "Shutdown" or method == "shutdown") then
-            print("🛡️ BLOCKED: game:Shutdown() attempt")
-            warn("blocked the kick!")
-            return nil
-        end
-        
-        return old(self, ...)
-    end)
-end
-
--- MONITOR AND PROTECT AGAINST CHARACTER/PLAYER DESTRUCTION
-local function protectPlayerAndCharacter()
-    -- Protect player object
-    if player then
-        local playerMetatable = getmetatable(player) or {}
-        local originalDestroy = player.Destroy
-        
-        player.Destroy = function(...)
-            if antiKickEnabled then
-                print("🛡️ BLOCKED: Player:Destroy() attempt")
-                warn("blocked the kick!")
-                return
-            end
-            return originalDestroy(...)
-        end
-    end
-    
-    -- Protect character
-    local function protectCharacter(character)
-        if character then
-            local originalDestroy = character.Destroy
-            character.Destroy = function(...)
-                if antiKickEnabled then
-                    print("🛡️ BLOCKED: Character:Destroy() attempt")
-                    warn("blocked the kick!")
-                    return
-                end
-                return originalDestroy(...)
-            end
-        end
-    end
-    
-    if player.Character then
-        protectCharacter(player.Character)
-    end
-    
-    player.CharacterAdded:Connect(protectCharacter)
-end
-
--- MAINTAIN PROTECTION WITH ADVANCED MONITORING
-task.spawn(function()
-    while antiKickEnabled do
-        -- Ensure player is still connected
-        if not player or not player.Parent or player.Parent ~= Players then
-            print("⚠️ Player disconnection detected - anti-kick may have failed")
-            break
-        end
-        
-        -- Check for character
-        if not player.Character and player.Parent == Players then
-            print("🛡️ Character missing - attempting restoration...")
-            pcall(function()
-                player:LoadCharacter()
-            end)
-        end
-        
-        -- Periodic re-initialization (every 30 seconds)
-        if math.random(1, 30) == 1 then
-            pcall(function()
-                hookAllKickMethods()
-                blockSpecificRemotes()
-                print("🛡️ Anti-kick protection renewed")
-            end)
-        end
-        
-        task.wait(1)
-    end
+    -- Reset variables for new character
+    originalGravity = nil
+    bodyVelocity = nil
+    originalTransparencies = {}
 end)
 
-pcall(hookAllKickMethods)
-pcall(blockSpecificRemotes)
-pcall(protectPlayerAndCharacter)
+-- Initialize anti-kick system
+if antiKickEnabled then
+    local success, error = pcall(hookRemoteEvents)
+    if not success then
+        warn("⚠️ Could not hook remote events: " .. tostring(error))
+        print("🛡️ Anti-kick system may not work properly")
+    end
+end
+
+print("🚀 Enhanced Steal-A-Brainrot loaded successfully!")
+print("📋 Features:")
+print("   • 🔷 FLOAT - Platform under player with slow fall")
+print("   • 🔷 FLOOR STEAL - See through walls")
+print("   • 💰 Steal - Tween to base at 40 studs/second")
+print("   • 🛡️ Anti-kick protection")
+print("   • 🎣 Automatic grapple hook integration")
+print("   • ⚡ Advanced wall detection and pathfinding")
+print("   • 🚨 Emergency stop (ESC key)")
+print("   • Double-tap space while floating for enhanced jump!")
+print("⚡ Ready to dominate! ⚡")
