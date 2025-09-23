@@ -8,7 +8,6 @@ local HttpService = game:GetService("HttpService")
 local StarterPlayer = game:GetService("StarterPlayer")
 local CoreGui = game:GetService("CoreGui")
 local GuiService = game:GetService("GuiService")
-local TeleportService = game:GetService("TeleportService")
 
 local player = Players.LocalPlayer
 local LocalPlayer = Players.LocalPlayer
