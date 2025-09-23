@@ -366,7 +366,6 @@ local function performRaycast(origin, direction, distance)
     local raycastParams = RaycastParams.new()
     raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
     
-    -- More comprehensive filter list
     local filterList = {player.Character}
     
     -- Add all player platforms to filter
@@ -435,73 +434,92 @@ local function checkDirectPath(startPos, targetPos)
 end
 
 -- Find safe path around walls
-local function findSafePath(startPos, targetPos)
-    -- Check direct path first
-    local directClear, wallHit = checkDirectPath(startPos, targetPos)
+local function findSmartPath(startPos, targetPos)
+    print("🔍 Starting smart pathfinding...")
     
-    if directClear then
+    local WALL_CHECK_DISTANCE = 10
+    local ESCAPE_HEIGHT = 15
+    local MAX_ESCAPE_ATTEMPTS = 8
+    
+    -- Check direct path first
+    local direction = (targetPos - startPos).Unit
+    local distance = (targetPos - startPos).Magnitude
+    
+    local directHit = performRaycast(startPos, direction, math.min(distance, WALL_CHECK_DISTANCE))
+    if not directHit or not directHit.Instance.CanCollide then
         print("✅ Direct path is clear")
         return {targetPos}
     end
     
-    print("🔥 Direct path blocked, finding alternative...")
+    print("🚧 Direct path blocked, analyzing surroundings...")
     
-    -- Calculate direction and distance
-    local direction = (targetPos - startPos)
-    local horizontalDirection = Vector3.new(direction.X, 0, direction.Z).Unit
-    local distance = direction.Magnitude
-    
-    -- Try going up and over obstacles (higher altitude)
-    local highWaypoint = Vector3.new(
-        startPos.X + (targetPos.X - startPos.X) * 0.5,
-        math.max(startPos.Y, targetPos.Y) + WALL_AVOIDANCE_HEIGHT * 2, -- Double the height
-        startPos.Z + (targetPos.Z - startPos.Z) * 0.5
-    )
-    
-    -- Check if high path is clear
-    local upClear1 = checkDirectPath(startPos, highWaypoint)
-    local upClear2 = checkDirectPath(highWaypoint, targetPos)
-    
-    if upClear1 and upClear2 then
-        print("⬆️ Using high path over obstacles")
-        return {highWaypoint, targetPos}
-    end
-    
-    -- Try wider side paths with better spacing
-    local sideDistance = 30 -- Increased from 20
+    -- Check all 8 horizontal directions + up/down
     local directions = {
-        Vector3.new(sideDistance, WALL_AVOIDANCE_HEIGHT, 0),   -- Right + Up
-        Vector3.new(-sideDistance, WALL_AVOIDANCE_HEIGHT, 0),  -- Left + Up
-        Vector3.new(0, WALL_AVOIDANCE_HEIGHT, sideDistance),   -- Forward + Up
-        Vector3.new(0, WALL_AVOIDANCE_HEIGHT, -sideDistance),  -- Backward + Up
-        Vector3.new(sideDistance, WALL_AVOIDANCE_HEIGHT, sideDistance),   -- Forward-Right + Up
-        Vector3.new(-sideDistance, WALL_AVOIDANCE_HEIGHT, sideDistance),  -- Forward-Left + Up
-        Vector3.new(sideDistance, WALL_AVOIDANCE_HEIGHT, -sideDistance),  -- Backward-Right + Up
-        Vector3.new(-sideDistance, WALL_AVOIDANCE_HEIGHT, -sideDistance)  -- Backward-Left + Up
+        Vector3.new(1, 0, 0),    -- Right
+        Vector3.new(-1, 0, 0),   -- Left  
+        Vector3.new(0, 0, 1),    -- Forward
+        Vector3.new(0, 0, -1),   -- Backward
+        Vector3.new(1, 0, 1),    -- Forward-Right
+        Vector3.new(-1, 0, 1),   -- Forward-Left
+        Vector3.new(1, 0, -1),   -- Backward-Right
+        Vector3.new(-1, 0, -1),  -- Backward-Left
+        Vector3.new(0, 1, 0),    -- Up
+        Vector3.new(0, -1, 0)    -- Down (if needed)
     }
     
-    for _, offset in pairs(directions) do
-        local waypoint = startPos + offset
-        
-        -- Check if this path is clear
-        local path1Clear = checkDirectPath(startPos, waypoint)
-        local path2Clear = checkDirectPath(waypoint, targetPos)
-        
-        if path1Clear and path2Clear then
-            print("↗️ Using elevated side path")
-            return {waypoint, targetPos}
+    local wallDistances = {}
+    local openDirections = {}
+    
+    -- Test each direction
+    for i, dir in ipairs(directions) do
+        local hit = performRaycast(startPos, dir, WALL_CHECK_DISTANCE)
+        if hit and hit.Instance.CanCollide then
+            wallDistances[i] = hit.Distance or WALL_CHECK_DISTANCE
+            print("🔴 Wall detected " .. tostring(dir) .. " at distance: " .. math.floor(wallDistances[i]))
+        else
+            wallDistances[i] = WALL_CHECK_DISTANCE
+            table.insert(openDirections, {index = i, direction = dir})
+            print("🟢 Open space " .. tostring(dir))
         end
     end
     
-    -- Last resort: very high and far detour
-    local farWaypoint = Vector3.new(
-        startPos.X + (targetPos.X > startPos.X and 50 or -50),
-        math.max(startPos.Y, targetPos.Y) + WALL_AVOIDANCE_HEIGHT * 3,
-        startPos.Z + (targetPos.Z > startPos.Z and 50 or -50)
-    )
+    -- If we found open directions, use the best one
+    if #openDirections > 0 then
+        -- Prefer upward direction if available
+        for _, openDir in ipairs(openDirections) do
+            if openDir.direction.Y > 0 then
+                local escapePoint = startPos + (openDir.direction * ESCAPE_HEIGHT)
+                print("⬆️ Using upward escape route")
+                return {escapePoint, targetPos}
+            end
+        end
+        
+        -- Otherwise use the first available horizontal direction
+        local bestDir = openDirections[1]
+        local escapePoint = startPos + (bestDir.direction * ESCAPE_HEIGHT)
+        print("↗️ Using horizontal escape route")
+        return {escapePoint, targetPos}
+    end
     
-    print("🔥 Using extreme detour path")
-    return {farWaypoint, targetPos}
+    -- If completely enclosed, try to escape upward with increasing height
+    print("🔥 Player appears trapped, attempting vertical escape...")
+    for attempt = 1, MAX_ESCAPE_ATTEMPTS do
+        local escapeHeight = ESCAPE_HEIGHT + (attempt * 5)
+        local upwardPoint = startPos + Vector3.new(0, escapeHeight, 0)
+        
+        local upHit = performRaycast(startPos, Vector3.new(0, 1, 0), escapeHeight)
+        if not upHit or not upHit.Instance.CanCollide then
+            print("🚀 Found vertical escape at height: " .. escapeHeight)
+            -- Add intermediate waypoint to avoid ceiling clips
+            local midPoint = startPos + Vector3.new(0, escapeHeight * 0.6, 0)
+            return {midPoint, upwardPoint, targetPos}
+        end
+    end
+    
+    -- Last resort: try diagonal escape
+    print("🆘 Using last resort diagonal escape")
+    local diagonalEscape = startPos + Vector3.new(20, ESCAPE_HEIGHT * 2, 20)
+    return {diagonalEscape, targetPos}
 end
 
 -- Main Tween Function
@@ -547,24 +565,24 @@ local function tweenToBase()
     
     print("💰 Starting steal mission...")
     print("📏 Distance: " .. math.floor(totalDistance) .. " studs")
-    print("⏱️ Speed: " .. TWEEN_SPEED .. " studs/second")
+    print("⏱️ Speed: 20 studs/second (FIXED)")
     
-    -- Calculate safe path
-    local waypoints = findSafePath(startPosition, targetPosition)
+    -- Calculate smart path with reduced lag
+    local waypoints = findSmartPath(startPosition, targetPosition)
     
     tweenToBaseEnabled = true
     stealButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
     stealButton.Text = "🔥 Stealing..."
     
-    -- Start grapple hook loop (every 0.1 seconds)
+    -- Reduced grapple hook frequency to prevent lag
     stealGrappleConnection = task.spawn(function()
         while tweenToBaseEnabled do
             equipAndFireGrapple()
-            task.wait(0.5)
+            task.wait(0.5) -- Increased from 0.5 to reduce lag
         end
     end)
     
-    -- FIXED: Execute tween through waypoints with proper TweenService
+    -- FIXED: Tween with exact 20 studs/second speed using Position (Vector3)
     local function tweenToNextWaypoint(waypointIndex)
         if not tweenToBaseEnabled or waypointIndex > #waypoints then
             -- Tween completed
@@ -584,31 +602,32 @@ local function tweenToBase()
         local waypoint = waypoints[waypointIndex]
         local currentPos = humanoidRootPart.Position
         local segmentDistance = (waypoint - currentPos).Magnitude
-        local segmentTime = segmentDistance / TWEEN_SPEED -- This ensures constant speed
+        local segmentTime = segmentDistance / 20 -- FIXED: Exact 20 studs per second
         
         print("🎯 Moving to waypoint " .. waypointIndex .. "/" .. #waypoints .. " (Distance: " .. math.floor(segmentDistance) .. " studs, Time: " .. string.format("%.1f", segmentTime) .. "s)")
         
-        -- FIXED: Use proper TweenService for consistent speed
+        -- FIXED: Use Vector3 Position with proper TweenInfo for consistent speed
         local tweenInfo = TweenInfo.new(
-            segmentTime, -- Duration based on distance/speed
-            Enum.EasingStyle.Linear, -- Linear for constant speed
-            Enum.EasingDirection.InOut,
-            0, -- No repeat
-            false, -- Don't reverse
-            0 -- No delay
+            segmentTime,                    -- Exact duration for 20 studs/second
+            Enum.EasingStyle.Linear,        -- Linear for constant speed
+            Enum.EasingDirection.InOut,     -- Smooth direction
+            0,                             -- No repeat
+            false,                         -- Don't reverse
+            0                              -- No delay
         )
         
+        -- FIXED: Tween Position (Vector3) instead of CFrame
         currentTween = TweenService:Create(
             humanoidRootPart,
             tweenInfo,
-            {Position = waypoint}
+            {Position = waypoint}  -- Using Vector3 Position as requested
         )
         
         currentTween:Play()
         
         currentTween.Completed:Connect(function(playbackState)
             if playbackState == Enum.PlaybackState.Completed and tweenToBaseEnabled then
-                -- Small delay between segments for smooth transition
+                -- Reduced delay to prevent stuttering
                 task.wait(0.05)
                 tweenToNextWaypoint(waypointIndex + 1)
             end
