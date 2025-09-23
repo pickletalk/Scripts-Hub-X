@@ -362,6 +362,7 @@ local function findPlayerPlot()
 end
 
 -- FIXED CARPET TELEPORT SYSTEM
+-- FIXED PHYSICS-BASED MOVEMENT SYSTEM
 local function tweenToBase()
     local currentTime = tick()
     
@@ -410,12 +411,10 @@ local function tweenToBase()
         warn("❌ Could not find player's base plot")
         return
     end
-
-    local originalJumpPower = humanoid.JumpPower
-    local originalJumpHeight = humanoid.JumpHeight
     
-    -- Disable jump to prevent interference
+    -- FIXED: Properly control character physics
     if humanoid then
+        humanoid.PlatformStand = true -- Disable normal physics
         humanoid.JumpPower = 0
         humanoid.JumpHeight = 0
     end
@@ -438,98 +437,125 @@ local function tweenToBase()
     stealGrappleConnection = task.spawn(function()
         while tweenToBaseEnabled do
             equipAndFireGrapple()
-            task.wait(0.3)
+            task.wait(1)
         end
     end)
     
-    -- PHASE 1: Tween to carpet at 10 studs/second (FIXED SPEED)
+    -- PHASE 1: Move to carpet at 15 studs/second
     local function moveToCarpet()
+        if not tweenToBaseEnabled then return end
+        
         local carpetDistance = (carpetPosition - humanoidRootPart.Position).Magnitude
-        local carpetTime = carpetDistance / 10 -- FIXED: 10 studs per second to carpet
+        local carpetTime = carpetDistance / 15 -- 15 studs per second to carpet
         
         print("🟫 Phase 1: Moving to carpet")
         print("📏 Distance to carpet: " .. math.floor(carpetDistance) .. " studs")
-        print("⏱️ Time to carpet: " .. string.format("%.1f", carpetTime) .. "s at 10 studs/sec")
+        print("⏱️ Time to carpet: " .. string.format("%.1f", carpetTime) .. "s at 15 studs/sec")
         
-        -- FIXED: Use proper TweenService instead of BodyPosition
-        local tweenInfo = TweenInfo.new(
-            carpetTime,                     -- Exact time for 10 studs/second
-            Enum.EasingStyle.Linear,        -- Constant speed
-            Enum.EasingDirection.InOut,
-            0,
-            false,
-            0
-        )
+        -- FIXED: Use BodyVelocity for smooth physics-based movement
+        local bodyVelocity = Instance.new("BodyVelocity")
+        bodyVelocity.MaxForce = Vector3.new(4000, 4000, 4000)
         
-        currentTween = TweenService:Create(
-            humanoidRootPart,
-            tweenInfo,
-            {Position = carpetPosition}
-        )
+        -- Calculate velocity direction for 15 studs/second
+        local direction = (carpetPosition - humanoidRootPart.Position).Unit
+        bodyVelocity.Velocity = direction * 15 -- 15 studs per second
+        bodyVelocity.Parent = humanoidRootPart
         
-        currentTween:Play()
-        
-        currentTween.Completed:Connect(function(playbackState)
-            if playbackState == Enum.PlaybackState.Completed and tweenToBaseEnabled then
+        -- Timer to stop movement and proceed to next phase
+        local carpetTimer = task.spawn(function()
+            task.wait(carpetTime)
+            
+            -- Stop movement
+            if bodyVelocity and bodyVelocity.Parent then
+                bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+                task.wait(0.1) -- Brief stop
+                bodyVelocity:Destroy()
+            end
+            
+            if tweenToBaseEnabled then
                 print("✅ Reached carpet! Starting teleport to base...")
-                task.wait(0.1) -- Brief pause at carpet
+                task.wait(0.2) -- Brief pause at carpet
                 moveToBase()
             end
         end)
+        
+        -- Store current operation for cleanup
+        currentTween = {
+            Cancel = function()
+                if carpetTimer then
+                    task.cancel(carpetTimer)
+                end
+                if bodyVelocity and bodyVelocity.Parent then
+                    bodyVelocity:Destroy()
+                end
+            end
+        }
     end
     
-    -- PHASE 2: Teleport to base at 10 studs/second
+    -- PHASE 2: Move to base at 15 studs/second
     local function moveToBase()
         if not tweenToBaseEnabled then return end
         
         -- Update position in case character moved slightly
         local currentPos = humanoidRootPart.Position
         local baseDistance = (basePosition - currentPos).Magnitude
-        local baseTime = baseDistance / 10 -- 10 studs per second to base
+        local baseTime = baseDistance / 15 -- 15 studs per second to base
         
-        print("🎯 Phase 2: Teleporting to base")
+        print("🎯 Phase 2: Moving to base")
         print("📏 Distance to base: " .. math.floor(baseDistance) .. " studs")
-        print("⏱️ Time to base: " .. string.format("%.1f", baseTime) .. "s at 10 studs/sec")
+        print("⏱️ Time to base: " .. string.format("%.1f", baseTime) .. "s at 15 studs/sec")
         
-        -- FIXED: Use proper TweenService for base movement too
-        local tweenInfo = TweenInfo.new(
-            baseTime,                       -- Exact time for 10 studs/second
-            Enum.EasingStyle.Linear,        -- Constant speed
-            Enum.EasingDirection.InOut,
-            0,
-            false,
-            0
-        )
+        -- FIXED: Use BodyVelocity for base movement too
+        local bodyVelocity = Instance.new("BodyVelocity")
+        bodyVelocity.MaxForce = Vector3.new(4000, 4000, 4000)
         
-        currentTween = TweenService:Create(
-            humanoidRootPart,
-            tweenInfo,
-            {Position = basePosition}
-        )
+        -- Calculate velocity direction for 15 studs/second
+        local direction = (basePosition - humanoidRootPart.Position).Unit
+        bodyVelocity.Velocity = direction * 15 -- 15 studs per second
+        bodyVelocity.Parent = humanoidRootPart
         
-        currentTween:Play()
-        
-        currentTween.Completed:Connect(function(playbackState)
-            if playbackState == Enum.PlaybackState.Completed and tweenToBaseEnabled then
-                -- Mission completed
-                tweenToBaseEnabled = false
-                stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-                stealButton.Text = "💰 Steal 💰"
-                
-                if stealGrappleConnection then
-                    task.cancel(stealGrappleConnection)
-                    stealGrappleConnection = nil
-                end
-                
-                -- Restore jump power
-                if humanoid then
-                    humanoid.JumpPower = originalJumpPower
-                    humanoid.JumpHeight = originalJumpHeight
-                end
-                
-                print("✅ Successfully reached base via carpet! 💰")
+        -- Timer for base movement
+        local baseTimer = task.spawn(function()
+            task.wait(baseTime)
+            
+            -- Stop movement
+            if bodyVelocity and bodyVelocity.Parent then
+                bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+                task.wait(0.1) -- Brief stop
+                bodyVelocity:Destroy()
             end
+            
+            -- Mission completed
+            tweenToBaseEnabled = false
+            stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+            stealButton.Text = "💰 Steal 💰"
+            
+            if stealGrappleConnection then
+                task.cancel(stealGrappleConnection)
+                stealGrappleConnection = nil
+            end
+            
+            -- FIXED: Restore normal character physics
+            if humanoid then
+                humanoid.PlatformStand = false -- Re-enable normal physics
+                humanoid.JumpPower = 50
+                humanoid.JumpHeight = 7.2
+            end
+            
+            print("✅ Successfully reached base via carpet! 💰")
         end)
+        
+        -- Store current operation for cleanup
+        currentTween = {
+            Cancel = function()
+                if baseTimer then
+                    task.cancel(baseTimer)
+                end
+                if bodyVelocity and bodyVelocity.Parent then
+                    bodyVelocity:Destroy()
+                end
+            end
+        }
     end
     
     -- Start the two-phase movement
