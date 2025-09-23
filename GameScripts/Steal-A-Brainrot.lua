@@ -412,14 +412,9 @@ local function tweenToBase()
         return
     end
 
-    local origJP = humanoid.JumpPower
-    local origJH = humanoid.JumpHeight
-    
     -- FIXED: Properly control character physics
     if humanoid then
         humanoid.PlatformStand = true -- Disable normal physics
-        humanoid.JumpPower = 0
-        humanoid.JumpHeight = 0
     end
     
     -- Calculate positions
@@ -490,8 +485,6 @@ local function tweenToBase()
             -- FIXED: Restore normal character physics
             if humanoid then
                 humanoid.PlatformStand = false -- Re-enable normal physics
-                humanoid.JumpPower = origJP
-                humanoid.JumpHeight = origJH
             end
             
             print("✅ Successfully reached base via carpet! 💰")
