@@ -411,6 +411,9 @@ local function tweenToBase()
         warn("❌ Could not find player's base plot")
         return
     end
+
+    local origJP = humanoid.JumpPower
+    local origJH = humanoid.JumpHeight
     
     -- FIXED: Properly control character physics
     if humanoid then
@@ -437,7 +440,7 @@ local function tweenToBase()
     stealGrappleConnection = task.spawn(function()
         while tweenToBaseEnabled do
             equipAndFireGrapple()
-            task.wait(1)
+            task.wait(0.3)
         end
     end)
     
@@ -474,7 +477,7 @@ local function tweenToBase()
             
             if tweenToBaseEnabled then
                 print("✅ Reached carpet! Starting teleport to base...")
-                task.wait(0.2) -- Brief pause at carpet
+                task.wait(0.1) -- Brief pause at carpet
                 moveToBase()
             end
         end)
@@ -538,8 +541,8 @@ local function tweenToBase()
             -- FIXED: Restore normal character physics
             if humanoid then
                 humanoid.PlatformStand = false -- Re-enable normal physics
-                humanoid.JumpPower = 50
-                humanoid.JumpHeight = 7.2
+                humanoid.JumpPower = origJP
+                humanoid.JumpHeight = origJH
             end
             
             print("✅ Successfully reached base via carpet! 💰")
