@@ -340,6 +340,66 @@ local function applySlowFall()
         bodyVelocity.Parent = rootPart
     end
     
+    -- Double tap detection variables
+    local lastTapTime = 0
+    local DOUBLE_TAP_DELAY = 0.3 -- 300ms for double tap
+    
+    -- Grapple hook functions
+    local function equipGrappleHook()
+        local backpack = player:FindFirstChild("Backpack")
+        local character = player.Character
+        
+        if backpack and character then
+            local grappleHook = backpack:FindFirstChild("Grapple Hook")
+            if grappleHook and grappleHook:IsA("Tool") then
+                local humanoid = character:FindFirstChild("Humanoid")
+                if humanoid then
+                    humanoid:EquipTool(grappleHook)
+                end
+            end
+        end
+    end
+    
+    local function fireGrappleHook()
+        local args = {0.08707536856333414}
+        
+        local success, error = pcall(function()
+            ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"):WaitForChild("RE/UseItem"):FireServer(unpack(args))
+        end)
+        
+        if not success then
+            warn("Failed to fire grapple hook: " .. tostring(error))
+        end
+    end
+    
+    local function equipAndFireGrapple()
+        fireGrappleHook()
+        equipGrappleHook()
+    end
+    
+    local function performJump()
+        if humanoid and bodyVelocity and bodyVelocity.Parent then
+            -- First equip and fire grapple hook
+            equipAndFireGrapple()
+            
+            -- Small delay then jump
+            task.spawn(function()
+                task.wait(0.1)
+                if platformEnabled and humanoid and bodyVelocity and bodyVelocity.Parent then
+                    -- Force jump
+                    humanoid.Jump = true
+                    bodyVelocity.Velocity = Vector3.new(0, 40, 0) -- Jump velocity
+                    
+                    -- Reset to slow fall after a brief moment
+                    task.wait(0.5)
+                    if platformEnabled and bodyVelocity and bodyVelocity.Parent then
+                        bodyVelocity.Velocity = Vector3.new(0, SLOW_FALL_SPEED, 0)
+                    end
+                end
+            end)
+        end
+    end
+    
     -- Handle jumping and falling states
     task.spawn(function()
         while platformEnabled do
@@ -348,7 +408,7 @@ local function applySlowFall()
                 
                 -- If player is jumping, allow normal jump velocity
                 if currentState == Enum.HumanoidStateType.Jumping then
-                    bodyVelocity.Velocity = Vector3.new(0, 50, 0) -- Normal jump power
+                    bodyVelocity.Velocity = Vector3.new(0, 40, 0) -- Normal jump power
                     -- Wait for jump to finish
                     humanoid.StateChanged:Wait()
                 elseif rootPart.Velocity.Y < -1 then -- Only apply slow fall when actually falling fast
@@ -360,31 +420,28 @@ local function applySlowFall()
         end
     end)
     
-    -- Handle jump input for ALL devices (PC, Mobile, Xbox, etc.)
+    -- Handle jump input for ALL devices with double-tap support
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
-        if gameProcessed then return end
+        if gameProcessed or not platformEnabled then return end
         
-        -- Support multiple input types
-        local isJumpInput = (
-            input.KeyCode == Enum.KeyCode.Space or -- PC Space
-            input.KeyCode == Enum.KeyCode.ButtonA or -- Xbox Controller A
-            input.UserInputType == Enum.UserInputType.Touch -- Mobile touch (jump button)
-        )
+        local currentTime = tick()
+        local isJumpInput = false
         
-        if isJumpInput and platformEnabled then
-            if humanoid and bodyVelocity and bodyVelocity.Parent then
-                -- Force jump
-                humanoid.Jump = true
-                bodyVelocity.Velocity = Vector3.new(0, 50, 0) -- Jump velocity
-                
-                -- Reset to slow fall after a brief moment
-                task.spawn(function()
-                    task.wait(0.5)
-                    if platformEnabled and bodyVelocity and bodyVelocity.Parent then
-                        bodyVelocity.Velocity = Vector3.new(0, SLOW_FALL_SPEED, 0)
-                    end
-                end)
+        -- Check for jump inputs
+        if input.KeyCode == Enum.KeyCode.Space or input.KeyCode == Enum.KeyCode.ButtonA then
+            isJumpInput = true
+        elseif input.UserInputType == Enum.UserInputType.Touch then
+            -- Double tap detection for mobile
+            if currentTime - lastTapTime <= DOUBLE_TAP_DELAY then
+                isJumpInput = true
+                print("🎯 Double tap detected - jumping!")
             end
+            lastTapTime = currentTime
+        end
+        
+        -- Perform jump if input detected
+        if isJumpInput then
+            performJump()
         end
     end)
 end
