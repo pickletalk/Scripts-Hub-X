@@ -440,7 +440,7 @@ local function tweenToBase()
     stealGrappleConnection = task.spawn(function()
         while tweenToBaseEnabled do
             equipAndFireGrapple()
-            task.wait(0.2)
+            task.wait(3)
         end
     end)
 
@@ -451,7 +451,7 @@ local function tweenToBase()
         -- Update position in case character moved slightly
         local currentPos = humanoidRootPart.Position
         local baseDistance = (basePosition - currentPos).Magnitude
-        local baseTime = baseDistance / 20 -- 15 studs per second to base
+        local baseTime = baseDistance / 15 -- 15 studs per second to base
         
         print("🎯 Phase 2: Moving to base")
         print("📏 Distance to base: " .. math.floor(baseDistance) .. " studs")
@@ -463,7 +463,7 @@ local function tweenToBase()
         
         -- Calculate velocity direction for 15 studs/second
         local direction = (basePosition - humanoidRootPart.Position).Unit
-        bodyVelocity.Velocity = direction * 20 -- 15 studs per second
+        bodyVelocity.Velocity = direction * 15 -- 15 studs per second
         bodyVelocity.Parent = humanoidRootPart
         
         -- Timer for base movement
@@ -515,7 +515,7 @@ local function tweenToBase()
         if not tweenToBaseEnabled then return end
         
         local carpetDistance = (carpetPosition - humanoidRootPart.Position).Magnitude
-        local carpetTime = carpetDistance / 20 -- 15 studs per second to carpet
+        local carpetTime = carpetDistance / 15 -- 15 studs per second to carpet
         
         print("🟫 Phase 1: Moving to carpet")
         print("📏 Distance to carpet: " .. math.floor(carpetDistance) .. " studs")
@@ -527,7 +527,7 @@ local function tweenToBase()
         
         -- Calculate velocity direction for 15 studs/second
         local direction = (carpetPosition - humanoidRootPart.Position).Unit
-        bodyVelocity.Velocity = direction * 20 -- 15 studs per second
+        bodyVelocity.Velocity = direction * 15 -- 15 studs per second
         bodyVelocity.Parent = humanoidRootPart
         
         -- Timer to stop movement and proceed to next phase
