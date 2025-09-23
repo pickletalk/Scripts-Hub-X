@@ -759,7 +759,7 @@ local function enableWallTransparency()
     -- GRAPPLE HOOK FUNCTIONALITY - END
     
     wallButton.BackgroundColor3 = Color3.fromRGB(150, 50, 0)
-    wallButton.Text = "🔷 FLOOR STEAL/ELEVATE 🔷"
+    wallButton.Text = "🔷 FLOOR STEAL 🔷"
     
     local floatStatus = platformEnabled and "ON" or "OFF"
     statusLabel.Text = "Float: " .. floatStatus .. " | Walls: ON"
@@ -808,7 +808,7 @@ local function disableWallTransparency()
     end
     
     wallButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    wallButton.Text = "🔷 FLOOR STEAL/ELEVATE 🔷"
+    wallButton.Text = "🔷 FLOOR STEAL 🔷"
     
     local floatStatus = platformEnabled and "ON" or "OFF"
     statusLabel.Text = "Float: " .. floatStatus .. " | Walls: OFF"
