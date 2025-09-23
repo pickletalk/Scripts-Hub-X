@@ -389,7 +389,7 @@ local function applySlowFall()
                     -- Force jump
                     humanoid.Jump = true
                     equipAndFireGrapple()
-                    bodyVelocity.Velocity = Vector3.new(0, 40, 0) -- Jump velocity
+                    bodyVelocity.Velocity = CFrame.new(0, 40, 0) -- Jump velocity
                     equipAndFireGrapple()
                     
                     -- Reset to slow fall after a brief moment
