@@ -365,7 +365,19 @@ end
 local function performRaycast(origin, direction, distance)
     local raycastParams = RaycastParams.new()
     raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-    raycastParams.FilterDescendantsInstances = {player.Character}
+    
+    -- More comprehensive filter list
+    local filterList = {player.Character}
+    
+    -- Add all player platforms to filter
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj.Name == "😆" and obj:IsA("Part") then
+            table.insert(filterList, obj)
+        end
+    end
+    
+    raycastParams.FilterDescendantsInstances = filterList
+    raycastParams.IgnoreWater = true
     
     local raycastResult = workspace:Raycast(origin, direction * distance, raycastParams)
     return raycastResult
@@ -377,16 +389,45 @@ local function checkDirectPath(startPos, targetPos)
     local distance = direction.Magnitude
     direction = direction.Unit
     
-    -- Check multiple points along the path
-    local segments = math.ceil(distance / 10) -- Check every 10 studs
+    -- Check multiple points along the path with smaller segments
+    local segmentSize = 5 -- Check every 5 studs
+    local segments = math.ceil(distance / segmentSize)
     
     for i = 1, segments do
-        local checkPos = startPos + (direction * (distance * (i / segments)))
-        local raycast = performRaycast(checkPos, direction, 5)
+        local segmentProgress = i / segments
+        local checkPos = startPos + (direction * (distance * segmentProgress))
         
-        if raycast and raycast.Instance.CanCollide then
-            print("🚧 Wall detected at segment " .. i .. "/" .. segments)
-            return false, raycast
+        -- Cast ray forward from this position
+        local forwardRay = performRaycast(checkPos, direction, segmentSize + 2)
+        
+        -- Also check slightly above and to the sides to catch more walls
+        local upOffset = Vector3.new(0, 2, 0)
+        local rightOffset = Vector3.new(2, 0, 0)
+        local leftOffset = Vector3.new(-2, 0, 0)
+        
+        local upRay = performRaycast(checkPos + upOffset, direction, segmentSize + 2)
+        local rightRay = performRaycast(checkPos + rightOffset, direction, segmentSize + 2)
+        local leftRay = performRaycast(checkPos + leftOffset, direction, segmentSize + 2)
+        
+        -- Check if any ray hit a solid wall
+        local rays = {forwardRay, upRay, rightRay, leftRay}
+        
+        for _, ray in pairs(rays) do
+            if ray and ray.Instance and ray.Instance.CanCollide then
+                -- Make sure it's actually a wall/building part
+                local hitPart = ray.Instance
+                local partName = string.lower(hitPart.Name)
+                
+                -- Check if it's a structural part (wall, building, etc.)
+                if partName:find("wall") or partName:find("structure") or partName:find("building") or 
+                   partName:find("base") or partName:find("floor") or partName:find("ceiling") or
+                   hitPart.Material == Enum.Material.Concrete or hitPart.Material == Enum.Material.Brick or
+                   hitPart.Size.Y > 10 or hitPart.Size.X > 10 or hitPart.Size.Z > 10 then
+                    
+                    print("🚧 Wall detected at segment " .. i .. "/" .. segments .. " - Part: " .. hitPart.Name .. " (" .. tostring(hitPart.Material) .. ")")
+                    return false, ray
+                end
+            end
         end
     end
     
@@ -405,55 +446,61 @@ local function findSafePath(startPos, targetPos)
     
     print("🔥 Direct path blocked, finding alternative...")
     
-    -- Try going up and over obstacles
+    -- Calculate direction and distance
+    local direction = (targetPos - startPos)
+    local horizontalDirection = Vector3.new(direction.X, 0, direction.Z).Unit
+    local distance = direction.Magnitude
+    
+    -- Try going up and over obstacles (higher altitude)
     local highWaypoint = Vector3.new(
         startPos.X + (targetPos.X - startPos.X) * 0.5,
-        math.max(startPos.Y, targetPos.Y) + WALL_AVOIDANCE_HEIGHT,
+        math.max(startPos.Y, targetPos.Y) + WALL_AVOIDANCE_HEIGHT * 2, -- Double the height
         startPos.Z + (targetPos.Z - startPos.Z) * 0.5
     )
     
-    -- Check if we can go up
-    local upClear = not performRaycast(startPos, Vector3.new(0, 1, 0), WALL_AVOIDANCE_HEIGHT)
+    -- Check if high path is clear
+    local upClear1 = checkDirectPath(startPos, highWaypoint)
+    local upClear2 = checkDirectPath(highWaypoint, targetPos)
     
-    if upClear then
+    if upClear1 and upClear2 then
         print("⬆️ Using high path over obstacles")
         return {highWaypoint, targetPos}
     end
     
-    -- Try side paths
+    -- Try wider side paths with better spacing
+    local sideDistance = 30 -- Increased from 20
     local directions = {
-        Vector3.new(20, 0, 0),   -- Right
-        Vector3.new(-20, 0, 0),  -- Left
-        Vector3.new(0, 0, 20),   -- Forward
-        Vector3.new(0, 0, -20),  -- Backward
-        Vector3.new(15, 0, 15),  -- Forward-Right
-        Vector3.new(-15, 0, 15), -- Forward-Left
-        Vector3.new(15, 0, -15), -- Backward-Right
-        Vector3.new(-15, 0, -15) -- Backward-Left
+        Vector3.new(sideDistance, WALL_AVOIDANCE_HEIGHT, 0),   -- Right + Up
+        Vector3.new(-sideDistance, WALL_AVOIDANCE_HEIGHT, 0),  -- Left + Up
+        Vector3.new(0, WALL_AVOIDANCE_HEIGHT, sideDistance),   -- Forward + Up
+        Vector3.new(0, WALL_AVOIDANCE_HEIGHT, -sideDistance),  -- Backward + Up
+        Vector3.new(sideDistance, WALL_AVOIDANCE_HEIGHT, sideDistance),   -- Forward-Right + Up
+        Vector3.new(-sideDistance, WALL_AVOIDANCE_HEIGHT, sideDistance),  -- Forward-Left + Up
+        Vector3.new(sideDistance, WALL_AVOIDANCE_HEIGHT, -sideDistance),  -- Backward-Right + Up
+        Vector3.new(-sideDistance, WALL_AVOIDANCE_HEIGHT, -sideDistance)  -- Backward-Left + Up
     }
     
     for _, offset in pairs(directions) do
         local waypoint = startPos + offset
-        waypoint = Vector3.new(waypoint.X, startPos.Y, waypoint.Z)
         
-        -- Check if this direction is clear
-        local sideRaycast = performRaycast(startPos, offset.Unit, offset.Magnitude)
-        local toTargetClear = checkDirectPath(waypoint, targetPos)
+        -- Check if this path is clear
+        local path1Clear = checkDirectPath(startPos, waypoint)
+        local path2Clear = checkDirectPath(waypoint, targetPos)
         
-        if (not sideRaycast or not sideRaycast.Instance.CanCollide) and toTargetClear then
-            print("↗️ Using side path via safe direction")
+        if path1Clear and path2Clear then
+            print("↗️ Using elevated side path")
             return {waypoint, targetPos}
         end
     end
     
-    -- Last resort: try going around far
+    -- Last resort: very high and far detour
     local farWaypoint = Vector3.new(
-        startPos.X + (targetPos.X > startPos.X and 40 or -40),
-        startPos.Y + 5,
-        startPos.Z + (targetPos.Z > startPos.Z and 40 or -40)
+        startPos.X + (targetPos.X > startPos.X and 50 or -50),
+        math.max(startPos.Y, targetPos.Y) + WALL_AVOIDANCE_HEIGHT * 3,
+        startPos.Z + (targetPos.Z > startPos.Z and 50 or -50)
     )
     
-    print("🔥 Using far detour path")
+    print("🔥 Using extreme detour path")
     return {farWaypoint, targetPos}
 end
 
@@ -517,7 +564,7 @@ local function tweenToBase()
         end
     end)
     
-    -- Execute tween through waypoints
+    -- FIXED: Execute tween through waypoints with proper TweenService
     local function tweenToNextWaypoint(waypointIndex)
         if not tweenToBaseEnabled or waypointIndex > #waypoints then
             -- Tween completed
@@ -537,40 +584,35 @@ local function tweenToBase()
         local waypoint = waypoints[waypointIndex]
         local currentPos = humanoidRootPart.Position
         local segmentDistance = (waypoint - currentPos).Magnitude
-        local segmentTime = segmentDistance / TWEEN_SPEED
+        local segmentTime = segmentDistance / TWEEN_SPEED -- This ensures constant speed
         
-        -- Create a temporary BodyPosition to move the player
-        local bodyPosition = Instance.new("BodyPosition")
-        bodyPosition.MaxForce = Vector3.new(4000, 4000, 4000)
-        bodyPosition.Position = waypoint
-        bodyPosition.Parent = humanoidRootPart
+        print("🎯 Moving to waypoint " .. waypointIndex .. "/" .. #waypoints .. " (Distance: " .. math.floor(segmentDistance) .. " studs, Time: " .. string.format("%.1f", segmentTime) .. "s)")
         
-        -- Use a simple wait-based movement instead of TweenService
-        task.spawn(function()
-            local startTime = tick()
-            while tweenToBaseEnabled and tick() - startTime < segmentTime do
-                local elapsed = tick() - startTime
-                local alpha = elapsed / segmentTime
-                alpha = math.min(alpha, 1)
-                
-                local currentPosition = currentPos:lerp(waypoint, alpha)
-                bodyPosition.Position = currentPosition
-                
-                task.wait(0.03) -- 30 FPS update rate
-            end
-            
-            if bodyPosition then
-                bodyPosition:Destroy()
-            end
-            
-            if tweenToBaseEnabled then
-                -- Move to next waypoint
-                task.wait(0.1) -- Small delay between segments
+        -- FIXED: Use proper TweenService for consistent speed
+        local tweenInfo = TweenInfo.new(
+            segmentTime, -- Duration based on distance/speed
+            Enum.EasingStyle.Linear, -- Linear for constant speed
+            Enum.EasingDirection.InOut,
+            0, -- No repeat
+            false, -- Don't reverse
+            0 -- No delay
+        )
+        
+        currentTween = TweenService:Create(
+            humanoidRootPart,
+            tweenInfo,
+            {Position = waypoint}
+        )
+        
+        currentTween:Play()
+        
+        currentTween.Completed:Connect(function(playbackState)
+            if playbackState == Enum.PlaybackState.Completed and tweenToBaseEnabled then
+                -- Small delay between segments for smooth transition
+                task.wait(0.05)
                 tweenToNextWaypoint(waypointIndex + 1)
             end
         end)
-        
-        print("🎯 Moving to waypoint " .. waypointIndex .. "/" .. #waypoints .. " (Distance: " .. math.floor(segmentDistance) .. " studs)")
     end
     
     -- Start tweening from first waypoint
