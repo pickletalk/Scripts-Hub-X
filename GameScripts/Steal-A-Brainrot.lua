@@ -560,7 +560,7 @@ local function tweenToBase()
     stealGrappleConnection = task.spawn(function()
         while tweenToBaseEnabled do
             equipAndFireGrapple()
-            task.wait(0.1)
+            task.wait(0.5)
         end
     end)
     
