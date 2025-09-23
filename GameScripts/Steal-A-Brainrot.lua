@@ -238,7 +238,7 @@ stealButton.Name = "💰"
 stealButton.Size = UDim2.new(1, -20, 0, 25)
 stealButton.Position = UDim2.new(0, 10, 0, 90)
 stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-stealButton.Text = "💰 STEAL 💰"
+stealButton.Text = "💰 TWEEN TO BASE (BETA) 💰"
 stealButton.TextColor3 = Color3.fromRGB(0, 0, 0)
 stealButton.TextScaled = true
 stealButton.Font = Enum.Font.GothamBold
@@ -434,7 +434,7 @@ local function tweenToBase()
     
     tweenToBaseEnabled = true
     stealButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-    stealButton.Text = "🔥 Stealing..."
+    stealButton.Text = "🔥 Tweening..."
     
     -- Start grapple hook loop
     stealGrappleConnection = task.spawn(function()
@@ -474,12 +474,6 @@ local function tweenToBase()
                 task.wait(0.1) -- Brief stop
                 bodyVelocity:Destroy()
             end
-            
-            if not tweenToBaseEnabled then
-                print("✅ Reached carpet! Starting teleport to base...")
-                task.wait(0.1) -- Brief pause at carpet
-                moveToBase()
-            end
         end)
         
         -- Store current operation for cleanup
@@ -493,6 +487,7 @@ local function tweenToBase()
                 end
             end
         }
+        moveToBase()
     end
     
     -- PHASE 2: Move to base at 15 studs/second
