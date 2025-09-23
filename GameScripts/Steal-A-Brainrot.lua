@@ -132,8 +132,8 @@ local currentTween = nil
 local stealGrappleConnection = nil
 local lastClickTime = 0
 local DOUBLE_CLICK_PREVENTION_TIME = 1.5
-local RAYCAST_DISTANCE = 30
-local TWEEN_SPEED = 40
+local RAYCAST_DISTANCE = 40
+local TWEEN_SPEED = 20
 local WALL_AVOIDANCE_HEIGHT = 10
 
 -- ESP variables
