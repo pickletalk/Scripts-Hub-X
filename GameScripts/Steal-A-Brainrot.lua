@@ -339,27 +339,52 @@ local function applySlowFall()
         bodyVelocity.Velocity = Vector3.new(0, SLOW_FALL_SPEED, 0) -- Slow downward movement
         bodyVelocity.Parent = rootPart
     end
-
-    -- Allow jumping while maintaining slow fall
+    
+    -- Handle jumping and falling states
     task.spawn(function()
         while platformEnabled do
-            if humanoid and humanoid.Parent then
-                -- Only force falling state if not jumping
-                if humanoid:GetState() ~= Enum.HumanoidStateType.Jumping then
+            if humanoid and humanoid.Parent and bodyVelocity and bodyVelocity.Parent then
+                local currentState = humanoid:GetState()
+                
+                -- If player is jumping, allow normal jump velocity
+                if currentState == Enum.HumanoidStateType.Jumping then
+                    bodyVelocity.Velocity = Vector3.new(0, 50, 0) -- Normal jump power
+                    -- Wait for jump to finish
+                    humanoid.StateChanged:Wait()
+                elseif rootPart.Velocity.Y < -1 then -- Only apply slow fall when actually falling fast
                     humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
-                end
-                -- Update velocity to maintain slow fall (but allow jump velocity override)
-                if bodyVelocity and bodyVelocity.Parent then
-                    local currentVelocity = bodyVelocity.Velocity
-                    -- If player is jumping, don't override Y velocity
-                    if humanoid:GetState() == Enum.HumanoidStateType.Jumping then
-                        bodyVelocity.Velocity = Vector3.new(0, math.max(currentVelocity.Y, 0), 0)
-                    else
-                        bodyVelocity.Velocity = Vector3.new(0, SLOW_FALL_SPEED, 0)
-                    end
+                    bodyVelocity.Velocity = Vector3.new(0, SLOW_FALL_SPEED, 0)
                 end
             end
             task.wait(0.1)
+        end
+    end)
+    
+    -- Handle jump input for ALL devices (PC, Mobile, Xbox, etc.)
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        
+        -- Support multiple input types
+        local isJumpInput = (
+            input.KeyCode == Enum.KeyCode.Space or -- PC Space
+            input.KeyCode == Enum.KeyCode.ButtonA or -- Xbox Controller A
+            input.UserInputType == Enum.UserInputType.Touch -- Mobile touch (jump button)
+        )
+        
+        if isJumpInput and platformEnabled then
+            if humanoid and bodyVelocity and bodyVelocity.Parent then
+                -- Force jump
+                humanoid.Jump = true
+                bodyVelocity.Velocity = Vector3.new(0, 50, 0) -- Jump velocity
+                
+                -- Reset to slow fall after a brief moment
+                task.spawn(function()
+                    task.wait(0.5)
+                    if platformEnabled and bodyVelocity and bodyVelocity.Parent then
+                        bodyVelocity.Velocity = Vector3.new(0, SLOW_FALL_SPEED, 0)
+                    end
+                end)
+            end
         end
     end)
 end
