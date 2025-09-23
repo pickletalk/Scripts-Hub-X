@@ -210,7 +210,7 @@ wallButton.Name = "detect"
 wallButton.Size = UDim2.new(0, 130, 0, 35)
 wallButton.Position = UDim2.new(0, 150, 0, 45)
 wallButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-wallButton.Text = "🔷 FLOOR STEAL/ELEVATE 🔷"
+wallButton.Text = "🔷 FLOOR STEAL 🔷"
 wallButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 wallButton.TextScaled = true
 wallButton.Font = Enum.Font.GothamBold
@@ -339,16 +339,24 @@ local function applySlowFall()
         bodyVelocity.Velocity = Vector3.new(0, SLOW_FALL_SPEED, 0) -- Slow downward movement
         bodyVelocity.Parent = rootPart
     end
-    
-    -- Force the character into falling state to trigger animation
+
+    -- Allow jumping while maintaining slow fall
     task.spawn(function()
         while platformEnabled do
             if humanoid and humanoid.Parent then
-                -- Keep forcing falling state
-                humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
-                -- Update velocity to maintain slow fall
+                -- Only force falling state if not jumping
+                if humanoid:GetState() ~= Enum.HumanoidStateType.Jumping then
+                    humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
+                end
+                -- Update velocity to maintain slow fall (but allow jump velocity override)
                 if bodyVelocity and bodyVelocity.Parent then
-                    bodyVelocity.Velocity = Vector3.new(0, SLOW_FALL_SPEED, 0)
+                    local currentVelocity = bodyVelocity.Velocity
+                    -- If player is jumping, don't override Y velocity
+                    if humanoid:GetState() == Enum.HumanoidStateType.Jumping then
+                        bodyVelocity.Velocity = Vector3.new(0, math.max(currentVelocity.Y, 0), 0)
+                    else
+                        bodyVelocity.Velocity = Vector3.new(0, SLOW_FALL_SPEED, 0)
+                    end
                 end
             end
             task.wait(0.1)
