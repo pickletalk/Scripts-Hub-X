@@ -561,7 +561,7 @@ getFreeKeyButton.MouseButton1Click:Connect(function()
         
         -- Open the HTML page (you'll need to host this somewhere)
         if setclipboard then
-            setclipboard("https://your-domain.com/keysystem.html")
+            setclipboard("https://pickletalk.github.io/scripts-hub-x-key-system/")
             getFreeKeyButton.Text = "Link Copied!"
             getFreeKeyButton.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
             statusLabel.Text = "Key generator link copied! Paste in browser."
@@ -572,7 +572,7 @@ getFreeKeyButton.MouseButton1Click:Connect(function()
             statusLabel.Text = "Get FREE key from our website or buy premium!"
             statusLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
         else
-            statusLabel.Text = "Please visit: your-domain.com/keysystem.html"
+            statusLabel.Text = "Please visit: https://pickletalk.github.io/scripts-hub-x-key-system/"
             statusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
         end
     end)
