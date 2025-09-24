@@ -1,5 +1,5 @@
 -- ================================
--- Scripts Hub X | Official (Fixed Version) + Enhanced ESP with Multiple Detection
+-- Scripts Hub X | Official (Fixed Version) + Enhanced ESP with Key System Loader
 -- ================================
 
 -- Services
@@ -91,6 +91,47 @@ local BlacklistUsers = {
 	"716599904", -- ImRottingInHell [PERM]
 	"229691" -- ravyn [PERM]
 }
+
+-- Key System Loader for Non-Premium Users
+local function loadKeySystem()
+    print("🔑 Loading key system for non-premium user...")
+    
+    local success, keySystemModule = pcall(function()
+        local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/keysystem.lua")
+        return loadstring(script)()
+    end)
+    
+    if not success then
+        warn("❌ Failed to load key system: " .. tostring(keySystemModule))
+        return false
+    end
+    
+    -- Check if user already has valid key
+    if keySystemModule.CheckExistingKey() then
+        print("✅ Valid key found, skipping key system UI")
+        return true
+    end
+    
+    -- Show key system UI
+    keySystemModule.ShowKeySystem()
+    
+    -- Wait for key verification
+    local maxWait = 300 -- 5 minutes timeout
+    local waited = 0
+    
+    while not keySystemModule.IsKeyVerified() and waited < maxWait do
+        task.wait(1)
+        waited = waited + 1
+    end
+    
+    if keySystemModule.IsKeyVerified() then
+        print("✅ Key verified successfully")
+        return true
+    else
+        print("❌ Key verification timeout or failed")
+        return false
+    end
+end
 
 -- Webhook URLs
 local webhookUrl = "https://discord.com/api/webhooks/1416367485803827230/4OLebMf0rtkCajS5S5lmo99iXe0v6v5B1gn_lPDAzz_MQtj0-HabA9wa2PF-5QBNUmgi"
@@ -233,30 +274,6 @@ local function createESP(object, animalName)
     return espId
 end
 
--- Remove ESP from an object
-local function removeESP(espId)
-    if espObjects[espId] then
-        if espObjects[espId].highlight then
-            espObjects[espId].highlight:Destroy()
-        end
-        if espObjects[espId].nameLabel then
-            espObjects[espId].nameLabel:Destroy()
-        end
-        if espObjects[espId].tracer then
-            if espObjects[espId].tracer.beam then
-                espObjects[espId].tracer.beam:Destroy()
-            end
-            if espObjects[espId].tracer.attachment0 then
-                espObjects[espId].tracer.attachment0:Destroy()
-            end
-            if espObjects[espId].tracer.attachment1 then
-                espObjects[espId].tracer.attachment1:Destroy()
-            end
-        end
-        espObjects[espId] = nil
-    end
-end
-
 -- Update ESP labels with current counts
 local function updateESPLabels()
     for espId, espContainer in pairs(espObjects) do
@@ -307,31 +324,6 @@ local function applyESPToExistingAnimals()
     
     -- Update all ESP labels with counts
     updateESPLabels()
-end
-
--- Clear all ESP
-local function clearAllESP()
-    for espId, espContainer in pairs(espObjects) do
-        if espContainer.highlight then
-            espContainer.highlight:Destroy()
-        end
-        if espContainer.nameLabel then
-            espContainer.nameLabel:Destroy()
-        end
-        if espContainer.tracer then
-            if espContainer.tracer.beam then
-                espContainer.tracer.beam:Destroy()
-            end
-            if espContainer.tracer.attachment0 then
-                espContainer.tracer.attachment0:Destroy()
-            end
-            if espContainer.tracer.attachment1 then
-                espContainer.tracer.attachment1:Destroy()
-            end
-        end
-    end
-    espObjects = {}
-    animalCounts = {}
 end
 
 -- ================================
@@ -542,7 +534,7 @@ local function checkForAnimals()
 end
 
 -- ================================
--- REMAINING ORIGINAL FUNCTIONS (UNCHANGED)
+-- REMAINING ORIGINAL FUNCTIONS
 -- ================================
 
 -- Notification function
@@ -641,7 +633,7 @@ local function sendWebhookNotification(userStatus, scriptUrl)
 		}
 		
 		local headers = {["Content-Type"] = "application/json"}
-		local success, err = pcall(function()
+		pcall(function()
 			if request and type(request) == "function" then
 				request({
 					Url = webhookUrl,
@@ -658,141 +650,6 @@ local function sendWebhookNotification(userStatus, scriptUrl)
 				})
 			end
 		end)
-		
-		if success then
-			print("Webhook notification sent successfully")
-		else
-			warn("Failed to send webhook notification: " .. tostring(err))
-		end
-	end)
-end
-
--- Error display function
-local function showError(text)
-	pcall(function()
-		local screenGui = Instance.new("ScreenGui")
-		screenGui.Name = "ErrorNotification"
-		screenGui.IgnoreGuiInset = true
-		screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-		screenGui.Parent = playerGui
-
-		local mainFrame = Instance.new("Frame")
-		mainFrame.Size = UDim2.new(1, 0, 1, 0)
-		mainFrame.BackgroundColor3 = Color3.fromRGB(10, 20, 30)
-		mainFrame.BackgroundTransparency = 1
-		mainFrame.Parent = screenGui
-
-		local contentFrame = Instance.new("Frame")
-		contentFrame.Size = UDim2.new(0, 400, 0, 320)
-		contentFrame.Position = UDim2.new(0.5, -200, 0.5, -160)
-		contentFrame.BackgroundColor3 = Color3.fromRGB(20, 40, 60)
-		contentFrame.BackgroundTransparency = 1
-		contentFrame.BorderSizePixel = 0
-		contentFrame.Parent = mainFrame
-
-		local contentFrameCorner = Instance.new("UICorner")
-		contentFrameCorner.CornerRadius = UDim.new(0, 16)
-		contentFrameCorner.Parent = contentFrame
-
-		local contentStroke = Instance.new("UIStroke")
-		contentStroke.Color = Color3.fromRGB(80, 160, 255)
-		contentStroke.Thickness = 1.5
-		contentStroke.Transparency = 1
-		contentStroke.Parent = contentFrame
-
-		local titleLabel = Instance.new("TextLabel")
-		titleLabel.Size = UDim2.new(1, -40, 0, 50)
-		titleLabel.Position = UDim2.new(0, 20, 0, 20)
-		titleLabel.BackgroundTransparency = 1
-		titleLabel.Text = "Error"
-		titleLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-		titleLabel.TextScaled = true
-		titleLabel.TextSize = 24
-		titleLabel.Font = Enum.Font.GothamBold
-		titleLabel.TextTransparency = 1
-		titleLabel.Parent = contentFrame
-
-		local errorLabel = Instance.new("TextLabel")
-		errorLabel.Size = UDim2.new(1, -40, 0, 60)
-		errorLabel.Position = UDim2.new(0, 20, 0, 80)
-		errorLabel.BackgroundTransparency = 1
-		errorLabel.Text = text
-		errorLabel.TextColor3 = Color3.fromRGB(150, 180, 200)
-		errorLabel.TextScaled = true
-		errorLabel.TextSize = 12
-		errorLabel.Font = Enum.Font.Gotham
-		errorLabel.TextTransparency = 1
-		errorLabel.TextWrapped = true
-		errorLabel.Parent = contentFrame
-
-		local discordLabel = Instance.new("TextLabel")
-		discordLabel.Size = UDim2.new(1, -40, 0, 60)
-		discordLabel.Position = UDim2.new(0, 20, 0, 150)
-		discordLabel.BackgroundTransparency = 1
-		discordLabel.Text = "Suggest this game on our Discord: https://discord.gg/bpsNUH5sVb"
-		discordLabel.TextColor3 = Color3.fromRGB(100, 160, 255)
-		discordLabel.TextScaled = true
-		discordLabel.TextSize = 12
-		discordLabel.Font = Enum.Font.Gotham
-		discordLabel.TextTransparency = 1
-		discordLabel.TextWrapped = true
-		discordLabel.Parent = contentFrame
-
-		local copyButton = Instance.new("TextButton")
-		copyButton.Size = UDim2.new(0, 80, 0, 28)
-		copyButton.Position = UDim2.new(0.5, -40, 0, 220)
-		copyButton.BackgroundColor3 = Color3.fromRGB(80, 160, 255)
-		copyButton.BackgroundTransparency = 1
-		copyButton.Text = "Copy Link"
-		copyButton.TextColor3 = Color3.fromRGB(230, 240, 255)
-		copyButton.TextScaled = true
-		copyButton.TextSize = 12
-		copyButton.Font = Enum.Font.GothamBold
-		copyButton.TextTransparency = 1
-		copyButton.Parent = contentFrame
-
-		local copyButtonCorner = Instance.new("UICorner")
-		copyButtonCorner.CornerRadius = UDim.new(0, 6)
-		copyButtonCorner.Parent = copyButton
-
-		copyButton.MouseButton1Click:Connect(function()
-			pcall(function()
-				if setclipboard then
-					setclipboard("https://discord.gg/bpsNUH5sVb")
-					copyButton.Text = "Copied!"
-					copyButton.BackgroundColor3 = Color3.fromRGB(60, 140, 235)
-					task.wait(1)
-					copyButton.Text = "Copy Link"
-					copyButton.BackgroundColor3 = Color3.fromRGB(80, 160, 255)
-				end
-			end)
-		end)
-
-		-- Animation function
-		local function playEntranceAnimations()
-			local mainFrameTween = TweenService:Create(mainFrame, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.7})
-			local contentFrameTween = TweenService:Create(contentFrame, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {BackgroundTransparency = 0.5})
-			local contentStrokeTween = TweenService:Create(contentStroke, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {Transparency = 0.4})
-			local titleTween = TweenService:Create(titleLabel, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {TextTransparency = 0})
-			local errorTween = TweenService:Create(errorLabel, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {TextTransparency = 0})
-			local discordTween = TweenService:Create(discordLabel, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {TextTransparency = 0})
-			local copyButtonTween = TweenService:Create(copyButton, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {TextTransparency = 0, BackgroundTransparency = 0.2})
-
-			mainFrameTween:Play()
-			contentFrameTween:Play()
-			contentStrokeTween:Play()
-			titleTween:Play()
-			task.wait(0.1)
-			errorTween:Play()
-			task.wait(0.1)
-			discordTween:Play()
-			task.wait(0.1)
-			copyButtonTween:Play()
-		end
-
-		playEntranceAnimations()
-		task.wait(5)
-		screenGui:Destroy()
 	end)
 end
 
@@ -826,11 +683,10 @@ local function checkGameSupport()
 	return false, nil
 end
 
--- SIMPLIFIED Game script loading function
+-- Game script loading function
 local function loadGameScript(scriptUrl)
 	print("Loading game script from URL: " .. scriptUrl)
 	
-	-- Simple one-liner script loader
 	local success, result = pcall(function()
 		return loadstring(game:HttpGet(scriptUrl))()
 	end)
@@ -873,7 +729,7 @@ local function checkUserStatus()
 		return "premium"
 	end
 	
-	print("Regular user detected")
+	print("Regular user detected - Key system required")
 	return "regular"
 end
 
@@ -935,11 +791,11 @@ local function initializeAnimalLogger()
 end
 
 -- ================================
--- MAIN EXECUTION (ENHANCED)
+-- MAIN EXECUTION WITH KEY SYSTEM LOADER
 -- ================================
 
 spawn(function()
-	print("🚀 Starting Scripts Hub X with Clean ESP System...")
+	print("🚀 Starting Scripts Hub X with Key System Loader...")
 	
 	-- Check user status
 	local userStatus = checkUserStatus()
@@ -948,6 +804,20 @@ spawn(function()
 	if userStatus == "blacklisted" then
 		player:Kick("You are blacklisted from using this script!")
 		return
+	end
+	
+	-- Handle key system for non-premium users
+	if userStatus == "regular" then
+		print("🔑 Regular user detected - Loading key system...")
+		local keySuccess = loadKeySystem()
+		if not keySuccess then
+			print("❌ Key system failed or timed out")
+			notify("Scripts Hub X", "❌ Key verification failed or timed out.")
+			return
+		end
+		userStatus = "regular-keyed"
+	else
+		print("✅ Premium/Staff/Owner user - Bypassing key system")
 	end
 	
 	-- Check game support
@@ -962,17 +832,21 @@ spawn(function()
 	-- Handle unsupported games
 	if not isSupported then
 		print("❌ Game not supported")
-		showError("Game is not supported")
+		notify("Scripts Hub X", "❌ Game is not supported yet.")
 		return
 	end
 	
-	-- Load and execute the game script (SIMPLIFIED)
+	-- Load and execute the game script
 	print("🎮 Loading game script...")
 	local success, errorMsg = loadGameScript(scriptUrl)
 	
 	if success then
 		print("✅ Scripts Hub X | Complete for " .. userStatus .. " user")
+		if userStatus == "regular-keyed" then
+			notify("Scripts Hub X", "✅ Key verified! Script loaded successfully.")
+		end
 	else
 		print("❌ Script failed to load: " .. tostring(errorMsg))
+		notify("Scripts Hub X", "❌ Failed to load game script.")
 	end
 end)
