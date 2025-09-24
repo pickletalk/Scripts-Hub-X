@@ -555,13 +555,10 @@ end
 -- Button Events
 getFreeKeyButton.MouseButton1Click:Connect(function()
     print("Get FREE Key button clicked")
-    local success, err = pcall(function()
-        statusLabel.Text = "Opening FREE key generator..."
-        statusLabel.TextColor3 = Color3.fromRGB(76, 175, 80)
-        
+    local success, err = pcall(function()  
         -- Open the HTML page (you'll need to host this somewhere)
         if setclipboard then
-            setclipboard("https://pickletalk.github.io/scripts-hub-x-key-system/")
+            setclipboard("https://workink.net/21Z5/ej1umc5v")
             getFreeKeyButton.Text = "Link Copied!"
             getFreeKeyButton.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
             statusLabel.Text = "Key generator link copied! Paste in browser."
@@ -572,7 +569,7 @@ getFreeKeyButton.MouseButton1Click:Connect(function()
             statusLabel.Text = "Get FREE key from our website or buy premium!"
             statusLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
         else
-            statusLabel.Text = "Please visit: https://pickletalk.github.io/scripts-hub-x-key-system/"
+            statusLabel.Text = "Please visit: https://workink.net/21Z5/ej1umc5v"
             statusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
         end
     end)
