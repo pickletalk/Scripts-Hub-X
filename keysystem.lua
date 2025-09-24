@@ -290,10 +290,10 @@ joinCorner.Parent = joinButton
 local checkKeyButton = Instance.new("TextButton")
 checkKeyButton.Size = UDim2.new(0, 45, 0, 25)
 checkKeyButton.Position = UDim2.new(0, 210, 0, 0)
-checkKeyButton.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
+checkKeyButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
 checkKeyButton.BackgroundTransparency = 1
 checkKeyButton.Text = "Youtube"
-checkKeyButton.TextColor3 = Color3.fromRGB(255, 0, 0)
+checkKeyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 checkKeyButton.TextSize = 8
 checkKeyButton.Font = Enum.Font.GothamBold
 checkKeyButton.TextTransparency = 1
@@ -428,10 +428,10 @@ checkKeyButton.MouseButton1Click:Connect(function()
     local success, err = pcall(function()
         if setclipboard then
             setclipboard("https://youtube.com/@pickletalk1?si=3qmXDIx5StyveZeF")
-            joinButton.Text = "Copied!"
+            checkKeyButton.Text = "Copied!"
             joinButton.BackgroundColor3 = Color3.fromRGB(67, 56, 202)
             wait(1)
-            joinButton.Text = "Youtube"
+            checkKeyButton.Text = "Youtube"
             joinButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
         end
     end)
