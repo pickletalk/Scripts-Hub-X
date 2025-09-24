@@ -1,4 +1,4 @@
--- Scripts Hub X | Enhanced Key System with Custom Free Keys
+-- Scripts Hub X | Enhanced Key System with 24h Expiration
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
@@ -10,129 +10,109 @@ if not playerGui then
     return {}
 end
 
-print("Enhanced Key system started, PlayerGui found")
+print("Enhanced Key system started with 24h expiration")
 
-local service = 5008
-local secret = "dd2c65bc-6361-4147-9a25-246cd334eedd"
-local useNonce = true
-local cachedLink, cachedTime = "", 0
+-- Key Storage and Expiration System
+local keyStorageKey = "ScriptsHubX_KeyData_" .. tostring(player.UserId)
 local verifiedKey = nil
+local keyExpirationTime = 24 * 60 * 60 -- 24 hours in seconds
 
 -- Global request tracking to prevent spam
 local requestSending = false
 
--- Custom FREE key validation patterns
-local validFreeKeyPatterns = {
-    "FREE_%w%w%w%w%w%w%-%w%w%w%w%w%w%-%w%w%w%w%w%w%-%w%w%w%w%w%w", -- FREE_XXXXXX-XXXXXX-XXXXXX-XXXXXX
-    "FREE_[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]%-[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]%-[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]%-[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]"
-}
-
-local function lEncode(data)
-    return HttpService:JSONEncode(data)
-end
-
-local function lDecode(data)
-    return HttpService:JSONDecode(data)
-end
-
-local function lDigest(input)
-    local inputStr = tostring(input)
-    local hash = {}
-    for i = 1, #inputStr do
-        table.insert(hash, string.byte(inputStr, i))
-    end
-    local hashHex = ""
-    for _, byte in ipairs(hash) do
-        hashHex = hashHex .. string.format("%02x", byte)
-    end
-    return hashHex
-end
-
-local function generateNonce()
-    local str = ""
-    for _ = 1, 16 do
-        str = str .. string.char(math.floor(math.random() * (122 - 97 + 1)) + 97)
-    end
-    return str
-end
-
--- Custom FREE key validation function
+-- Custom FREE key validation function with improved error handling
 local function validateCustomFreeKey(key)
+    if not key or key == "" then
+        return false, "Please enter a key."
+    end
+    
     -- Check if key starts with FREE_
-    if not string.sub(key, 1, 5) == "FREE_" then
-        return false
+    if string.sub(key, 1, 5) ~= "FREE_" then
+        return false, "Invalid key format. Key must start with 'FREE_'"
     end
     
     -- Check if key matches the pattern FREE_XXXXXX-XXXXXX-XXXXXX-XXXXXX
     local pattern = "^FREE_[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]%-[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]%-[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]%-[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]$"
     
-    return string.match(key, pattern) ~= nil
-end
-
-local host = "https://api.platoboost.com"
-local hostResponse = request({
-    Url = host .. "/public/connectivity",
-    Method = "GET"
-})
-if hostResponse.StatusCode ~= 200 and hostResponse.StatusCode ~= 429 then
-    host = "https://api.platoboost.net"
-end
-
-local function cacheLink()
-    print("Attempting to cache link...")
-    if cachedTime + (10*60) < os.time() then
-        print("Cache expired, requesting new link...")
-        local success, response = pcall(function()
-            return request({
-                Url = host .. "/public/start",
-                Method = "POST",
-                Body = lEncode({
-                    service = service,
-                    identifier = lDigest(player.UserId)
-                }),
-                Headers = {
-                    ["Content-Type"] = "application/json"
-                }
-            })
-        end)
-        
-        if not success then
-            print("Request failed: " .. tostring(response))
-            return false, "Request failed: " .. tostring(response)
-        end
-        
-        print("Response Status Code: " .. tostring(response.StatusCode))
-        print("Response Body: " .. tostring(response.Body))
-        
-        if response.StatusCode == 200 then
-            local decodeSuccess, decoded = pcall(function()
-                return lDecode(response.Body)
-            end)
-            
-            if not decodeSuccess then
-                print("Failed to decode response: " .. tostring(decoded))
-                return false, "Failed to decode response"
-            end
-            
-            print("Decoded response success: " .. tostring(decoded.success))
-            if decoded.success == true then
-                cachedLink = decoded.data.url
-                cachedTime = os.time()
-                print("Successfully cached link: " .. cachedLink)
-                return true, cachedLink
-            else
-                print("API returned error: " .. tostring(decoded.message))
-                return false, decoded.message or "Unknown API error"
-            end
-        elseif response.StatusCode == 429 then
-            return false, "You are being rate limited, please wait 20 seconds and try again."
-        else
-            return false, "Server returned status code: " .. tostring(response.StatusCode)
-        end
-    else
-        print("Using cached link: " .. cachedLink)
-        return true, cachedLink
+    if not string.match(key, pattern) then
+        return false, "Invalid key format. Please get a new key from our website."
     end
+    
+    return true, "Key format is valid"
+end
+
+-- Save key with timestamp to prevent re-verification
+local function saveKeyData(key)
+    local keyData = {
+        key = key,
+        timestamp = os.time(),
+        userId = player.UserId
+    }
+    
+    local success, err = pcall(function()
+        if writefile then
+            writefile(keyStorageKey .. ".json", HttpService:JSONEncode(keyData))
+        end
+    end)
+    
+    if success then
+        print("Key data saved successfully")
+    else
+        warn("Failed to save key data: " .. tostring(err))
+    end
+end
+
+-- Load and validate saved key data
+local function loadKeyData()
+    local success, result = pcall(function()
+        if readfile and isfile and isfile(keyStorageKey .. ".json") then
+            local data = readfile(keyStorageKey .. ".json")
+            return HttpService:JSONDecode(data)
+        end
+        return nil
+    end)
+    
+    if not success or not result then
+        print("No valid key data found")
+        return nil
+    end
+    
+    -- Check if key is expired (24 hours)
+    local currentTime = os.time()
+    local keyAge = currentTime - result.timestamp
+    
+    if keyAge >= keyExpirationTime then
+        print("Stored key has expired (24+ hours old)")
+        -- Delete expired key file
+        pcall(function()
+            if delfile and isfile and isfile(keyStorageKey .. ".json") then
+                delfile(keyStorageKey .. ".json")
+            end
+        end)
+        return nil
+    end
+    
+    -- Validate key format
+    local isValid, message = validateCustomFreeKey(result.key)
+    if isValid and result.userId == player.UserId then
+        local hoursLeft = math.floor((keyExpirationTime - keyAge) / 3600)
+        local minutesLeft = math.floor(((keyExpirationTime - keyAge) % 3600) / 60)
+        print("Valid key found! Expires in " .. hoursLeft .. "h " .. minutesLeft .. "m")
+        return result
+    else
+        print("Stored key is invalid or belongs to different user")
+        return nil
+    end
+end
+
+-- Check if user has valid non-expired key
+local function checkExistingKey()
+    local keyData = loadKeyData()
+    if keyData then
+        verifiedKey = keyData.key
+        return true
+    end
+    return false
 end
 
 -- Forward declare UI elements
@@ -141,113 +121,26 @@ local statusLabel
 local function verifyKey(key)
     if requestSending then
         if statusLabel then
-            statusLabel.Text = "A request is already being sent, please slow down."
+            statusLabel.Text = "Please wait, verification in progress..."
+            statusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
         end
-        return false
+        return false, "Please wait"
     end
     
     requestSending = true
     
-    -- First check if it's a custom FREE key
-    if validateCustomFreeKey(key) then
-        print("Custom FREE key detected: " .. key)
+    -- Validate custom FREE key
+    local isValid, message = validateCustomFreeKey(key)
+    
+    if isValid then
         verifiedKey = key
+        saveKeyData(key) -- Save key with timestamp
         requestSending = false
-        return true, "Custom free key verified successfully"
+        return true, "Key verified successfully! Valid for 24 hours."
+    else
+        requestSending = false
+        return false, message
     end
-    
-    local success, result = pcall(function()
-        local nonce = generateNonce()
-        local endpoint = host .. "/public/whitelist/" .. tostring(service) .. "?identifier=" .. lDigest(player.UserId) .. "&key=" .. key
-        if useNonce then
-            endpoint = endpoint .. "&nonce=" .. nonce
-        end
-        
-        local response = request({
-            Url = endpoint,
-            Method = "GET"
-        })
-        
-        if response.StatusCode == 200 then
-            local decoded = lDecode(response.Body)
-            if decoded.success == true then
-                if decoded.data.valid == true then
-                    verifiedKey = key
-                    return true, "Key verified successfully"
-                else
-                    -- Handle API-based FREE_ keys
-                    if string.sub(key, 1, 4) == "FREE_" then
-                        local redeemNonce = generateNonce()
-                        local redeemEndpoint = host .. "/public/redeem/" .. tostring(service)
-                        local body = {
-                            identifier = lDigest(player.UserId),
-                            key = key
-                        }
-                        if useNonce then
-                            body.nonce = redeemNonce
-                        end
-                        
-                        local redeemResponse = request({
-                            Url = redeemEndpoint,
-                            Method = "POST",
-                            Body = lEncode(body),
-                            Headers = {
-                                ["Content-Type"] = "application/json"
-                            }
-                        })
-                        
-                        if redeemResponse.StatusCode == 200 then
-                            local redeemDecoded = lDecode(redeemResponse.Body)
-                            if redeemDecoded.success == true then
-                                if redeemDecoded.data.valid == true then
-                                    if useNonce then
-                                        if redeemDecoded.data.hash == lDigest("true" .. "-" .. redeemNonce .. "-" .. secret) then
-                                            verifiedKey = key
-                                            return true, "Free key redeemed successfully"
-                                        else
-                                            return false, "Failed to verify integrity."
-                                        end
-                                    else
-                                        verifiedKey = key
-                                        return true, "Free key redeemed successfully"
-                                    end
-                                else
-                                    return false, "Key is invalid."
-                                end
-                            else
-                                if string.sub(redeemDecoded.message, 1, 27) == "unique constraint violation" then
-                                    return false, "You already have an active key, please wait for it to expire."
-                                else
-                                    return false, redeemDecoded.message
-                                end
-                            end
-                        elseif redeemResponse.StatusCode == 429 then
-                            return false, "You are being rate limited, please wait 20 seconds."
-                        else
-                            return false, "Server returned an invalid status code."
-                        end
-                    else
-                        return false, "Key is invalid."
-                    end
-                end
-            else
-                return false, decoded.message
-            end
-        elseif response.StatusCode == 429 then
-            return false, "You are being rate limited, please wait 20 seconds."
-        else
-            return false, "Server returned an invalid status code."
-        end
-    end)
-    
-    requestSending = false
-    
-    if not success then
-        print("Error in verifyKey: " .. tostring(result))
-        return false, "Verification failed: " .. tostring(result)
-    end
-    
-    return result
 end
 
 local screenGui = Instance.new("ScreenGui")
@@ -327,7 +220,7 @@ statusLabel = Instance.new("TextLabel")
 statusLabel.Size = UDim2.new(1, -30, 0, 30)
 statusLabel.Position = UDim2.new(0, 15, 0, 90)
 statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "Get FREE key from our website or buy premium!"
+statusLabel.Text = "Get FREE key from our website! Valid for 24 hours."
 statusLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
 statusLabel.TextSize = 10
 statusLabel.Font = Enum.Font.Gotham
@@ -393,22 +286,22 @@ local joinCorner = Instance.new("UICorner")
 joinCorner.CornerRadius = UDim.new(0, 8)
 joinCorner.Parent = joinButton
 
--- Get Premium Button
-local getPremiumButton = Instance.new("TextButton")
-getPremiumButton.Size = UDim2.new(0, 45, 0, 25)
-getPremiumButton.Position = UDim2.new(0, 210, 0, 0)
-getPremiumButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-getPremiumButton.BackgroundTransparency = 1
-getPremiumButton.Text = "Premium"
-getPremiumButton.TextColor3 = Color3.fromRGB(0, 0, 0)
-getPremiumButton.TextSize = 8
-getPremiumButton.Font = Enum.Font.GothamBold
-getPremiumButton.TextTransparency = 1
-getPremiumButton.Parent = buttonsFrame
+-- Check Key Button
+local checkKeyButton = Instance.new("TextButton")
+checkKeyButton.Size = UDim2.new(0, 45, 0, 25)
+checkKeyButton.Position = UDim2.new(0, 210, 0, 0)
+checkKeyButton.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
+checkKeyButton.BackgroundTransparency = 1
+checkKeyButton.Text = "Check Key"
+checkKeyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+checkKeyButton.TextSize = 8
+checkKeyButton.Font = Enum.Font.GothamBold
+checkKeyButton.TextTransparency = 1
+checkKeyButton.Parent = buttonsFrame
 
-local getPremiumCorner = Instance.new("UICorner")
-getPremiumCorner.CornerRadius = UDim.new(0, 8)
-getPremiumCorner.Parent = getPremiumButton
+local checkKeyCorner = Instance.new("UICorner")
+checkKeyCorner.CornerRadius = UDim.new(0, 8)
+checkKeyCorner.Parent = checkKeyButton
 
 local isVerified = false
 
@@ -443,7 +336,7 @@ local function ShowKeySystem()
             BackgroundTransparency = 0.3,
             TextTransparency = 0
         })
-        local getPremiumTween = TweenService:Create(getPremiumButton, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        local checkKeyTween = TweenService:Create(checkKeyButton, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             BackgroundTransparency = 0.3,
             TextTransparency = 0
         })
@@ -460,27 +353,11 @@ local function ShowKeySystem()
         verifyTween:Play()
         getFreeKeyTween:Play()
         joinTween:Play()
-        getPremiumTween:Play()
+        checkKeyTween:Play()
         closeTween:Play()
     end)
     if not success then
         warn("Failed to show key system UI: " .. tostring(err))
-        mainFrame.BackgroundTransparency = 0.2
-        uiStroke.Transparency = 0
-        titleLabel.TextTransparency = 0
-        keyInput.BackgroundTransparency = 0.3
-        keyInput.TextTransparency = 0
-        statusLabel.TextTransparency = 0
-        verifyButton.BackgroundTransparency = 0.3
-        verifyButton.TextTransparency = 0
-        getFreeKeyButton.BackgroundTransparency = 0.3
-        getFreeKeyButton.TextTransparency = 0
-        joinButton.BackgroundTransparency = 0.3
-        joinButton.TextTransparency = 0
-        getPremiumButton.BackgroundTransparency = 0.3
-        getPremiumButton.TextTransparency = 0
-        closeButton.BackgroundTransparency = 0.3
-        closeButton.TextTransparency = 0
     end
 end
 
@@ -488,75 +365,28 @@ local function HideKeySystem()
     print("Hiding key system UI")
     local success, err = pcall(function()
         local frameTween = TweenService:Create(mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-            BackgroundTransparency = 1,
-            Size = UDim2.new(0, 280, 0, 220)
+            BackgroundTransparency = 1
         })
-        local strokeTween = TweenService:Create(uiStroke, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-            Transparency = 1
-        })
-        local titleTween = TweenService:Create(titleLabel, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-            TextTransparency = 1
-        })
-        local inputTween = TweenService:Create(keyInput, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-            BackgroundTransparency = 1,
-            TextTransparency = 1
-        })
-        local statusTween = TweenService:Create(statusLabel, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-            TextTransparency = 1
-        })
-        local verifyTween = TweenService:Create(verifyButton, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-            BackgroundTransparency = 1,
-            TextTransparency = 1
-        })
-        local getFreeKeyTween = TweenService:Create(getFreeKeyButton, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-            BackgroundTransparency = 1,
-            TextTransparency = 1
-        })
-        local joinTween = TweenService:Create(joinButton, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-            BackgroundTransparency = 1,
-            TextTransparency = 1
-        })
-        local getPremiumTween = TweenService:Create(getPremiumButton, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-            BackgroundTransparency = 1,
-            TextTransparency = 1
-        })
-        local closeTween = TweenService:Create(closeButton, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-            BackgroundTransparency = 1,
-            TextTransparency = 1
-        })
-        
-        frameTween:Play()
-        strokeTween:Play()
-        titleTween:Play()
-        inputTween:Play()
-        statusTween:Play()
-        verifyTween:Play()
-        getFreeKeyTween:Play()
-        joinTween:Play()
-        getPremiumTween:Play()
-        closeTween:Play()
-        
         frameTween.Completed:Connect(function()
             if screenGui and screenGui.Parent then
                 screenGui:Destroy()
                 print("KeySystemGUI destroyed")
             end
         end)
+        frameTween:Play()
     end)
     if not success then
         warn("Failed to hide key system UI: " .. tostring(err))
-        if screenGui and screenGui.Parent then
-            screenGui:Destroy()
-            print("KeySystemGUI destroyed (fallback)")
-        end
     end
 end
 
 -- Button Events
 getFreeKeyButton.MouseButton1Click:Connect(function()
     print("Get FREE Key button clicked")
-    local success, err = pcall(function()  
-        -- Open the HTML page (you'll need to host this somewhere)
+    local success, err = pcall(function()
+        statusLabel.Text = "Opening key generator..."
+        statusLabel.TextColor3 = Color3.fromRGB(76, 175, 80)
+        
         if setclipboard then
             setclipboard("https://workink.net/21Z5/ej1umc5v")
             getFreeKeyButton.Text = "Link Copied!"
@@ -566,17 +396,15 @@ getFreeKeyButton.MouseButton1Click:Connect(function()
             wait(2)
             getFreeKeyButton.Text = "Get FREE Key"
             getFreeKeyButton.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
-            statusLabel.Text = "Get FREE key from our website or buy premium!"
+            statusLabel.Text = "Get FREE key from our website! Valid for 24 hours."
             statusLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
         else
-            statusLabel.Text = "Please visit: https://workink.net/21Z5/ej1umc5v"
+            statusLabel.Text = "Visit: workink.net/21Z5/ej1umc5v"
             statusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
         end
     end)
     if not success then
         warn("Get FREE Key button failed: " .. tostring(err))
-        statusLabel.Text = "Error: " .. tostring(err)
-        statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
     end
 end)
 
@@ -596,22 +424,19 @@ joinButton.MouseButton1Click:Connect(function()
     end
 end)
 
-getPremiumButton.MouseButton1Click:Connect(function()
-    local success, err = pcall(function()
-        statusLabel.Text = "Contact us on Discord to buy premium keys!"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
+checkKeyButton.MouseButton1Click:Connect(function()
+    local keyData = loadKeyData()
+    if keyData then
+        local currentTime = os.time()
+        local keyAge = currentTime - keyData.timestamp
+        local hoursLeft = math.floor((keyExpirationTime - keyAge) / 3600)
+        local minutesLeft = math.floor(((keyExpirationTime - keyAge) % 3600) / 60)
         
-        if setclipboard then
-            setclipboard("https://discord.gg/bpsNUH5sVb")
-            getPremiumButton.Text = "Link Copied!"
-            wait(2)
-            getPremiumButton.Text = "Premium"
-            statusLabel.Text = "Get FREE key from our website or buy premium!"
-            statusLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
-        end
-    end)
-    if not success then
-        warn("Get Premium button failed: " .. tostring(err))
+        statusLabel.Text = "✅ Key valid! Expires in " .. hoursLeft .. "h " .. minutesLeft .. "m"
+        statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+    else
+        statusLabel.Text = "❌ No valid key found. Get a new key!"
+        statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
     end
 end)
 
@@ -634,24 +459,22 @@ verifyButton.MouseButton1Click:Connect(function()
         
         local verified, message = verifyKey(keyInput.Text)
         if verified then
-            statusLabel.Text = "Key accepted! Loading..."
+            statusLabel.Text = "✅ " .. message
             statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
             isVerified = true
-            wait(1)
+            wait(1.5)
             HideKeySystem()
         else
-            statusLabel.Text = message or "Key verification failed"
+            statusLabel.Text = "❌ " .. message
             statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
             keyInput.Text = ""
-            wait(3)
-            statusLabel.Text = "Get FREE key from our website or buy premium!"
+            wait(4)
+            statusLabel.Text = "Get FREE key from our website! Valid for 24 hours."
             statusLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
         end
     end)
     if not success then
         warn("Verify button failed: " .. tostring(err))
-        statusLabel.Text = "Verification error occurred"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
     end
 end)
 
@@ -659,8 +482,9 @@ end)
 return {
     ShowKeySystem = ShowKeySystem,
     HideKeySystem = HideKeySystem,
-    IsKeyVerified = function() return isVerified end,
+    IsKeyVerified = function() return isVerified or checkExistingKey() end,
     ValidateKey = verifyKey,
     GetEnteredKey = function() return verifiedKey end,
-    getVerifiedKey = function() return verifiedKey end
+    getVerifiedKey = function() return verifiedKey end,
+    CheckExistingKey = checkExistingKey
 }
