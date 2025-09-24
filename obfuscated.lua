@@ -847,6 +847,5 @@ spawn(function()
 		end
 	else
 		print("❌ Script failed to load: " .. tostring(errorMsg))
-		notify("Scripts Hub X", "❌ Failed to load game script.")
 	end
 end)
