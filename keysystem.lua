@@ -203,7 +203,7 @@ keyInput.Size = UDim2.new(1, -30, 0, 35)
 keyInput.Position = UDim2.new(0, 15, 0, 50)
 keyInput.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
 keyInput.BackgroundTransparency = 1
-keyInput.PlaceholderText = "Enter Key Here"
+keyInput.PlaceholderText = "Enter Key"
 keyInput.TextColor3 = Color3.fromRGB(180, 180, 200)
 keyInput.TextSize = 12
 keyInput.Font = Enum.Font.Gotham
@@ -220,7 +220,7 @@ statusLabel = Instance.new("TextLabel")
 statusLabel.Size = UDim2.new(1, -30, 0, 30)
 statusLabel.Position = UDim2.new(0, 15, 0, 90)
 statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "Get FREE key from our website! Valid for 24 hours."
+statusLabel.Text = "Get key from our website! Valid for 24 hours."
 statusLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
 statusLabel.TextSize = 10
 statusLabel.Font = Enum.Font.Gotham
@@ -258,7 +258,7 @@ getFreeKeyButton.Size = UDim2.new(0, 70, 0, 25)
 getFreeKeyButton.Position = UDim2.new(0, 65, 0, 0)
 getFreeKeyButton.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
 getFreeKeyButton.BackgroundTransparency = 1
-getFreeKeyButton.Text = "Get FREE Key"
+getFreeKeyButton.Text = "Get Key"
 getFreeKeyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 getFreeKeyButton.TextSize = 9
 getFreeKeyButton.Font = Enum.Font.GothamBold
@@ -292,8 +292,8 @@ checkKeyButton.Size = UDim2.new(0, 45, 0, 25)
 checkKeyButton.Position = UDim2.new(0, 210, 0, 0)
 checkKeyButton.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
 checkKeyButton.BackgroundTransparency = 1
-checkKeyButton.Text = "Check Key"
-checkKeyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+checkKeyButton.Text = "Youtube"
+checkKeyButton.TextColor3 = Color3.fromRGB(255, 0, 0)
 checkKeyButton.TextSize = 8
 checkKeyButton.Font = Enum.Font.GothamBold
 checkKeyButton.TextTransparency = 1
@@ -394,9 +394,9 @@ getFreeKeyButton.MouseButton1Click:Connect(function()
             statusLabel.Text = "Key generator link copied! Paste in browser."
             statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
             wait(2)
-            getFreeKeyButton.Text = "Get FREE Key"
+            getFreeKeyButton.Text = "Get Key"
             getFreeKeyButton.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
-            statusLabel.Text = "Get FREE key from our website! Valid for 24 hours."
+            statusLabel.Text = "Get key from our website! Valid for 24 hours."
             statusLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
         else
             statusLabel.Text = "Visit: workink.net/21Z5/ej1umc5v"
@@ -425,18 +425,18 @@ joinButton.MouseButton1Click:Connect(function()
 end)
 
 checkKeyButton.MouseButton1Click:Connect(function()
-    local keyData = loadKeyData()
-    if keyData then
-        local currentTime = os.time()
-        local keyAge = currentTime - keyData.timestamp
-        local hoursLeft = math.floor((keyExpirationTime - keyAge) / 3600)
-        local minutesLeft = math.floor(((keyExpirationTime - keyAge) % 3600) / 60)
-        
-        statusLabel.Text = "✅ Key valid! Expires in " .. hoursLeft .. "h " .. minutesLeft .. "m"
-        statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-    else
-        statusLabel.Text = "❌ No valid key found. Get a new key!"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+    local success, err = pcall(function()
+        if setclipboard then
+            setclipboard("https://youtube.com/@pickletalk1?si=3qmXDIx5StyveZeF")
+            joinButton.Text = "Copied!"
+            joinButton.BackgroundColor3 = Color3.fromRGB(67, 56, 202)
+            wait(1)
+            joinButton.Text = "Youtube"
+            joinButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        end
+    end)
+    if not success then
+        warn("YouTube button failed: " .. tostring(err))
     end
 end)
 
@@ -469,7 +469,7 @@ verifyButton.MouseButton1Click:Connect(function()
             statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
             keyInput.Text = ""
             wait(4)
-            statusLabel.Text = "Get FREE key from our website! Valid for 24 hours."
+            statusLabel.Text = "Get key from our website! Valid for 24 hours."
             statusLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
         end
     end)
