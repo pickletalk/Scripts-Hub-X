@@ -1,14 +1,16 @@
--- Scripts Hub X | Key System (Fixed)
+-- Scripts Hub X | Enhanced Key System with Custom Free Keys
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui", 5)
+
 if not playerGui then
     warn("PlayerGui not found after 5 seconds")
     return {}
 end
-print("Key system started, PlayerGui found")
+
+print("Enhanced Key system started, PlayerGui found")
 
 local service = 5008
 local secret = "dd2c65bc-6361-4147-9a25-246cd334eedd"
@@ -18,6 +20,12 @@ local verifiedKey = nil
 
 -- Global request tracking to prevent spam
 local requestSending = false
+
+-- Custom FREE key validation patterns
+local validFreeKeyPatterns = {
+    "FREE_%w%w%w%w%w%w%-%w%w%w%w%w%w%-%w%w%w%w%w%w%-%w%w%w%w%w%w", -- FREE_XXXXXX-XXXXXX-XXXXXX-XXXXXX
+    "FREE_[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]%-[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]%-[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]%-[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]"
+}
 
 local function lEncode(data)
     return HttpService:JSONEncode(data)
@@ -46,6 +54,19 @@ local function generateNonce()
         str = str .. string.char(math.floor(math.random() * (122 - 97 + 1)) + 97)
     end
     return str
+end
+
+-- Custom FREE key validation function
+local function validateCustomFreeKey(key)
+    -- Check if key starts with FREE_
+    if not string.sub(key, 1, 5) == "FREE_" then
+        return false
+    end
+    
+    -- Check if key matches the pattern FREE_XXXXXX-XXXXXX-XXXXXX-XXXXXX
+    local pattern = "^FREE_[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]%-[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]%-[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]%-[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]$"
+    
+    return string.match(key, pattern) ~= nil
 end
 
 local host = "https://api.platoboost.com"
@@ -127,6 +148,14 @@ local function verifyKey(key)
     
     requestSending = true
     
+    -- First check if it's a custom FREE key
+    if validateCustomFreeKey(key) then
+        print("Custom FREE key detected: " .. key)
+        verifiedKey = key
+        requestSending = false
+        return true, "Custom free key verified successfully"
+    end
+    
     local success, result = pcall(function()
         local nonce = generateNonce()
         local endpoint = host .. "/public/whitelist/" .. tostring(service) .. "?identifier=" .. lDigest(player.UserId) .. "&key=" .. key
@@ -146,7 +175,7 @@ local function verifyKey(key)
                     verifiedKey = key
                     return true, "Key verified successfully"
                 else
-                    -- Handle FREE_ keys
+                    -- Handle API-based FREE_ keys
                     if string.sub(key, 1, 4) == "FREE_" then
                         local redeemNonce = generateNonce()
                         local redeemEndpoint = host .. "/public/redeem/" .. tostring(service)
@@ -229,8 +258,8 @@ screenGui.Parent = playerGui
 print("KeySystemGUI created")
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 250, 0, 200)
-mainFrame.Position = UDim2.new(0.5, -125, 0.5, -100)
+mainFrame.Size = UDim2.new(0, 280, 0, 220)
+mainFrame.Position = UDim2.new(0.5, -140, 0.5, -110)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 mainFrame.BackgroundTransparency = 1
 mainFrame.BorderSizePixel = 0
@@ -268,7 +297,7 @@ local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(1, -20, 0, 30)
 titleLabel.Position = UDim2.new(0, 10, 0, 10)
 titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "Key System"
+titleLabel.Text = "🔐 Key System"
 titleLabel.TextColor3 = Color3.fromRGB(0, 120, 220)
 titleLabel.TextSize = 18
 titleLabel.Font = Enum.Font.GothamBold
@@ -293,14 +322,14 @@ local inputCorner = Instance.new("UICorner")
 inputCorner.CornerRadius = UDim.new(0, 10)
 inputCorner.Parent = keyInput
 
--- Status Label (NOW PROPERLY DEFINED)
+-- Status Label
 statusLabel = Instance.new("TextLabel")
 statusLabel.Size = UDim2.new(1, -30, 0, 30)
 statusLabel.Position = UDim2.new(0, 15, 0, 90)
 statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "Get key or join Discord server to buy a premium!"
+statusLabel.Text = "Get FREE key from our website or buy premium!"
 statusLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
-statusLabel.TextSize = 11
+statusLabel.TextSize = 10
 statusLabel.Font = Enum.Font.Gotham
 statusLabel.TextWrapped = true
 statusLabel.TextTransparency = 1
@@ -315,13 +344,13 @@ buttonsFrame.Parent = mainFrame
 
 -- Verify Button
 local verifyButton = Instance.new("TextButton")
-verifyButton.Size = UDim2.new(0, 60, 0, 25)
-verifyButton.Position = UDim2.new(0, 15, 0, 0)
+verifyButton.Size = UDim2.new(0, 50, 0, 25)
+verifyButton.Position = UDim2.new(0, 5, 0, 0)
 verifyButton.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
 verifyButton.BackgroundTransparency = 1
 verifyButton.Text = "Verify"
 verifyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-verifyButton.TextSize = 11
+verifyButton.TextSize = 10
 verifyButton.Font = Enum.Font.GothamBold
 verifyButton.TextTransparency = 1
 verifyButton.Parent = buttonsFrame
@@ -330,15 +359,32 @@ local verifyCorner = Instance.new("UICorner")
 verifyCorner.CornerRadius = UDim.new(0, 8)
 verifyCorner.Parent = verifyButton
 
+-- Get FREE Key Button
+local getFreeKeyButton = Instance.new("TextButton")
+getFreeKeyButton.Size = UDim2.new(0, 70, 0, 25)
+getFreeKeyButton.Position = UDim2.new(0, 65, 0, 0)
+getFreeKeyButton.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
+getFreeKeyButton.BackgroundTransparency = 1
+getFreeKeyButton.Text = "Get FREE Key"
+getFreeKeyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+getFreeKeyButton.TextSize = 9
+getFreeKeyButton.Font = Enum.Font.GothamBold
+getFreeKeyButton.TextTransparency = 1
+getFreeKeyButton.Parent = buttonsFrame
+
+local getFreeKeyCorner = Instance.new("UICorner")
+getFreeKeyCorner.CornerRadius = UDim.new(0, 8)
+getFreeKeyCorner.Parent = getFreeKeyButton
+
 -- Join Discord Button
 local joinButton = Instance.new("TextButton")
-joinButton.Size = UDim2.new(0, 60, 0, 25)
-joinButton.Position = UDim2.new(0, 85, 0, 0)
-joinButton.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
+joinButton.Size = UDim2.new(0, 55, 0, 25)
+joinButton.Position = UDim2.new(0, 145, 0, 0)
+joinButton.BackgroundColor3 = Color3.fromRGB(114, 137, 218)
 joinButton.BackgroundTransparency = 1
-joinButton.Text = "Join Discord"
+joinButton.Text = "Discord"
 joinButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-joinButton.TextSize = 11
+joinButton.TextSize = 9
 joinButton.Font = Enum.Font.GothamBold
 joinButton.TextTransparency = 1
 joinButton.Parent = buttonsFrame
@@ -347,22 +393,22 @@ local joinCorner = Instance.new("UICorner")
 joinCorner.CornerRadius = UDim.new(0, 8)
 joinCorner.Parent = joinButton
 
--- Get Key Button
-local getKeyButton = Instance.new("TextButton")
-getKeyButton.Size = UDim2.new(0, 60, 0, 25)
-getKeyButton.Position = UDim2.new(0, 155, 0, 0)
-getKeyButton.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
-getKeyButton.BackgroundTransparency = 1
-getKeyButton.Text = "Get Key"
-getKeyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-getKeyButton.TextSize = 11
-getKeyButton.Font = Enum.Font.GothamBold
-getKeyButton.TextTransparency = 1
-getKeyButton.Parent = buttonsFrame
+-- Get Premium Button
+local getPremiumButton = Instance.new("TextButton")
+getPremiumButton.Size = UDim2.new(0, 45, 0, 25)
+getPremiumButton.Position = UDim2.new(0, 210, 0, 0)
+getPremiumButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+getPremiumButton.BackgroundTransparency = 1
+getPremiumButton.Text = "Premium"
+getPremiumButton.TextColor3 = Color3.fromRGB(0, 0, 0)
+getPremiumButton.TextSize = 8
+getPremiumButton.Font = Enum.Font.GothamBold
+getPremiumButton.TextTransparency = 1
+getPremiumButton.Parent = buttonsFrame
 
-local getKeyCorner = Instance.new("UICorner")
-getKeyCorner.CornerRadius = UDim.new(0, 8)
-getKeyCorner.Parent = getKeyButton
+local getPremiumCorner = Instance.new("UICorner")
+getPremiumCorner.CornerRadius = UDim.new(0, 8)
+getPremiumCorner.Parent = getPremiumButton
 
 local isVerified = false
 
@@ -389,7 +435,7 @@ local function ShowKeySystem()
             BackgroundTransparency = 0.3,
             TextTransparency = 0
         })
-        local getKeyTween = TweenService:Create(getKeyButton, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        local getFreeKeyTween = TweenService:Create(getFreeKeyButton, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             BackgroundTransparency = 0.3,
             TextTransparency = 0
         })
@@ -397,18 +443,24 @@ local function ShowKeySystem()
             BackgroundTransparency = 0.3,
             TextTransparency = 0
         })
+        local getPremiumTween = TweenService:Create(getPremiumButton, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            BackgroundTransparency = 0.3,
+            TextTransparency = 0
+        })
         local closeTween = TweenService:Create(closeButton, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             BackgroundTransparency = 0.3,
             TextTransparency = 0
         })
+        
         frameTween:Play()
         strokeTween:Play()
         titleTween:Play()
         inputTween:Play()
         statusTween:Play()
         verifyTween:Play()
-        getKeyTween:Play()
+        getFreeKeyTween:Play()
         joinTween:Play()
+        getPremiumTween:Play()
         closeTween:Play()
     end)
     if not success then
@@ -421,10 +473,12 @@ local function ShowKeySystem()
         statusLabel.TextTransparency = 0
         verifyButton.BackgroundTransparency = 0.3
         verifyButton.TextTransparency = 0
-        getKeyButton.BackgroundTransparency = 0.3
-        getKeyButton.TextTransparency = 0
+        getFreeKeyButton.BackgroundTransparency = 0.3
+        getFreeKeyButton.TextTransparency = 0
         joinButton.BackgroundTransparency = 0.3
         joinButton.TextTransparency = 0
+        getPremiumButton.BackgroundTransparency = 0.3
+        getPremiumButton.TextTransparency = 0
         closeButton.BackgroundTransparency = 0.3
         closeButton.TextTransparency = 0
     end
@@ -435,7 +489,7 @@ local function HideKeySystem()
     local success, err = pcall(function()
         local frameTween = TweenService:Create(mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
             BackgroundTransparency = 1,
-            Size = UDim2.new(0, 250, 0, 200)
+            Size = UDim2.new(0, 280, 0, 220)
         })
         local strokeTween = TweenService:Create(uiStroke, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
             Transparency = 1
@@ -454,7 +508,7 @@ local function HideKeySystem()
             BackgroundTransparency = 1,
             TextTransparency = 1
         })
-        local getKeyTween = TweenService:Create(getKeyButton, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+        local getFreeKeyTween = TweenService:Create(getFreeKeyButton, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
             BackgroundTransparency = 1,
             TextTransparency = 1
         })
@@ -462,19 +516,26 @@ local function HideKeySystem()
             BackgroundTransparency = 1,
             TextTransparency = 1
         })
+        local getPremiumTween = TweenService:Create(getPremiumButton, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+            BackgroundTransparency = 1,
+            TextTransparency = 1
+        })
         local closeTween = TweenService:Create(closeButton, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
             BackgroundTransparency = 1,
             TextTransparency = 1
         })
+        
         frameTween:Play()
         strokeTween:Play()
         titleTween:Play()
         inputTween:Play()
         statusTween:Play()
         verifyTween:Play()
-        getKeyTween:Play()
+        getFreeKeyTween:Play()
         joinTween:Play()
+        getPremiumTween:Play()
         closeTween:Play()
+        
         frameTween.Completed:Connect(function()
             if screenGui and screenGui.Parent then
                 screenGui:Destroy()
@@ -491,36 +552,32 @@ local function HideKeySystem()
     end
 end
 
-getKeyButton.MouseButton1Click:Connect(function()
-    print("Get Key button clicked")
+-- Button Events
+getFreeKeyButton.MouseButton1Click:Connect(function()
+    print("Get FREE Key button clicked")
     local success, err = pcall(function()
-        statusLabel.Text = "Generating key link..."
-        statusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+        statusLabel.Text = "Opening FREE key generator..."
+        statusLabel.TextColor3 = Color3.fromRGB(76, 175, 80)
         
-        local linkSuccess, link = cacheLink()
-        if linkSuccess then
-            if link and link ~= "" then
-                setclipboard(link)
-                getKeyButton.Text = "Copied!"
-                getKeyButton.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
-                statusLabel.Text = "Key link copied to clipboard!"
-                statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-                wait(2)
-                getKeyButton.Text = "Get Key"
-                getKeyButton.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
-                statusLabel.Text = "Get key or join Discord server to buy a premium!"
-                statusLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
-            else
-                statusLabel.Text = "Failed: Empty link received"
-                statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
-            end
+        -- Open the HTML page (you'll need to host this somewhere)
+        if setclipboard then
+            setclipboard("https://your-domain.com/keysystem.html")
+            getFreeKeyButton.Text = "Link Copied!"
+            getFreeKeyButton.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+            statusLabel.Text = "Key generator link copied! Paste in browser."
+            statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+            wait(2)
+            getFreeKeyButton.Text = "Get FREE Key"
+            getFreeKeyButton.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
+            statusLabel.Text = "Get FREE key from our website or buy premium!"
+            statusLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
         else
-            statusLabel.Text = "Error: " .. tostring(link)
-            statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+            statusLabel.Text = "Please visit: your-domain.com/keysystem.html"
+            statusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
         end
     end)
     if not success then
-        warn("Get Key button failed: " .. tostring(err))
+        warn("Get FREE Key button failed: " .. tostring(err))
         statusLabel.Text = "Error: " .. tostring(err)
         statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
     end
@@ -528,15 +585,36 @@ end)
 
 joinButton.MouseButton1Click:Connect(function()
     local success, err = pcall(function()
-        setclipboard("https://discord.gg/bpsNUH5sVb")
-        joinButton.Text = "Copied!"
-        joinButton.BackgroundColor3 = Color3.fromRGB(0, 80, 160)
-        wait(1)
-        joinButton.Text = "Join Discord"
-        joinButton.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
+        if setclipboard then
+            setclipboard("https://discord.gg/bpsNUH5sVb")
+            joinButton.Text = "Copied!"
+            joinButton.BackgroundColor3 = Color3.fromRGB(67, 56, 202)
+            wait(1)
+            joinButton.Text = "Discord"
+            joinButton.BackgroundColor3 = Color3.fromRGB(114, 137, 218)
+        end
     end)
     if not success then
         warn("Join Discord button failed: " .. tostring(err))
+    end
+end)
+
+getPremiumButton.MouseButton1Click:Connect(function()
+    local success, err = pcall(function()
+        statusLabel.Text = "Contact us on Discord to buy premium keys!"
+        statusLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
+        
+        if setclipboard then
+            setclipboard("https://discord.gg/bpsNUH5sVb")
+            getPremiumButton.Text = "Link Copied!"
+            wait(2)
+            getPremiumButton.Text = "Premium"
+            statusLabel.Text = "Get FREE key from our website or buy premium!"
+            statusLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
+        end
+    end)
+    if not success then
+        warn("Get Premium button failed: " .. tostring(err))
     end
 end)
 
@@ -569,7 +647,7 @@ verifyButton.MouseButton1Click:Connect(function()
             statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
             keyInput.Text = ""
             wait(3)
-            statusLabel.Text = "Get key or join Discord server to buy a premium!"
+            statusLabel.Text = "Get FREE key from our website or buy premium!"
             statusLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
         end
     end)
