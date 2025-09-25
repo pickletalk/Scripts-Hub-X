@@ -382,8 +382,6 @@ local function executeSteal()
     -- Step 2: Wait longer then fire Taser Gun at self
     print("⚡ Step 2: Firing Taser Gun at self...")
     if not fireTaserGunAtSelf() then
-        -- Try again once more
-        task.wait(0.5)
         if not fireTaserGunAtSelf() then
             stealEnabled = false
             stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
@@ -394,9 +392,10 @@ local function executeSteal()
     
     -- Step 3: Wait for taser effect then teleport to MainRoot
     print("📍 Step 3: Teleporting to MainRoot...")
+    task.wait(1)
     
     local success, teleportError = pcall(function()
-        humanoidRootPart.CFrame = playerPlotMainRoot.CFrame + Vector3.new(0, 5, 0) -- 5 studs above MainRoot
+        humanoidRootPart.CFrame = playerPlotMainRoot.CFrame + Vector3.new(0, 10, 0) -- 5 studs above MainRoot
     end)
     
     if success then
