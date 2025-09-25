@@ -1,4 +1,3 @@
--- Optimized and secured script for Steal A Brainrot
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
@@ -8,6 +7,7 @@ local HttpService = game:GetService("HttpService")
 local StarterPlayer = game:GetService("StarterPlayer")
 local CoreGui = game:GetService("CoreGui")
 local GuiService = game:GetService("GuiService")
+local TeleportService = game:GetService("TeleportService")
 
 local player = Players.LocalPlayer
 local LocalPlayer = Players.LocalPlayer
@@ -18,11 +18,15 @@ local rootPart = character:WaitForChild("HumanoidRootPart")
 -- Bypassed
 local grappleHookConnection = nil
 
--- Anti-Kick Methods
+-- Anti Kick
+local antiKickEnabled = true
 local kickMethods = {
+    -- === STANDARD PLAYER KICK METHODS ===
     "kick", "Kick", "KICK", "KickPlayer", "kickplayer", "kick_player", "kickClient", "KickClient",
     "PlayerKick", "player_kick", "PLAYER_KICK", "kickUser", "KickUser", "kick_user",
     "clientKick", "ClientKick", "CLIENT_KICK", "userKick", "UserKick", "USER_KICK",
+
+    -- === REMOVE/DISCONNECT METHODS ===
     "remove", "Remove", "REMOVE", "RemovePlayer", "removeplayer", "remove_player",
     "disconnect", "Disconnect", "DISCONNECT", "DisconnectPlayer", "disconnectplayer",
     "disconnect_player", "PlayerDisconnect", "player_disconnect", "PLAYER_DISCONNECT",
@@ -30,6 +34,8 @@ local kickMethods = {
     "clientDisconnect", "ClientDisconnect", "CLIENT_DISCONNECT", "userRemove", "UserRemove",
     "destroy", "Destroy", "DESTROY", "DestroyPlayer", "destroyplayer", "destroy_player",
     "delete", "Delete", "DELETE", "DeletePlayer", "deleteplayer", "delete_player",
+    
+    -- === TELEPORT/SERVER HOP METHODS ===
     "teleport", "Teleport", "TELEPORT", "TeleportPlayer", "teleportplayer", "teleport_player",
     "TeleportClient", "teleportclient", "teleport_client", "TELEPORT_CLIENT",
     "ServerHop", "serverhop", "server_hop", "SERVER_HOP", "rejoin", "Rejoin", "REJOIN",
@@ -38,6 +44,8 @@ local kickMethods = {
     "TeleportToPlaceInstance", "serverSwitch", "ServerSwitch", "SERVER_SWITCH",
     "changeServer", "ChangeServer", "CHANGE_SERVER", "switchServer", "SwitchServer",
     "migrate", "Migrate", "MIGRATE", "MigratePlayer", "migrateplayer", "migrate_player",
+
+    -- === PUNISHMENT METHODS ===
     "punish", "Punish", "PUNISH", "PunishPlayer", "punishplayer", "punish_player",
     "suspend", "Suspend", "SUSPEND", "SuspendPlayer", "suspendplayer", "suspend_player",
     "terminate", "Terminate", "TERMINATE", "TerminatePlayer", "terminateplayer", "terminate_player",
@@ -58,6 +66,7 @@ local specificRemotesToBlock = {
     "Replion", "replion", "REPLION",
     "Packages", "packages", "PACKAGES",
     "Net", "net", "NET",
+    -- Additional common anti-cheat remote names
     "AntiCheat", "anticheat", "ANTICHEAT",
     "AC", "ac", "SecurityCheck", "securitycheck",
     "Validate", "validate", "VALIDATE",
@@ -67,6 +76,7 @@ local specificRemotesToBlock = {
 
 -- KICK PATTERN STRINGS TO DETECT IN ARGUMENTS
 local kickPatterns = {
+    -- Standard patterns
     "kick", "ban", "remove", "disconnect", "teleport", "rejoin", "serverhop", "server hop",
     "hop", "leave", "exit", "quit", "punish", "suspend", "terminate", "boot", "eject",
     "expel", "exile", "admin", "moderator", "mod", "staff", "owner", "anticheat", "cheat",
@@ -75,6 +85,8 @@ local kickPatterns = {
     "shutdown", "restart", "reboot", "filtering", "localscript", "clientside", "security",
     "auto", "system", "network", "connection", "ping", "latency", "game", "match", "room",
     "lobby", "server", "instance", "fe", "client", "user", "player", "destroyplayer",
+
+    -- Common kick messages
     "you have been kicked", "banned from", "disconnected", "connection lost", "timed out",
     "cheat detected", "exploit detected", "script detected", "violation detected", "unauthorized",
     "access denied", "permission denied", "invalid client", "client verification failed",
@@ -85,6 +97,7 @@ local kickPatterns = {
 local kickErrorCodes = {
     267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 
     529, 610, 611, 612, 613, 614, 615, 616, 617, 618, 619, 620,
+    -- Additional error codes from strict games
     1001, 1002, 1003, 1004, 1005, 2001, 2002, 2003, 3001, 3002,
     4001, 4002, 4003, 5001, 5002, 6001, 6002, 7001, 7002, 8001, 8002
 }
@@ -94,7 +107,6 @@ local platformEnabled = false
 local currentPlatform = nil
 local platformUpdateConnection = nil
 local PLATFORM_OFFSET = 3.62
-
 -- Variables for slow fall
 local SLOW_FALL_SPEED = -0.45 
 local originalGravity = nil
@@ -129,135 +141,6 @@ local plotDisplays = {}
 local playerBaseName = LocalPlayer.DisplayName .. "'s Base"
 local playerBaseTimeWarning = false
 local alertGui = nil
-
--- Performance optimization variables
-local lastUpdateTime = 0
-local updateInterval = 0.1 -- Update every 0.1 seconds instead of every frame
-local spoofedHRP = {
-    Velocity = Vector3.new(0,0,0),
-    CFrame = CFrame.new(),
-    Position = Vector3.new()
-}
-
--- Store original methods
-local oldTeleport = TeleportService.Teleport
-local oldTeleportToPrivateServer = TeleportService.TeleportToPrivateServer
-local oldTeleportAsync = TeleportService.TeleportAsync
-local oldTeleportPartyAsync = TeleportService.TeleportPartyAsync
-local oldTeleportToPlaceInstance = TeleportService.TeleportToPlaceInstance
-
--- Store original metamethods
-local originalIndex
-local originalNewIndex
-
--- Hook __index to spoof checks and block kicks
-originalIndex = hookmetamethod(game, "__index", newcclosure(function(self, property)
-    -- Block kick methods
-    if kickMethods[property] then
-        return function() end
-    end
-    
-    -- Spoof HumanoidRootPart checks
-    if self and self:IsA("HumanoidRootPart") then
-        if property == "Velocity" then
-            return spoofedHRP.Velocity
-        elseif property == "CFrame" then
-            return spoofedHRP.CFrame
-        elseif property == "Position" then
-            return spoofedHRP.Position
-        end
-    end
-    
-    -- Block specific remote events
-    if self and (self:IsA("RemoteEvent") or self:IsA("RemoteFunction")) then
-        for _, name in pairs(specificRemotesToBlock) do
-            if self.Name:lower():find(name:lower()) then
-                if property == "FireServer" or property == "InvokeServer" then
-                    return function() end
-                end
-            end
-        end
-    end
-    
-    return originalIndex(self, property)
-end))
-
--- Hook __newindex to prevent setting kick-related properties
-originalNewIndex = hookmetamethod(game, "__newindex", newcclosure(function(self, property, value)
-    -- Block setting kick-related properties
-    if kickMethods[property] then
-        return
-    end
-    
-    -- Block setting HumanoidRootPart properties that would reveal our manipulation
-    if self and self:IsA("HumanoidRootPart") then
-        if property == "Velocity" or property == "CFrame" or property == "Position" then
-            -- Store the value but don't actually set it
-            spoofedHRP[property] = value
-            return
-        end
-    end
-    
-    return originalNewIndex(self, property, value)
-end))
-
--- Block TeleportService methods
-TeleportService.Teleport = newcclosure(function(...)
-    return
-end)
-
-TeleportService.TeleportToPrivateServer = newcclosure(function(...)
-    return
-end)
-
-TeleportService.TeleportAsync = newcclosure(function(...)
-    return
-end)
-
-TeleportService.TeleportPartyAsync = newcclosure(function(...)
-    return
-end)
-
-TeleportService.TeleportToPlaceInstance = newcclosure(function(...)
-    return
-end)
-
--- Optimized update function for performance
-local function optimizedUpdate()
-    local currentTime = tick()
-    
-    -- Only update at intervals to reduce lag
-    if currentTime - lastUpdateTime < updateInterval then
-        return
-    end
-    
-    lastUpdateTime = currentTime
-    
-    -- Update spoofed HumanoidRootPart values
-    if rootPart then
-        spoofedHRP.Position = rootPart.Position
-        spoofedHRP.CFrame = rootPart.CFrame
-        
-        -- Only spoof velocity when using our features
-        if platformEnabled or wallTransparencyEnabled or tweenToBaseEnabled then
-            spoofedHRP.Velocity = Vector3.new(0, 0, 0)
-        else
-            spoofedHRP.Velocity = rootPart.Velocity
-        end
-    end
-    
-    -- Update platform positions if enabled
-    if platformEnabled and currentPlatform then
-        updatePlatformPosition()
-    end
-    
-    if comboFloatEnabled and comboCurrentPlatform then
-        updateComboPlatformPosition()
-    end
-end
-
--- Create optimized heartbeat connection
-local heartbeatConnection = RunService.Heartbeat:Connect(optimizedUpdate)
 
 local playerGui = player:WaitForChild("PlayerGui")
 
@@ -893,6 +776,7 @@ local function enablePlatform()
     -- Apply slow fall effect
     applySlowFall()
     
+    platformUpdateConnection = RunService.Heartbeat:Connect(updatePlatformPosition)
     updatePlatformPosition()
 
     -- Start the continuous loop for both equipping and firing
@@ -917,6 +801,11 @@ local function disablePlatform()
     
     -- Remove slow fall effect
     removeSlowFall()
+    
+    if platformUpdateConnection then
+        platformUpdateConnection:Disconnect()
+        platformUpdateConnection = nil
+    end
     
     if currentPlatform then
         currentPlatform:Destroy()
@@ -949,6 +838,7 @@ local function enableWallTransparency()
     
     -- Create and manage platform
     comboCurrentPlatform = createComboPlatform()
+    comboPlatformUpdateConnection = RunService.Heartbeat:Connect(updateComboPlatformPosition)
     updateComboPlatformPosition()
     
     -- Force player collision more aggressively
@@ -985,6 +875,11 @@ local function disableWallTransparency()
     originalTransparencies = {}
     
     -- Stop platform updates and remove platform
+    if comboPlatformUpdateConnection then
+        comboPlatformUpdateConnection:Disconnect()
+        comboPlatformUpdateConnection = nil
+    end
+    
     if comboCurrentPlatform then
         comboCurrentPlatform:Destroy()
         comboCurrentPlatform = nil
@@ -1445,6 +1340,8 @@ stealButton.MouseButton1Click:Connect(function()
             local humanoid = character:FindFirstChild("Humanoid")
             if humanoid then
                 humanoid.PlatformStand = false
+                humanoid.JumpPower = origJP -- Default value, adjust if needed
+                humanoid.JumpHeight = origHP -- Default value, adjust if needed
             end
         end
         
@@ -1489,22 +1386,6 @@ closeButton.MouseButton1Click:Connect(function()
     if grappleHookConnection then task.cancel(grappleHookConnection) end
     if stealGrappleConnection then task.cancel(stealGrappleConnection) end
     if currentTween then currentTween:Cancel() end
-    if heartbeatConnection then heartbeatConnection:Disconnect() end
-    
-    -- Restore original functions
-    TeleportService.Teleport = oldTeleport
-    TeleportService.TeleportToPrivateServer = oldTeleportToPrivateServer
-    TeleportService.TeleportAsync = oldTeleportAsync
-    TeleportService.TeleportPartyAsync = oldTeleportPartyAsync
-    TeleportService.TeleportToPlaceInstance = oldTeleportToPlaceInstance
-    
-    -- Restore original metamethods
-    if originalIndex then
-        hookmetamethod(game, "__index", originalIndex)
-    end
-    if originalNewIndex then
-        hookmetamethod(game, "__newindex", originalNewIndex)
-    end
     
     removeSlowFall()
     
@@ -1513,41 +1394,446 @@ closeButton.MouseButton1Click:Connect(function()
     print("❌ Script closed and cleaned up")
 end)
 
--- Add hover effects to buttons
 local function addHoverEffect(button, hoverColor, originalColor)
     button.MouseEnter:Connect(function()
-        button.BackgroundColor3 = hoverColor
+        if button == floatButton then
+            if platformEnabled then
+                button.BackgroundColor3 = Color3.fromRGB(50, 180, 80)
+            else
+                button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+            end
+        elseif button == wallButton then
+            if wallTransparencyEnabled then
+                button.BackgroundColor3 = Color3.fromRGB(180, 80, 30)
+            else
+                button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+            end
+        else
+            button.BackgroundColor3 = hoverColor
+        end
     end)
     
     button.MouseLeave:Connect(function()
-        button.BackgroundColor3 = originalColor
+        if button == floatButton then
+            if platformEnabled then
+                button.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
+            else
+                button.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+            end
+        elseif button == wallButton then
+            if wallTransparencyEnabled then
+                button.BackgroundColor3 = Color3.fromRGB(150, 50, 0)
+            else
+                button.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+            end
+        else
+            button.BackgroundColor3 = originalColor
+        end
     end)
 end
 
-addHoverEffect(floatButton, Color3.fromRGB(0, 50, 150), Color3.fromRGB(0, 0, 0))
-addHoverEffect(wallButton, Color3.fromRGB(200, 70, 0), Color3.fromRGB(0, 0, 0))
-addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
-
--- Setup ESP and plot displays
-Players.PlayerAdded:Connect(function(player)
-    createPlayerDisplay(player)
-end)
-
-for _, player in pairs(Players:GetPlayers()) do
-    createPlayerDisplay(player)
-end
-
--- Update plots periodically
-local plotUpdateConnection = task.spawn(function()
-    while true do
-        updateAllPlots()
-        task.wait(0.1)
+-- Emergency stop function (press ESC while tweening)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    
+    if input.KeyCode == Enum.KeyCode.Escape and tweenToBaseEnabled then
+        print("🛑 Emergency stop activated!")
+        
+        if currentTween then
+            currentTween:Cancel()
+        end
+        
+        tweenToBaseEnabled = false
+        stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+        stealButton.Text = "💰 Steal 💰"
+        
+        if stealGrappleConnection then
+            task.cancel(stealGrappleConnection)
+            stealGrappleConnection = nil
+        end
     end
 end)
 
--- Character event handling
+-- Character respawn handling
+player.CharacterRemoving:Connect(function()
+    platformEnabled = false
+    wallTransparencyEnabled = false
+    comboFloatEnabled = false
+    tweenToBaseEnabled = false
+    
+    if currentPlatform then currentPlatform:Destroy() end
+    if comboCurrentPlatform then comboCurrentPlatform:Destroy() end
+    if currentTween then currentTween:Cancel() end
+    if grappleHookConnection then task.cancel(grappleHookConnection) end
+    if stealGrappleConnection then task.cancel(stealGrappleConnection) end
+    
+    -- Reset button states
+    floatButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    floatButton.Text = "📷 FLOAT 📷"
+    wallButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    wallButton.Text = "📷 FLOOR STEAL 📷"
+    stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+    stealButton.Text = "💰 Steal 💰"
+end)
+
 player.CharacterAdded:Connect(onCharacterAdded)
 
--- Initialize
-onCharacterAdded(player.Character)
+-- Initialize ESP
+for _, playerObj in pairs(Players:GetPlayers()) do
+    if playerObj ~= LocalPlayer then
+        createPlayerDisplay(playerObj)
+        playerObj.CharacterAdded:Connect(function()
+            task.wait(0.5)
+            createPlayerDisplay(playerObj)
+        end)
+    end
+end
+
+Players.PlayerAdded:Connect(function(playerObj)
+    if playerObj ~= LocalPlayer then
+        createPlayerDisplay(playerObj)
+        playerObj.CharacterAdded:Connect(function()
+            task.wait(0.5)
+            createPlayerDisplay(playerObj)
+        end)
+    end
+end)
+
+updateAllPlots()
+
+local plots = workspace:FindFirstChild("Plots")
+if plots then
+    plots.ChildAdded:Connect(function(child)
+        if child:IsA("Model") or child:IsA("Folder") then
+            task.wait(0.5)
+            createOrUpdatePlotDisplay(child)
+        end
+    end)
+end
+
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+        pcall(updateAllPlots)
+    end
+end)
+
+addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
+addHoverEffect(floatButton, Color3.fromRGB(30, 30, 30), Color3.fromRGB(0, 0, 0))
+addHoverEffect(wallButton, Color3.fromRGB(30, 30, 30), Color3.fromRGB(0, 0, 0))
+
+game:BindToClose(function()
+    if wallTransparencyEnabled then
+        disableWallTransparency()
+    end
+    if alertGui then
+        removeAlertGui()
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(playerObj)
+    if playerObj == LocalPlayer then
+        removeAlertGui()
+    end
+end)
+
 removeJumpDelay()
+
+-- Anti-kick system functions
+local function blockSpecificRemotes()
+    -- Block game:GetService("ReplicatedStorage").Packages.Replion.Remotes.Removed
+    local remote = game:GetService('ReplicatedStorage'):FindFirstChild('Packages')
+    if remote then
+        remote = remote:FindFirstChild('Replion')
+        if remote then
+            remote = remote:FindFirstChild('Remotes')
+            if remote then
+                remote = remote:FindFirstChild('Removed')
+                if remote then
+                    local old = hookmetamethod(game, '__namecall', function(self, ...)
+                        if self == remote and getnamecallmethod() == "FireServer" then
+                            if antiKickEnabled then
+                                print("🛡️ BLOCKED: Replion.Remotes.Removed FireServer attempt")
+                                warn("blocked the kick!")
+                                return nil
+                            end
+                        end
+                        return old(self, ...)
+                    end)
+                    print("🛡️ Successfully hooked: ReplicatedStorage.Packages.Replion.Remotes.Removed")
+                end
+            end
+        end
+    end
+    
+    -- Block game:GetService("ReplicatedStorage").Packages.Net["RE/TeleportService/Reconnect"]
+    local netRemote = game:GetService('ReplicatedStorage'):FindFirstChild('Packages')
+    if netRemote then
+        netRemote = netRemote:FindFirstChild('Net')
+        if netRemote then
+            netRemote = netRemote:FindFirstChild('RE/TeleportService/Reconnect')
+            if netRemote then
+                local old = hookmetamethod(game, '__namecall', function(self, ...)
+                    if self == netRemote and getnamecallmethod() == "FireServer" then
+                        if antiKickEnabled then
+                            print("🛡️ BLOCKED: Net RE/TeleportService/Reconnect FireServer attempt")
+                            warn("blocked the kick!")
+                            return nil
+                        end
+                    end
+                    return old(self, ...)
+                end)
+                print("🛡️ Successfully hooked: ReplicatedStorage.Packages.Net[RE/TeleportService/Reconnect]")
+            end
+        end
+    end
+    
+    -- Monitor for these remotes being added later
+    game.DescendantAdded:Connect(function(obj)
+        if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+            task.wait(0.1)
+            local fullName = obj:GetFullName()
+            
+            if string.find(fullName, "Replion") and string.find(fullName, "Removed") then
+                local old = hookmetamethod(game, '__namecall', function(self, ...)
+                    if self == obj and (getnamecallmethod() == "FireServer" or getnamecallmethod() == "InvokeServer") then
+                        if antiKickEnabled then
+                            print("🛡️ BLOCKED: New Replion.Removed remote attempt")
+                            warn("blocked the kick!")
+                            return nil
+                        end
+                    end
+                    return old(self, ...)
+                end)
+                print("🛡️ Hooked new Replion remote:", fullName)
+                
+            elseif string.find(fullName, "TeleportService") and string.find(fullName, "Reconnect") then
+                local old = hookmetamethod(game, '__namecall', function(self, ...)
+                    if self == obj and (getnamecallmethod() == "FireServer" or getnamecallmethod() == "InvokeServer") then
+                        if antiKickEnabled then
+                            print("🛡️ BLOCKED: New TeleportService/Reconnect remote attempt")
+                            warn("blocked the kick!")
+                            return nil
+                        end
+                    end
+                    return old(self, ...)
+                end)
+                print("🛡️ Hooked new TeleportService remote:", fullName)
+            end
+        end
+    end)
+end
+
+-- ULTIMATE KICK METHOD HOOKING (COMPREHENSIVE)
+local function hookAllKickMethods()
+    local old = hookmetamethod(game, "__namecall", function(self, ...)
+        local method = getnamecallmethod()
+        local args = {...}
+        
+        if not antiKickEnabled then
+            return old(self, ...)
+        end
+        
+        -- Check if method is in our comprehensive kick list
+        for _, kickMethod in pairs(kickMethods) do
+            if method == kickMethod then
+                print("🛡️ BLOCKED: " .. method .. " method blocked on", self.Name or tostring(self))
+                warn("blocked the kick!")
+                return nil
+            end
+        end
+        
+        -- Special handling for Player:Kick specifically
+        if method == "Kick" and self == player then
+            print("🛡️ BLOCKED: Player:Kick() attempt on local player")
+            warn("blocked the kick!")
+            return nil
+        end
+        
+        -- Check for RemoteEvent/RemoteFunction kick attempts
+        if method == "FireServer" or method == "InvokeServer" then
+            -- Check remote name against specific blocked remotes
+            local remoteName = self.Name or ""
+            local remoteFullName = self:GetFullName() or ""
+            
+            for _, blockedRemote in pairs(specificRemotesToBlock) do
+                if string.find(remoteName, blockedRemote) or string.find(remoteFullName, blockedRemote) then
+                    print("🛡️ BLOCKED: Blocked remote detected - " .. blockedRemote .. " in " .. remoteFullName)
+                    warn("blocked the kick!")
+                    return nil
+                end
+            end
+            
+            -- Check arguments for kick patterns
+            for i, arg in pairs(args) do
+                if type(arg) == "string" then
+                    local lower = string.lower(arg)
+                    
+                    -- Check against all kick patterns
+                    for _, pattern in pairs(kickPatterns) do
+                        if string.find(lower, string.lower(pattern)) then
+                            print("🛡️ BLOCKED: " .. method .. " with kick pattern: " .. pattern .. " in argument: " .. tostring(arg))
+                            warn("blocked the kick!")
+                            return nil
+                        end
+                    end
+                    
+                elseif type(arg) == "number" then
+                    -- Check for kick error codes
+                    for _, errorCode in pairs(kickErrorCodes) do
+                        if arg == errorCode then
+                            print("🛡️ BLOCKED: " .. method .. " with kick error code: " .. tostring(arg))
+                            warn("blocked the kick!")
+                            return nil
+                        end
+                    end
+                    
+                    -- Check for place IDs (potential teleportation)
+                    if arg > 1000000 and arg < 999999999999 then
+                        print("🛡️ BLOCKED: " .. method .. " with potential place ID: " .. tostring(arg))
+                        warn("blocked the kick!")
+                        return nil
+                    end
+                    
+                elseif type(arg) == "table" then
+                    -- Check table contents recursively
+                    local function checkTable(t, depth)
+                        if depth > 10 then return false end -- Prevent infinite recursion
+                        
+                        for k, v in pairs(t) do
+                            if type(v) == "string" then
+                                local lower = string.lower(v)
+                                for _, pattern in pairs(kickPatterns) do
+                                    if string.find(lower, string.lower(pattern)) then
+                                        return true
+                                    end
+                                end
+                            elseif type(v) == "number" then
+                                for _, errorCode in pairs(kickErrorCodes) do
+                                    if v == errorCode then
+                                        return true
+                                    end
+                                end
+                            elseif type(v) == "table" then
+                                if checkTable(v, depth + 1) then 
+                                    return true 
+                                end
+                            end
+                        end
+                        return false
+                    end
+                    
+                    if checkTable(arg, 0) then
+                        print("🛡️ BLOCKED: " .. method .. " with table containing kick data")
+                        warn("blocked the kick!")
+                        return nil
+                    end
+                end
+            end
+        end
+        
+        -- Block TeleportService methods
+        if self == TeleportService then
+            local teleportMethods = {
+                "Teleport", "TeleportAsync", "TeleportToPlaceInstance", 
+                "TeleportToPrivateServer", "TeleportPartyAsync", "TeleportToSpawnByName"
+            }
+            
+            for _, teleMethod in pairs(teleportMethods) do
+                if method == teleMethod then
+                    -- Check if local player is being teleported
+                    for _, arg in pairs(args) do
+                        if arg == player or (type(arg) == "table" and table.find(arg, player)) then
+                            print("🛡️ BLOCKED: TeleportService." .. method .. " attempt on local player")
+                            warn("blocked the kick!")
+                            return nil
+                        end
+                    end
+                end
+            end
+        end
+        
+        -- Block game shutdown methods
+        if self == game and (method == "Shutdown" or method == "shutdown") then
+            print("🛡️ BLOCKED: game:Shutdown() attempt")
+            warn("blocked the kick!")
+            return nil
+        end
+        
+        return old(self, ...)
+    end)
+end
+
+-- MONITOR AND PROTECT AGAINST CHARACTER/PLAYER DESTRUCTION
+local function protectPlayerAndCharacter()
+    -- Protect player object
+    if player then
+        local playerMetatable = getmetatable(player) or {}
+        local originalDestroy = player.Destroy
+        
+        player.Destroy = function(...)
+            if antiKickEnabled then
+                print("🛡️ BLOCKED: Player:Destroy() attempt")
+                warn("blocked the kick!")
+                return
+            end
+            return originalDestroy(...)
+        end
+    end
+    
+    -- Protect character
+    local function protectCharacter(character)
+        if character then
+            local originalDestroy = character.Destroy
+            character.Destroy = function(...)
+                if antiKickEnabled then
+                    print("🛡️ BLOCKED: Character:Destroy() attempt")
+                    warn("blocked the kick!")
+                    return
+                end
+                return originalDestroy(...)
+            end
+        end
+    end
+    
+    if player.Character then
+        protectCharacter(player.Character)
+    end
+    
+    player.CharacterAdded:Connect(protectCharacter)
+end
+
+-- MAINTAIN PROTECTION WITH ADVANCED MONITORING
+task.spawn(function()
+    while antiKickEnabled do
+        -- Ensure player is still connected
+        if not player or not player.Parent or player.Parent ~= Players then
+            print("⚠️ Player disconnection detected - anti-kick may have failed")
+            break
+        end
+        
+        -- Check for character
+        if not player.Character and player.Parent == Players then
+            print("🛡️ Character missing - attempting restoration...")
+            pcall(function()
+                player:LoadCharacter()
+            end)
+        end
+        
+        -- Periodic re-initialization (every 30 seconds)
+        if math.random(1, 30) == 1 then
+            pcall(function()
+                hookAllKickMethods()
+                blockSpecificRemotes()
+                print("🛡️ Anti-kick protection renewed")
+            end)
+        end
+        
+        task.wait(1)
+    end
+end)
+
+-- Initialize anti-kick system
+pcall(hookAllKickMethods)
+pcall(blockSpecificRemotes)
+pcall(protectPlayerAndCharacter)
