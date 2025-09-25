@@ -272,9 +272,17 @@ local function fireTaserGunAtSelf()
         return false
     end
     
+    -- Check if Taser Gun is equipped
+    local equippedTool = character:FindFirstChildOfClass("Tool")
+    if not equippedTool or equippedTool.Name ~= "Taser Gun" then
+        warn("❌ Taser Gun not equipped")
+        return false
+    end
+    
     local success, error = pcall(function()
+        -- Use the same method as the original Taser Gun script
         local Net = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"))
-        Net:RemoteEvent("UseItem"):FireServer(humanoidRootPart) -- Fire at self (HumanoidRootPart)
+        Net:RemoteEvent("UseItem"):FireServer(humanoidRootPart)
     end)
     
     if success then
@@ -365,22 +373,26 @@ local function executeSteal()
     if not equipTaserGun() then
         stealEnabled = false
         stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+        stealButton.Text = "💰 STEAL 💰 (TASER GUN NOT FOUND)"
+        wait(1)
         stealButton.Text = "💰 STEAL 💰"
         return
     end
     
-    -- Step 2: Wait a bit then fire Taser Gun at self
-    task.wait(0.5)
+    -- Step 2: Wait longer then fire Taser Gun at self
     print("⚡ Step 2: Firing Taser Gun at self...")
     if not fireTaserGunAtSelf() then
-        stealEnabled = false
-        stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-        stealButton.Text = "💰 STEAL 💰"
-        return
+        -- Try again once more
+        task.wait(0.5)
+        if not fireTaserGunAtSelf() then
+            stealEnabled = false
+            stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+            stealButton.Text = "💰 STEAL 💰"
+            return
+        end
     end
     
-    -- Step 3: Wait a bit then teleport to MainRoot
-    task.wait(1)
+    -- Step 3: Wait for taser effect then teleport to MainRoot
     print("📍 Step 3: Teleporting to MainRoot...")
     
     local success, teleportError = pcall(function()
