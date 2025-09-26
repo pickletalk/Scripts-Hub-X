@@ -167,7 +167,7 @@ local function getAnimalDataFromPodium(plotName, animalName)
                     if attachment then
                         local animalOverhead = attachment:FindFirstChild("AnimalOverhead")
                         if animalOverhead then
-                            local priceText = animalOverhead:FindFirstChild("Price")
+                            local priceText = animalOverhead:FindFirstChild("Generation")
                             local rarityText = animalOverhead:FindFirstChild("Rarity")
                             local mutationText = animalOverhead:FindFirstChild("Mutation")
                             
