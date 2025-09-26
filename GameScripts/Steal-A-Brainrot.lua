@@ -336,6 +336,21 @@ local function equipGrappleHook()
     end
 end
 
+local function unEquipGrappleHook()
+    local backpack = player:FindFirstChild("Backpack")
+    local character = player.Character
+    
+    if backpack and character then
+        local grappleHook = backpack:FindFirstChild("Grapple Hook")
+        if grappleHook and grappleHook:IsA("Tool") then
+            local humanoid = character:FindFirstChild("Humanoid")
+            if humanoid then
+                humanoid:UnEquipTool(grappleHook)
+            end
+        end
+    end
+end
+
 local function fireGrappleHook()
     local args = {0.08707536856333414}
     
@@ -710,7 +725,7 @@ local function executeTeleportToHighestBrainrot()
                 local targetPosition = highestBrainrotData.teleportPart.Position + Vector3.new(0, 5, 0)
                     for i = 1, 3 do
                     fireQuantumCloner()
-                    task.wait(0.2)
+                    task.wait(0.3)
                     character.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
                     task.wait(1.5)
                     fireQuantumClonerTeleport()
@@ -853,6 +868,7 @@ local function applySlowFall()
                     -- Force jump
                     humanoid.Jump = true
                     equipAndFireGrapple()
+                    unEquipGrappleHook()
                 end
             end)
         end
@@ -1009,6 +1025,8 @@ local function enablePlatform()
             while platformEnabled do
                 task.wait(2)
                 equipAndFireGrapple()
+                task.wait(0.1)
+                unEquipGrappleHook()
             end
         end)
         print("- Continuously firing grapple hook RemoteEvent every 2 seconds")
@@ -1077,6 +1095,8 @@ local function enableWallTransparency()
             while wallTransparencyEnabled do
                 task.wait(1.5)
                 equipAndFireGrapple()
+                task.wait(0.1)
+                unEquipGrappleHook()
             end
         end)
         print("- Continuously firing grapple hook RemoteEvent every 1.5 seconds")
