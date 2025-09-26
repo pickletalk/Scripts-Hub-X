@@ -100,12 +100,83 @@ local alertGui = nil
 
 local playerGui = player:WaitForChild("PlayerGui")
 
-local screenGui = Instance.new("ScreenGui")
+-- DECLARE UI ELEMENTS (moved to top)
+local screenGui, mainFrame, titleBar, closeButton, floatButton, wallButton, teleportButton, creditLabel
+
+-- Helper Functions (defined first)
+local function addHoverEffect(button, hoverColor, originalColor)
+    if not button then return end
+    
+    button.MouseEnter:Connect(function()
+        if button == floatButton then
+            if platformEnabled then
+                button.BackgroundColor3 = Color3.fromRGB(50, 180, 80)
+            else
+                button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+            end
+        elseif button == wallButton then
+            if wallTransparencyEnabled then
+                button.BackgroundColor3 = Color3.fromRGB(180, 80, 30)
+            else
+                button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+            end
+        else
+            button.BackgroundColor3 = hoverColor
+        end
+    end)
+    
+    button.MouseLeave:Connect(function()
+        if button == floatButton then
+            if platformEnabled then
+                button.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
+            else
+                button.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+            end
+        elseif button == wallButton then
+            if wallTransparencyEnabled then
+                button.BackgroundColor3 = Color3.fromRGB(150, 50, 0)
+            else
+                button.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+            end
+        else
+            button.BackgroundColor3 = originalColor
+        end
+    end)
+end
+
+-- Character handling function (defined early)
+local function onCharacterAdded(newCharacter)
+    character = newCharacter
+    humanoid = character:WaitForChild("Humanoid")
+    rootPart = character:WaitForChild("HumanoidRootPart")
+    
+    -- Reset all velocity variables
+    originalGravity = nil
+    bodyVelocity = nil
+    elevationBodyVelocity = nil
+
+    if platformEnabled then
+        task.wait(1)
+        
+        if currentPlatform then
+            currentPlatform:Destroy()
+        end
+        
+        currentPlatform = createPlatform()
+        applySlowFall()
+        updatePlatformPosition()
+        
+        task.wait(0.5)
+    end
+end
+
+-- Create UI Elements
+screenGui = Instance.new("ScreenGui")
 screenGui.Name = "im"
 screenGui.Parent = playerGui
 screenGui.ResetOnSpawn = false
 
-local mainFrame = Instance.new("Frame")
+mainFrame = Instance.new("Frame")
 mainFrame.Name = "the"
 mainFrame.Size = UDim2.new(0, 280, 0, 150)
 mainFrame.Position = UDim2.new(1, -290, 0, 140)
@@ -117,7 +188,7 @@ local mainCorner = Instance.new("UICorner")
 mainCorner.CornerRadius = UDim.new(0, 8)
 mainCorner.Parent = mainFrame
 
-local titleBar = Instance.new("Frame")
+titleBar = Instance.new("Frame")
 titleBar.Name = "best"
 titleBar.Size = UDim2.new(1, 0, 0, 30)
 titleBar.Position = UDim2.new(0, 0, 0, 0)
@@ -140,7 +211,7 @@ titleText.TextScaled = true
 titleText.Font = Enum.Font.GothamBold
 titleText.Parent = titleBar
 
-local closeButton = Instance.new("TextButton")
+closeButton = Instance.new("TextButton")
 closeButton.Name = "lol"
 closeButton.Size = UDim2.new(0, 25, 0, 25)
 closeButton.Position = UDim2.new(1, -27, 0, 2)
@@ -156,7 +227,7 @@ local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 4)
 closeCorner.Parent = closeButton
 
-local floatButton = Instance.new("TextButton")
+floatButton = Instance.new("TextButton")
 floatButton.Name = "can't"
 floatButton.Size = UDim2.new(0, 130, 0, 35)
 floatButton.Position = UDim2.new(0, 10, 0, 45)
@@ -172,7 +243,7 @@ local floatCorner = Instance.new("UICorner")
 floatCorner.CornerRadius = UDim.new(0, 6)
 floatCorner.Parent = floatButton
 
-local wallButton = Instance.new("TextButton")
+wallButton = Instance.new("TextButton")
 wallButton.Name = "detect"
 wallButton.Size = UDim2.new(0, 130, 0, 35)
 wallButton.Position = UDim2.new(0, 150, 0, 45)
@@ -189,7 +260,7 @@ wallCorner.CornerRadius = UDim.new(0, 6)
 wallCorner.Parent = wallButton
 
 -- TELEPORT TO HIGHEST BRAINROT BUTTON (renamed from stealButton)
-local teleportButton = Instance.new("TextButton")
+teleportButton = Instance.new("TextButton")
 teleportButton.Name = "💰"
 teleportButton.Size = UDim2.new(1, -20, 0, 25)
 teleportButton.Position = UDim2.new(0, 10, 0, 90)
@@ -205,7 +276,7 @@ local teleportCorner = Instance.new("UICorner")
 teleportCorner.CornerRadius = UDim.new(0, 6)
 teleportCorner.Parent = teleportButton
 
-local creditLabel = Instance.new("TextLabel")
+creditLabel = Instance.new("TextLabel")
 creditLabel.Name = "😆"
 creditLabel.Size = UDim2.new(1, -20, 0, 20)
 creditLabel.Position = UDim2.new(0, 10, 0, 120)
@@ -217,6 +288,7 @@ creditLabel.Font = Enum.Font.Gotham
 creditLabel.TextXAlignment = Enum.TextXAlignment.Left
 creditLabel.Parent = mainFrame
 
+-- Dragging functionality
 local dragging = false
 local dragStart = nil
 local startPos = nil
@@ -239,134 +311,6 @@ titleBar.InputBegan:Connect(function(input)
         end)
     end
 end)
-
--- Character respawn handling
-player.CharacterRemoving:Connect(function()
-    platformEnabled = false
-    wallTransparencyEnabled = false
-    comboFloatEnabled = false
-    teleportEnabled = false
-    
-    if currentPlatform then currentPlatform:Destroy() end
-    if comboCurrentPlatform then comboCurrentPlatform:Destroy() end
-    if grappleHookConnection then task.cancel(grappleHookConnection) end
-    if teleportGrappleConnection then task.cancel(teleportGrappleConnection) end
-    if teleportOverlay then removeTeleportOverlay() end
-    
-    -- Reset button states
-    floatButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    floatButton.Text = "🚹 FLOAT 🚹"
-    wallButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    wallButton.Text = "💰 FLOOR STEAL 💰"
-    teleportButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-    teleportButton.Text = "🧠 TELEPORT TO HIGHEST BRAINROT 🧠"
-end)
-
-player.CharacterAdded:Connect(onCharacterAdded)
-
--- Initialize ESP
-for _, playerObj in pairs(Players:GetPlayers()) do
-    if playerObj ~= LocalPlayer then
-        createPlayerDisplay(playerObj)
-        playerObj.CharacterAdded:Connect(function()
-            task.wait(0.5)
-            createPlayerDisplay(playerObj)
-        end)
-    end
-end
-
-initializePermanentESP()
-
-Players.PlayerAdded:Connect(function(newPlayer)
-    newPlayer.CharacterAdded:Connect(function(character)
-        task.wait(1) -- Wait for character to fully load
-        createPermanentPlayerESP(newPlayer)
-    end)
-end)
-
--- Handle player respawning
-for _, player in pairs(Players:GetPlayers()) do
-    if player ~= LocalPlayer then
-        player.CharacterAdded:Connect(function(character)
-            task.wait(1) -- Wait for character to fully load
-            createPermanentPlayerESP(player)
-        end)
-    end
-end
-
--- Clean up highlights when players leave
-Players.PlayerRemoving:Connect(function(leavingPlayer)
-    if leavingPlayer.Character then
-        local head = leavingPlayer.Character:FindFirstChild("Head")
-        local hrp = leavingPlayer.Character:FindFirstChild("HumanoidRootPart")
-        
-        if head then
-            local permanentESP = head:FindFirstChild("PermanentESP")
-            if permanentESP then permanentESP:Destroy() end
-        end
-        
-        if hrp then
-            local permanentHighlight = hrp:FindFirstChild("PermanentHighlight")
-            if permanentHighlight then permanentHighlight:Destroy() end
-        end
-    end
-end)
-
-Players.PlayerAdded:Connect(function(playerObj)
-    if playerObj ~= LocalPlayer then
-        createPlayerDisplay(playerObj)
-        playerObj.CharacterAdded:Connect(function()
-            task.wait(0.5)
-            createPlayerDisplay(playerObj)
-        end)
-    end
-end)
-
-updateAllPlots()
-
-local plots = workspace:FindFirstChild("Plots")
-if plots then
-    plots.ChildAdded:Connect(function(child)
-        if child:IsA("Model") or child:IsA("Folder") then
-            task.wait(0.5)
-            createOrUpdatePlotDisplay(child)
-        end
-    end)
-end
-
-task.spawn(function()
-    while true do
-        task.wait(0.5)
-        pcall(updateAllPlots)
-    end
-end)
-
-addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
-addHoverEffect(floatButton, Color3.fromRGB(30, 30, 30), Color3.fromRGB(0, 0, 0))
-addHoverEffect(wallButton, Color3.fromRGB(30, 30, 30), Color3.fromRGB(0, 0, 0))
-
-game:BindToClose(function()
-    if wallTransparencyEnabled then
-        disableWallTransparency()
-    end
-    if alertGui then
-        removeAlertGui()
-    end
-    if teleportOverlay then
-        removeTeleportOverlay()
-    end
-end)
-
-Players.PlayerRemoving:Connect(function(playerObj)
-    if playerObj == LocalPlayer then
-        removeAlertGui()
-        if teleportOverlay then
-            removeTeleportOverlay()
-        end
-    end
-end)
-
-removeJumpDelay()
 
 titleBar.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
@@ -856,6 +800,7 @@ local function initializePermanentESP()
     end
 end
 
+-- Platform creation and management functions
 local function createPlatform()
     local platform = Instance.new("Part")
     platform.Name = "😆"
@@ -1009,6 +954,7 @@ local function updateComboPlatformPosition()
     end
 end
 
+-- Wall transparency functions
 local function storeOriginalTransparencies()
     originalTransparencies = {}
     for _, obj in pairs(workspace:GetDescendants()) do
@@ -1060,6 +1006,7 @@ local function forcePlayerHeadCollision()
     end
 end
 
+-- Main toggle functions
 local function enablePlatform()
     if platformEnabled then return end
     
@@ -1080,7 +1027,7 @@ local function enablePlatform()
                 equipAndFireGrapple()
             end
         end)
-        print("- Continuously firing grapple hook RemoteEvent every 3 seconds")
+        print("- Continuously firing grapple hook RemoteEvent every 2 seconds")
     end
     
     floatButton.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
@@ -1109,7 +1056,7 @@ local function disablePlatform()
         grappleHookConnection = nil
         print("🎣 Grapple Hook fire loop stopped!")
         equipAndFireGrapple()
-        wait(0.5)
+        task.wait(0.5)
         equipAndFireGrapple()
     end
     
@@ -1489,6 +1436,7 @@ local function updateAllPlots()
     end
 end
 
+-- Jump delay removal functions
 local jumpDelayConnections = {}
 
 local function cleanupJumpDelayConnections(character)
@@ -1549,32 +1497,110 @@ local function removeJumpDelay()
     end)
 end
 
-local function onCharacterAdded(newCharacter)
-    character = newCharacter
-    humanoid = character:WaitForChild("Humanoid")
-    rootPart = character:WaitForChild("HumanoidRootPart")
-    
-    -- Reset all velocity variables
-    originalGravity = nil
-    bodyVelocity = nil
-    elevationBodyVelocity = nil
+-- EVENT CONNECTIONS AND INITIALIZATION
 
-    if platformEnabled then
-        task.wait(1)
-        
-        if currentPlatform then
-            currentPlatform:Destroy()
-        end
-        
-        currentPlatform = createPlatform()
-        applySlowFall()
-        updatePlatformPosition()
-        
-        task.wait(0.5)
+-- Character respawn handling
+player.CharacterRemoving:Connect(function()
+    platformEnabled = false
+    wallTransparencyEnabled = false
+    comboFloatEnabled = false
+    teleportEnabled = false
+    
+    if currentPlatform then currentPlatform:Destroy() end
+    if comboCurrentPlatform then comboCurrentPlatform:Destroy() end
+    if grappleHookConnection then task.cancel(grappleHookConnection) end
+    if teleportGrappleConnection then task.cancel(teleportGrappleConnection) end
+    if teleportOverlay then removeTeleportOverlay() end
+    
+    -- Reset button states
+    floatButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    floatButton.Text = "🚹 FLOAT 🚹"
+    wallButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    wallButton.Text = "💰 FLOOR STEAL 💰"
+    teleportButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+    teleportButton.Text = "🧠 TELEPORT TO HIGHEST BRAINROT 🧠"
+end)
+
+player.CharacterAdded:Connect(onCharacterAdded)
+
+-- Initialize ESP
+for _, playerObj in pairs(Players:GetPlayers()) do
+    if playerObj ~= LocalPlayer then
+        createPlayerDisplay(playerObj)
+        playerObj.CharacterAdded:Connect(function()
+            task.wait(0.5)
+            createPlayerDisplay(playerObj)
+        end)
     end
 end
 
--- Button Functions
+initializePermanentESP()
+
+Players.PlayerAdded:Connect(function(newPlayer)
+    newPlayer.CharacterAdded:Connect(function(character)
+        task.wait(1) -- Wait for character to fully load
+        createPermanentPlayerESP(newPlayer)
+    end)
+end)
+
+-- Handle player respawning
+for _, player in pairs(Players:GetPlayers()) do
+    if player ~= LocalPlayer then
+        player.CharacterAdded:Connect(function(character)
+            task.wait(1) -- Wait for character to fully load
+            createPermanentPlayerESP(player)
+        end)
+    end
+end
+
+-- Clean up highlights when players leave
+Players.PlayerRemoving:Connect(function(leavingPlayer)
+    if leavingPlayer.Character then
+        local head = leavingPlayer.Character:FindFirstChild("Head")
+        local hrp = leavingPlayer.Character:FindFirstChild("HumanoidRootPart")
+        
+        if head then
+            local permanentESP = head:FindFirstChild("PermanentESP")
+            if permanentESP then permanentESP:Destroy() end
+        end
+        
+        if hrp then
+            local permanentHighlight = hrp:FindFirstChild("PermanentHighlight")
+            if permanentHighlight then permanentHighlight:Destroy() end
+        end
+    end
+end)
+
+Players.PlayerAdded:Connect(function(playerObj)
+    if playerObj ~= LocalPlayer then
+        createPlayerDisplay(playerObj)
+        playerObj.CharacterAdded:Connect(function()
+            task.wait(0.5)
+            createPlayerDisplay(playerObj)
+        end)
+    end
+end)
+
+updateAllPlots()
+
+local plots = workspace:FindFirstChild("Plots")
+if plots then
+    plots.ChildAdded:Connect(function(child)
+        if child:IsA("Model") or child:IsA("Folder") then
+            task.wait(0.5)
+            createOrUpdatePlotDisplay(child)
+        end
+    end)
+end
+
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+        pcall(updateAllPlots)
+    end
+end)
+
+-- BUTTON EVENT CONNECTIONS
 floatButton.MouseButton1Click:Connect(function()
     local originalSize = floatButton.Size
     local clickTween = TweenService:Create(floatButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 125, 0, 33)})
@@ -1657,40 +1683,37 @@ closeButton.MouseButton1Click:Connect(function()
     print("❌ Script closed and cleaned up")
 end)
 
-local function addHoverEffect(button, hoverColor, originalColor)
-    button.MouseEnter:Connect(function()
-        if button == floatButton then
-            if platformEnabled then
-                button.BackgroundColor3 = Color3.fromRGB(50, 180, 80)
-            else
-                button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-            end
-        elseif button == wallButton then
-            if wallTransparencyEnabled then
-                button.BackgroundColor3 = Color3.fromRGB(180, 80, 30)
-            else
-                button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-            end
-        else
-            button.BackgroundColor3 = hoverColor
+-- Apply hover effects
+addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
+addHoverEffect(floatButton, Color3.fromRGB(30, 30, 30), Color3.fromRGB(0, 0, 0))
+addHoverEffect(wallButton, Color3.fromRGB(30, 30, 30), Color3.fromRGB(0, 0, 0))
+
+-- CLEANUP CONNECTIONS
+game:BindToClose(function()
+    if wallTransparencyEnabled then
+        disableWallTransparency()
+    end
+    if alertGui then
+        removeAlertGui()
+    end
+    if teleportOverlay then
+        removeTeleportOverlay()
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(playerObj)
+    if playerObj == LocalPlayer then
+        removeAlertGui()
+        if teleportOverlay then
+            removeTeleportOverlay()
         end
-    end)
-    
-    button.MouseLeave:Connect(function()
-        if button == floatButton then
-            if platformEnabled then
-                button.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
-            else
-                button.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-            end
-        elseif button == wallButton then
-            if wallTransparencyEnabled then
-                button.BackgroundColor3 = Color3.fromRGB(150, 50, 0)
-            else
-                button.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-            end
-        else
-            button.BackgroundColor3 = originalColor
-        end
-    end)
-end
+    end
+end)
+
+-- Initialize jump delay removal
+removeJumpDelay()
+
+print("✅ Steal A Brainrot script loaded successfully!")
+print("🚹 Float Button - Creates invisible platform beneath player")
+print("💰 Floor Steal Button - Makes walls transparent + platform")
+print("🧠 Teleport Button - Finds and teleports to highest value animal")
