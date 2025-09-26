@@ -42,11 +42,55 @@ local comboPlatformUpdateConnection = nil
 local comboPlayerCollisionConnection = nil
 local COMBO_PLATFORM_OFFSET = 3.7
 
--- Steal variables (replaced tween to base variables)
-local stealEnabled = false
-local stealGrappleConnection = nil
+-- Teleport to Highest Brainrot variables (replaced steal variables)
+local teleportEnabled = false
+local teleportGrappleConnection = nil
 local lastClickTime = 0
 local DOUBLE_CLICK_PREVENTION_TIME = 1.5
+local highestBrainrotData = nil
+local teleportOverlay = nil
+
+-- Target brainrot names for detection
+local brainrotNames = {
+    "Los Tralaleritos",
+    "Guerriro Digitale",
+    "Las Tralaleritas",
+    "Job Job Job Sahur",
+    "Las Vaquitas Saturnitas",
+    "Graipuss Medussi",
+    "Noo My Hotspot",
+    "Sahur Combinasion",
+    "Pot Hotspot",
+    "Chicleteira Bicicleteira",
+    "Los Nooo My Hotspotsitos",
+    "La Grande Combinasion",
+    "Los Combinasionas",
+    "Nuclearo Dinossauro",
+    "Karkerkar combinasion",
+    "Los Hotspotsitos",
+    "Tralaledon",
+    "Esok Sekolah",
+    "Ketupat Kepat",
+    "Los Bros",
+    "La Supreme Combinasion",
+    "Ketchuru and Masturu",
+    "Garama and Madundung",
+    "Las Vaquitas Saturnitas",
+    "Chicleteira Bicicleteira",
+    "Spaghetti Tualetti",
+    "Dragon Cannelloni",
+    "Blackhole Goat",
+    "Agarrini la Palini",
+    "Los Spyderinis",
+    "Fragola la la la",
+    "Strawberry Elephant"
+}
+
+-- Create lookup table for faster checking
+local brainrotLookup = {}
+for _, name in pairs(brainrotNames) do
+    brainrotLookup[name] = true
+end
 
 -- ESP variables
 local plotDisplays = {}
@@ -144,22 +188,22 @@ local wallCorner = Instance.new("UICorner")
 wallCorner.CornerRadius = UDim.new(0, 6)
 wallCorner.Parent = wallButton
 
--- STEAL BUTTON (renamed from stealButton)
-local stealButton = Instance.new("TextButton")
-stealButton.Name = "💰"
-stealButton.Size = UDim2.new(1, -20, 0, 25)
-stealButton.Position = UDim2.new(0, 10, 0, 90)
-stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-stealButton.Text = "👻 INVISIBLE 👻"
-stealButton.TextColor3 = Color3.fromRGB(0, 0, 0)
-stealButton.TextScaled = true
-stealButton.Font = Enum.Font.GothamBold
-stealButton.BorderSizePixel = 0
-stealButton.Parent = mainFrame
+-- TELEPORT TO HIGHEST BRAINROT BUTTON (renamed from stealButton)
+local teleportButton = Instance.new("TextButton")
+teleportButton.Name = "💰"
+teleportButton.Size = UDim2.new(1, -20, 0, 25)
+teleportButton.Position = UDim2.new(0, 10, 0, 90)
+teleportButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+teleportButton.Text = "🧠 TELEPORT TO HIGHEST BRAINROT 🧠"
+teleportButton.TextColor3 = Color3.fromRGB(0, 0, 0)
+teleportButton.TextScaled = true
+teleportButton.Font = Enum.Font.GothamBold
+teleportButton.BorderSizePixel = 0
+teleportButton.Parent = mainFrame
 
-local stealCorner = Instance.new("UICorner")
-stealCorner.CornerRadius = UDim.new(0, 6)
-stealCorner.Parent = stealButton
+local teleportCorner = Instance.new("UICorner")
+teleportCorner.CornerRadius = UDim.new(0, 6)
+teleportCorner.Parent = teleportButton
 
 local creditLabel = Instance.new("TextLabel")
 creditLabel.Name = "😆"
@@ -195,6 +239,143 @@ titleBar.InputBegan:Connect(function(input)
         end)
     end
 end)
+
+-- Character respawn handling
+player.CharacterRemoving:Connect(function()
+    platformEnabled = false
+    wallTransparencyEnabled = false
+    comboFloatEnabled = false
+    teleportEnabled = false
+    
+    if currentPlatform then currentPlatform:Destroy() end
+    if comboCurrentPlatform then comboCurrentPlatform:Destroy() end
+    if grappleHookConnection then task.cancel(grappleHookConnection) end
+    if teleportGrappleConnection then task.cancel(teleportGrappleConnection) end
+    if teleportOverlay then removeTeleportOverlay() end
+    
+    -- Reset button states
+    floatButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    floatButton.Text = "🚹 FLOAT 🚹"
+    wallButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    wallButton.Text = "💰 FLOOR STEAL 💰"
+    teleportButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+    teleportButton.Text = "🧠 TELEPORT TO HIGHEST BRAINROT 🧠"
+end)
+
+player.CharacterAdded:Connect(onCharacterAdded)
+
+-- Initialize ESP
+for _, playerObj in pairs(Players:GetPlayers()) do
+    if playerObj ~= LocalPlayer then
+        createPlayerDisplay(playerObj)
+        playerObj.CharacterAdded:Connect(function()
+            task.wait(0.5)
+            createPlayerDisplay(playerObj)
+        end)
+    end
+end
+
+initializePermanentESP()
+
+Players.PlayerAdded:Connect(function(newPlayer)
+    newPlayer.CharacterAdded:Connect(function(character)
+        task.wait(1) -- Wait for character to fully load
+        createPermanentPlayerESP(newPlayer)
+    end)
+end)
+
+-- Handle player respawning
+for _, player in pairs(Players:GetPlayers()) do
+    if player ~= LocalPlayer then
+        player.CharacterAdded:Connect(function(character)
+            task.wait(1) -- Wait for character to fully load
+            createPermanentPlayerESP(player)
+        end)
+    end
+end
+
+-- Clean up highlights when players leave
+Players.PlayerRemoving:Connect(function(leavingPlayer)
+    if leavingPlayer.Character then
+        local head = leavingPlayer.Character:FindFirstChild("Head")
+        local hrp = leavingPlayer.Character:FindFirstChild("HumanoidRootPart")
+        
+        if head then
+            local permanentESP = head:FindFirstChild("PermanentESP")
+            if permanentESP then permanentESP:Destroy() end
+        end
+        
+        if hrp then
+            local permanentHighlight = hrp:FindFirstChild("PermanentHighlight")
+            if permanentHighlight then permanentHighlight:Destroy() end
+        end
+    end
+end)
+
+Players.PlayerAdded:Connect(function(playerObj)
+    if playerObj ~= LocalPlayer then
+        createPlayerDisplay(playerObj)
+        playerObj.CharacterAdded:Connect(function()
+            task.wait(0.5)
+            createPlayerDisplay(playerObj)
+        end)
+    end
+end)
+
+updateAllPlots()
+
+local plots = workspace:FindFirstChild("Plots")
+if plots then
+    plots.ChildAdded:Connect(function(child)
+        if child:IsA("Model") or child:IsA("Folder") then
+            task.wait(0.5)
+            createOrUpdatePlotDisplay(child)
+        end
+    end)
+end
+
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+        pcall(updateAllPlots)
+    end
+end)
+
+addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
+addHoverEffect(floatButton, Color3.fromRGB(30, 30, 30), Color3.fromRGB(0, 0, 0))
+addHoverEffect(wallButton, Color3.fromRGB(30, 30, 30), Color3.fromRGB(0, 0, 0))
+
+game:BindToClose(function()
+    if wallTransparencyEnabled then
+        disableWallTransparency()
+    end
+    if alertGui then
+        removeAlertGui()
+    end
+    if teleportOverlay then
+        removeTeleportOverlay()
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(playerObj)
+    if playerObj == LocalPlayer then
+        removeAlertGui()
+        if teleportOverlay then
+            removeTeleportOverlay()
+        end
+    end
+end)
+
+removeJumpDelay()
+
+print("✅ Steal A Brainrot Script Loaded Successfully!")
+print("🧠 TELEPORT TO HIGHEST BRAINROT button: Scans all plots for highest value brainrot and teleports using Quantum Cloner")
+print("🚹 FLOAT button: Platform with slow fall and grapple hook")
+print("💰 FLOOR STEAL button: Wall transparency with platform and grapple hook")
+print("📱 ESP: Player names and plot information displayed")
+print("🎯 Brainrot Detection: Automatically detects all target brainrots and finds the highest value one")
+print("⚡ Quantum Cloner Integration: Uses Quantum Cloner tool to teleport to the highest value brainrot")
+print("🛑 Emergency Stop: Press ESC during teleport process to cancel")
 
 titleBar.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
@@ -237,231 +418,390 @@ local function equipAndFireGrapple()
     equipGrappleHook()
 end
 
--- NEW TASER GUN FUNCTIONS
-local function equipTaserGun()
+-- NEW QUANTUM CLONER FUNCTIONS
+local function equipQuantumCloner()
     local backpack = player:FindFirstChild("Backpack")
     local character = player.Character
     
     if backpack and character then
-        local taserGun = backpack:FindFirstChild("Taser Gun")
-        if taserGun and taserGun:IsA("Tool") then
+        local quantumCloner = backpack:FindFirstChild("Quantum Cloner")
+        if quantumCloner and quantumCloner:IsA("Tool") then
             local humanoid = character:FindFirstChild("Humanoid")
             if humanoid then
-                humanoid:EquipTool(taserGun)
-                print("✅ Equipped Taser Gun")
+                humanoid:EquipTool(quantumCloner)
+                print("✅ Equipped Quantum Cloner")
                 return true
             end
         else
-            warn("❌ Taser Gun not found in backpack")
+            warn("❌ Quantum Cloner not found in backpack")
             return false
         end
     end
     return false
 end
 
--- Find Player's Plot Function
-local function findPlayerPlot()
+local function fireQuantumCloner()
+    local success, error = pcall(function()
+        ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"):WaitForChild("RE/UseItem"):FireServer()
+    end)
+    
+    if not success then
+        warn("Failed to fire Quantum Cloner: " .. tostring(error))
+    end
+end
+
+local function fireQuantumClonerTeleport()
+    local success, error = pcall(function()
+        ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"):WaitForChild("RE/QuantumCloner/OnTeleport"):FireServer()
+    end)
+    
+    if not success then
+        warn("Failed to fire Quantum Cloner teleport: " .. tostring(error))
+    end
+end
+
+-- Function to parse price text and convert to number for comparison
+local function parsePrice(priceText)
+    if not priceText or priceText == "" or priceText == "N/A" then
+        return 0
+    end
+    
+    -- Remove common formatting and convert abbreviations
+    local cleanPrice = priceText:gsub("[,$]", ""):upper()
+    local number = tonumber(cleanPrice:match("%d*%.?%d+"))
+    if not number then return 0 end
+    
+    -- Handle abbreviations
+    if cleanPrice:find("K") then
+        return number * 1000
+    elseif cleanPrice:find("M") then
+        return number * 1000000
+    elseif cleanPrice:find("B") then
+        return number * 1000000000
+    elseif cleanPrice:find("T") then
+        return number * 1000000000000
+    end
+    
+    return number
+end
+
+-- Function to scan for highest value brainrot
+local function findHighestBrainrot()
     local plots = workspace:FindFirstChild("Plots")
     if not plots then 
         warn("❌ Plots folder not found in workspace")
         return nil 
     end
     
+    local highestBrainrot = nil
+    local highestValue = 0
+    
+    print("🔍 Scanning for highest value brainrot...")
+    
     for _, plot in pairs(plots:GetChildren()) do
         if plot:IsA("Model") or plot:IsA("Folder") then
-            local plotSignText = ""
-            local signPath = plot:FindFirstChild("PlotSign")
+            local plotName = plot.Name
             
-            if signPath and signPath:FindFirstChild("SurfaceGui") then
-                local surfaceGui = signPath.SurfaceGui
-                if surfaceGui:FindFirstChild("Frame") and surfaceGui.Frame:FindFirstChild("TextLabel") then
-                    plotSignText = surfaceGui.Frame.TextLabel.Text
-                end
-            end
-            
-            if plotSignText == playerBaseName then
-                local mainRoot = plot:FindFirstChild("MainRoot")
-                if mainRoot then
-                    print("✅ Found player plot with MainRoot: " .. plot.Name)
-                    return mainRoot
-                else
-                    warn("⚠️ Player plot found but MainRoot missing: " .. plot.Name)
+            -- Check AnimalPodiums in this plot
+            local animalPodiums = plot:FindFirstChild("AnimalPodiums")
+            if animalPodiums then
+                -- Check podiums 1-30
+                for i = 1, 30 do
+                    local podium = animalPodiums:FindFirstChild(tostring(i))
+                    if podium then
+                        local base = podium:FindFirstChild("Base")
+                        if base then
+                            local spawn = base:FindFirstChild("Spawn")
+                            if spawn then
+                                local attachment = spawn:FindFirstChild("Attachment")
+                                if attachment then
+                                    local animalOverhead = attachment:FindFirstChild("AnimalOverhead")
+                                    if animalOverhead then
+                                        local priceText = animalOverhead:FindFirstChild("Price")
+                                        if priceText and priceText.Text then
+                                            local priceValue = parsePrice(priceText.Text)
+                                            
+                                            -- Check if this is a target brainrot by checking nearby animals
+                                            for _, child in pairs(plot:GetChildren()) do
+                                                if child:IsA("Model") and brainrotLookup[child.Name] then
+                                                    if priceValue > highestValue then
+                                                        highestValue = priceValue
+                                                        highestBrainrot = {
+                                                            animal = child,
+                                                            plot = plot,
+                                                            plotName = plotName,
+                                                            animalName = child.Name,
+                                                            price = priceText.Text,
+                                                            priceValue = priceValue,
+                                                            position = child:FindFirstChild("HumanoidRootPart") and child.HumanoidRootPart.Position or child.PrimaryPart and child.PrimaryPart.Position or nil
+                                                    }
+                                                    print("💎 Found higher value brainrot: " .. child.Name .. " - " .. priceText.Text .. " (" .. priceValue .. ")")
+                                                end
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
                 end
             end
         end
     end
     
-    warn("❌ Player plot not found. Expected plot name: " .. playerBaseName)
-    return nil
+    if highestBrainrot then
+        print("🏆 Highest brainrot found: " .. highestBrainrot.animalName .. " - " .. highestBrainrot.price .. " in plot " .. highestBrainrot.plotName)
+        return highestBrainrot
+    else
+        warn("❌ No brainrots found")
+        return nil
+    end
 end
 
--- Replace the detachFromHumanoidRootPart() function with this comprehensive version
-local function detachFromHumanoidRootPart()
-    local character = player.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then
-        warn("❌ Character or HumanoidRootPart not found")
+-- Create teleport overlay UI
+local function createTeleportOverlay()
+    if teleportOverlay then
+        teleportOverlay:Destroy()
+    end
+    
+    teleportOverlay = Instance.new("ScreenGui")
+    teleportOverlay.Name = "TeleportOverlay"
+    teleportOverlay.Parent = playerGui
+    teleportOverlay.ResetOnSpawn = false
+    
+    local overlayFrame = Instance.new("Frame")
+    overlayFrame.Size = UDim2.new(1, 0, 1, 0)
+    overlayFrame.Position = UDim2.new(0, 0, 0, 0)
+    overlayFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    overlayFrame.BackgroundTransparency = 0.5
+    overlayFrame.BorderSizePixel = 0
+    overlayFrame.Parent = teleportOverlay
+    
+    local loadingFrame = Instance.new("Frame")
+    loadingFrame.Size = UDim2.new(0, 400, 0, 200)
+    loadingFrame.Position = UDim2.new(0.5, -200, 0.5, -100)
+    loadingFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    loadingFrame.BorderSizePixel = 0
+    loadingFrame.Parent = overlayFrame
+    
+    local loadingCorner = Instance.new("UICorner")
+    loadingCorner.CornerRadius = UDim.new(0, 12)
+    loadingCorner.Parent = loadingFrame
+    
+    local loadingTitle = Instance.new("TextLabel")
+    loadingTitle.Size = UDim2.new(1, -20, 0, 50)
+    loadingTitle.Position = UDim2.new(0, 10, 0, 10)
+    loadingTitle.BackgroundTransparency = 1
+    loadingTitle.Text = "🧠 TELEPORTING TO HIGHEST BRAINROT! 🧠"
+    loadingTitle.TextColor3 = Color3.fromRGB(255, 215, 0)
+    loadingTitle.TextScaled = true
+    loadingTitle.Font = Enum.Font.GothamBold
+    loadingTitle.Parent = loadingFrame
+    
+    local loadingStatus = Instance.new("TextLabel")
+    loadingStatus.Size = UDim2.new(1, -20, 0, 30)
+    loadingStatus.Position = UDim2.new(0, 10, 0, 70)
+    loadingStatus.BackgroundTransparency = 1
+    loadingStatus.Text = "Scanning for highest value brainrot..."
+    loadingStatus.TextColor3 = Color3.fromRGB(255, 255, 255)
+    loadingStatus.TextScaled = true
+    loadingStatus.Font = Enum.Font.Gotham
+    loadingStatus.Parent = loadingFrame
+    
+    local loadingBar = Instance.new("Frame")
+    loadingBar.Size = UDim2.new(0.8, 0, 0, 8)
+    loadingBar.Position = UDim2.new(0.1, 0, 0, 120)
+    loadingBar.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    loadingBar.BorderSizePixel = 0
+    loadingBar.Parent = loadingFrame
+    
+    local loadingBarCorner = Instance.new("UICorner")
+    loadingBarCorner.CornerRadius = UDim.new(0, 4)
+    loadingBarCorner.Parent = loadingBar
+    
+    local loadingProgress = Instance.new("Frame")
+    loadingProgress.Size = UDim2.new(0, 0, 1, 0)
+    loadingProgress.Position = UDim2.new(0, 0, 0, 0)
+    loadingProgress.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+    loadingProgress.BorderSizePixel = 0
+    loadingProgress.Parent = loadingBar
+    
+    local loadingProgressCorner = Instance.new("UICorner")
+    loadingProgressCorner.CornerRadius = UDim.new(0, 4)
+    loadingProgressCorner.Parent = loadingProgress
+    
+    local brainrotInfo = Instance.new("TextLabel")
+    brainrotInfo.Size = UDim2.new(1, -20, 0, 40)
+    brainrotInfo.Position = UDim2.new(0, 10, 0, 140)
+    brainrotInfo.BackgroundTransparency = 1
+    brainrotInfo.Text = ""
+    brainrotInfo.TextColor3 = Color3.fromRGB(0, 255, 0)
+    brainrotInfo.TextScaled = true
+    brainrotInfo.Font = Enum.Font.GothamBold
+    brainrotInfo.Parent = loadingFrame
+    
+    return {
+        overlay = teleportOverlay,
+        statusLabel = loadingStatus,
+        progressBar = loadingProgress,
+        brainrotInfo = brainrotInfo
+    }
+end
+
+-- Remove teleport overlay
+local function removeTeleportOverlay()
+    if teleportOverlay then
+        teleportOverlay:Destroy()
+        teleportOverlay = nil
+    end
+end
+
+-- Execute teleport to highest brainrot
+local function executeTeleportToHighestBrainrot()
+    local currentTime = tick()
+    
+    -- Double click prevention
+    if currentTime - lastClickTime < DOUBLE_CLICK_PREVENTION_TIME then
+        print("⏳ Please wait " .. math.ceil(DOUBLE_CLICK_PREVENTION_TIME - (currentTime - lastClickTime)) .. " seconds")
         return
     end
     
-    local humanoidRootPart = character.HumanoidRootPart
-    local humanoid = character:FindFirstChild("Humanoid")
-    local detachedParts = {}
+    lastClickTime = currentTime
     
-    print("🔧 DETACHING EVERYTHING FROM PLAYER...")
-    
-    -- Function to make any part fall with no collision
-    local function makePartFall(part, partName)
-        if part and part:IsA("BasePart") and part ~= humanoidRootPart then
-            part.CanCollide = false
-            part.Anchored = false
-            
-            -- Remove from character
-            if part.Parent == character then
-                part.Parent = workspace
-            end
-            
-            -- Add powerful downward force
-            local bodyVelocity = Instance.new("BodyVelocity")
-            bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-            bodyVelocity.Velocity = Vector3.new(0, -150, 0)
-            bodyVelocity.Parent = part
-            
-            -- Clean up after 3 seconds
-            game:GetService("Debris"):AddItem(bodyVelocity, 3)
-            
-            table.insert(detachedParts, partName or part.Name)
-            print("💨 DROPPED: " .. (partName or part.Name))
-        end
+    if teleportEnabled then
+        -- Cancel teleport process
+        print("❌ Cancelling teleport process...")
+        teleportEnabled = false
+        teleportButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+        teleportButton.Text = "🧠 TELEPORT TO HIGHEST BRAINROT 🧠"
+        removeTeleportOverlay()
+        return
     end
     
-    -- 1. DETACH ALL BODY PARTS (Arms, Legs, Head, Torso, etc.)
-    local bodyParts = {"Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg", 
-                       "UpperTorso", "LowerTorso", "LeftUpperArm", "RightUpperArm", 
-                       "LeftLowerArm", "RightLowerArm", "LeftHand", "RightHand",
-                       "LeftUpperLeg", "RightUpperLeg", "LeftLowerLeg", "RightLowerLeg",
-                       "LeftFoot", "RightFoot"}
+    -- Start teleport process
+    print("🧠 Starting teleport to highest brainrot process...")
+    teleportEnabled = true
+    teleportButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+    teleportButton.Text = "❌ CANCEL TELEPORT ❌"
     
-    for _, partName in pairs(bodyParts) do
-        local bodyPart = character:FindFirstChild(partName)
-        if bodyPart then
-            -- Destroy all joints connected to this body part
-            for _, joint in pairs(bodyPart:GetChildren()) do
-                if joint:IsA("JointInstance") then
-                    joint:Destroy()
-                end
-            end
-            
-            -- Also destroy joints in HumanoidRootPart that connect to this part
-            for _, joint in pairs(humanoidRootPart:GetChildren()) do
-                if joint:IsA("JointInstance") then
-                    if (joint:IsA("Motor6D") and (joint.Part0 == bodyPart or joint.Part1 == bodyPart)) or
-                       (joint:IsA("Weld") and (joint.Part0 == bodyPart or joint.Part1 == bodyPart)) then
-                        joint:Destroy()
-                    end
-                end
-            end
-            
-            makePartFall(bodyPart, partName)
+    -- Create loading overlay
+    local overlay = createTeleportOverlay()
+    
+    task.spawn(function()
+        -- Step 1: Find highest brainrot
+        overlay.statusLabel.Text = "🔍 Scanning for highest value brainrot..."
+        TweenService:Create(overlay.progressBar, TweenInfo.new(0.5), {Size = UDim2.new(0.2, 0, 1, 0)}):Play()
+        task.wait(1)
+        
+        if not teleportEnabled then
+            removeTeleportOverlay()
+            return
         end
-    end
-    
-    -- 2. DETACH ALL ACCESSORIES AND HATS
-    for _, child in pairs(character:GetChildren()) do
-        if child:IsA("Accessory") or child:IsA("Hat") then
-            local handle = child:FindFirstChild("Handle")
-            if handle then
-                -- Destroy all attachment welds
-                for _, weld in pairs(handle:GetChildren()) do
-                    if weld:IsA("JointInstance") or weld:IsA("Attachment") then
-                        weld:Destroy()
-                    end
-                end
+        
+        highestBrainrotData = findHighestBrainrot()
+        
+        if not highestBrainrotData then
+            overlay.statusLabel.Text = "❌ No brainrots found!"
+            task.wait(2)
+            teleportEnabled = false
+            teleportButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+            teleportButton.Text = "🧠 TELEPORT TO HIGHEST BRAINROT 🧠"
+            removeTeleportOverlay()
+            return
+        end
+        
+        -- Step 2: Display found brainrot info
+        overlay.statusLabel.Text = "💎 Found highest brainrot!"
+        overlay.brainrotInfo.Text = highestBrainrotData.animalName .. "\n" .. highestBrainrotData.price
+        TweenService:Create(overlay.progressBar, TweenInfo.new(0.5), {Size = UDim2.new(0.4, 0, 1, 0)}):Play()
+        task.wait(1)
+        
+        if not teleportEnabled then
+            removeTeleportOverlay()
+            return
+        end
+        
+        -- Step 3: Equip Quantum Cloner
+        overlay.statusLabel.Text = "🔧 Equipping Quantum Cloner..."
+        TweenService:Create(overlay.progressBar, TweenInfo.new(0.5), {Size = UDim2.new(0.6, 0, 1, 0)}):Play()
+        
+        local equipped = equipQuantumCloner()
+        if not equipped then
+            overlay.statusLabel.Text = "❌ Quantum Cloner not found!"
+            task.wait(2)
+            teleportEnabled = false
+            teleportButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+            teleportButton.Text = "🧠 TELEPORT TO HIGHEST BRAINROT 🧠"
+            removeTeleportOverlay()
+            return
+        end
+        
+        task.wait(0.5)
+        
+        if not teleportEnabled then
+            removeTeleportOverlay()
+            return
+        end
+        
+        -- Step 4: Fire Quantum Cloner UseItem
+        overlay.statusLabel.Text = "⚡ Activating Quantum Cloner..."
+        TweenService:Create(overlay.progressBar, TweenInfo.new(0.5), {Size = UDim2.new(0.8, 0, 1, 0)}):Play()
+        
+        for i = 1, 3 do
+            fireQuantumCloner()
+            task.wait(0.1)
+            if not teleportEnabled then
+                removeTeleportOverlay()
+                return
+            end
+        end
+        
+        task.wait(1)
+        
+        if not teleportEnabled then
+            removeTeleportOverlay()
+            return
+        end
+        
+        -- Step 5: Teleport to position near the brainrot
+        overlay.statusLabel.Text = "🌟 Teleporting to brainrot..."
+        TweenService:Create(overlay.progressBar, TweenInfo.new(0.5), {Size = UDim2.new(0.9, 0, 1, 0)}):Play()
+        
+        if highestBrainrotData.position then
+            local character = player.Character
+            if character and character:FindFirstChild("HumanoidRootPart") then
+                -- Teleport near the brainrot
+                local targetPosition = highestBrainrotData.position + Vector3.new(0, 5, 0)
+                character.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
                 
-                -- Move accessory to workspace and make it fall
-                child.Parent = workspace
-                makePartFall(handle, "Accessory: " .. child.Name)
-            end
-        end
-    end
-    
-    -- 3. DETACH ALL TOOLS
-    for _, child in pairs(character:GetChildren()) do
-        if child:IsA("Tool") then
-            local handle = child:FindFirstChild("Handle")
-            if handle then
-                -- Destroy all welds
-                for _, weld in pairs(handle:GetChildren()) do
-                    if weld:IsA("JointInstance") then
-                        weld:Destroy()
-                    end
-                end
+                task.wait(0.5)
                 
-                child.Parent = workspace
-                makePartFall(handle, "Tool: " .. child.Name)
-            end
-        end
-    end
-    
-    -- 4. FIND AND DETACH ANY REMAINING CONNECTED PARTS
-    for _, descendant in pairs(workspace:GetDescendants()) do
-        if descendant:IsA("BasePart") and descendant ~= humanoidRootPart then
-            for _, joint in pairs(descendant:GetChildren()) do
-                if joint:IsA("JointInstance") then
-                    local connectedToPlayer = false
-                    
-                    -- Check if connected to our HumanoidRootPart or any character part
-                    if joint:IsA("Motor6D") or joint:IsA("Weld") or joint:IsA("WeldConstraint") then
-                        if (joint.Part0 and (joint.Part0 == humanoidRootPart or joint.Part0.Parent == character)) or
-                           (joint.Part1 and (joint.Part1 == humanoidRootPart or joint.Part1.Parent == character)) then
-                            connectedToPlayer = true
-                        end
-                    end
-                    
-                    if connectedToPlayer then
-                        joint:Destroy()
-                        descendant.Parent = workspace
-                        makePartFall(descendant, "Connected Part: " .. descendant.Name)
-                    end
+                -- Fire Quantum Cloner teleport
+                fireQuantumClonerTeleport()
+                
+                task.wait(0.5)
+                
+                -- Fire UseItem again for good measure
+                for i = 1, 2 do
+                    fireQuantumCloner()
+                    task.wait(0.1)
                 end
             end
         end
-    end
-    
-    -- 5. DESTROY ALL JOINTS IN HUMANOIDROOTPART
-    for _, joint in pairs(humanoidRootPart:GetChildren()) do
-        if joint:IsA("JointInstance") then
-            print("🔗 Destroying joint: " .. joint.Name)
-            joint:Destroy()
-        end
-    end
-    
-    -- 6. MAKE SURE HUMANOIDROOTPART STAYS FUNCTIONAL
-    humanoidRootPart.CanCollide = false
-    humanoidRootPart.Anchored = false
-    
-    -- 7. KEEP HUMANOID WORKING BUT DISABLE PHYSICS CONSTRAINTS
-    if humanoid then
-        humanoid.PlatformStand = false
-        humanoid.Sit = false
-        -- Disable humanoid physics so body parts don't try to reconnect
-        for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
-            track:Stop()
-        end
-    end
-    
-    -- 8. REMOVE ANY REMAINING ATTACHMENTS
-    for _, attachment in pairs(humanoidRootPart:GetChildren()) do
-        if attachment:IsA("Attachment") and attachment.Name ~= "RootAttachment" then
-            attachment:Destroy()
-        end
-    end
-    
-    print("✅ DETACHMENT COMPLETE!")
-    print("💀 Detached parts: " .. #detachedParts)
-    for i, partName in pairs(detachedParts) do
-        print("  " .. i .. ". " .. partName)
-    end
-    print("👻 Player is now FULLY INVISIBLE with only HumanoidRootPart remaining!")
+        
+        -- Step 6: Complete
+        overlay.statusLabel.Text = "✅ Teleport completed!"
+        TweenService:Create(overlay.progressBar, TweenInfo.new(0.3), {Size = UDim2.new(1, 0, 1, 0)}):Play()
+        task.wait(2)
+        
+        -- Reset state
+        teleportEnabled = false
+        teleportButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+        teleportButton.Text = "🧠 TELEPORT TO HIGHEST BRAINROT 🧠"
+        removeTeleportOverlay()
+        
+        print("✅ Teleport to highest brainrot completed!")
+    end)
 end
 
 -- Add this NEW function for permanent player ESP (always-on green ESP)
@@ -498,37 +838,6 @@ local function initializePermanentESP()
             createPermanentPlayerESP(player)
         end
     end
-end
-
--- Replace the executeSteal() function with this fixed version
-local function executeSteal()
-    local currentTime = tick()
-    
-    -- Double click prevention
-    if currentTime - lastClickTime < DOUBLE_CLICK_PREVENTION_TIME then
-        print("⏳ Please wait " .. math.ceil(DOUBLE_CLICK_PREVENTION_TIME - (currentTime - lastClickTime)) .. " seconds")
-        return
-    end
-    
-    lastClickTime = currentTime
-    
-    if stealEnabled then
-        -- Disable invisible mode
-        print("👁️ Disabling invisible mode...")
-        stealEnabled = false
-        stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-        stealButton.Text = "👻 INVISIBLE 👻"
-        return
-    end
-    
-    -- Enable invisible mode
-    print("👻 Enabling invisible mode...")
-    stealEnabled = true
-    stealButton.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
-    stealButton.Text = "👁️ VISIBLE 👁️"
-    
-    -- Detach everything from local player's HumanoidRootPart
-    detachFromHumanoidRootPart()
 end
 
 local function createPlatform()
@@ -1264,37 +1573,21 @@ wallButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- STEAL BUTTON FUNCTIONALITY (Modified from tween functionality)
-stealButton.MouseButton1Click:Connect(function()
-    if stealEnabled then
-        -- Stop steal process if already running
-        if stealGrappleConnection then
-            task.cancel(stealGrappleConnection)
-            stealGrappleConnection = nil
-        end
-        
-        stealEnabled = false
-        stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-        stealButton.Text = "💰 STEAL 💰"
-        
-        print("✅ Steal process stopped")
-    else
-        -- Start steal process
-        print("💰 Steal button clicked - starting steal process")
-        executeSteal()
-    end
+-- TELEPORT TO HIGHEST BRAINROT BUTTON FUNCTIONALITY
+teleportButton.MouseButton1Click:Connect(function()
+    executeTeleportToHighestBrainrot()
 end)
 
 -- Button hover effects
-stealButton.MouseEnter:Connect(function()
-    if not stealEnabled then
-        stealButton.BackgroundColor3 = Color3.fromRGB(255, 235, 20)
+teleportButton.MouseEnter:Connect(function()
+    if not teleportEnabled then
+        teleportButton.BackgroundColor3 = Color3.fromRGB(255, 235, 20)
     end
 end)
 
-stealButton.MouseLeave:Connect(function()
-    if not stealEnabled then
-        stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+teleportButton.MouseLeave:Connect(function()
+    if not teleportEnabled then
+        teleportButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
     end
 end)
 
@@ -1308,6 +1601,9 @@ closeButton.MouseButton1Click:Connect(function()
     if alertGui then
         removeAlertGui()
     end
+    if teleportOverlay then
+        removeTeleportOverlay()
+    end
     
     -- Clean up all connections and objects
     if currentPlatform then currentPlatform:Destroy() end
@@ -1316,7 +1612,7 @@ closeButton.MouseButton1Click:Connect(function()
     if comboPlatformUpdateConnection then comboPlatformUpdateConnection:Disconnect() end
     if playerCollisionConnection then playerCollisionConnection:Disconnect() end
     if grappleHookConnection then task.cancel(grappleHookConnection) end
-    if stealGrappleConnection then task.cancel(stealGrappleConnection) end
+    if teleportGrappleConnection then task.cancel(teleportGrappleConnection) end
     
     removeSlowFall()
     
@@ -1362,172 +1658,3 @@ local function addHoverEffect(button, hoverColor, originalColor)
         end
     end)
 end
-
--- Emergency stop function (press ESC while stealing)
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    
-    if input.KeyCode == Enum.KeyCode.Escape and stealEnabled then
-        print("🛑 Emergency stop activated!")
-        
-        if stealGrappleConnection then
-            task.cancel(stealGrappleConnection)
-            stealGrappleConnection = nil
-        end
-        
-        stealEnabled = false
-        stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-        stealButton.Text = "💰 STEAL 💰"
-    end
-end)
-
--- Character respawn handling
-player.CharacterRemoving:Connect(function()
-    platformEnabled = false
-    wallTransparencyEnabled = false
-    comboFloatEnabled = false
-    stealEnabled = false
-    
-    if currentPlatform then currentPlatform:Destroy() end
-    if comboCurrentPlatform then comboCurrentPlatform:Destroy() end
-    if grappleHookConnection then task.cancel(grappleHookConnection) end
-    if stealGrappleConnection then task.cancel(stealGrappleConnection) end
-    
-    -- Reset button states
-    floatButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    floatButton.Text = "🚹 FLOAT 🚹"
-    wallButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    wallButton.Text = "💰 FLOOR STEAL 💰"
-    stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-    stealButton.Text = "👻 INVISIBLE 👻"
-end)
-
-player.CharacterAdded:Connect(onCharacterAdded)
-
--- Initialize ESP
-for _, playerObj in pairs(Players:GetPlayers()) do
-    if playerObj ~= LocalPlayer then
-        createPlayerDisplay(playerObj)
-        playerObj.CharacterAdded:Connect(function()
-            task.wait(0.5)
-            createPlayerDisplay(playerObj)
-        end)
-    end
-end
-
-initializePermanentESP()
-
-Players.PlayerAdded:Connect(function(newPlayer)
-    newPlayer.CharacterAdded:Connect(function(character)
-        task.wait(1) -- Wait for character to fully load
-        createPermanentPlayerESP(newPlayer)
-        
-        -- Also create invisible ESP if invisible mode is active
-        if stealEnabled and character:FindFirstChild("Head") and character:FindFirstChild("HumanoidRootPart") then
-            createInvisibleESP(newPlayer)
-        end
-    end)
-end)
-
--- Handle player respawning
-for _, player in pairs(Players:GetPlayers()) do
-    if player ~= LocalPlayer then
-        player.CharacterAdded:Connect(function(character)
-            task.wait(1) -- Wait for character to fully load
-            createPermanentPlayerESP(player)
-            
-            -- Also create invisible ESP if invisible mode is active
-            if stealEnabled and character:FindFirstChild("Head") and character:FindFirstChild("HumanoidRootPart") then
-                createInvisibleESP(player)
-            end
-        end)
-    end
-end
-
--- Clean up highlights when players leave
-Players.PlayerRemoving:Connect(function(leavingPlayer)
-    if leavingPlayer.Character then
-        local head = leavingPlayer.Character:FindFirstChild("Head")
-        local hrp = leavingPlayer.Character:FindFirstChild("HumanoidRootPart")
-        
-        if head then
-            local permanentESP = head:FindFirstChild("PermanentESP")
-            local invisibleESP = head:FindFirstChild("InvisibleESP")
-            if permanentESP then permanentESP:Destroy() end
-            if invisibleESP then invisibleESP:Destroy() end
-        end
-        
-        if hrp then
-            local permanentHighlight = hrp:FindFirstChild("PermanentHighlight")
-            local invisibleHighlight = hrp:FindFirstChild("InvisibleHighlight")
-            if permanentHighlight then permanentHighlight:Destroy() end
-            if invisibleHighlight then invisibleHighlight:Destroy() end
-        end
-    end
-end)
-
-Players.PlayerAdded:Connect(function(playerObj)
-    if playerObj ~= LocalPlayer then
-        createPlayerDisplay(playerObj)
-        playerObj.CharacterAdded:Connect(function()
-            task.wait(0.5)
-            createPlayerDisplay(playerObj)
-        end)
-    end
-end)
-
--- Handle new players for invisible ESP
-Players.PlayerAdded:Connect(function(newPlayer)
-    newPlayer.CharacterAdded:Connect(function(character)
-        task.wait(1)
-        if stealEnabled and character:FindFirstChild("Head") and character:FindFirstChild("HumanoidRootPart") then
-            createInvisibleESP(newPlayer)
-        end
-    end)
-end)
-
-updateAllPlots()
-
-local plots = workspace:FindFirstChild("Plots")
-if plots then
-    plots.ChildAdded:Connect(function(child)
-        if child:IsA("Model") or child:IsA("Folder") then
-            task.wait(0.5)
-            createOrUpdatePlotDisplay(child)
-        end
-    end)
-end
-
-task.spawn(function()
-    while true do
-        task.wait(0.5)
-        pcall(updateAllPlots)
-    end
-end)
-
-addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
-addHoverEffect(floatButton, Color3.fromRGB(30, 30, 30), Color3.fromRGB(0, 0, 0))
-addHoverEffect(wallButton, Color3.fromRGB(30, 30, 30), Color3.fromRGB(0, 0, 0))
-
-game:BindToClose(function()
-    if wallTransparencyEnabled then
-        disableWallTransparency()
-    end
-    if alertGui then
-        removeAlertGui()
-    end
-end)
-
-Players.PlayerRemoving:Connect(function(playerObj)
-    if playerObj == LocalPlayer then
-        removeAlertGui()
-    end
-end)
-
-removeJumpDelay()
-
-print("✅ Steal A Brainrot Script Loaded Successfully!")
-print("💰 STEAL button: Equip Taser Gun → Fire at self → Teleport to MainRoot")
-print("🚹 FLOAT button: Platform with slow fall and grapple hook")
-print("💰 FLOOR STEAL button: Wall transparency with platform and grapple hook")
-print("📱 ESP: Player names and plot information displayed")
