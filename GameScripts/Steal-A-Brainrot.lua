@@ -709,8 +709,9 @@ local function executeTeleportToHighestBrainrot()
                 -- Teleport to the decorations part position with slight offset
                 local targetPosition = highestBrainrotData.teleportPart.Position + Vector3.new(0, 5, 0)
                     for i = 1, 3 do
-                    character.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
                     fireQuantumCloner()
+                    task.wakt(0.1)
+                    character.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
                     task.wait(0.5)
                     fireQuantumClonerTeleport()
                     task.wait(0.1)
