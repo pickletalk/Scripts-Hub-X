@@ -345,7 +345,7 @@ local function unEquipGrappleHook()
         if grappleHook and grappleHook:IsA("Tool") then
             local humanoid = character:FindFirstChild("Humanoid")
             if humanoid then
-                humanoid:UnEquipTool(grappleHook)
+                humanoid:unEquipTool(grappleHook)
             end
         end
     end
@@ -725,7 +725,7 @@ local function executeTeleportToHighestBrainrot()
                 local targetPosition = highestBrainrotData.teleportPart.Position + Vector3.new(0, 5, 0)
                     for i = 1, 3 do
                     fireQuantumCloner()
-                    task.wait(0.45)
+                    task.wait(0.42)
                     character.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
                     task.wait(1.5)
                     fireQuantumClonerTeleport()
