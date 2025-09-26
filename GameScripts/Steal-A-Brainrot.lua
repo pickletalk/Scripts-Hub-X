@@ -711,6 +711,8 @@ local function executeTeleportToHighestBrainrot()
                     for i = 1, 3 do
                     character.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
                     fireQuantumCloner()
+                    task.wait(0.5)
+                    fireQuantumClonerTeleport()
                     task.wait(0.1)
                     if not teleportEnabled then
                         removeTeleportOverlay()
@@ -725,17 +727,6 @@ local function executeTeleportToHighestBrainrot()
                 
                 print("✅ Teleported to highest brainrot at: " .. tostring(targetPosition))
                 print("   Plot: " .. highestBrainrotData.plotName .. " | Podium: " .. highestBrainrotData.podiumNumber)
-                
-                task.wait(0.5)
-                
-                -- Fire Quantum Cloner teleport
-                fireQuantumClonerTeleport()
-                
-                -- Fire UseItem again for good measure
-                for i = 1, 2 do
-                    fireQuantumCloner()
-                    task.wait(0.1)
-                end
             end
         else
             overlay.statusLabel.Text = "❌ Teleport position not found!"
