@@ -947,6 +947,26 @@ local function applySlowFall()
     end)
 end
 
+local function removeSlowFall()
+    if originalGravity and player.Character then
+        local character = player.Character
+        local humanoid = character:FindFirstChild("Humanoid")
+        
+        if humanoid then
+            -- Reset to normal gravity behavior
+            if bodyVelocity then
+                bodyVelocity:Destroy()
+                bodyVelocity = nil
+            end
+            if elevationBodyVelocity then
+                elevationBodyVelocity:Destroy()
+                elevationBodyVelocity = nil
+            end
+        end
+    end
+    originalGravity = nil
+end
+
 local function createComboPlatform()
     local platform = Instance.new("Part")
     platform.Name = "😆"
@@ -1630,7 +1650,7 @@ closeButton.MouseButton1Click:Connect(function()
     if grappleHookConnection then task.cancel(grappleHookConnection) end
     if teleportGrappleConnection then task.cancel(teleportGrappleConnection) end
     
-    removeSlowFall()
+    pcall(removeSlowFall) -- Use pcall in case function has issues
     
     screenGui:Destroy()
     
