@@ -345,7 +345,7 @@ local function unEquipGrappleHook()
         if grappleHook and grappleHook:IsA("Tool") then
             local humanoid = character:FindFirstChild("Humanoid")
             if humanoid then
-                humanoid:unEquipTool(grappleHook)
+                humanoid:UnequipTool(grappleHook)
             end
         end
     end
