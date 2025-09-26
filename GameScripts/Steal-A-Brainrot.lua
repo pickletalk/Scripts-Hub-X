@@ -474,7 +474,7 @@ local function findHighestBrainrot()
                                 if attachment then
                                     local animalOverhead = attachment:FindFirstChild("AnimalOverhead")
                                     if animalOverhead then
-                                        local priceLabel = animalOverhead:FindFirstChild("Price")
+                                        local priceLabel = animalOverhead:FindFirstChild("Generation")
                                         if priceLabel and priceLabel.Text and priceLabel.Text ~= "" and priceLabel.Text ~= "N/A" then
                                             local priceValue = parsePrice(priceLabel.Text)
                                             
