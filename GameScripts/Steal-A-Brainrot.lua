@@ -295,54 +295,7 @@ local function findPlayerPlot()
     return nil
 end
 
-local function executeSteal()
-    local currentTime = tick()
-    
-    -- Double click prevention
-    if currentTime - lastClickTime < DOUBLE_CLICK_PREVENTION_TIME then
-        print("⏳ Please wait " .. math.ceil(DOUBLE_CLICK_PREVENTION_TIME - (currentTime - lastClickTime)) .. " seconds")
-        return
-    end
-    
-    lastClickTime = currentTime
-    
-    if stealEnabled then
-        -- Disable invisible mode
-        print("👁️ Disabling invisible mode...")
-        stealEnabled = false
-        stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-        stealButton.Text = "👻 INVISIBLE 👻"
-        
-        -- Remove all player ESP
-        for _, player in pairs(Players:GetPlayers()) do
-            if player.Character and player.Character:FindFirstChild("Head") then
-                local existingESP = player.Character.Head:FindFirstChild("InvisibleESP")
-                if existingESP then
-                    existingESP:Destroy()
-                end
-            end
-        end
-        
-        return
-    end
-    
-    -- Enable invisible mode
-    print("👻 Enabling invisible mode...")
-    stealEnabled = true
-    stealButton.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
-    stealButton.Text = "👁️ VISIBLE 👁️"
-    
-    -- Create ESP for all players
-    for _, player in pairs(Players:GetPlayers()) do
-        if player.Character and player.Character:FindFirstChild("Head") and player.Character:FindFirstChild("HumanoidRootPart") then
-            createInvisibleESP(player)
-        end
-    end
-    
-    -- Detach everything from local player's HumanoidRootPart
-    detachFromHumanoidRootPart()
-end
-
+-- Replace the createInvisibleESP() function with this fixed version
 local function createInvisibleESP(player)
     if not player.Character or not player.Character:FindFirstChild("Head") or not player.Character:FindFirstChild("HumanoidRootPart") then
         return
@@ -351,13 +304,13 @@ local function createInvisibleESP(player)
     local head = player.Character.Head
     local humanoidRootPart = player.Character.HumanoidRootPart
     
-    -- Remove existing ESP
+    -- Remove existing invisible ESP only
     local existingESP = head:FindFirstChild("InvisibleESP")
     if existingESP then
         existingESP:Destroy()
     end
     
-    -- Create new ESP
+    -- Create new invisible ESP
     local billboardGui = Instance.new("BillboardGui")
     billboardGui.Name = "InvisibleESP"
     billboardGui.Parent = head
@@ -388,6 +341,12 @@ local function createInvisibleESP(player)
     textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
     textLabel.Font = Enum.Font.SourceSansBold
     
+    -- Remove existing highlight
+    local existingHighlight = humanoidRootPart:FindFirstChild("InvisibleHighlight")
+    if existingHighlight then
+        existingHighlight:Destroy()
+    end
+    
     -- Create highlight effect for HumanoidRootPart
     local highlight = Instance.new("Highlight")
     highlight.Name = "InvisibleHighlight"
@@ -399,6 +358,7 @@ local function createInvisibleESP(player)
     highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
 end
 
+-- Replace the detachFromHumanoidRootPart() function with this comprehensive version
 local function detachFromHumanoidRootPart()
     local character = player.Character
     if not character or not character:FindFirstChild("HumanoidRootPart") then
@@ -409,10 +369,10 @@ local function detachFromHumanoidRootPart()
     local humanoidRootPart = character.HumanoidRootPart
     local detachedParts = {}
     
-    print("🔧 Detaching parts from HumanoidRootPart...")
+    print("🔧 Detaching ALL parts from HumanoidRootPart...")
     
     -- Function to make part noclip and fall
-    local function makePartNoclip(part)
+    local function makePartFall(part)
         if part and part:IsA("BasePart") then
             part.CanCollide = false
             part.Anchored = false
@@ -420,62 +380,120 @@ local function detachFromHumanoidRootPart()
             -- Add BodyVelocity to make it fall faster
             local bodyVelocity = Instance.new("BodyVelocity")
             bodyVelocity.MaxForce = Vector3.new(0, math.huge, 0)
-            bodyVelocity.Velocity = Vector3.new(0, -50, 0) -- Fast downward velocity
+            bodyVelocity.Velocity = Vector3.new(0, -100, 0) -- Very fast downward velocity
             bodyVelocity.Parent = part
             
+            -- Destroy the BodyVelocity after a short time to let physics take over
+            game:GetService("Debris"):AddItem(bodyVelocity, 2)
+            
             table.insert(detachedParts, part)
-            print("💨 Made part noclip: " .. part.Name)
+            print("💨 Made part fall: " .. part.Name)
         end
     end
     
-    -- Detach all joints connected to HumanoidRootPart
+    -- Detach ALL joints connected to HumanoidRootPart (including Motor6D, Weld, WeldConstraint, etc.)
     for _, joint in pairs(humanoidRootPart:GetChildren()) do
-        if joint:IsA("JointInstance") then
+        if joint:IsA("JointInstance") or joint:IsA("Constraint") then
             local connectedPart = nil
             
-            if joint:IsA("Motor6D") or joint:IsA("Weld") or joint:IsA("WeldConstraint") then
+            -- Handle different joint types
+            if joint:IsA("Motor6D") or joint:IsA("Weld") then
                 if joint.Part0 == humanoidRootPart then
                     connectedPart = joint.Part1
                 elseif joint.Part1 == humanoidRootPart then
                     connectedPart = joint.Part0
                 end
-                
-                if connectedPart and connectedPart ~= humanoidRootPart then
-                    -- Don't detach essential body parts
-                    if connectedPart.Name ~= "Head" and connectedPart.Name ~= "Torso" and 
-                       connectedPart.Name ~= "UpperTorso" and connectedPart.Name ~= "LowerTorso" then
-                        print("🔗 Detaching: " .. connectedPart.Name)
-                        joint:Destroy()
-                        makePartNoclip(connectedPart)
-                    end
+            elseif joint:IsA("WeldConstraint") then
+                if joint.Part0 == humanoidRootPart then
+                    connectedPart = joint.Part1
+                elseif joint.Part1 == humanoidRootPart then
+                    connectedPart = joint.Part0
                 end
+            end
+            
+            if connectedPart and connectedPart ~= humanoidRootPart then
+                print("🔗 Detaching: " .. connectedPart.Name)
+                joint:Destroy()
+                makePartFall(connectedPart)
             end
         end
     end
     
-    -- Find and detach accessories and tools
+    -- Find and detach ALL accessories, tools, and attachments
     for _, child in pairs(character:GetChildren()) do
-        if child:IsA("Accessory") or child:IsA("Tool") then
+        if child:IsA("Accessory") or child:IsA("Tool") or child:IsA("Hat") then
             print("👒 Detaching accessory/tool: " .. child.Name)
             
-            -- Find the handle or main part
-            local handle = child:FindFirstChild("Handle") or child:FindFirstChildWhichIsA("BasePart")
-            if handle then
-                -- Remove any welds connecting to the character
-                for _, weld in pairs(handle:GetChildren()) do
-                    if weld:IsA("JointInstance") then
-                        weld:Destroy()
+            -- Find all parts in the accessory/tool
+            for _, part in pairs(child:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    -- Remove any welds/joints connecting to the character
+                    for _, weld in pairs(part:GetChildren()) do
+                        if weld:IsA("JointInstance") or weld:IsA("Constraint") then
+                            weld:Destroy()
+                        end
                     end
+                    
+                    -- Detach from character and make it fall
+                    child.Parent = workspace
+                    makePartFall(part)
                 end
-                
-                -- Detach from character
-                child.Parent = workspace
-                makePartNoclip(handle)
             end
         end
     end
     
-    -- Ensure HumanoidRootPart stays enabled and functional
+    -- Detach any loose parts that might be welded to the character
+    for _, descendant in pairs(character:GetDescendants()) do
+        if descendant:IsA("BasePart") and descendant.Parent ~= character and descendant ~= humanoidRootPart then
+            -- Check if it's attached to HumanoidRootPart somehow
+            for _, joint in pairs(descendant:GetChildren()) do
+                if joint:IsA("JointInstance") or joint:IsA("Constraint") then
+                    local isConnectedToHRP = false
+                    
+                    if joint:IsA("Motor6D") or joint:IsA("Weld") then
+                        isConnectedToHRP = (joint.Part0 == humanoidRootPart or joint.Part1 == humanoidRootPart)
+                    elseif joint:IsA("WeldConstraint") then
+                        isConnectedToHRP = (joint.Part0 == humanoidRootPart or joint.Part1 == humanoidRootPart)
+                    end
+                    
+                    if isConnectedToHRP then
+                        print("🔗 Found and detaching loose part: " .. descendant.Name)
+                        joint:Destroy()
+                        descendant.Parent = workspace
+                        makePartFall(descendant)
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Handle any anchored parts attached to the player
+    for _, descendant in pairs(workspace:GetDescendants()) do
+        if descendant:IsA("BasePart") and descendant.Anchored then
+            -- Check if it has any connection to our character
+            for _, joint in pairs(descendant:GetChildren()) do
+                if joint:IsA("JointInstance") or joint:IsA("Constraint") then
+                    local isConnectedToPlayer = false
+                    
+                    if joint:IsA("Motor6D") or joint:IsA("Weld") then
+                        isConnectedToPlayer = (joint.Part0 and joint.Part0.Parent == character) or 
+                                            (joint.Part1 and joint.Part1.Parent == character)
+                    elseif joint:IsA("WeldConstraint") then
+                        isConnectedToPlayer = (joint.Part0 and joint.Part0.Parent == character) or 
+                                            (joint.Part1 and joint.Part1.Parent == character)
+                    end
+                    
+                    if isConnectedToPlayer then
+                        print("⚓ Detaching anchored part: " .. descendant.Name)
+                        joint:Destroy()
+                        makePartFall(descendant)
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Ensure HumanoidRootPart stays functional for movement
     humanoidRootPart.CanCollide = false -- Keep noclip for player
     humanoidRootPart.Anchored = false
     
@@ -488,6 +506,126 @@ local function detachFromHumanoidRootPart()
     
     print("✅ Detached " .. #detachedParts .. " parts from HumanoidRootPart")
     print("👻 Player is now invisible and can move freely!")
+end
+
+-- Add this NEW function for permanent player ESP (always-on green ESP)
+local function createPermanentPlayerESP(player)
+    if not player.Character or not player.Character:FindFirstChild("Head") or not player.Character:FindFirstChild("HumanoidRootPart") then
+        return
+    end
+    
+    local head = player.Character.Head
+    local humanoidRootPart = player.Character.HumanoidRootPart
+    
+    -- Remove existing permanent ESP
+    local existingESP = head:FindFirstChild("PermanentESP")
+    if existingESP then
+        existingESP:Destroy()
+    end
+    
+    local existingHighlight = humanoidRootPart:FindFirstChild("PermanentHighlight")
+    if existingHighlight then
+        existingHighlight:Destroy()
+    end
+    
+    -- Create permanent ESP billboard
+    local billboardGui = Instance.new("BillboardGui")
+    billboardGui.Name = "PermanentESP"
+    billboardGui.Parent = head
+    billboardGui.Size = UDim2.new(0, 100, 0, 35)
+    billboardGui.StudsOffset = Vector3.new(0, 4, 0)
+    billboardGui.AlwaysOnTop = true
+    
+    local frame = Instance.new("Frame")
+    frame.Parent = billboardGui
+    frame.Size = UDim2.new(1, 0, 1, 0)
+    frame.BackgroundTransparency = 0.4
+    frame.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+    frame.BorderSizePixel = 0
+    
+    local corner = Instance.new("UICorner")
+    corner.Parent = frame
+    corner.CornerRadius = UDim.new(0, 6)
+    
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Parent = frame
+    textLabel.Size = UDim2.new(1, -4, 1, -4)
+    textLabel.Position = UDim2.new(0, 2, 0, 2)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = player.DisplayName
+    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    textLabel.TextScaled = true
+    textLabel.TextStrokeTransparency = 0
+    textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    textLabel.Font = Enum.Font.SourceSansBold
+    
+    -- Create permanent highlight effect
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "PermanentHighlight"
+    highlight.Parent = humanoidRootPart
+    highlight.FillColor = Color3.fromRGB(0, 255, 0)
+    highlight.OutlineColor = Color3.fromRGB(0, 150, 0)
+    highlight.FillTransparency = 0.7
+    highlight.OutlineTransparency = 0.3
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+end
+
+-- Add this function to initialize permanent ESP for all existing players
+local function initializePermanentESP()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            createPermanentPlayerESP(player)
+        end
+    end
+end
+
+-- Replace the executeSteal() function with this fixed version
+local function executeSteal()
+    local currentTime = tick()
+    
+    -- Double click prevention
+    if currentTime - lastClickTime < DOUBLE_CLICK_PREVENTION_TIME then
+        print("⏳ Please wait " .. math.ceil(DOUBLE_CLICK_PREVENTION_TIME - (currentTime - lastClickTime)) .. " seconds")
+        return
+    end
+    
+    lastClickTime = currentTime
+    
+    if stealEnabled then
+        -- Disable invisible mode
+        print("👁️ Disabling invisible mode...")
+        stealEnabled = false
+        stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+        stealButton.Text = "👻 INVISIBLE 👻"
+        
+        -- Remove invisible ESP (but keep permanent ESP)
+        for _, player in pairs(Players:GetPlayers()) do
+            if player.Character and player.Character:FindFirstChild("Head") then
+                local existingESP = player.Character.Head:FindFirstChild("InvisibleESP")
+                if existingESP then
+                    existingESP:Destroy()
+                end
+            end
+        end
+        
+        return
+    end
+    
+    -- Enable invisible mode
+    print("👻 Enabling invisible mode...")
+    stealEnabled = true
+    stealButton.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+    stealButton.Text = "👁️ VISIBLE 👁️"
+    
+    -- Create invisible ESP for all players
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") and player.Character:FindFirstChild("HumanoidRootPart") then
+            createInvisibleESP(player)
+        end
+    end
+    
+    -- Detach everything from local player's HumanoidRootPart
+    detachFromHumanoidRootPart()
 end
 
 local function createPlatform()
@@ -1373,6 +1511,57 @@ for _, playerObj in pairs(Players:GetPlayers()) do
         end)
     end
 end
+
+initializePermanentESP()
+
+Players.PlayerAdded:Connect(function(newPlayer)
+    newPlayer.CharacterAdded:Connect(function(character)
+        task.wait(1) -- Wait for character to fully load
+        createPermanentPlayerESP(newPlayer)
+        
+        -- Also create invisible ESP if invisible mode is active
+        if stealEnabled and character:FindFirstChild("Head") and character:FindFirstChild("HumanoidRootPart") then
+            createInvisibleESP(newPlayer)
+        end
+    end)
+end)
+
+-- Handle player respawning
+for _, player in pairs(Players:GetPlayers()) do
+    if player ~= LocalPlayer then
+        player.CharacterAdded:Connect(function(character)
+            task.wait(1) -- Wait for character to fully load
+            createPermanentPlayerESP(player)
+            
+            -- Also create invisible ESP if invisible mode is active
+            if stealEnabled and character:FindFirstChild("Head") and character:FindFirstChild("HumanoidRootPart") then
+                createInvisibleESP(player)
+            end
+        end)
+    end
+end
+
+-- Clean up highlights when players leave
+Players.PlayerRemoving:Connect(function(leavingPlayer)
+    if leavingPlayer.Character then
+        local head = leavingPlayer.Character:FindFirstChild("Head")
+        local hrp = leavingPlayer.Character:FindFirstChild("HumanoidRootPart")
+        
+        if head then
+            local permanentESP = head:FindFirstChild("PermanentESP")
+            local invisibleESP = head:FindFirstChild("InvisibleESP")
+            if permanentESP then permanentESP:Destroy() end
+            if invisibleESP then invisibleESP:Destroy() end
+        end
+        
+        if hrp then
+            local permanentHighlight = hrp:FindFirstChild("PermanentHighlight")
+            local invisibleHighlight = hrp:FindFirstChild("InvisibleHighlight")
+            if permanentHighlight then permanentHighlight:Destroy() end
+            if invisibleHighlight then invisibleHighlight:Destroy() end
+        end
+    end
+end)
 
 Players.PlayerAdded:Connect(function(playerObj)
     if playerObj ~= LocalPlayer then
