@@ -922,6 +922,9 @@ local function executeTeleportToHighestBrainrot()
                     character.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
                     task.wait(1.5)
                     fireQuantumClonerTeleport()
+                    if not teleportEnabled then
+                    removeTeleportOverlay()
+                    return
                     end
                 end
         
