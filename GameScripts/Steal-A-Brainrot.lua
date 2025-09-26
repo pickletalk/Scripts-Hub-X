@@ -395,32 +395,36 @@ local function fireQuantumClonerTeleport()
     end
 end
 
--- Function to parse price text and convert to number for comparison
+-- Enhanced parsePrice function that handles the price format correctly
 local function parsePrice(priceText)
     if not priceText or priceText == "" or priceText == "N/A" then
         return 0
     end
     
-    -- Remove common formatting and convert abbreviations
+    -- Remove common formatting and convert to uppercase for consistency
     local cleanPrice = priceText:gsub("[,$]", ""):upper()
+    
+    -- Extract the number part (including decimals)
     local number = tonumber(cleanPrice:match("%d*%.?%d+"))
     if not number then return 0 end
     
-    -- Handle abbreviations
-    if cleanPrice:find("K") then
-        return number * 1000
-    elseif cleanPrice:find("M") then
-        return number * 1000000
+    -- Handle abbreviations (both uppercase and lowercase)
+    if cleanPrice:find("T") then
+        return number * 1000000000000  -- Trillion
     elseif cleanPrice:find("B") then
-        return number * 1000000000
-    elseif cleanPrice:find("T") then
-        return number * 1000000000000
+        return number * 1000000000     -- Billion
+    elseif cleanPrice:find("M") then
+        return number * 1000000        -- Million
+    elseif cleanPrice:find("K") then
+        return number * 1000           -- Thousand
+    elseif cleanPrice:find("S") then
+        return number                  -- Just the number (seconds/base)
     end
     
     return number
 end
 
--- Function to scan for highest value animal (ANY ANIMAL, not just brainrots)
+-- Fixed function to scan for highest value brainrot using the correct path structure
 local function findHighestBrainrot()
     local plots = workspace:FindFirstChild("Plots")
     if not plots then 
@@ -428,74 +432,65 @@ local function findHighestBrainrot()
         return nil 
     end
     
-    local highestAnimal = nil
+    local highestBrainrot = nil
     local highestValue = 0
     
-    print("🔍 Scanning for highest value animal (checking ALL animals)...")
+    print("🔍 Scanning for highest value brainrot using correct plot structure...")
     
+    -- Use the same method as obfuscated.lua to iterate through plots
     for _, plot in pairs(plots:GetChildren()) do
         if plot:IsA("Model") or plot:IsA("Folder") then
             local plotName = plot.Name
             
-            -- Get all animals in this plot (ANY animal, not filtering by brainrotNames)
-            local allAnimals = {}
-            for _, child in pairs(plot:GetChildren()) do
-                if child:IsA("Model") and child.Name ~= plotName and child:FindFirstChild("HumanoidRootPart") then
-                    -- This is likely an animal model
-                    table.insert(allAnimals, child)
-                end
-            end
-            
-            -- If this plot has animals, check their prices
-            if #allAnimals > 0 then
-                local animalPodiums = plot:FindFirstChild("AnimalPodiums")
-                if animalPodiums then
-                    -- Check podiums 1-30
-                    for i = 1, 30 do
-                        local podium = animalPodiums:FindFirstChild(tostring(i))
-                        if podium then
-                            local base = podium:FindFirstChild("Base")
-                            if base then
-                                local spawn = base:FindFirstChild("Spawn")
-                                if spawn then
-                                    local attachment = spawn:FindFirstChild("Attachment")
-                                    if attachment then
-                                        local animalOverhead = attachment:FindFirstChild("AnimalOverhead")
-                                        if animalOverhead then
-                                            local priceLabel = animalOverhead:FindFirstChild("Price")
-                                            if priceLabel and priceLabel.Text and priceLabel.Text ~= "" and priceLabel.Text ~= "N/A" then
-                                                local priceValue = parsePrice(priceLabel.Text)
-                                                
-                                                -- Check if this price is higher than current highest
-                                                if priceValue > highestValue then
-                                                    -- Find which animal this price belongs to (get the closest one)
-                                                    local podiumPosition = spawn.Position
-                                                    local closestAnimal = nil
-                                                    local closestDistance = math.huge
-                                                    
-                                                    for _, animal in pairs(allAnimals) do
-                                                        if animal:FindFirstChild("HumanoidRootPart") then
-                                                            local distance = (animal.HumanoidRootPart.Position - podiumPosition).Magnitude
-                                                            if distance < closestDistance then
-                                                                closestDistance = distance
-                                                                closestAnimal = animal
-                                                            end
-                                                        end
-                                                    end
-                                                    
-                                                    if closestAnimal then
+            -- Check if this plot has AnimalPodiums
+            local animalPodiums = plot:FindFirstChild("AnimalPodiums")
+            if animalPodiums then
+                print("📋 Checking plot: " .. plotName .. " for brainrots...")
+                
+                -- Check podiums 1-30 (ignore if number doesn't exist)
+                for i = 1, 30 do
+                    local podium = animalPodiums:FindFirstChild(tostring(i))
+                    if podium then
+                        local base = podium:FindFirstChild("Base")
+                        if base then
+                            local spawn = base:FindFirstChild("Spawn")
+                            if spawn then
+                                local attachment = spawn:FindFirstChild("Attachment")
+                                if attachment then
+                                    local animalOverhead = attachment:FindFirstChild("AnimalOverhead")
+                                    if animalOverhead then
+                                        local priceLabel = animalOverhead:FindFirstChild("Price")
+                                        if priceLabel and priceLabel.Text and priceLabel.Text ~= "" and priceLabel.Text ~= "N/A" then
+                                            local priceValue = parsePrice(priceLabel.Text)
+                                            
+                                            print("💰 Found price on podium " .. i .. " in plot " .. plotName .. ": " .. priceLabel.Text .. " (parsed: " .. priceValue .. ")")
+                                            
+                                            -- Check if this price is higher than current highest
+                                            if priceValue > highestValue then
+                                                -- Check if the decorations part exists for teleportation
+                                                local decorations = base:FindFirstChild("Decorations")
+                                                if decorations then
+                                                    local teleportPart = decorations:FindFirstChild("Part")
+                                                    if teleportPart then
                                                         highestValue = priceValue
-                                                        highestAnimal = {
-                                                            animal = closestAnimal,
+                                                        highestBrainrot = {
                                                             plot = plot,
                                                             plotName = plotName,
-                                                            animalName = closestAnimal.Name,
+                                                            podiumNumber = i,
                                                             price = priceLabel.Text,
                                                             priceValue = priceValue,
-                                                            position = closestAnimal.HumanoidRootPart.Position
+                                                            teleportPart = teleportPart,
+                                                            position = teleportPart.Position,
+                                                            -- Get additional info if available
+                                                            rarity = animalOverhead:FindFirstChild("Rarity") and animalOverhead.Rarity.Text or "Unknown",
+                                                            mutation = animalOverhead:FindFirstChild("Mutation") and animalOverhead.Mutation.Text or "None"
                                                         }
-                                                        print("💎 Found higher value animal: " .. closestAnimal.Name .. " - " .. priceLabel.Text .. " (" .. priceValue .. ") in plot " .. plotName)
+                                                        print("💎 New highest brainrot found: " .. priceLabel.Text .. " (" .. priceValue .. ") in plot " .. plotName .. " podium " .. i)
+                                                    else
+                                                        warn("⚠ Teleport part not found in decorations for podium " .. i .. " in plot " .. plotName)
                                                     end
+                                                else
+                                                    warn("⚠ Decorations not found for podium " .. i .. " in plot " .. plotName)
                                                 end
                                             end
                                         end
@@ -509,11 +504,16 @@ local function findHighestBrainrot()
         end
     end
     
-    if highestAnimal then
-        print("🏆 Highest value animal found: " .. highestAnimal.animalName .. " - " .. highestAnimal.price .. " in plot " .. highestAnimal.plotName)
-        return highestAnimal
+    if highestBrainrot then
+        print("🏆 Highest value brainrot found:")
+        print("   Plot: " .. highestBrainrot.plotName)
+        print("   Podium: " .. highestBrainrot.podiumNumber)
+        print("   Price: " .. highestBrainrot.price .. " (value: " .. highestBrainrot.priceValue .. ")")
+        print("   Rarity: " .. highestBrainrot.rarity)
+        print("   Mutation: " .. highestBrainrot.mutation)
+        return highestBrainrot
     else
-        warn("⚠ No animals with valid prices found")
+        warn("⚠ No brainrots with valid prices found")
         return nil
     end
 end
@@ -616,7 +616,8 @@ local function removeTeleportOverlay()
     end
 end
 
--- Execute teleport to highest brainrot
+
+-- Updated teleport function that uses the correct teleportation target
 local function executeTeleportToHighestBrainrot()
     local currentTime = tick()
     
@@ -672,9 +673,9 @@ local function executeTeleportToHighestBrainrot()
         
         -- Step 2: Display found brainrot info
         overlay.statusLabel.Text = "💎 Found highest brainrot!"
-        overlay.brainrotInfo.Text = highestBrainrotData.animalName .. "\n" .. highestBrainrotData.price
+        overlay.brainrotInfo.Text = "Plot: " .. highestBrainrotData.plotName .. " | Podium: " .. highestBrainrotData.podiumNumber .. "\nPrice: " .. highestBrainrotData.price .. " | Rarity: " .. highestBrainrotData.rarity
         TweenService:Create(overlay.progressBar, TweenInfo.new(0.5), {Size = UDim2.new(0.4, 0, 1, 0)}):Play()
-        task.wait(1)
+        task.wait(2)
         
         if not teleportEnabled then
             removeTeleportOverlay()
@@ -704,7 +705,6 @@ local function executeTeleportToHighestBrainrot()
         end
         
         -- Step 4: Fire Quantum Cloner UseItem
-        overlay.statusLabel.Text = "⚡ Activating Quantum Cloner..."
         TweenService:Create(overlay.progressBar, TweenInfo.new(0.5), {Size = UDim2.new(0.8, 0, 1, 0)}):Play()
         
         for i = 1, 3 do
@@ -723,16 +723,19 @@ local function executeTeleportToHighestBrainrot()
             return
         end
         
-        -- Step 5: Teleport to position near the brainrot
-        overlay.statusLabel.Text = "🌟 Teleporting to brainrot..."
+        -- Step 5: Teleport to the correct position (Decorations Part)
+        overlay.statusLabel.Text = "🌟 Teleporting to highest brainrot..."
         TweenService:Create(overlay.progressBar, TweenInfo.new(0.5), {Size = UDim2.new(0.9, 0, 1, 0)}):Play()
         
-        if highestBrainrotData.position then
+        if highestBrainrotData.teleportPart then
             local character = player.Character
             if character and character:FindFirstChild("HumanoidRootPart") then
-                -- Teleport near the brainrot
-                local targetPosition = highestBrainrotData.position + Vector3.new(0, 5, 0)
+                -- Teleport to the decorations part position with slight offset
+                local targetPosition = highestBrainrotData.teleportPart.Position + Vector3.new(0, 5, 0)
                 character.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
+                
+                print("✅ Teleported to highest brainrot at: " .. tostring(targetPosition))
+                print("   Plot: " .. highestBrainrotData.plotName .. " | Podium: " .. highestBrainrotData.podiumNumber)
                 
                 task.wait(0.5)
                 
@@ -747,12 +750,15 @@ local function executeTeleportToHighestBrainrot()
                     task.wait(0.1)
                 end
             end
+        else
+            overlay.statusLabel.Text = "❌ Teleport position not found!"
+            task.wait(2)
         end
         
         -- Step 6: Complete
         overlay.statusLabel.Text = "✅ Teleport completed!"
         TweenService:Create(overlay.progressBar, TweenInfo.new(0.3), {Size = UDim2.new(1, 0, 1, 0)}):Play()
-        task.wait(2)
+        task.wait(1)
         
         -- Reset state
         teleportEnabled = false
