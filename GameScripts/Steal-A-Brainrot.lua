@@ -368,15 +368,6 @@ end)
 
 removeJumpDelay()
 
-print("✅ Steal A Brainrot Script Loaded Successfully!")
-print("🧠 TELEPORT TO HIGHEST BRAINROT button: Scans all plots for highest value brainrot and teleports using Quantum Cloner")
-print("🚹 FLOAT button: Platform with slow fall and grapple hook")
-print("💰 FLOOR STEAL button: Wall transparency with platform and grapple hook")
-print("📱 ESP: Player names and plot information displayed")
-print("🎯 Brainrot Detection: Automatically detects all target brainrots and finds the highest value one")
-print("⚡ Quantum Cloner Integration: Uses Quantum Cloner tool to teleport to the highest value brainrot")
-print("🛑 Emergency Stop: Press ESC during teleport process to cancel")
-
 titleBar.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
         if dragging then
@@ -485,11 +476,11 @@ local function parsePrice(priceText)
     return number
 end
 
--- Function to scan for highest value brainrot
+-- Function to scan for highest value brainrot (FIXED VERSION)
 local function findHighestBrainrot()
     local plots = workspace:FindFirstChild("Plots")
     if not plots then 
-        warn("❌ Plots folder not found in workspace")
+        warn("⚠ Plots folder not found in workspace")
         return nil 
     end
     
@@ -502,40 +493,50 @@ local function findHighestBrainrot()
         if plot:IsA("Model") or plot:IsA("Folder") then
             local plotName = plot.Name
             
-            -- Check AnimalPodiums in this plot
-            local animalPodiums = plot:FindFirstChild("AnimalPodiums")
-            if animalPodiums then
-                -- Check podiums 1-30
-                for i = 1, 30 do
-                    local podium = animalPodiums:FindFirstChild(tostring(i))
-                    if podium then
-                        local base = podium:FindFirstChild("Base")
-                        if base then
-                            local spawn = base:FindFirstChild("Spawn")
-                            if spawn then
-                                local attachment = spawn:FindFirstChild("Attachment")
-                                if attachment then
-                                    local animalOverhead = attachment:FindFirstChild("AnimalOverhead")
-                                    if animalOverhead then
-                                        local priceText = animalOverhead:FindFirstChild("Price")
-                                        if priceText and priceText.Text then
-                                            local priceValue = parsePrice(priceText.Text)
-                                            
-                                            -- Check if this is a target brainrot by checking nearby animals
-                                            for _, child in pairs(plot:GetChildren()) do
-                                                if child:IsA("Model") and brainrotLookup[child.Name] then
+            -- First, find all brainrot animals in this plot
+            local brainrotAnimals = {}
+            for _, child in pairs(plot:GetChildren()) do
+                if child:IsA("Model") and brainrotLookup[child.Name] then
+                    table.insert(brainrotAnimals, child)
+                end
+            end
+            
+            -- If this plot has brainrot animals, check their prices
+            if #brainrotAnimals > 0 then
+                local animalPodiums = plot:FindFirstChild("AnimalPodiums")
+                if animalPodiums then
+                    -- Check podiums 1-30
+                    for i = 1, 30 do
+                        local podium = animalPodiums:FindFirstChild(tostring(i))
+                        if podium then
+                            local base = podium:FindFirstChild("Base")
+                            if base then
+                                local spawn = base:FindFirstChild("Spawn")
+                                if spawn then
+                                    local attachment = spawn:FindFirstChild("Attachment")
+                                    if attachment then
+                                        local animalOverhead = attachment:FindFirstChild("AnimalOverhead")
+                                        if animalOverhead then
+                                            local priceLabel = animalOverhead:FindFirstChild("Price")
+                                            if priceLabel and priceLabel.Text and priceLabel.Text ~= "" then
+                                                local priceValue = parsePrice(priceLabel.Text)
+                                                
+                                                -- Check if this price belongs to one of our target brainrots
+                                                for _, brainrotAnimal in pairs(brainrotAnimals) do
                                                     if priceValue > highestValue then
                                                         highestValue = priceValue
                                                         highestBrainrot = {
-                                                            animal = child,
+                                                            animal = brainrotAnimal,
                                                             plot = plot,
                                                             plotName = plotName,
-                                                            animalName = child.Name,
-                                                            price = priceText.Text,
+                                                            animalName = brainrotAnimal.Name,
+                                                            price = priceLabel.Text,
                                                             priceValue = priceValue,
-                                                            position = child:FindFirstChild("HumanoidRootPart") and child.HumanoidRootPart.Position or child.PrimaryPart and child.PrimaryPart.Position or nil
-                                                    }
-                                                    print("💎 Found higher value brainrot: " .. child.Name .. " - " .. priceText.Text .. " (" .. priceValue .. ")")
+                                                            position = brainrotAnimal:FindFirstChild("HumanoidRootPart") and brainrotAnimal.HumanoidRootPart.Position or brainrotAnimal.PrimaryPart and brainrotAnimal.PrimaryPart.Position or nil
+                                                        }
+                                                        print("💎 Found higher value brainrot: " .. brainrotAnimal.Name .. " - " .. priceLabel.Text .. " (" .. priceValue .. ")")
+                                                        break -- Found a match for this price, move to next podium
+                                                    end
                                                 end
                                             end
                                         end
@@ -553,7 +554,7 @@ local function findHighestBrainrot()
         print("🏆 Highest brainrot found: " .. highestBrainrot.animalName .. " - " .. highestBrainrot.price .. " in plot " .. highestBrainrot.plotName)
         return highestBrainrot
     else
-        warn("❌ No brainrots found")
+        warn("⚠ No brainrots found")
         return nil
     end
 end
