@@ -419,7 +419,7 @@ local function createPlatform()
     platform.Material = Enum.Material.Neon
     platform.BrickColor = BrickColor.new("Bright blue")
     platform.Anchored = true
-    platform.CanCollide = false
+    platform.CanCollide = true
     platform.Shape = Enum.PartType.Block
     platform.TopSurface = Enum.SurfaceType.Smooth
     platform.BottomSurface = Enum.SurfaceType.Smooth
@@ -455,6 +455,7 @@ local function updatePlatformPosition()
 end
 
 local function applySlowFall()
+    -- This function now does nothing - just keeps the grapple hook functionality
     if not player.Character then return end
     
     local character = player.Character
@@ -463,32 +464,19 @@ local function applySlowFall()
     
     if not humanoid or not rootPart then return end
     
-    -- Store original gravity if not stored
-    if not originalGravity then
-        originalGravity = workspace.Gravity
-    end
-    
-    -- Create BodyVelocity to control falling speed
-    if not bodyVelocity or not bodyVelocity.Parent then
-        bodyVelocity = Instance.new("BodyVelocity")
-        bodyVelocity.MaxForce = Vector3.new(0, math.huge, 0)
-        bodyVelocity.Velocity = Vector3.new(0, SLOW_FALL_SPEED, 0)
-        bodyVelocity.Parent = rootPart
-    end
-    
     -- Double tap detection variables
     local lastTapTime = 0
     local DOUBLE_TAP_DELAY = 0.3
     
     local function performJump()
-        if humanoid and bodyVelocity and bodyVelocity.Parent then
+        if humanoid then
             -- First equip and fire grapple hook
             equipAndFireGrapple()
             
             -- Small delay then jump
             task.spawn(function()
                 task.wait(0.1)
-                if platformEnabled and humanoid and bodyVelocity and bodyVelocity.Parent then
+                if platformEnabled and humanoid then
                     -- Force jump
                     humanoid.Jump = true
                     equipAndFireGrapple()
@@ -513,19 +501,6 @@ local function applySlowFall()
             lastTapTime = currentTime
         end
     end)
-end
-
-local function removeSlowFall()
-    -- Remove BodyVelocity
-    if bodyVelocity and bodyVelocity.Parent then
-        bodyVelocity:Destroy()
-        bodyVelocity = nil
-    end
-    
-    -- Restore original gravity
-    if originalGravity then
-        workspace.Gravity = originalGravity
-    end
 end
 
 local function createComboPlatform()
@@ -653,9 +628,7 @@ local function disablePlatform()
 
     platformEnabled = false
     
-    -- Remove slow fall effect
-    removeSlowFall()
-    
+    -- Remove platform update connection
     if platformUpdateConnection then
         platformUpdateConnection:Disconnect()
         platformUpdateConnection = nil
