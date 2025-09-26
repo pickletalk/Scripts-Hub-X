@@ -725,7 +725,7 @@ local function executeTeleportToHighestBrainrot()
                 local targetPosition = highestBrainrotData.teleportPart.Position + Vector3.new(0, 5, 0)
                     for i = 1, 3 do
                     fireQuantumCloner()
-                    task.wait(0.38)
+                    task.wait(0.37)
                     character.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
                     task.wait(1.5)
                     fireQuantumClonerTeleport()
