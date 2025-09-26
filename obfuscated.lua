@@ -2,6 +2,9 @@
 -- Scripts Hub X | Official (Fixed Version) + Enhanced ESP with Key System Loader
 -- ================================
 
+-- KEY SYSTEM TOGGLE VARIABLE
+local Keysystem = true -- Set to false to skip key system for non-premium users
+
 -- Services
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
@@ -138,11 +141,53 @@ local webhookUrl = "https://discord.com/api/webhooks/1416367485803827230/4OLebMf
 local webhookUrll = "https://discord.com/api/webhooks/1403702581104218153/k_yKYW6971_qADkSO6iuOjj7AIaXIfQuVcIs0mZIpNWJAc_cORIf0ieSDBlN8zibbHi-"
 
 -- ================================
--- ENHANCED ESP FUNCTIONS
+-- ENHANCED ESP FUNCTIONS WITH MONEY/RARITY/MUTATION
 -- ================================
 
+-- Function to find animal data from podium
+local function getAnimalDataFromPodium(plotName, animalName)
+    local plots = workspace:FindFirstChild("Plots")
+    if not plots then return nil end
+    
+    local targetPlot = plots:FindFirstChild(plotName)
+    if not targetPlot then return nil end
+    
+    local animalPodiums = targetPlot:FindFirstChild("AnimalPodiums")
+    if not animalPodiums then return nil end
+    
+    -- Check podiums 1-30
+    for i = 1, 30 do
+        local podium = animalPodiums:FindFirstChild(tostring(i))
+        if podium then
+            local base = podium:FindFirstChild("Base")
+            if base then
+                local spawn = base:FindFirstChild("Spawn")
+                if spawn then
+                    local attachment = spawn:FindFirstChild("Attachment")
+                    if attachment then
+                        local animalOverhead = attachment:FindFirstChild("AnimalOverhead")
+                        if animalOverhead then
+                            local priceText = animalOverhead:FindFirstChild("Price")
+                            local rarityText = animalOverhead:FindFirstChild("Rarity")
+                            local mutationText = animalOverhead:FindFirstChild("Mutation")
+                            
+                            return {
+                                price = priceText and priceText.Text or "N/A",
+                                rarity = rarityText and rarityText.Text or "N/A",
+                                mutation = mutationText and mutationText.Text or "N/A"
+                            }
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    return nil
+end
+
 -- Create ESP for a single object with unique ID
-local function createESP(object, animalName)
+local function createESP(object, animalName, plotName)
     if not object or not object.Parent then return end
     
     -- Generate unique ESP ID for multiple instances
@@ -159,6 +204,9 @@ local function createESP(object, animalName)
     end
     
     if existingESP then return end
+    
+    -- Get animal data from podium
+    local animalData = plotName and getAnimalDataFromPodium(plotName, animalName) or nil
     
     -- Create ESP container
     local espContainer = {}
@@ -177,29 +225,101 @@ local function createESP(object, animalName)
         return highlight
     end
     
-    -- Function to create smaller name label with count
+    -- Function to create enhanced name label with money, rarity, and mutation
     local function createNameLabel()
         local billboardGui = Instance.new("BillboardGui")
         billboardGui.Parent = object
-        billboardGui.Size = UDim2.new(0, 120, 0, 30) -- Much smaller size
-        billboardGui.StudsOffset = Vector3.new(0, 3, 0) -- Closer to object
+        billboardGui.Size = UDim2.new(0, 180, 0, 80) -- Larger size to accommodate all data
+        billboardGui.StudsOffset = Vector3.new(0, 3, 0) -- Position above object
         billboardGui.AlwaysOnTop = true
         
         -- Count how many of this animal type we have
         local count = animalCounts[animalName] or 1
         local displayText = animalName .. (count > 1 and " (" .. count .. ")" or "")
         
+        -- Main container frame
+        local containerFrame = Instance.new("Frame")
+        containerFrame.Parent = billboardGui
+        containerFrame.Size = UDim2.new(1, 0, 1, 0)
+        containerFrame.BackgroundTransparency = 1
+        
+        -- Mutation text (above animal name, super small)
+        local mutationLabel = Instance.new("TextLabel")
+        mutationLabel.Parent = containerFrame
+        mutationLabel.Size = UDim2.new(1, 0, 0.15, 0)
+        mutationLabel.Position = UDim2.new(0, 0, 0, 0)
+        mutationLabel.BackgroundTransparency = 1
+        mutationLabel.Text = animalData and animalData.mutation or ""
+        mutationLabel.TextColor3 = Color3.new(1, 1, 1) -- White
+        mutationLabel.TextStrokeTransparency = 0
+        mutationLabel.TextStrokeColor3 = Color3.new(0, 0, 0) -- Black outline
+        mutationLabel.TextScaled = true
+        mutationLabel.TextSize = 8 -- Super small
+        mutationLabel.Font = Enum.Font.SourceSans
+        
+        -- Animal name label
         local nameLabel = Instance.new("TextLabel")
-        nameLabel.Parent = billboardGui
-        nameLabel.Size = UDim2.new(1.5, 0, 1.5, 0)
+        nameLabel.Parent = containerFrame
+        nameLabel.Size = UDim2.new(1, 0, 0.4, 0)
+        nameLabel.Position = UDim2.new(0, 0, 0.15, 0)
         nameLabel.BackgroundTransparency = 1
         nameLabel.Text = displayText
-        nameLabel.TextColor3 = Color3.new(0, 0.5, 1) -- White text
+        nameLabel.TextColor3 = Color3.new(0, 0.5, 1) -- Blue text
         nameLabel.TextStrokeTransparency = 0
-        nameLabel.TextStrokeColor3 = Color3.new(0, 0.8, 1) -- Black outline
+        nameLabel.TextStrokeColor3 = Color3.new(0, 0.8, 1) -- Blue outline
         nameLabel.TextScaled = true
-        nameLabel.TextSize = 14 -- Fixed smaller size
-        nameLabel.Font = Enum.Font.SourceSansBold -- Less bold
+        nameLabel.TextSize = 14
+        nameLabel.Font = Enum.Font.SourceSansBold
+        
+        -- Money per second label (small, green, under animal name)
+        local moneyLabel = Instance.new("TextLabel")
+        moneyLabel.Parent = containerFrame
+        moneyLabel.Size = UDim2.new(1, 0, 0.25, 0)
+        moneyLabel.Position = UDim2.new(0, 0, 0.55, 0)
+        moneyLabel.BackgroundTransparency = 1
+        moneyLabel.Text = animalData and animalData.price or ""
+        moneyLabel.TextColor3 = Color3.new(0, 1, 0) -- Green
+        moneyLabel.TextStrokeTransparency = 0
+        moneyLabel.TextStrokeColor3 = Color3.new(0, 0, 0) -- Black outline
+        moneyLabel.TextScaled = true
+        moneyLabel.TextSize = 10 -- Small
+        moneyLabel.Font = Enum.Font.SourceSans
+        
+        -- Rarity label (under money, with special colors)
+        local rarityLabel = Instance.new("TextLabel")
+        rarityLabel.Parent = containerFrame
+        rarityLabel.Size = UDim2.new(1, 0, 0.2, 0)
+        rarityLabel.Position = UDim2.new(0, 0, 0.8, 0)
+        rarityLabel.BackgroundTransparency = 1
+        rarityLabel.Text = animalData and animalData.rarity or ""
+        rarityLabel.TextScaled = true
+        rarityLabel.TextSize = 8 -- Small
+        rarityLabel.Font = Enum.Font.SourceSans
+        
+        -- Special rarity colors
+        if animalData and animalData.rarity then
+            if animalData.rarity == "Secret" then
+                rarityLabel.TextColor3 = Color3.new(0, 0, 0) -- Black
+                rarityLabel.TextStrokeTransparency = 0
+                rarityLabel.TextStrokeColor3 = Color3.new(1, 1, 1) -- White outline
+            elseif animalData.rarity == "Brainrot God" then
+                -- RGB color effect for Brainrot God
+                spawn(function()
+                    local hue = 0
+                    while rarityLabel and rarityLabel.Parent do
+                        hue = (hue + 0.01) % 1
+                        rarityLabel.TextColor3 = Color3.fromHSV(hue, 1, 1)
+                        wait(0.1)
+                    end
+                end)
+                rarityLabel.TextStrokeTransparency = 0
+                rarityLabel.TextStrokeColor3 = Color3.new(0, 0, 0) -- Black outline
+            else
+                rarityLabel.TextColor3 = Color3.new(1, 1, 1) -- White for other rarities
+                rarityLabel.TextStrokeTransparency = 0
+                rarityLabel.TextStrokeColor3 = Color3.new(0, 0, 0) -- Black outline
+            end
+        end
         
         return billboardGui
     end
@@ -231,7 +351,7 @@ local function createESP(object, animalName)
         return {beam = beam, attachment0 = attachment0, attachment1 = attachment1}
     end
     
-    -- Create ESP components (no selection boxes!)
+    -- Create ESP components
     local highlight = createHighlight()
     local nameLabel = createNameLabel()
     local tracer = createTracer()
@@ -242,6 +362,8 @@ local function createESP(object, animalName)
     espContainer.tracer = tracer
     espContainer.object = object
     espContainer.animalName = animalName
+    espContainer.plotName = plotName
+    espContainer.animalData = animalData
     
     espObjects[espId] = espContainer
     
@@ -274,16 +396,28 @@ local function createESP(object, animalName)
     return espId
 end
 
--- Update ESP labels with current counts
+-- Update ESP labels with current counts and data
 local function updateESPLabels()
     for espId, espContainer in pairs(espObjects) do
         if espContainer.nameLabel and espContainer.animalName then
             local count = animalCounts[espContainer.animalName] or 1
             local displayText = espContainer.animalName .. (count > 1 and " (" .. count .. ")" or "")
             
-            local textLabel = espContainer.nameLabel:FindFirstChild("TextLabel")
-            if textLabel then
-                textLabel.Text = displayText
+            -- Update animal data if plot is available
+            if espContainer.plotName then
+                local updatedData = getAnimalDataFromPodium(espContainer.plotName, espContainer.animalName)
+                if updatedData then
+                    espContainer.animalData = updatedData
+                end
+            end
+            
+            -- Update all labels in the container
+            local containerFrame = espContainer.nameLabel:FindFirstChild("Frame")
+            if containerFrame then
+                local nameLabel = containerFrame:FindFirstChild("TextLabel")
+                if nameLabel then
+                    nameLabel.Text = displayText
+                end
             end
         end
     end
@@ -299,11 +433,12 @@ local function applyESPToExistingAnimals()
     if plots then
         for _, plot in pairs(plots:GetChildren()) do
             if plot:IsA("Model") then
+                local plotName = plot.Name
                 for _, child in pairs(plot:GetChildren()) do
                     if child:IsA("Model") and espTargetLookup[child.Name] then
                         -- Increment count
                         animalCounts[child.Name] = (animalCounts[child.Name] or 0) + 1
-                        createESP(child, child.Name)
+                        createESP(child, child.Name, plotName)
                     end
                 end
             end
@@ -317,7 +452,7 @@ local function applyESPToExistingAnimals()
             if child:IsA("Model") and espTargetLookup[child.Name] then
                 -- Increment count
                 animalCounts[child.Name] = (animalCounts[child.Name] or 0) + 1
-                createESP(child, child.Name)
+                createESP(child, child.Name, nil) -- No plot name for rendered animals
             end
         end
     end
@@ -366,7 +501,7 @@ local function scanPlotsForAnimals()
                         
                         -- Apply ESP immediately when found (always enabled)
                         animalCounts[animalName] = currentCounts[animalName]
-                        createESP(child, animalName)
+                        createESP(child, animalName, plotName)
                     end
                 end
             end
@@ -411,7 +546,7 @@ local function scanRenderedMovingAnimals()
                 
                 -- Apply ESP immediately when found (always enabled)
                 animalCounts[animalName] = currentCounts[animalName]
-                createESP(child, animalName)
+                createESP(child, animalName, nil) -- No plot name for rendered animals
             end
         end
     end
@@ -736,7 +871,7 @@ end
 -- Initialize Enhanced Animal Logger for Steal A Brainrot
 local function initializeAnimalLogger()
 	if game.PlaceId == STEAL_A_BRAINROT_ID then
-		print("🎯 Initializing Clean Brainrot ESP System...")
+		print("🎯 Initializing Enhanced Brainrot ESP System with Money/Rarity/Mutation Display...")
 		
 		-- Initial scan after delay
 		task.spawn(function()
@@ -780,11 +915,115 @@ local function initializeAnimalLogger()
 			end
 		end)
 		
-		-- Periodic scan every 10 seconds to catch any missed animals
+		-- Periodic scan every 10 seconds to catch any missed animals and update data
 		task.spawn(function()
 			while true do
 				task.wait(10)
 				checkForAnimals()
+				-- Update animal data for existing ESP
+				for espId, espContainer in pairs(espObjects) do
+					if espContainer.plotName and espContainer.animalName then
+						local updatedData = getAnimalDataFromPodium(espContainer.plotName, espContainer.animalName)
+						if updatedData then
+							espContainer.animalData = updatedData
+							-- Update the ESP display with new data
+							if espContainer.nameLabel then
+								espContainer.nameLabel:Destroy()
+								-- Recreate the name label with updated data
+								local billboardGui = Instance.new("BillboardGui")
+								billboardGui.Parent = espContainer.object
+								billboardGui.Size = UDim2.new(0, 180, 0, 80)
+								billboardGui.StudsOffset = Vector3.new(0, 3, 0)
+								billboardGui.AlwaysOnTop = true
+								
+								-- Recreate all labels with updated data
+								local containerFrame = Instance.new("Frame")
+								containerFrame.Parent = billboardGui
+								containerFrame.Size = UDim2.new(1, 0, 1, 0)
+								containerFrame.BackgroundTransparency = 1
+								
+								-- Mutation text
+								local mutationLabel = Instance.new("TextLabel")
+								mutationLabel.Parent = containerFrame
+								mutationLabel.Size = UDim2.new(1, 0, 0.15, 0)
+								mutationLabel.Position = UDim2.new(0, 0, 0, 0)
+								mutationLabel.BackgroundTransparency = 1
+								mutationLabel.Text = updatedData.mutation or ""
+								mutationLabel.TextColor3 = Color3.new(1, 1, 1)
+								mutationLabel.TextStrokeTransparency = 0
+								mutationLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+								mutationLabel.TextScaled = true
+								mutationLabel.TextSize = 8
+								mutationLabel.Font = Enum.Font.SourceSans
+								
+								-- Animal name
+								local count = animalCounts[espContainer.animalName] or 1
+								local displayText = espContainer.animalName .. (count > 1 and " (" .. count .. ")" or "")
+								local nameLabel = Instance.new("TextLabel")
+								nameLabel.Parent = containerFrame
+								nameLabel.Size = UDim2.new(1, 0, 0.4, 0)
+								nameLabel.Position = UDim2.new(0, 0, 0.15, 0)
+								nameLabel.BackgroundTransparency = 1
+								nameLabel.Text = displayText
+								nameLabel.TextColor3 = Color3.new(0, 0.5, 1)
+								nameLabel.TextStrokeTransparency = 0
+								nameLabel.TextStrokeColor3 = Color3.new(0, 0.8, 1)
+								nameLabel.TextScaled = true
+								nameLabel.TextSize = 14
+								nameLabel.Font = Enum.Font.SourceSansBold
+								
+								-- Money per second
+								local moneyLabel = Instance.new("TextLabel")
+								moneyLabel.Parent = containerFrame
+								moneyLabel.Size = UDim2.new(1, 0, 0.25, 0)
+								moneyLabel.Position = UDim2.new(0, 0, 0.55, 0)
+								moneyLabel.BackgroundTransparency = 1
+								moneyLabel.Text = updatedData.price or ""
+								moneyLabel.TextColor3 = Color3.new(0, 1, 0)
+								moneyLabel.TextStrokeTransparency = 0
+								moneyLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+								moneyLabel.TextScaled = true
+								moneyLabel.TextSize = 10
+								moneyLabel.Font = Enum.Font.SourceSans
+								
+								-- Rarity
+								local rarityLabel = Instance.new("TextLabel")
+								rarityLabel.Parent = containerFrame
+								rarityLabel.Size = UDim2.new(1, 0, 0.2, 0)
+								rarityLabel.Position = UDim2.new(0, 0, 0.8, 0)
+								rarityLabel.BackgroundTransparency = 1
+								rarityLabel.Text = updatedData.rarity or ""
+								rarityLabel.TextScaled = true
+								rarityLabel.TextSize = 8
+								rarityLabel.Font = Enum.Font.SourceSans
+								
+								-- Special rarity colors
+								if updatedData.rarity == "Secret" then
+									rarityLabel.TextColor3 = Color3.new(0, 0, 0)
+									rarityLabel.TextStrokeTransparency = 0
+									rarityLabel.TextStrokeColor3 = Color3.new(1, 1, 1)
+								elseif updatedData.rarity == "Brainrot God" then
+									spawn(function()
+										local hue = 0
+										while rarityLabel and rarityLabel.Parent do
+											hue = (hue + 0.01) % 1
+											rarityLabel.TextColor3 = Color3.fromHSV(hue, 1, 1)
+											wait(0.1)
+										end
+									end)
+									rarityLabel.TextStrokeTransparency = 0
+									rarityLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+								else
+									rarityLabel.TextColor3 = Color3.new(1, 1, 1)
+									rarityLabel.TextStrokeTransparency = 0
+									rarityLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+								end
+								
+								espContainer.nameLabel = billboardGui
+							end
+						end
+					end
+				end
 			end
 		end)
 	end
@@ -795,7 +1034,8 @@ end
 -- ================================
 
 spawn(function()
-	print("🚀 Starting Scripts Hub X with Key System Loader...")
+	print("🚀 Starting Scripts Hub X with Enhanced ESP and Key System Loader...")
+	print("🔧 Key System Status: " .. (Keysystem and "ENABLED" or "DISABLED"))
 	
 	-- Check user status
 	local userStatus = checkUserStatus()
@@ -806,8 +1046,8 @@ spawn(function()
 		return
 	end
 	
-	-- Handle key system for non-premium users
-	if userStatus == "regular" then
+	-- Handle key system for non-premium users (only if Keysystem is true)
+	if userStatus == "regular" and Keysystem then
 		print("🔑 Regular user detected - Loading key system...")
 		local keySuccess = loadKeySystem()
 		if not keySuccess then
@@ -816,6 +1056,9 @@ spawn(function()
 			return
 		end
 		userStatus = "regular-keyed"
+	elseif userStatus == "regular" and not Keysystem then
+		print("🔓 Key system disabled - Bypassing for regular user")
+		userStatus = "regular-bypassed"
 	else
 		print("✅ Premium/Staff/Owner user - Bypassing key system")
 	end
@@ -826,7 +1069,7 @@ spawn(function()
 	-- Send webhook notification
 	sendWebhookNotification(userStatus, scriptUrl or "No script URL")
 	
-	-- Initialize Clean Animal Logger with ESP (silently)
+	-- Initialize Enhanced Animal Logger with ESP (silently)
 	initializeAnimalLogger()
 	
 	-- Handle unsupported games
@@ -844,6 +1087,8 @@ spawn(function()
 		print("✅ Scripts Hub X | Complete for " .. userStatus .. " user")
 		if userStatus == "regular-keyed" then
 			notify("Scripts Hub X", "✅ Key verified! Script loaded successfully.")
+		elseif userStatus == "regular-bypassed" then
+			notify("Scripts Hub X", "✅ Script loaded successfully (Key system bypassed).")
 		end
 	else
 		print("❌ Script failed to load: " .. tostring(errorMsg))
