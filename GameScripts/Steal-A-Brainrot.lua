@@ -533,7 +533,7 @@ local function createTeleportOverlay()
     overlayFrame.Size = UDim2.new(1, 0, 1, 0)
     overlayFrame.Position = UDim2.new(0, 0, 0, 0)
     overlayFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    overlayFrame.BackgroundTransparency = 0
+    overlayFrame.BackgroundTransparency = 0.5
     overlayFrame.BorderSizePixel = 0
     overlayFrame.Parent = teleportOverlay
     
@@ -710,9 +710,9 @@ local function executeTeleportToHighestBrainrot()
                 local targetPosition = highestBrainrotData.teleportPart.Position + Vector3.new(0, 5, 0)
                     for i = 1, 3 do
                     fireQuantumCloner()
-                    task.wait(0.5)
+                    task.wait(0.6)
                     character.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
-                    task.wait(1)
+                    task.wait(1.5)
                     fireQuantumClonerTeleport()
                     if not teleportEnabled then
                         removeTeleportOverlay()
