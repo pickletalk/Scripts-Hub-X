@@ -50,6 +50,11 @@ local DOUBLE_CLICK_PREVENTION_TIME = 1.5
 local highestBrainrotData = nil
 local teleportOverlay = nil
 
+-- Highest Value ESP variables
+local highestValueESP = nil
+local highestValueData = nil
+local espUpdateConnection = nil
+
 -- Target brainrot names for detection
 local brainrotNames = {
     "Los Tralaleritos",
@@ -530,6 +535,194 @@ local function findHighestBrainrot()
     else
         warn("⚠ No brainrots with valid prices found")
         return nil
+    end
+end
+
+-- Create ESP for highest value animal
+local function createHighestValueESP(brainrotData)
+    if not brainrotData or not brainrotData.teleportPart then return end
+    
+    -- Remove existing ESP
+    if highestValueESP then
+        if highestValueESP.highlight then highestValueESP.highlight:Destroy() end
+        if highestValueESP.nameLabel then highestValueESP.nameLabel:Destroy() end
+        if highestValueESP.tracer then 
+            if highestValueESP.tracer.beam then highestValueESP.tracer.beam:Destroy() end
+            if highestValueESP.tracer.attachment0 then highestValueESP.tracer.attachment0:Destroy() end
+            if highestValueESP.tracer.attachment1 then highestValueESP.tracer.attachment1:Destroy() end
+        end
+        if highestValueESP.structureHighlight then highestValueESP.structureHighlight:Destroy() end
+    end
+    
+    local espContainer = {}
+    
+    -- Create highlight for the animal area
+    local highlight = Instance.new("Highlight")
+    highlight.Parent = brainrotData.teleportPart
+    highlight.FillColor = Color3.fromRGB(255, 215, 0) -- Gold color
+    highlight.OutlineColor = Color3.fromRGB(255, 255, 0) -- Bright yellow
+    highlight.FillTransparency = 0.7
+    highlight.OutlineTransparency = 0
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    espContainer.highlight = highlight
+    
+    -- Create name label with all data
+    local billboardGui = Instance.new("BillboardGui")
+    billboardGui.Parent = brainrotData.teleportPart
+    billboardGui.Size = UDim2.new(0, 180, 0, 80)
+    billboardGui.StudsOffset = Vector3.new(0, 8, 0)
+    billboardGui.AlwaysOnTop = true
+    
+    local containerFrame = Instance.new("Frame")
+    containerFrame.Parent = billboardGui
+    containerFrame.Size = UDim2.new(1, 0, 1, 0)
+    containerFrame.BackgroundTransparency = 1
+    
+    -- Mutation text (above animal name, super small)
+    local mutationLabel = Instance.new("TextLabel")
+    mutationLabel.Parent = containerFrame
+    mutationLabel.Size = UDim2.new(1, 0, 0.15, 0)
+    mutationLabel.Position = UDim2.new(0, 0, 0, 0)
+    mutationLabel.BackgroundTransparency = 1
+    mutationLabel.Text = brainrotData.mutation or ""
+    mutationLabel.TextColor3 = Color3.new(1, 1, 1)
+    mutationLabel.TextStrokeTransparency = 0
+    mutationLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+    mutationLabel.TextScaled = true
+    mutationLabel.TextSize = 8
+    mutationLabel.Font = Enum.Font.SourceSans
+    
+    -- Animal name label
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Parent = containerFrame
+    nameLabel.Size = UDim2.new(1, 0, 0.4, 0)
+    nameLabel.Position = UDim2.new(0, 0, 0.15, 0)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Text = "HIGHEST VALUE BRAINROT"
+    nameLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
+    nameLabel.TextStrokeTransparency = 0
+    nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+    nameLabel.TextScaled = true
+    nameLabel.TextSize = 14
+    nameLabel.Font = Enum.Font.SourceSansBold
+    
+    -- Price label
+    local moneyLabel = Instance.new("TextLabel")
+    moneyLabel.Parent = containerFrame
+    moneyLabel.Size = UDim2.new(1, 0, 0.25, 0)
+    moneyLabel.Position = UDim2.new(0, 0, 0.55, 0)
+    moneyLabel.BackgroundTransparency = 1
+    moneyLabel.Text = brainrotData.price or ""
+    moneyLabel.TextColor3 = Color3.new(0, 1, 0)
+    moneyLabel.TextStrokeTransparency = 0
+    moneyLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+    moneyLabel.TextScaled = true
+    moneyLabel.TextSize = 10
+    moneyLabel.Font = Enum.Font.SourceSans
+    
+    -- Rarity label
+    local rarityLabel = Instance.new("TextLabel")
+    rarityLabel.Parent = containerFrame
+    rarityLabel.Size = UDim2.new(1, 0, 0.2, 0)
+    rarityLabel.Position = UDim2.new(0, 0, 0.8, 0)
+    rarityLabel.BackgroundTransparency = 1
+    rarityLabel.Text = brainrotData.rarity or ""
+    rarityLabel.TextScaled = true
+    rarityLabel.TextSize = 8
+    rarityLabel.Font = Enum.Font.SourceSans
+    
+    -- Special rarity colors
+    if brainrotData.rarity == "Secret" then
+        rarityLabel.TextColor3 = Color3.new(0, 0, 0)
+        rarityLabel.TextStrokeTransparency = 0
+        rarityLabel.TextStrokeColor3 = Color3.new(1, 1, 1)
+    elseif brainrotData.rarity == "Brainrot God" then
+        task.spawn(function()
+            local hue = 0
+            while rarityLabel and rarityLabel.Parent do
+                hue = (hue + 0.01) % 1
+                rarityLabel.TextColor3 = Color3.fromHSV(hue, 1, 1)
+                task.wait(0.1)
+            end
+        end)
+        rarityLabel.TextStrokeTransparency = 0
+        rarityLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+    else
+        rarityLabel.TextColor3 = Color3.new(1, 1, 1)
+        rarityLabel.TextStrokeTransparency = 0
+        rarityLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+    end
+    
+    espContainer.nameLabel = billboardGui
+    
+    -- Create tracer
+    local camera = workspace.CurrentCamera
+    if camera then
+        local attachment0 = Instance.new("Attachment")
+        attachment0.Parent = camera
+        attachment0.Position = Vector3.new(0, 0, 0)
+        
+        local attachment1 = Instance.new("Attachment")
+        attachment1.Parent = brainrotData.teleportPart
+        
+        local beam = Instance.new("Beam")
+        beam.Parent = workspace
+        beam.Attachment0 = attachment0
+        beam.Attachment1 = attachment1
+        beam.Width0 = 1
+        beam.Width1 = 1
+        beam.Color = ColorSequence.new(Color3.fromRGB(255, 215, 0))
+        beam.Transparency = NumberSequence.new(0.3)
+        beam.FaceCamera = true
+        
+        espContainer.tracer = {beam = beam, attachment0 = attachment0, attachment1 = attachment1}
+    end
+    
+    -- Highlight structure base home
+    local structureBaseHome = brainrotData.plot:FindFirstChild("structure base home")
+    if structureBaseHome then
+        local structureHighlight = Instance.new("Highlight")
+        structureHighlight.Parent = structureBaseHome
+        structureHighlight.FillColor = Color3.fromRGB(255, 215, 0)
+        structureHighlight.OutlineColor = Color3.fromRGB(255, 255, 0)
+        structureHighlight.FillTransparency = 0.8
+        structureHighlight.OutlineTransparency = 0.2
+        structureHighlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+        espContainer.structureHighlight = structureHighlight
+    end
+    
+    highestValueESP = espContainer
+    highestValueData = brainrotData
+end
+
+-- Update ESP for highest value animal
+local function updateHighestValueESP()
+    local newHighestBrainrot = findHighestBrainrot()
+    
+    -- Only update if we found a different highest value
+    if newHighestBrainrot and (not highestValueData or 
+        newHighestBrainrot.priceValue > highestValueData.priceValue or
+        newHighestBrainrot.plotName ~= highestValueData.plotName or
+        newHighestBrainrot.podiumNumber ~= highestValueData.podiumNumber) then
+        
+        createHighestValueESP(newHighestBrainrot)
+        print("📍 Updated highest value ESP: " .. newHighestBrainrot.price .. " in " .. newHighestBrainrot.plotName)
+    end
+end
+
+-- Remove highest value ESP
+local function removeHighestValueESP()
+    if highestValueESP then
+        if highestValueESP.highlight then highestValueESP.highlight:Destroy() end
+        if highestValueESP.nameLabel then highestValueESP.nameLabel:Destroy() end
+        if highestValueESP.tracer then 
+            if highestValueESP.tracer.beam then highestValueESP.tracer.beam:Destroy() end
+            if highestValueESP.tracer.attachment0 then highestValueESP.tracer.attachment0:Destroy() end
+            if highestValueESP.tracer.attachment1 then highestValueESP.tracer.attachment1:Destroy() end
+        end
+        if highestValueESP.structureHighlight then highestValueESP.structureHighlight:Destroy() end
+        highestValueESP = nil
+        highestValueData = nil
     end
 end
 
@@ -1571,6 +1764,7 @@ Players.PlayerRemoving:Connect(function(leavingPlayer)
         if hrp then
             local permanentHighlight = hrp:FindFirstChild("PermanentHighlight")
             if permanentHighlight then permanentHighlight:Destroy() end
+            removeHighestValueESP()
         end
     end
 end)
@@ -1602,6 +1796,20 @@ task.spawn(function()
         task.wait(0.5)
         pcall(updateAllPlots)
     end
+end)
+
+-- Initialize highest value ESP system
+task.spawn(function()
+    task.wait(3) -- Wait for game to load
+    updateHighestValueESP()
+    
+    -- Update ESP every 15 seconds
+    espUpdateConnection = task.spawn(function()
+        while true do
+            task.wait(15)
+            updateHighestValueESP()
+        end
+    end)
 end)
 
 -- BUTTON EVENT CONNECTIONS
