@@ -476,7 +476,7 @@ local function parsePrice(priceText)
     return number
 end
 
--- Function to scan for highest value brainrot (FIXED VERSION)
+-- Function to scan for highest value animal (ANY ANIMAL, not just brainrots)
 local function findHighestBrainrot()
     local plots = workspace:FindFirstChild("Plots")
     if not plots then 
@@ -484,25 +484,26 @@ local function findHighestBrainrot()
         return nil 
     end
     
-    local highestBrainrot = nil
+    local highestAnimal = nil
     local highestValue = 0
     
-    print("🔍 Scanning for highest value brainrot...")
+    print("🔍 Scanning for highest value animal (checking ALL animals)...")
     
     for _, plot in pairs(plots:GetChildren()) do
         if plot:IsA("Model") or plot:IsA("Folder") then
             local plotName = plot.Name
             
-            -- First, find all brainrot animals in this plot
-            local brainrotAnimals = {}
+            -- Get all animals in this plot (ANY animal, not filtering by brainrotNames)
+            local allAnimals = {}
             for _, child in pairs(plot:GetChildren()) do
-                if child:IsA("Model") and brainrotLookup[child.Name] then
-                    table.insert(brainrotAnimals, child)
+                if child:IsA("Model") and child.Name ~= plotName and child:FindFirstChild("HumanoidRootPart") then
+                    -- This is likely an animal model
+                    table.insert(allAnimals, child)
                 end
             end
             
-            -- If this plot has brainrot animals, check their prices
-            if #brainrotAnimals > 0 then
+            -- If this plot has animals, check their prices
+            if #allAnimals > 0 then
                 local animalPodiums = plot:FindFirstChild("AnimalPodiums")
                 if animalPodiums then
                     -- Check podiums 1-30
@@ -518,24 +519,38 @@ local function findHighestBrainrot()
                                         local animalOverhead = attachment:FindFirstChild("AnimalOverhead")
                                         if animalOverhead then
                                             local priceLabel = animalOverhead:FindFirstChild("Price")
-                                            if priceLabel and priceLabel.Text and priceLabel.Text ~= "" then
+                                            if priceLabel and priceLabel.Text and priceLabel.Text ~= "" and priceLabel.Text ~= "N/A" then
                                                 local priceValue = parsePrice(priceLabel.Text)
                                                 
-                                                -- Check if this price belongs to one of our target brainrots
-                                                for _, brainrotAnimal in pairs(brainrotAnimals) do
-                                                    if priceValue > highestValue then
+                                                -- Check if this price is higher than current highest
+                                                if priceValue > highestValue then
+                                                    -- Find which animal this price belongs to (get the closest one)
+                                                    local podiumPosition = spawn.Position
+                                                    local closestAnimal = nil
+                                                    local closestDistance = math.huge
+                                                    
+                                                    for _, animal in pairs(allAnimals) do
+                                                        if animal:FindFirstChild("HumanoidRootPart") then
+                                                            local distance = (animal.HumanoidRootPart.Position - podiumPosition).Magnitude
+                                                            if distance < closestDistance then
+                                                                closestDistance = distance
+                                                                closestAnimal = animal
+                                                            end
+                                                        end
+                                                    end
+                                                    
+                                                    if closestAnimal then
                                                         highestValue = priceValue
-                                                        highestBrainrot = {
-                                                            animal = brainrotAnimal,
+                                                        highestAnimal = {
+                                                            animal = closestAnimal,
                                                             plot = plot,
                                                             plotName = plotName,
-                                                            animalName = brainrotAnimal.Name,
+                                                            animalName = closestAnimal.Name,
                                                             price = priceLabel.Text,
                                                             priceValue = priceValue,
-                                                            position = brainrotAnimal:FindFirstChild("HumanoidRootPart") and brainrotAnimal.HumanoidRootPart.Position or brainrotAnimal.PrimaryPart and brainrotAnimal.PrimaryPart.Position or nil
+                                                            position = closestAnimal.HumanoidRootPart.Position
                                                         }
-                                                        print("💎 Found higher value brainrot: " .. brainrotAnimal.Name .. " - " .. priceLabel.Text .. " (" .. priceValue .. ")")
-                                                        break -- Found a match for this price, move to next podium
+                                                        print("💎 Found higher value animal: " .. closestAnimal.Name .. " - " .. priceLabel.Text .. " (" .. priceValue .. ") in plot " .. plotName)
                                                     end
                                                 end
                                             end
@@ -550,11 +565,11 @@ local function findHighestBrainrot()
         end
     end
     
-    if highestBrainrot then
-        print("🏆 Highest brainrot found: " .. highestBrainrot.animalName .. " - " .. highestBrainrot.price .. " in plot " .. highestBrainrot.plotName)
-        return highestBrainrot
+    if highestAnimal then
+        print("🏆 Highest value animal found: " .. highestAnimal.animalName .. " - " .. highestAnimal.price .. " in plot " .. highestAnimal.plotName)
+        return highestAnimal
     else
-        warn("⚠ No brainrots found")
+        warn("⚠ No animals with valid prices found")
         return nil
     end
 end
