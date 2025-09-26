@@ -652,7 +652,6 @@ local function executeTeleportToHighestBrainrot()
         -- Step 1: Find highest brainrot
         overlay.statusLabel.Text = "🔍 Scanning for highest value brainrot..."
         TweenService:Create(overlay.progressBar, TweenInfo.new(0.5), {Size = UDim2.new(0.2, 0, 1, 0)}):Play()
-        task.wait(1)
         
         if not teleportEnabled then
             removeTeleportOverlay()
@@ -675,15 +674,12 @@ local function executeTeleportToHighestBrainrot()
         overlay.statusLabel.Text = "💎 Found highest brainrot!"
         overlay.brainrotInfo.Text = "Plot: " .. highestBrainrotData.plotName .. " | Podium: " .. highestBrainrotData.podiumNumber .. "\nPrice: " .. highestBrainrotData.price .. " | Rarity: " .. highestBrainrotData.rarity
         TweenService:Create(overlay.progressBar, TweenInfo.new(0.5), {Size = UDim2.new(0.4, 0, 1, 0)}):Play()
-        task.wait(2)
         
         if not teleportEnabled then
             removeTeleportOverlay()
             return
         end
-        
-        -- Step 3: Equip Quantum Cloner
-        overlay.statusLabel.Text = "🔧 Equipping Quantum Cloner..."
+
         TweenService:Create(overlay.progressBar, TweenInfo.new(0.5), {Size = UDim2.new(0.6, 0, 1, 0)}):Play()
         
         local equipped = equipQuantumCloner()
@@ -697,33 +693,12 @@ local function executeTeleportToHighestBrainrot()
             return
         end
         
-        task.wait(0.5)
-        
         if not teleportEnabled then
             removeTeleportOverlay()
             return
         end
-        
-        -- Step 4: Fire Quantum Cloner UseItem
-        TweenService:Create(overlay.progressBar, TweenInfo.new(0.5), {Size = UDim2.new(0.8, 0, 1, 0)}):Play()
-        
-        for i = 1, 3 do
-            fireQuantumCloner()
-            task.wait(0.1)
-            if not teleportEnabled then
-                removeTeleportOverlay()
-                return
-            end
-        end
-        
-        task.wait(1)
-        
-        if not teleportEnabled then
-            removeTeleportOverlay()
-            return
-        end
-        
-        -- Step 5: Teleport to the correct position (Decorations Part)
+
+        -- Step 4: Teleport to the correct position (Decorations Part)
         overlay.statusLabel.Text = "🌟 Teleporting to highest brainrot..."
         TweenService:Create(overlay.progressBar, TweenInfo.new(0.5), {Size = UDim2.new(0.9, 0, 1, 0)}):Play()
         
@@ -733,6 +708,19 @@ local function executeTeleportToHighestBrainrot()
                 -- Teleport to the decorations part position with slight offset
                 local targetPosition = highestBrainrotData.teleportPart.Position + Vector3.new(0, 5, 0)
                 character.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
+                    for i = 1, 3 do
+                    fireQuantumCloner()
+                    task.wait(0.1)
+                    if not teleportEnabled then
+                        removeTeleportOverlay()
+                        return
+                    end
+                end
+        
+                if not teleportEnabled then
+                    removeTeleportOverlay()
+                    return
+                end
                 
                 print("✅ Teleported to highest brainrot at: " .. tostring(targetPosition))
                 print("   Plot: " .. highestBrainrotData.plotName .. " | Podium: " .. highestBrainrotData.podiumNumber)
@@ -741,8 +729,6 @@ local function executeTeleportToHighestBrainrot()
                 
                 -- Fire Quantum Cloner teleport
                 fireQuantumClonerTeleport()
-                
-                task.wait(0.5)
                 
                 -- Fire UseItem again for good measure
                 for i = 1, 2 do
