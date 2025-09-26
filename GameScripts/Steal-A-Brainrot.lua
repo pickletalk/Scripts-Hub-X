@@ -150,7 +150,7 @@ stealButton.Name = "💰"
 stealButton.Size = UDim2.new(1, -20, 0, 25)
 stealButton.Position = UDim2.new(0, 10, 0, 90)
 stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-stealButton.Text = "💰 STEAL 💰"
+stealButton.Text = "👻 INVISIBLE 👻"
 stealButton.TextColor3 = Color3.fromRGB(0, 0, 0)
 stealButton.TextScaled = true
 stealButton.Font = Enum.Font.GothamBold
@@ -259,41 +259,6 @@ local function equipTaserGun()
     return false
 end
 
-local function fireTaserGunAtSelf()
-    local character = player.Character
-    if not character then
-        warn("❌ Character not found")
-        return false
-    end
-    
-    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-    if not humanoidRootPart then
-        warn("❌ HumanoidRootPart not found")
-        return false
-    end
-    
-    -- Check if Taser Gun is equipped
-    local equippedTool = character:FindFirstChildOfClass("Tool")
-    if not equippedTool or equippedTool.Name ~= "Taser Gun" then
-        warn("❌ Taser Gun not equipped")
-        return false
-    end
-    
-    local success, error = pcall(function()
-        -- Use the same method as the original Taser Gun script
-        local Net = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"))
-        Net:RemoteEvent("UseItem"):FireServer(humanoidRootPart)
-    end)
-    
-    if success then
-        print("✅ Fired Taser Gun at self")
-        return true
-    else
-        warn("❌ Failed to fire Taser Gun: " .. tostring(error))
-        return false
-    end
-end
-
 -- Find Player's Plot Function
 local function findPlayerPlot()
     local plots = workspace:FindFirstChild("Plots")
@@ -330,7 +295,6 @@ local function findPlayerPlot()
     return nil
 end
 
--- NEW STEAL FUNCTION (replaces tweenToBase)
 local function executeSteal()
     local currentTime = tick()
     
@@ -342,12 +306,100 @@ local function executeSteal()
     
     lastClickTime = currentTime
     
-    -- Stop existing steal process
-    if stealGrappleConnection then
-        task.cancel(stealGrappleConnection)
-        stealGrappleConnection = nil
+    if stealEnabled then
+        -- Disable invisible mode
+        print("👁️ Disabling invisible mode...")
+        stealEnabled = false
+        stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+        stealButton.Text = "👻 INVISIBLE 👻"
+        
+        -- Remove all player ESP
+        for _, player in pairs(Players:GetPlayers()) do
+            if player.Character and player.Character:FindFirstChild("Head") then
+                local existingESP = player.Character.Head:FindFirstChild("InvisibleESP")
+                if existingESP then
+                    existingESP:Destroy()
+                end
+            end
+        end
+        
+        return
     end
     
+    -- Enable invisible mode
+    print("👻 Enabling invisible mode...")
+    stealEnabled = true
+    stealButton.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+    stealButton.Text = "👁️ VISIBLE 👁️"
+    
+    -- Create ESP for all players
+    for _, player in pairs(Players:GetPlayers()) do
+        if player.Character and player.Character:FindFirstChild("Head") and player.Character:FindFirstChild("HumanoidRootPart") then
+            createInvisibleESP(player)
+        end
+    end
+    
+    -- Detach everything from local player's HumanoidRootPart
+    detachFromHumanoidRootPart()
+end
+
+local function createInvisibleESP(player)
+    if not player.Character or not player.Character:FindFirstChild("Head") or not player.Character:FindFirstChild("HumanoidRootPart") then
+        return
+    end
+    
+    local head = player.Character.Head
+    local humanoidRootPart = player.Character.HumanoidRootPart
+    
+    -- Remove existing ESP
+    local existingESP = head:FindFirstChild("InvisibleESP")
+    if existingESP then
+        existingESP:Destroy()
+    end
+    
+    -- Create new ESP
+    local billboardGui = Instance.new("BillboardGui")
+    billboardGui.Name = "InvisibleESP"
+    billboardGui.Parent = head
+    billboardGui.Size = UDim2.new(0, 120, 0, 40)
+    billboardGui.StudsOffset = Vector3.new(0, 3, 0)
+    billboardGui.AlwaysOnTop = true
+    
+    local frame = Instance.new("Frame")
+    frame.Parent = billboardGui
+    frame.Size = UDim2.new(1, 0, 1, 0)
+    frame.BackgroundTransparency = 0.3
+    frame.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    frame.BorderSizePixel = 0
+    
+    local corner = Instance.new("UICorner")
+    corner.Parent = frame
+    corner.CornerRadius = UDim.new(0, 8)
+    
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Parent = frame
+    textLabel.Size = UDim2.new(1, -4, 1, -4)
+    textLabel.Position = UDim2.new(0, 2, 0, 2)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = player.DisplayName .. "\n👻 INVISIBLE"
+    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    textLabel.TextScaled = true
+    textLabel.TextStrokeTransparency = 0
+    textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    textLabel.Font = Enum.Font.SourceSansBold
+    
+    -- Create highlight effect for HumanoidRootPart
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "InvisibleHighlight"
+    highlight.Parent = humanoidRootPart
+    highlight.FillColor = Color3.fromRGB(0, 255, 0)
+    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+    highlight.FillTransparency = 0.5
+    highlight.OutlineTransparency = 0
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+end
+
+local function detachFromHumanoidRootPart()
     local character = player.Character
     if not character or not character:FindFirstChild("HumanoidRootPart") then
         warn("❌ Character or HumanoidRootPart not found")
@@ -355,61 +407,87 @@ local function executeSteal()
     end
     
     local humanoidRootPart = character.HumanoidRootPart
+    local detachedParts = {}
     
-    -- Find player plot MainRoot
-    local playerPlotMainRoot = findPlayerPlot()
-    if not playerPlotMainRoot then
-        warn("❌ Could not find player's plot MainRoot")
-        return
-    end
-
-    print("💰 Starting steal process...")
-    stealEnabled = true
-    stealButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-    stealButton.Text = "🔥 Stealing..."
+    print("🔧 Detaching parts from HumanoidRootPart...")
     
-    -- Step 1: Equip Taser Gun
-    print("🔫 Step 1: Equipping Taser Gun...")
-    if not equipTaserGun() then
-        stealEnabled = false
-        stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-        stealButton.Text = "💰 STEAL 💰 (TASER GUN NOT FOUND)"
-        wait(1)
-        stealButton.Text = "💰 STEAL 💰"
-        return
-    end
-    
-    -- Step 2: Wait longer then fire Taser Gun at self
-    print("⚡ Step 2: Firing Taser Gun at self...")
-    if not fireTaserGunAtSelf() then
-        if not fireTaserGunAtSelf() then
-            stealEnabled = false
-            stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-            stealButton.Text = "💰 STEAL 💰"
-            return
+    -- Function to make part noclip and fall
+    local function makePartNoclip(part)
+        if part and part:IsA("BasePart") then
+            part.CanCollide = false
+            part.Anchored = false
+            
+            -- Add BodyVelocity to make it fall faster
+            local bodyVelocity = Instance.new("BodyVelocity")
+            bodyVelocity.MaxForce = Vector3.new(0, math.huge, 0)
+            bodyVelocity.Velocity = Vector3.new(0, -50, 0) -- Fast downward velocity
+            bodyVelocity.Parent = part
+            
+            table.insert(detachedParts, part)
+            print("💨 Made part noclip: " .. part.Name)
         end
     end
     
-    -- Step 3: Wait for taser effect then teleport to MainRoot
-    print("📍 Step 3: Teleporting to MainRoot...")
-    task.wait(1)
-    
-    local success, teleportError = pcall(function()
-        humanoidRootPart.CFrame = playerPlotMainRoot.CFrame + Vector3.new(0, 10, 0) -- 5 studs above MainRoot
-    end)
-    
-    if success then
-        print("✅ Successfully teleported to MainRoot! 💰")
-    else
-        warn("❌ Failed to teleport: " .. tostring(teleportError))
+    -- Detach all joints connected to HumanoidRootPart
+    for _, joint in pairs(humanoidRootPart:GetChildren()) do
+        if joint:IsA("JointInstance") then
+            local connectedPart = nil
+            
+            if joint:IsA("Motor6D") or joint:IsA("Weld") or joint:IsA("WeldConstraint") then
+                if joint.Part0 == humanoidRootPart then
+                    connectedPart = joint.Part1
+                elseif joint.Part1 == humanoidRootPart then
+                    connectedPart = joint.Part0
+                end
+                
+                if connectedPart and connectedPart ~= humanoidRootPart then
+                    -- Don't detach essential body parts
+                    if connectedPart.Name ~= "Head" and connectedPart.Name ~= "Torso" and 
+                       connectedPart.Name ~= "UpperTorso" and connectedPart.Name ~= "LowerTorso" then
+                        print("🔗 Detaching: " .. connectedPart.Name)
+                        joint:Destroy()
+                        makePartNoclip(connectedPart)
+                    end
+                end
+            end
+        end
     end
     
-    -- Reset button
-    stealEnabled = false
-    stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-    stealButton.Text = "💰 STEAL 💰"
+    -- Find and detach accessories and tools
+    for _, child in pairs(character:GetChildren()) do
+        if child:IsA("Accessory") or child:IsA("Tool") then
+            print("👒 Detaching accessory/tool: " .. child.Name)
+            
+            -- Find the handle or main part
+            local handle = child:FindFirstChild("Handle") or child:FindFirstChildWhichIsA("BasePart")
+            if handle then
+                -- Remove any welds connecting to the character
+                for _, weld in pairs(handle:GetChildren()) do
+                    if weld:IsA("JointInstance") then
+                        weld:Destroy()
+                    end
+                end
+                
+                -- Detach from character
+                child.Parent = workspace
+                makePartNoclip(handle)
+            end
+        end
+    end
     
-    print("✅ Steal process completed! 💰")
+    -- Ensure HumanoidRootPart stays enabled and functional
+    humanoidRootPart.CanCollide = false -- Keep noclip for player
+    humanoidRootPart.Anchored = false
+    
+    -- Make sure humanoid stays functional
+    local humanoid = character:FindFirstChild("Humanoid")
+    if humanoid then
+        humanoid.PlatformStand = false
+        humanoid.Sit = false
+    end
+    
+    print("✅ Detached " .. #detachedParts .. " parts from HumanoidRootPart")
+    print("👻 Player is now invisible and can move freely!")
 end
 
 local function createPlatform()
@@ -1280,7 +1358,7 @@ player.CharacterRemoving:Connect(function()
     wallButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     wallButton.Text = "💰 FLOOR STEAL 💰"
     stealButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-    stealButton.Text = "💰 STEAL 💰"
+    stealButton.Text = "👻 INVISIBLE 👻"
 end)
 
 player.CharacterAdded:Connect(onCharacterAdded)
@@ -1304,6 +1382,16 @@ Players.PlayerAdded:Connect(function(playerObj)
             createPlayerDisplay(playerObj)
         end)
     end
+end)
+
+-- Handle new players for invisible ESP
+Players.PlayerAdded:Connect(function(newPlayer)
+    newPlayer.CharacterAdded:Connect(function(character)
+        task.wait(1)
+        if stealEnabled and character:FindFirstChild("Head") and character:FindFirstChild("HumanoidRootPart") then
+            createInvisibleESP(newPlayer)
+        end
+    end)
 end)
 
 updateAllPlots()
