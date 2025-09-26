@@ -674,7 +674,8 @@ local function executeTeleportToHighestBrainrot()
         overlay.statusLabel.Text = "💎 Found highest brainrot!"
         overlay.brainrotInfo.Text = "Plot: " .. highestBrainrotData.plotName .. " | Podium: " .. highestBrainrotData.podiumNumber .. "\nPrice: " .. highestBrainrotData.price .. " | Rarity: " .. highestBrainrotData.rarity
         TweenService:Create(overlay.progressBar, TweenInfo.new(0.5), {Size = UDim2.new(0.4, 0, 1, 0)}):Play()
-        
+        task.wait(0.5)
+            
         if not teleportEnabled then
             removeTeleportOverlay()
             return
@@ -707,8 +708,8 @@ local function executeTeleportToHighestBrainrot()
             if character and character:FindFirstChild("HumanoidRootPart") then
                 -- Teleport to the decorations part position with slight offset
                 local targetPosition = highestBrainrotData.teleportPart.Position + Vector3.new(0, 5, 0)
-                character.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
                     for i = 1, 3 do
+                    character.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
                     fireQuantumCloner()
                     task.wait(0.1)
                     if not teleportEnabled then
