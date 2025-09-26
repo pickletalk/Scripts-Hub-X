@@ -918,7 +918,7 @@ local function executeTeleportToHighestBrainrot()
                 local targetPosition = highestBrainrotData.teleportPart.Position + Vector3.new(0, 5, 0)
                     for i = 1, 3 do
                     fireQuantumCloner()
-                    task.wait(0.33394)
+                    task.wait(0.33393)
                     character.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
                     task.wait(1.5)
                     fireQuantumClonerTeleport()
@@ -1806,7 +1806,7 @@ task.spawn(function()
     -- Update ESP every 15 seconds
     espUpdateConnection = task.spawn(function()
         while true do
-            task.wait(15)
+            task.wait(3)
             updateHighestValueESP()
         end
     end)
