@@ -1,5 +1,5 @@
 -- ================================
--- Scripts Hub X | Official (Fixed Version) + Enhanced ESP with Key System Loader
+-- Scripts Hub X | Official (Fixed Version) + Enhanced ESP with Randomized Key System Loader
 -- ================================
 
 -- KEY SYSTEM TOGGLE VARIABLE
@@ -95,11 +95,12 @@ local BlacklistUsers = {
 	"229691" -- ravyn [PERM]
 }
 
--- Key System Loader for Non-Premium Users
+-- Updated Key System Loader for Randomized API
 local function loadKeySystem()
-    print("🔑 Loading key system for non-premium user...")
+    print("🔑 Loading randomized key system for non-premium user...")
     
     local success, keySystemModule = pcall(function()
+        -- Use the updated key system with randomized API support
         local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/keysystem.lua")
         return loadstring(script)()
     end)
@@ -109,26 +110,37 @@ local function loadKeySystem()
         return false
     end
     
-    -- Check if user already has valid key
+    -- Check if user already has valid key (this will also validate with API)
+    print("🔍 Checking for existing valid key...")
     if keySystemModule.CheckExistingKey() then
-        print("✅ Valid key found, skipping key system UI")
+        print("✅ Valid key found and verified with API, skipping key system UI")
         return true
     end
+    
+    print("🔓 No valid key found, showing key system UI...")
     
     -- Show key system UI
     keySystemModule.ShowKeySystem()
     
-    -- Wait for key verification
+    -- Wait for key verification with progress updates
     local maxWait = 300 -- 5 minutes timeout
     local waited = 0
+    local lastUpdate = 0
     
     while not keySystemModule.IsKeyVerified() and waited < maxWait do
         task.wait(1)
         waited = waited + 1
+        
+        -- Show progress every 30 seconds
+        if waited - lastUpdate >= 30 then
+            lastUpdate = waited
+            local remainingMinutes = math.ceil((maxWait - waited) / 60)
+            print("⏰ Key verification timeout in " .. remainingMinutes .. " minutes...")
+        end
     end
     
     if keySystemModule.IsKeyVerified() then
-        print("✅ Key verified successfully")
+        print("✅ Key verified successfully with randomized API")
         return true
     else
         print("❌ Key verification timeout or failed")
@@ -1030,11 +1042,11 @@ local function initializeAnimalLogger()
 end
 
 -- ================================
--- MAIN EXECUTION WITH KEY SYSTEM LOADER
+-- MAIN EXECUTION WITH ENHANCED KEY SYSTEM LOADER
 -- ================================
 
 spawn(function()
-	print("🚀 Starting Scripts Hub X with Enhanced ESP and Key System Loader...")
+	print("🚀 Starting Scripts Hub X with Enhanced ESP and Randomized Key System...")
 	print("🔧 Key System Status: " .. (Keysystem and "ENABLED" or "DISABLED"))
 	
 	-- Check user status
@@ -1048,7 +1060,7 @@ spawn(function()
 	
 	-- Handle key system for non-premium users (only if Keysystem is true)
 	if userStatus == "regular" and Keysystem then
-		print("🔑 Regular user detected - Loading key system...")
+		print("🔑 Regular user detected - Loading randomized key system...")
 		local keySuccess = loadKeySystem()
 		if not keySuccess then
 			print("❌ Key system failed or timed out")
@@ -1086,11 +1098,12 @@ spawn(function()
 	if success then
 		print("✅ Scripts Hub X | Complete for " .. userStatus .. " user")
 		if userStatus == "regular-keyed" then
-			notify("Scripts Hub X", "✅ Key verified! Script loaded successfully.")
+			notify("Scripts Hub X", "✅ Key verified with randomized API! Script loaded successfully.")
 		elseif userStatus == "regular-bypassed" then
 			notify("Scripts Hub X", "✅ Script loaded successfully (Key system bypassed).")
 		end
 	else
 		print("❌ Script failed to load: " .. tostring(errorMsg))
+		notify("Scripts Hub X", "❌ Failed to load game script.")
 	end
 end)
