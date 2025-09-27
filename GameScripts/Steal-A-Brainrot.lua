@@ -18,8 +18,8 @@ local rootPart = character:WaitForChild("HumanoidRootPart")
 -- Anti-ragdoll protection variables
 local antiRagdollConnections = {}
 local antiRagdollMonitoringConnections = {}
-local MAX_VELOCITY = 50
-local MAX_ANGULAR_VELOCITY = 50
+local MAX_VELOCITY = 20
+local MAX_ANGULAR_VELOCITY = 20
 
 -- Bypassed
 local grappleHookConnection = nil
@@ -1271,7 +1271,7 @@ local function executeTeleportToHighestBrainrot()
                 local targetPosition = highestBrainrotData.teleportPart.Position + Vector3.new(0, 5, 0)
                     for i = 1, 3 do
                     fireQuantumCloner()
-                    task.wait(0.332)
+                    task.wait(0.331)
                     character.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
                     task.wait(1.5)
                     fireQuantumClonerTeleport()
