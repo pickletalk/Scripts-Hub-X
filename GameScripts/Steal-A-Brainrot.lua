@@ -18,6 +18,10 @@ local rootPart = character:WaitForChild("HumanoidRootPart")
 -- Bypassed
 local grappleHookConnection = nil
 
+-- Variables to track steal count
+local lastStealCount = 0
+local isMonitoring = false
+
 -- Platform variables
 local platformEnabled = false
 local currentPlatform = nil
@@ -414,6 +418,141 @@ local function fireQuantumClonerTeleport()
         warn("Failed to fire Quantum Cloner teleport: " .. tostring(error))
     end
 end
+
+-- Function to safely get steal count from leaderstats
+local function getStealCount()
+    local success, result = pcall(function()
+        -- Check if LocalPlayer exists
+        if not LocalPlayer then
+            return 0
+        end
+        
+        -- Check if leaderstats exists
+        local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
+        if not leaderstats then
+            warn("Leaderstats not found for LocalPlayer")
+            return 0
+        end
+        
+        -- Check if Steals stat exists
+        local stealsObject = leaderstats:FindFirstChild("Steals")
+        if not stealsObject then
+            warn("Steals stat not found in leaderstats")
+            return 0
+        end
+        
+        -- Get the value - handle both IntValue/NumberValue and StringValue
+        local stealValue
+        if stealsObject:IsA("IntValue") or stealsObject:IsA("NumberValue") then
+            stealValue = stealsObject.Value
+        elseif stealsObject:IsA("StringValue") then
+            stealValue = tonumber(stealsObject.Value) or 0
+        else
+            -- Fallback to Text property if it exists
+            if stealsObject.Text then
+                stealValue = tonumber(stealsObject.Text) or 0
+            else
+                stealValue = tonumber(tostring(stealsObject.Value)) or 0
+            end
+        end
+        
+        return stealValue
+    end)
+    
+    if success then
+        return result
+    else
+        warn("Error getting steal count: " .. tostring(result))
+        return 0
+    end
+end
+
+-- Function to kick the player
+local function kickPlayer()
+    local success, error = pcall(function()
+        LocalPlayer:Kick("Steal Success!!!!!")
+    end)
+    
+    if not success then
+        warn("Failed to kick player: " .. tostring(error))
+        -- Alternative method if kick fails
+        game:Shutdown()
+    end
+end
+
+-- Main monitoring function
+local function monitorSteals()
+    if isMonitoring then
+        return -- Prevent multiple instances
+    end
+    
+    isMonitoring = true
+    print("Starting steal monitoring...")
+    
+    -- Initialize last steal count
+    lastStealCount = getStealCount()
+    print("Initial steal count: " .. tostring(lastStealCount))
+    
+    -- Create monitoring loop
+    spawn(function()
+        while isMonitoring do
+            wait(0.1) -- Check every 0.1 seconds for responsiveness
+            
+            local currentStealCount = getStealCount()
+            
+            -- Check if steal count increased
+            if currentStealCount > lastStealCount then
+                print("Steal detected! Count increased from " .. 
+                      tostring(lastStealCount) .. " to " .. tostring(currentStealCount))
+                
+                isMonitoring = false -- Stop monitoring
+                wait(0.1) -- Small delay before kicking
+                kickPlayer()
+                break
+            end
+            
+            lastStealCount = currentStealCount
+        end
+    end)
+end
+
+-- Function to stop monitoring
+local function stopMonitoring()
+    isMonitoring = false
+    print("Steal monitoring stopped")
+end
+
+-- Wait for leaderstats to load before starting
+local function waitForLeaderstats()
+    print("Waiting for leaderstats to load...")
+    
+    -- Wait for LocalPlayer if not available
+    if not LocalPlayer then
+        Players.PlayerAdded:Wait()
+        LocalPlayer = Players.LocalPlayer
+    end
+    
+    -- Wait for leaderstats to exist
+    local leaderstats = LocalPlayer:WaitForChild("leaderstats", 30)
+    if not leaderstats then
+        warn("Leaderstats failed to load within 30 seconds")
+        return false
+    end
+    
+    -- Wait for Steals stat to exist
+    local stealsObject = leaderstats:WaitForChild("Steals", 10)
+    if not stealsObject then
+        warn("Steals stat failed to load within 10 seconds")
+        return false
+    end
+    
+    print("Leaderstats loaded successfully")
+    return true
+end
+
+-- Main execution
+print("=== Auto Leave on Steal Script ===")
+print("Initializing...")
 
 -- Enhanced parsePrice function that handles the price format correctly
 local function parsePrice(priceText)
@@ -1791,6 +1930,22 @@ if plots then
     end)
 end
 
+if waitForLeaderstats() then
+    monitorSteals()
+    
+    print("Script active! Player will be kicked when steal count increases.")
+    print("Current steal count: " .. tostring(getStealCount()))
+else
+    warn("Failed to initialize - leaderstats or Steals stat not found")
+end
+
+-- Cleanup on player leaving (good practice)
+Players.PlayerRemoving:Connect(function(player)
+    if player == LocalPlayer then
+        stopMonitoring()
+    end
+end)
+
 task.spawn(function()
     while true do
         task.wait(0.5)
@@ -1806,7 +1961,7 @@ task.spawn(function()
     -- Update ESP every 15 seconds
     espUpdateConnection = task.spawn(function()
         while true do
-            task.wait(3)
+            task.wait(20)
             updateHighestValueESP()
         end
     end)
