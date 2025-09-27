@@ -15,6 +15,9 @@ local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 local rootPart = character:WaitForChild("HumanoidRootPart")
 
+-- Leave ui
+local leaveGui, leaveButton
+
 -- Bypassed
 local grappleHookConnection = nil
 
@@ -328,6 +331,67 @@ titleBar.InputChanged:Connect(function(input)
         end
     end
 end)
+
+local function createLeaveUI()
+    leaveGui = Instance.new("ScreenGui")
+    leaveGui.Name = "LeaveUI"
+    leaveGui.Parent = playerGui
+    leaveGui.ResetOnSpawn = false
+    
+    leaveButton = Instance.new("TextButton")
+    leaveButton.Name = "LeaveButton"
+    leaveButton.Size = UDim2.new(0, 60, 0, 25)
+    leaveButton.Position = UDim2.new(0.5, -30, 0, 10) -- Center top of screen
+    leaveButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    leaveButton.Text = "LEAVE"
+    leaveButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    leaveButton.TextScaled = true
+    leaveButton.Font = Enum.Font.GothamBold
+    leaveButton.BorderSizePixel = 0
+    leaveButton.Parent = leaveGui
+    
+    local leaveCorner = Instance.new("UICorner")
+    leaveCorner.CornerRadius = UDim.new(0, 4)
+    leaveCorner.Parent = leaveButton
+    
+    -- Hover effects
+    leaveButton.MouseEnter:Connect(function()
+        leaveButton.BackgroundColor3 = Color3.fromRGB(220, 70, 70)
+    end)
+    
+    leaveButton.MouseLeave:Connect(function()
+        leaveButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    end)
+    
+    -- Click functionality
+    leaveButton.MouseButton1Click:Connect(function()
+        local success, error = pcall(function()
+            LocalPlayer:Kick("Successfully left!")
+        end)
+        
+        if not success then
+            warn("Failed to kick player: " .. tostring(error))
+            game:Shutdown()
+        end
+    end)
+end
+
+local function setupLeaveKeybind()
+    UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+        if gameProcessedEvent then return end
+        
+        if input.KeyCode == Enum.KeyCode.L then
+            local success, error = pcall(function()
+                LocalPlayer:Kick("Successfully left!")
+            end)
+            
+            if not success then
+                warn("Failed to kick player: " .. tostring(error))
+                game:Shutdown()
+            end
+        end
+    end)
+end
 
 -- Grapple Hook Functions (shared by all features)
 local function equipGrappleHook()
@@ -2079,6 +2143,8 @@ end)
 
 -- Initialize jump delay removal
 removeJumpDelay()
+createLeaveUI()
+setupLeaveKeybind()
 
 print("✅ Steal A Brainrot script loaded successfully!")
 print("🚹 Float Button - Creates invisible platform beneath player")
