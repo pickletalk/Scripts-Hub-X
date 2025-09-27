@@ -164,6 +164,9 @@ local function onCharacterAdded(newCharacter)
     character = newCharacter
     humanoid = character:WaitForChild("Humanoid")
     rootPart = character:WaitForChild("HumanoidRootPart")
+
+    task.wait(0.5) -- Wait for character to fully load
+    setupAntiRagdollProtection()
     
     -- Reset all velocity variables
     originalGravity = nil
