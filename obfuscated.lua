@@ -3,7 +3,7 @@
 -- ================================
 
 -- KEY SYSTEM TOGGLE VARIABLE
-local Keysystem = true -- Set to false to skip key system for non-premium users
+local Keysystem = false -- Set to false to skip key system for non-premium users
 
 -- Services
 local TweenService = game:GetService("TweenService")
