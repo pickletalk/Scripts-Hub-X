@@ -15,8 +15,11 @@ local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 local rootPart = character:WaitForChild("HumanoidRootPart")
 
--- Leave ui
-local leaveGui, leaveButton
+-- Anti-ragdoll protection variables
+local antiRagdollConnections = {}
+local antiRagdollMonitoringConnections = {}
+local MAX_VELOCITY = 50
+local MAX_ANGULAR_VELOCITY = 50
 
 -- Bypassed
 local grappleHookConnection = nil
@@ -332,65 +335,209 @@ titleBar.InputChanged:Connect(function(input)
     end
 end)
 
-local function createLeaveUI()
-    leaveGui = Instance.new("ScreenGui")
-    leaveGui.Name = "LeaveUI"
-    leaveGui.Parent = playerGui
-    leaveGui.ResetOnSpawn = false
-    
-    leaveButton = Instance.new("TextButton")
-    leaveButton.Name = "LeaveButton"
-    leaveButton.Size = UDim2.new(0, 60, 0, 25)
-    leaveButton.Position = UDim2.new(0.5, -30, 0, 10) -- Center top of screen
-    leaveButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-    leaveButton.Text = "LEAVE"
-    leaveButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    leaveButton.TextScaled = true
-    leaveButton.Font = Enum.Font.GothamBold
-    leaveButton.BorderSizePixel = 0
-    leaveButton.Parent = leaveGui
-    
-    local leaveCorner = Instance.new("UICorner")
-    leaveCorner.CornerRadius = UDim.new(0, 4)
-    leaveCorner.Parent = leaveButton
-    
-    -- Hover effects
-    leaveButton.MouseEnter:Connect(function()
-        leaveButton.BackgroundColor3 = Color3.fromRGB(220, 70, 70)
-    end)
-    
-    leaveButton.MouseLeave:Connect(function()
-        leaveButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-    end)
-    
-    -- Click functionality
-    leaveButton.MouseButton1Click:Connect(function()
-        local success, error = pcall(function()
-            LocalPlayer:Kick("Successfully left!")
-        end)
+-- Function to safely get character components for anti-ragdoll
+local function getAntiRagdollComponents()
+    local success, result = pcall(function()
+        if not LocalPlayer.Character then
+            return false
+        end
         
-        if not success then
-            warn("Failed to kick player: " .. tostring(error))
-            game:Shutdown()
+        local char = LocalPlayer.Character
+        local hum = char:FindFirstChild("Humanoid")
+        local root = char:FindFirstChild("HumanoidRootPart")
+        
+        return char and hum and root
+    end)
+    
+    return success and result
+end
+
+-- Function to prevent ragdolling
+local function preventRagdoll()
+    if not (humanoid and humanoid.Parent) then
+        return
+    end
+    
+    pcall(function()
+        -- Prevent PlatformStand (main ragdoll trigger)
+        if humanoid.PlatformStand then
+            humanoid.PlatformStand = false
+        end
+        
+        -- Keep humanoid state normal
+        if humanoid:GetState() == Enum.HumanoidStateType.Physics then
+            humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics, false)
+            humanoid:ChangeState(Enum.HumanoidStateType.Running)
+        end
+        
+        -- Restore joint connections if broken
+        for _, part in pairs(character:GetChildren()) do
+            if part:IsA("BasePart") and part ~= rootPart then
+                local joint = part:FindFirstChild("RootJoint") or 
+                            part:FindFirstChild("Neck") or 
+                            part:FindFirstChild("Right Shoulder") or 
+                            part:FindFirstChild("Left Shoulder") or 
+                            part:FindFirstChild("Right Hip") or 
+                            part:FindFirstChild("Left Hip")
+                
+                if joint and joint:IsA("Motor6D") then
+                    joint.Enabled = true
+                end
+            end
         end
     end)
 end
 
-local function setupLeaveKeybind()
-    UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
-        if gameProcessedEvent then return end
+-- Function to prevent excessive velocity (anti-fling)
+local function preventFling()
+    if not (rootPart and rootPart.Parent) then
+        return
+    end
+    
+    pcall(function()
+        local velocity = rootPart.AssemblyLinearVelocity
+        local angularVelocity = rootPart.AssemblyAngularVelocity
         
-        if input.KeyCode == Enum.KeyCode.L then
-            local success, error = pcall(function()
-                LocalPlayer:Kick("Successfully left!")
-            end)
-            
-            if not success then
-                warn("Failed to kick player: " .. tostring(error))
-                game:Shutdown()
+        -- Check linear velocity
+        if velocity.Magnitude > MAX_VELOCITY then
+            rootPart.AssemblyLinearVelocity = velocity.Unit * MAX_VELOCITY
+        end
+        
+        -- Check angular velocity
+        if angularVelocity.Magnitude > MAX_ANGULAR_VELOCITY then
+            rootPart.AssemblyAngularVelocity = angularVelocity.Unit * MAX_ANGULAR_VELOCITY
+        end
+        
+        -- Anchor briefly if velocity is extreme
+        if velocity.Magnitude > MAX_VELOCITY * 3 then
+            rootPart.Anchored = true
+            wait(0.1)
+            if rootPart and rootPart.Parent then
+                rootPart.Anchored = false
             end
         end
     end)
+end
+
+-- Function to disable TouchInterest on SentryBullet objects
+local function disableSentryBulletTouch(sentryBullet)
+    pcall(function()
+        if not sentryBullet or not sentryBullet.Parent then
+            return
+        end
+        
+        -- Method 1: Remove TouchInterest directly
+        local touchInterest = sentryBullet:FindFirstChild("TouchInterest")
+        if touchInterest then
+            touchInterest:Destroy()
+            print("🛡️ Disabled TouchInterest on:", sentryBullet.Name)
+        end
+        
+        -- Method 2: Disable CanTouch property
+        if sentryBullet:IsA("BasePart") then
+            sentryBullet.CanTouch = false
+        end
+        
+        -- Method 3: Make it non-collidable with player
+        sentryBullet.CanCollide = false
+        
+        -- Method 4: Move to different collision group
+        pcall(function()
+            sentryBullet.CollisionGroup = "SentryBulletDisabled"
+        end)
+    end)
+end
+
+-- Function to monitor and disable new SentryBullet objects
+local function monitorSentryBullets()
+    -- Monitor existing SentryBullet objects
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj.Name == "SentryBullet" and obj:IsA("BasePart") then
+            disableSentryBulletTouch(obj)
+        end
+    end
+    
+    -- Monitor new SentryBullet objects being added
+    local connection = Workspace.DescendantAdded:Connect(function(descendant)
+        if descendant.Name == "SentryBullet" and descendant:IsA("BasePart") then
+            wait() -- Small delay to ensure object is fully loaded
+            disableSentryBulletTouch(descendant)
+        end
+    end)
+    
+    table.insert(antiRagdollMonitoringConnections, connection)
+end
+
+-- Function to setup anti-ragdoll protection for character
+local function setupAntiRagdollProtection()
+    if not getAntiRagdollComponents() then
+        return false
+    end
+    
+    print("🛡️ Setting up anti-ragdoll protection for:", character.Name)
+    
+    -- Clear previous connections
+    for _, connection in pairs(antiRagdollConnections) do
+        if connection and connection.Connected then
+            connection:Disconnect()
+        end
+    end
+    antiRagdollConnections = {}
+    
+    -- Anti-ragdoll protection - Monitor humanoid state changes
+    local stateConnection = humanoid.StateChanged:Connect(function(oldState, newState)
+        if newState == Enum.HumanoidStateType.Physics then
+            preventRagdoll()
+        end
+    end)
+    table.insert(antiRagdollConnections, stateConnection)
+    
+    -- Monitor PlatformStand changes
+    local platformConnection = humanoid:GetPropertyChangedSignal("PlatformStand"):Connect(function()
+        if humanoid.PlatformStand then
+            preventRagdoll()
+        end
+    end)
+    table.insert(antiRagdollConnections, platformConnection)
+    
+    -- Anti-fling protection
+    local heartbeatConnection = RunService.Heartbeat:Connect(function()
+        preventFling()
+    end)
+    table.insert(antiRagdollConnections, heartbeatConnection)
+    
+    -- Touched event override for SentryBullet (backup method)
+    for _, part in pairs(character:GetChildren()) do
+        if part:IsA("BasePart") then
+            local touchConnection = part.Touched:Connect(function(hit)
+                if hit.Name == "SentryBullet" then
+                    -- Block the touch event by not allowing it to propagate
+                    return
+                end
+            end)
+            table.insert(antiRagdollConnections, touchConnection)
+        end
+    end
+    
+    print("🛡️ Anti-ragdoll protection setup complete")
+    return true
+end
+
+-- Function to cleanup anti-ragdoll connections
+local function cleanupAntiRagdoll()
+    for _, connection in pairs(antiRagdollConnections) do
+        if connection and connection.Connected then
+            connection:Disconnect()
+        end
+    end
+    antiRagdollConnections = {}
+    
+    for _, connection in pairs(antiRagdollMonitoringConnections) do
+        if connection and connection.Connected then
+            connection:Disconnect()
+        end
+    end
+    antiRagdollMonitoringConnections = {}
 end
 
 -- Grapple Hook Functions (shared by all features)
@@ -2031,6 +2178,13 @@ task.spawn(function()
     end)
 end)
 
+monitorSentryBullets()
+
+if LocalPlayer.Character then
+    task.wait(0.5)
+    setupAntiRagdollProtection()
+end
+
 -- BUTTON EVENT CONNECTIONS
 floatButton.MouseButton1Click:Connect(function()
     local originalSize = floatButton.Size
@@ -2143,8 +2297,6 @@ end)
 
 -- Initialize jump delay removal
 removeJumpDelay()
-createLeaveUI()
-setupLeaveKeybind()
 
 print("✅ Steal A Brainrot script loaded successfully!")
 print("🚹 Float Button - Creates invisible platform beneath player")
