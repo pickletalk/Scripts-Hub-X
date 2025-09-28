@@ -18,8 +18,8 @@ local rootPart = character:WaitForChild("HumanoidRootPart")
 -- Anti-ragdoll protection variables
 local antiRagdollConnections = {}
 local antiRagdollMonitoringConnections = {}
-local MAX_VELOCITY = 15
-local MAX_ANGULAR_VELOCITY = 15
+local MAX_VELOCITY = 20
+local MAX_ANGULAR_VELOCITY = 30
 
 -- Bypassed
 local grappleHookConnection = nil
@@ -32,7 +32,7 @@ local isMonitoring = false
 local platformEnabled = false
 local currentPlatform = nil
 local platformUpdateConnection = nil
-local PLATFORM_OFFSET = 3.5
+local PLATFORM_OFFSET = 3.6
 -- Variables for slow fall
 local SLOW_FALL_SPEED = -0.45 
 local originalGravity = nil
