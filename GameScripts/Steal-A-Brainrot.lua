@@ -18,8 +18,8 @@ local rootPart = character:WaitForChild("HumanoidRootPart")
 -- Anti-ragdoll protection variables
 local antiRagdollConnections = {}
 local antiRagdollMonitoringConnections = {}
-local MAX_VELOCITY = 20
-local MAX_ANGULAR_VELOCITY = 30
+local MAX_VELOCITY = 100
+local MAX_ANGULAR_VELOCITY = 100
 
 -- Bypassed
 local grappleHookConnection = nil
