@@ -1113,7 +1113,7 @@ local function createTeleportOverlay()
     loadingProgress.Size = UDim2.new(0, 0, 1, 0)
     loadingProgress.Position = UDim2.new(0, 0, 0, 0)
     loadingProgress.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-    loadingProgress.BorderSizePixel = 0)
+    loadingProgress.BorderSizePixel = 0
     loadingProgress.Parent = loadingBar
     
     local loadingProgressCorner = Instance.new("UICorner")
