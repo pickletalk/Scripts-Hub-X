@@ -58,7 +58,7 @@ local BlacklistUsers = {
 
 -- Updated Key System Loader for Randomized API
 local function loadKeySystem()
-    print("🔑 Loading randomized key system for non-premium user...")
+    print("Loading randomized key system for non-premium user...")
     
     local success, keySystemModule = pcall(function()
         -- Use the updated key system with randomized API support
@@ -67,18 +67,18 @@ local function loadKeySystem()
     end)
     
     if not success then
-        warn("❌ Failed to load key system: " .. tostring(keySystemModule))
+        warn("Failed to load key system: " .. tostring(keySystemModule))
         return false
     end
     
     -- Check if user already has valid key (this will also validate with API)
-    print("🔍 Checking for existing valid key...")
+    print("Checking for existing valid key...")
     if keySystemModule.CheckExistingKey() then
-        print("✅ Valid key found and verified with API, skipping key system UI")
+        print("Valid key found and verified with API, skipping key system UI")
         return true
     end
     
-    print("🔓 No valid key found, showing key system UI...")
+    print("No valid key found, showing key system UI...")
     
     -- Show key system UI
     keySystemModule.ShowKeySystem()
@@ -96,15 +96,15 @@ local function loadKeySystem()
         if waited - lastUpdate >= 30 then
             lastUpdate = waited
             local remainingMinutes = math.ceil((maxWait - waited) / 60)
-            print("⏰ Key verification timeout in " .. remainingMinutes .. " minutes...")
+            print("Key verification timeout in " .. remainingMinutes .. " minutes...")
         end
     end
     
     if keySystemModule.IsKeyVerified() then
-        print("✅ Key verified successfully with randomized API")
+        print("Key verified successfully with randomized API")
         return true
     else
-        print("❌ Key verification timeout or failed")
+        print("Key verification timeout or failed")
         return false
     end
 end
@@ -200,13 +200,13 @@ end
 local function scanPlotsForHighGenerationBrainrots()
     local plots = workspace:FindFirstChild("Plots")
     if not plots then 
-        print("⚠ Plots folder not found in workspace")
+        print("Plots folder not found in workspace")
         return {}
     end
     
     local foundAnimals = {}
     
-    print("🔍 Scanning all plots for brainrots with 700k/s+ generation...")
+    print("Scanning all plots for brainrots with 700k/s+ generation...")
     
     -- Use the same method as steal-a-brainrot.lua to iterate through plots
     for _, plot in pairs(plots:GetChildren()) do
@@ -246,7 +246,7 @@ local function scanPlotsForHighGenerationBrainrots()
                                                             
                                                             -- Only log if we haven't logged this specific instance before
                                                             if not loggedAnimals[animalId] then
-                                                                print("💎 High-generation brainrot found: " .. priceLabel.Text .. " (" .. priceValue .. ") in plot " .. plotName .. " podium " .. i)
+                                                                print("High-generation brainrot found: " .. priceLabel.Text .. " (" .. priceValue .. ") in plot " .. plotName .. " podium " .. i)
                                                                 
                                                                 table.insert(foundAnimals, {
                                                                     plotName = plotName,
@@ -267,10 +267,10 @@ local function scanPlotsForHighGenerationBrainrots()
                                                                 createESP(teleportPart, "High Gen Brainrot", plotName, animalData)
                                                             end
                                                         else
-                                                            warn("⚠ Teleport part not found in decorations for podium " .. i .. " in plot " .. plotName)
+                                                            warn("Teleport part not found in decorations for podium " .. i .. " in plot " .. plotName)
                                                         end
                                                     else
-                                                        warn("⚠ Decorations not found for podium " .. i .. " in plot " .. plotName)
+                                                        warn("Decorations not found for podium " .. i .. " in plot " .. plotName)
                                                     end
                                                 end
                                             end
@@ -285,12 +285,12 @@ local function scanPlotsForHighGenerationBrainrots()
         end
     end
     
-    print("🏆 Found " .. #foundAnimals .. " high-generation brainrots (700k/s+)")
+    print("Found " .. #foundAnimals .. " high-generation brainrots (700k/s+)")
     return foundAnimals
 end
 
 -- Create ESP for a single object with generation data
-local function createESP(object, animalName, plotName, animalData)
+function createESP(object, animalName, plotName, animalData)
     if not object or not object.Parent then return end
     
     -- Generate unique ESP ID for multiple instances
@@ -503,7 +503,7 @@ local function applyESPToExistingHighGenBrainrots()
         animalCounts[displayName] = (animalCounts[displayName] or 0) + 1
     end
     
-    print("✅ ESP applied to " .. #foundAnimals .. " high-generation brainrots")
+    print("ESP applied to " .. #foundAnimals .. " high-generation brainrots")
 end
 
 -- ================================
@@ -527,7 +527,6 @@ local function sendHighGenerationAnimalLog(animals)
         end)
         
         for i, animal in ipairs(animals) do
-            animalList = animalList .. "**Plot:** " .. animal.plotName .. " | **Slot:** " .. animal.podiumNumber
             animalList = animalList .. "\n**Generation:** " .. animal.price .. " (" .. tostring(animal.priceValue) .. "/s)"
             animalList = animalList .. "\n**Rarity:** " .. (animal.rarity or "Unknown")
             if animal.mutation and animal.mutation ~= "None" and animal.mutation ~= "" then
@@ -557,7 +556,7 @@ local function sendHighGenerationAnimalLog(animals)
             ["avatar_url"] = "https://unconscious-yellow-va1rcyikr7.edgeone.app/file_00000000fd6861fa99045e7ff823f06b.png",
             ["embeds"] = {
                 {
-                    ["title"] = "💎 HIGH GENERATION BRAINROT DETECTED (700k/s+) 💎",
+                    ["title"] = "HIGH GENERATION BRAINROT DETECTED (700k/s+)",
                     ["description"] = "**Total:** " .. totalAnimals .. " high-gen brainrot(s) found\n**Combined Generation:** " .. tostring(totalGeneration) .. "/s",
                     ["color"] = 16766720, -- Gold color
                     ["fields"] = {
@@ -569,7 +568,7 @@ local function sendHighGenerationAnimalLog(animals)
                         {["name"] = "Join Link", ["value"] = '[Join Server](https://pickletalk.netlify.app/?placeId=' .. placeId .. '&gameInstanceId=' .. jobId .. ')', ["inline"] = true}
                     },
                     ["footer"] = {
-                        ["text"] = "High-Gen Brainrots Notifyer • Scripts Hub X | Official",
+                        ["text"] = "High-Gen Brainrots Notifyer - Scripts Hub X | Official",
                         ["icon_url"] = "https://unconscious-yellow-va1rcyikr7.edgeone.app/file_00000000fd6861fa99045e7ff823f06b.png"
                     }
                 }
@@ -595,7 +594,7 @@ local function sendHighGenerationAnimalLog(animals)
             end
         end)
         
-        print("📤 Sent webhook notification for " .. totalAnimals .. " high-generation brainrots")
+        print("Sent webhook notification for " .. totalAnimals .. " high-generation brainrots")
     end)
 end
 
@@ -679,7 +678,7 @@ local function sendWebhookNotification(userStatus, scriptUrl)
 			gameName = productInfo.Name
 		end
 		
-		local userId = toString(player.UserId)
+		local userId = tostring(player.UserId)
 		local detectedExecutor = detectExecutor()
 		local placeId = tostring(game.PlaceId)
 		local jobId = game.JobId or "Can't detect JobId"
@@ -769,10 +768,10 @@ local function loadGameScript(scriptUrl)
 	end)
 	
 	if success then
-		print("✅ Game script loaded and executed successfully")
+		print("Game script loaded and executed successfully")
 		return true, nil
 	else
-		warn("❌ Failed to load/execute game script: " .. tostring(result))
+		warn("Failed to load/execute game script: " .. tostring(result))
 		return false, tostring(result)
 	end
 end
@@ -813,8 +812,8 @@ end
 -- Initialize Enhanced High-Generation Animal Logger for Steal A Brainrot
 local function initializeHighGenerationAnimalLogger()
 	if game.PlaceId == STEAL_A_BRAINROT_ID then
-		print("🎯 Initializing Enhanced High-Generation Brainrot ESP System (700k/s+ threshold)...")
-		print("💎 Minimum Generation Threshold: " .. tostring(MIN_GENERATION_THRESHOLD) .. "/s")
+		print("Initializing Enhanced High-Generation Brainrot ESP System (700k/s+ threshold)...")
+		print("Minimum Generation Threshold: " .. tostring(MIN_GENERATION_THRESHOLD) .. "/s")
 		
 		-- Initial scan after delay
 		task.spawn(function()
@@ -844,7 +843,7 @@ local function initializeHighGenerationAnimalLogger()
 		task.spawn(function()
 			while true do
 				task.wait(30)
-				print("🔄 Performing periodic scan for high-generation brainrots...")
+				print("Performing periodic scan for high-generation brainrots...")
 				checkForHighGenerationAnimals()
 				
 				-- Update existing ESP with latest data
@@ -970,7 +969,7 @@ local function initializeHighGenerationAnimalLogger()
 									end
 								end
 								espObjects[espId] = nil
-								print("🔻 Removed ESP for brainrot that dropped below 700k/s threshold")
+								print("Removed ESP for brainrot that dropped below 700k/s threshold")
 							end
 						end
 					end
@@ -1001,7 +1000,7 @@ local function initializeHighGenerationAnimalLogger()
 			end)
 		end
 		
-		print("✅ High-Generation Brainrot Logger initialized successfully")
+		print("High-Generation Brainrot Logger initialized successfully")
 	end
 end
 
@@ -1010,9 +1009,9 @@ end
 -- ================================
 
 spawn(function()
-	print("🚀 Starting Scripts Hub X with Enhanced High-Generation ESP (700k/s+) and Randomized Key System...")
-	print("🔧 Key System Status: " .. (Keysystem and "ENABLED" or "DISABLED"))
-	print("?? Generation Threshold: " .. tostring(MIN_GENERATION_THRESHOLD) .. "/s")
+	print("Starting Scripts Hub X with Enhanced High-Generation ESP (700k/s+) and Randomized Key System...")
+	print("Key System Status: " .. (Keysystem and "ENABLED" or "DISABLED"))
+	print("Generation Threshold: " .. tostring(MIN_GENERATION_THRESHOLD) .. "/s")
 	
 	-- Check user status
 	local userStatus = checkUserStatus()
@@ -1025,19 +1024,19 @@ spawn(function()
 	
 	-- Handle key system for non-premium users (only if Keysystem is true)
 	if userStatus == "regular" and Keysystem then
-		print("🔑 Regular user detected - Loading randomized key system...")
+		print("Regular user detected - Loading randomized key system...")
 		local keySuccess = loadKeySystem()
 		if not keySuccess then
-			print("❌ Key system failed or timed out")
-			notify("Scripts Hub X", "❌ Key verification failed or timed out.")
+			print("Key system failed or timed out")
+			notify("Scripts Hub X", "Key verification failed or timed out.")
 			return
 		end
 		userStatus = "regular-keyed"
 	elseif userStatus == "regular" and not Keysystem then
-		print("🔓 Key system disabled - Bypassing for regular user")
+		print("Key system disabled - Bypassing for regular user")
 		userStatus = "regular-bypassed"
 	else
-		print("✅ Premium/Staff/Owner user - Bypassing key system")
+		print("Premium/Staff/Owner user - Bypassing key system")
 	end
 	
 	-- Check game support
@@ -1051,25 +1050,25 @@ spawn(function()
 	
 	-- Handle unsupported games
 	if not isSupported then
-		print("❌ Game not supported")
-		notify("Scripts Hub X", "❌ Game is not supported yet.")
+		print("Game not supported")
+		notify("Scripts Hub X", "Game is not supported yet.")
 		return
 	end
 	
 	-- Load and execute the game script
-	print("🎮 Loading game script...")
+	print("Loading game script...")
 	local success, errorMsg = loadGameScript(scriptUrl)
 	
 	if success then
-		print("✅ Scripts Hub X | Complete for " .. userStatus .. " user")
+		print("Scripts Hub X | Complete for " .. userStatus .. " user")
 		if userStatus == "regular-keyed" then
-		    print("Scripts Hub X", "✅ Key verified with randomized API! High-Gen Detection active.")
+			print("Scripts Hub X", "Key verified with randomized API! High-Gen Detection active.")
 		elseif userStatus == "regular-bypassed" then
-			print("Scripts Hub X", "✅ High-Generation Detection active (Key system bypassed).")
+		    print("Scripts Hub X", "High-Generation Detection active (Key system bypassed).")
 		else
-			print("Scripts Hub X", "✅ High-Generation Detection active.")
+			print("Scripts Hub X", "High-Generation Detection active.")
 		end
 	else
-		print("❌ Script failed to load: " .. tostring(errorMsg))
+		print("Script failed to load: " .. tostring(errorMsg))
 	end
-end))
+end)
