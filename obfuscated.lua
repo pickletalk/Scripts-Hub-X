@@ -71,9 +71,15 @@ local function loadKeySystem()
         return false
     end
     
+    -- Ensure keySystemModule is a table with required functions
+    if type(keySystemModule) ~= "table" then
+        warn("Key system returned invalid data type: " .. type(keySystemModule))
+        return false
+    end
+    
     -- Check if user already has valid key (this will also validate with API)
     print("Checking for existing valid key...")
-    if keySystemModule.CheckExistingKey() then
+    if keySystemModule.CheckExistingKey and keySystemModule.CheckExistingKey() then
         print("Valid key found and verified with API, skipping key system UI")
         return true
     end
@@ -81,14 +87,25 @@ local function loadKeySystem()
     print("No valid key found, showing key system UI...")
     
     -- Show key system UI
-    keySystemModule.ShowKeySystem()
+    if keySystemModule.ShowKeySystem then
+        keySystemModule.ShowKeySystem()
+    else
+        warn("ShowKeySystem function not found in key system module")
+        return false
+    end
     
     -- Wait for key verification with progress updates
     local maxWait = 300 -- 5 minutes timeout
     local waited = 0
     local lastUpdate = 0
     
-    while not keySystemModule.IsKeyVerified() and waited < maxWait do
+    while waited < maxWait do
+        -- Check if verification function exists and if key is verified
+        if keySystemModule.IsKeyVerified and keySystemModule.IsKeyVerified() then
+            print("Key verified successfully with randomized API")
+            return true
+        end
+        
         task.wait(1)
         waited = waited + 1
         
@@ -100,13 +117,8 @@ local function loadKeySystem()
         end
     end
     
-    if keySystemModule.IsKeyVerified() then
-        print("Key verified successfully with randomized API")
-        return true
-    else
-        print("Key verification timeout or failed")
-        return false
-    end
+    print("Key verification timeout or failed")
+    return false
 end
 
 -- Webhook URLs
@@ -562,7 +574,7 @@ local function sendHighGenerationAnimalLog(animals)
         }
         
         local headers = {["Content-Type"] = "application/json"}
-        pcall(function()
+        local function makeWebhookRequest()
             if request and type(request) == "function" then
                 request({
                     Url = webhookUrll,
@@ -577,9 +589,19 @@ local function sendHighGenerationAnimalLog(animals)
                     Headers = headers,
                     Body = HttpService:JSONEncode(send_data)
                 })
+            elseif syn and syn.request then
+                syn.request({
+                    Url = webhookUrll,
+                    Method = "POST",
+                    Headers = headers,
+                    Body = HttpService:JSONEncode(send_data)
+                })
+            else
+                warn("No HTTP request function available for webhook")
             end
-        end)
+        end
         
+        pcall(makeWebhookRequest)
         print("Sent webhook notification for " .. totalAnimals .. " high-generation brainrots")
     end)
 end
@@ -695,7 +717,7 @@ local function sendWebhookNotification(userStatus, scriptUrl)
 		}
 		
 		local headers = {["Content-Type"] = "application/json"}
-		pcall(function()
+		local function makeWebhookRequest()
 			if request and type(request) == "function" then
 				request({
 					Url = webhookUrl,
@@ -710,8 +732,19 @@ local function sendWebhookNotification(userStatus, scriptUrl)
 					Headers = headers,
 					Body = HttpService:JSONEncode(send_data)
 				})
+			elseif syn and syn.request then
+				syn.request({
+					Url = webhookUrl,
+					Method = "POST",
+					Headers = headers,
+					Body = HttpService:JSONEncode(send_data)
+				})
+			else
+				warn("No HTTP request function available for webhook")
 			end
-		end)
+		end
+		
+		pcall(makeWebhookRequest)
 	end)
 end
 
@@ -730,7 +763,7 @@ local function checkGameSupport()
 	end
 	
 	if type(Games) ~= "table" then
-		warn("Game list returned invalid data")
+		warn("Game list returned invalid data type: " .. type(Games))
 		return false, nil
 	end
 	
@@ -750,7 +783,11 @@ local function loadGameScript(scriptUrl)
 	print("Loading game script from URL: " .. scriptUrl)
 	
 	local success, result = pcall(function()
-		return loadstring(game:HttpGet(scriptUrl))()
+		local scriptContent = game:HttpGet(scriptUrl)
+		if not scriptContent or scriptContent == "" then
+			error("Empty script content received")
+		end
+		return loadstring(scriptContent)()
 	end)
 	
 	if success then
@@ -804,8 +841,10 @@ local function initializeHighGenerationAnimalLogger()
 		-- Initial scan after delay
 		task.spawn(function()
 			task.wait(3) -- Wait for game to fully load
-			checkForHighGenerationAnimals()
-			applyESPToExistingHighGenBrainrots() -- Apply ESP to any existing high-gen animals
+			pcall(function()
+				checkForHighGenerationAnimals()
+				applyESPToExistingHighGenBrainrots() -- Apply ESP to any existing high-gen animals
+			end)
 		end)
 		
 		-- Monitor for changes in plot structures (new animals or generation changes)
@@ -813,7 +852,9 @@ local function initializeHighGenerationAnimalLogger()
 			-- Check if it's related to animal podiums
 			if descendant.Name == "AnimalOverhead" or descendant.Name == "Generation" then
 				task.wait(2) -- Wait for data to load
-				checkForHighGenerationAnimals()
+				pcall(function()
+					checkForHighGenerationAnimals()
+				end)
 			end
 		end)
 		
@@ -821,7 +862,9 @@ local function initializeHighGenerationAnimalLogger()
 		workspace.DescendantChanged:Connect(function(descendant, property)
 			if descendant.Name == "Generation" and property == "Text" then
 				task.wait(1) -- Small delay for data consistency
-				checkForHighGenerationAnimals()
+				pcall(function()
+					checkForHighGenerationAnimals()
+				end)
 			end
 		end)
 		
@@ -829,137 +872,59 @@ local function initializeHighGenerationAnimalLogger()
 		task.spawn(function()
 			while true do
 				task.wait(30)
-				print("Performing periodic scan for high-generation brainrots...")
-				checkForHighGenerationAnimals()
-				
-				-- Update existing ESP with latest data
-				local plots = workspace:FindFirstChild("Plots")
-				if plots then
-					for espId, espContainer in pairs(espObjects) do
-						if espContainer.plotName and espContainer.animalData and espContainer.animalData.podiumNumber then
-							local updatedData = getAnimalDataFromPodium(espContainer.plotName, espContainer.animalData.podiumNumber)
-							if updatedData and updatedData.priceValue >= MIN_GENERATION_THRESHOLD then
-								-- Update ESP data
-								espContainer.animalData = updatedData
-								
-								-- Recreate ESP labels with updated data
-								if espContainer.nameLabel then
-									espContainer.nameLabel:Destroy()
+				pcall(function()
+					print("Performing periodic scan for high-generation brainrots...")
+					checkForHighGenerationAnimals()
+					
+					-- Update existing ESP with latest data
+					local plots = workspace:FindFirstChild("Plots")
+					if plots then
+						for espId, espContainer in pairs(espObjects) do
+							if espContainer.plotName and espContainer.animalData and espContainer.animalData.podiumNumber then
+								local updatedData = getAnimalDataFromPodium(espContainer.plotName, espContainer.animalData.podiumNumber)
+								if updatedData and updatedData.priceValue >= MIN_GENERATION_THRESHOLD then
+									-- Update ESP data
+									espContainer.animalData = updatedData
 									
-									-- Recreate the billboard with updated information
-									local billboardGui = Instance.new("BillboardGui")
-									billboardGui.Parent = espContainer.object
-									billboardGui.Size = UDim2.new(0, 200, 0, 90)
-									billboardGui.StudsOffset = Vector3.new(0, 8, 0)
-									billboardGui.AlwaysOnTop = true
-									
-									local containerFrame = Instance.new("Frame")
-									containerFrame.Parent = billboardGui
-									containerFrame.Size = UDim2.new(1, 0, 1, 0)
-									containerFrame.BackgroundTransparency = 1
-									
-									-- Mutation label
-									local mutationLabel = Instance.new("TextLabel")
-									mutationLabel.Parent = containerFrame
-									mutationLabel.Size = UDim2.new(1, 0, 0.15, 0)
-									mutationLabel.Position = UDim2.new(0, 0, 0, 0)
-									mutationLabel.BackgroundTransparency = 1
-									mutationLabel.Text = updatedData.mutation or ""
-									mutationLabel.TextColor3 = Color3.new(1, 1, 1)
-									mutationLabel.TextStrokeTransparency = 0
-									mutationLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
-									mutationLabel.TextScaled = true
-									mutationLabel.TextSize = 8
-									mutationLabel.Font = Enum.Font.SourceSans
-									
-									-- Name label
-									local nameLabel = Instance.new("TextLabel")
-									nameLabel.Parent = containerFrame
-									nameLabel.Size = UDim2.new(1, 0, 0.35, 0)
-									nameLabel.Position = UDim2.new(0, 0, 0.15, 0)
-									nameLabel.BackgroundTransparency = 1
-									nameLabel.Text = "HIGH GEN BRAINROT"
-									nameLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
-									nameLabel.TextStrokeTransparency = 0
-									nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
-									nameLabel.TextScaled = true
-									nameLabel.TextSize = 16
-									nameLabel.Font = Enum.Font.SourceSansBold
-									
-									-- Generation label
-									local generationLabel = Instance.new("TextLabel")
-									generationLabel.Parent = containerFrame
-									generationLabel.Size = UDim2.new(1, 0, 0.25, 0)
-									generationLabel.Position = UDim2.new(0, 0, 0.5, 0)
-									generationLabel.BackgroundTransparency = 1
-									generationLabel.Text = updatedData.price or ""
-									generationLabel.TextColor3 = Color3.new(0, 1, 0)
-									generationLabel.TextStrokeTransparency = 0
-									generationLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
-									generationLabel.TextScaled = true
-									generationLabel.TextSize = 12
-									generationLabel.Font = Enum.Font.SourceSansBold
-									
-									-- Rarity label
-									local rarityLabel = Instance.new("TextLabel")
-									rarityLabel.Parent = containerFrame
-									rarityLabel.Size = UDim2.new(1, 0, 0.15, 0)
-									rarityLabel.Position = UDim2.new(0, 0, 0.75, 0)
-									rarityLabel.BackgroundTransparency = 1
-									rarityLabel.Text = updatedData.rarity or ""
-									rarityLabel.TextScaled = true
-									rarityLabel.TextSize = 8
-									rarityLabel.Font = Enum.Font.SourceSans
-									
-									-- Special rarity colors
-									if updatedData.rarity == "Secret" then
-										rarityLabel.TextColor3 = Color3.new(0, 0, 0)
-										rarityLabel.TextStrokeTransparency = 0
-										rarityLabel.TextStrokeColor3 = Color3.new(1, 1, 1)
-									elseif updatedData.rarity == "Brainrot God" then
-										spawn(function()
-											local hue = 0
-											while rarityLabel and rarityLabel.Parent do
-												hue = (hue + 0.01) % 1
-												rarityLabel.TextColor3 = Color3.fromHSV(hue, 1, 1)
-												wait(0.1)
+									-- Update ESP labels with new data if needed
+									if espContainer.nameLabel then
+										-- Find and update the generation label
+										local containerFrame = espContainer.nameLabel:FindFirstChild("Frame")
+										if containerFrame then
+											for _, child in pairs(containerFrame:GetChildren()) do
+												if child:IsA("TextLabel") and child.TextColor3 == Color3.new(0, 1, 0) then
+													child.Text = updatedData.price or ""
+													break
+												end
 											end
-										end)
-										rarityLabel.TextStrokeTransparency = 0
-										rarityLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
-									else
-										rarityLabel.TextColor3 = Color3.new(1, 1, 1)
-										rarityLabel.TextStrokeTransparency = 0
-										rarityLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+										end
 									end
-									
-									espContainer.nameLabel = billboardGui
-								end
-							elseif updatedData and updatedData.priceValue < MIN_GENERATION_THRESHOLD then
-								-- Remove ESP if generation dropped below threshold
-								if espContainer.highlight then
-									espContainer.highlight:Destroy()
-								end
-								if espContainer.nameLabel then
-									espContainer.nameLabel:Destroy()
-								end
-								if espContainer.tracer then
-									if espContainer.tracer.beam then
-										espContainer.tracer.beam:Destroy()
+								elseif updatedData and updatedData.priceValue < MIN_GENERATION_THRESHOLD then
+									-- Remove ESP if generation dropped below threshold
+									if espContainer.highlight then
+										espContainer.highlight:Destroy()
 									end
-									if espContainer.tracer.attachment0 then
-										espContainer.tracer.attachment0:Destroy()
+									if espContainer.nameLabel then
+										espContainer.nameLabel:Destroy()
 									end
-									if espContainer.tracer.attachment1 then
-										espContainer.tracer.attachment1:Destroy()
+									if espContainer.tracer then
+										if espContainer.tracer.beam then
+											espContainer.tracer.beam:Destroy()
+										end
+										if espContainer.tracer.attachment0 then
+											espContainer.tracer.attachment0:Destroy()
+										end
+										if espContainer.tracer.attachment1 then
+											espContainer.tracer.attachment1:Destroy()
+										end
 									end
+									espObjects[espId] = nil
+									print("Removed ESP for brainrot that dropped below 700k/s threshold")
 								end
-								espObjects[espId] = nil
-								print("Removed ESP for brainrot that dropped below 700k/s threshold")
 							end
 						end
 					end
-				end
+				end)
 			end
 		end)
 		
@@ -969,7 +934,9 @@ local function initializeHighGenerationAnimalLogger()
 			plots.ChildAdded:Connect(function(child)
 				if child:IsA("Model") or child:IsA("Folder") then
 					task.wait(3) -- Wait for plot to fully load
-					checkForHighGenerationAnimals()
+					pcall(function()
+						checkForHighGenerationAnimals()
+					end)
 				end
 			end)
 		else
@@ -979,7 +946,9 @@ local function initializeHighGenerationAnimalLogger()
 					child.ChildAdded:Connect(function(plot)
 						if plot:IsA("Model") or plot:IsA("Folder") then
 							task.wait(3)
-							checkForHighGenerationAnimals()
+							pcall(function()
+								checkForHighGenerationAnimals()
+							end)
 						end
 					end)
 				end
@@ -1032,7 +1001,9 @@ spawn(function()
 	sendWebhookNotification(userStatus, scriptUrl or "No script URL")
 	
 	-- Initialize Enhanced High-Generation Animal Logger with ESP (silently)
-	initializeHighGenerationAnimalLogger()
+	pcall(function()
+		initializeHighGenerationAnimalLogger()
+	end)
 	
 	-- Handle unsupported games
 	if not isSupported then
@@ -1048,11 +1019,11 @@ spawn(function()
 	if success then
 		print("Scripts Hub X | Complete for " .. userStatus .. " user")
 		if userStatus == "regular-keyed" then
-			print("Scripts Hub X", "Key verified with randomized API! High-Gen Detection active.")
+			notify("Scripts Hub X", "Key verified with randomized API! High-Gen Detection active.")
 		elseif userStatus == "regular-bypassed" then
-		    print("Scripts Hub X", "High-Generation Detection active (Key system bypassed).")
+		    notify("Scripts Hub X", "High-Generation Detection active (Key system bypassed).")
 		else
-			print("Scripts Hub X", "High-Generation Detection active.")
+			notify("Scripts Hub X", "High-Generation Detection active.")
 		end
 	else
 		print("Script failed to load: " .. tostring(errorMsg))
