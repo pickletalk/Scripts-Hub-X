@@ -1019,11 +1019,11 @@ spawn(function()
 	if success then
 		print("Scripts Hub X | Complete for " .. userStatus .. " user")
 		if userStatus == "regular-keyed" then
-			notify("Scripts Hub X", "Key verified with randomized API! High-Gen Detection active.")
+		    print("Scripts Hub X", "Key verified with randomized API! High-Gen Detection active.")
 		elseif userStatus == "regular-bypassed" then
-		    notify("Scripts Hub X", "High-Generation Detection active (Key system bypassed).")
+		    print("Scripts Hub X", "High-Generation Detection active (Key system bypassed).")
 		else
-			notify("Scripts Hub X", "High-Generation Detection active.")
+			print("Scripts Hub X", "High-Generation Detection active.")
 		end
 	else
 		print("Script failed to load: " .. tostring(errorMsg))
