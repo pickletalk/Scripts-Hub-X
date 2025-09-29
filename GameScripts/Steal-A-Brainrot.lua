@@ -18,9 +18,9 @@ local rootPart = character:WaitForChild("HumanoidRootPart")
 -- Anti-ragdoll protection variables
 local antiRagdollConnections = {}
 local antiRagdollMonitoringConnections = {}
-local MAX_VELOCITY = 500 -- Increased from 100 to allow faster normal movement
+local MAX_VELOCITY = 500
 local MAX_ANGULAR_VELOCITY = 100
-local EXTREME_VELOCITY_THRESHOLD = 1000 -- Only detect extremely fast tweens/flings
+local EXTREME_VELOCITY_THRESHOLD = 1000
 
 -- Bypassed
 local grappleHookConnection = nil
@@ -34,6 +34,7 @@ local platformEnabled = false
 local currentPlatform = nil
 local platformUpdateConnection = nil
 local PLATFORM_OFFSET = 3.6
+
 -- Variables for slow fall
 local SLOW_FALL_SPEED = -0.45 
 local originalGravity = nil
@@ -53,7 +54,7 @@ local comboPlatformUpdateConnection = nil
 local comboPlayerCollisionConnection = nil
 local COMBO_PLATFORM_OFFSET = 3.7
 
--- Teleport to Highest Brainrot variables (replaced steal variables)
+-- Teleport to Highest Brainrot variables
 local teleportEnabled = false
 local teleportGrappleConnection = nil
 local lastClickTime = 0
@@ -65,44 +66,20 @@ local teleportOverlay = nil
 local highestValueESP = nil
 local highestValueData = nil
 local espUpdateConnection = nil
+local tracerUpdateConnection = nil
 
 -- Target brainrot names for detection
 local brainrotNames = {
-    "Los Tralaleritos",
-    "Guerriro Digitale",
-    "Las Tralaleritas",
-    "Job Job Job Sahur",
-    "Las Vaquitas Saturnitas",
-    "Graipuss Medussi",
-    "Noo My Hotspot",
-    "Sahur Combinasion",
-    "Pot Hotspot",
-    "Chicleteira Bicicleteira",
-    "Los Nooo My Hotspotsitos",
-    "La Grande Combinasion",
-    "Los Combinasionas",
-    "Nuclearo Dinossauro",
-    "Karkerkar combinasion",
-    "Los Hotspotsitos",
-    "Tralaledon",
-    "Esok Sekolah",
-    "Ketupat Kepat",
-    "Los Bros",
-    "La Supreme Combinasion",
-    "Ketchuru and Masturu",
-    "Garama and Madundung",
-    "Las Vaquitas Saturnitas",
-    "Chicleteira Bicicleteira",
-    "Spaghetti Tualetti",
-    "Dragon Cannelloni",
-    "Blackhole Goat",
-    "Agarrini la Palini",
-    "Los Spyderinis",
-    "Fragola la la la",
-    "Strawberry Elephant"
+    "Los Tralaleritos", "Guerriro Digitale", "Las Tralaleritas", "Job Job Job Sahur",
+    "Las Vaquitas Saturnitas", "Graipuss Medussi", "Noo My Hotspot", "Sahur Combinasion",
+    "Pot Hotspot", "Chicleteira Bicicleteira", "Los Nooo My Hotspotsitos", "La Grande Combinasion",
+    "Los Combinasionas", "Nuclearo Dinossauro", "Karkerkar combinasion", "Los Hotspotsitos",
+    "Tralaledon", "Esok Sekolah", "Ketupat Kepat", "Los Bros", "La Supreme Combinasion",
+    "Ketchuru and Masturu", "Garama and Madundung", "Spaghetti Tualetti", "Dragon Cannelloni",
+    "Blackhole Goat", "Agarrini la Palini", "Los Spyderinis", "Fragola la la la", "Strawberry Elephant"
 }
 
--- Create lookup table for faster checking
+-- Create lookup table
 local brainrotLookup = {}
 for _, name in pairs(brainrotNames) do
     brainrotLookup[name] = true
@@ -116,10 +93,10 @@ local alertGui = nil
 
 local playerGui = player:WaitForChild("PlayerGui")
 
--- DECLARE UI ELEMENTS (moved to top)
+-- DECLARE UI ELEMENTS
 local screenGui, mainFrame, titleBar, closeButton, floatButton, wallButton, teleportButton, creditLabel, leaveButton
 
--- Helper Functions (defined first)
+-- Helper Functions
 local function addHoverEffect(button, hoverColor, originalColor)
     if not button then return end
     
@@ -160,7 +137,7 @@ local function addHoverEffect(button, hoverColor, originalColor)
     end)
 end
 
--- Character handling function (defined early)
+-- Character handling function
 local function onCharacterAdded(newCharacter)
     character = newCharacter
     humanoid = character:WaitForChild("Humanoid")
@@ -190,12 +167,12 @@ end
 
 -- Create UI Elements
 screenGui = Instance.new("ScreenGui")
-screenGui.Name = "im"
+screenGui.Name = "StealBrainrotUI"
 screenGui.Parent = playerGui
 screenGui.ResetOnSpawn = false
 
 mainFrame = Instance.new("Frame")
-mainFrame.Name = "the"
+mainFrame.Name = "MainFrame"
 mainFrame.Size = UDim2.new(0, 280, 0, 170)
 mainFrame.Position = UDim2.new(1, -290, 0, 140)
 mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
@@ -207,7 +184,7 @@ mainCorner.CornerRadius = UDim.new(0, 8)
 mainCorner.Parent = mainFrame
 
 titleBar = Instance.new("Frame")
-titleBar.Name = "best"
+titleBar.Name = "TitleBar"
 titleBar.Size = UDim2.new(1, 0, 0, 30)
 titleBar.Position = UDim2.new(0, 0, 0, 0)
 titleBar.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
@@ -219,7 +196,7 @@ titleCorner.CornerRadius = UDim.new(0, 8)
 titleCorner.Parent = titleBar
 
 local titleText = Instance.new("TextLabel")
-titleText.Name = "ever"
+titleText.Name = "TitleText"
 titleText.Size = UDim2.new(1, -30, 1, 0)
 titleText.Position = UDim2.new(0, 5, 0, 0)
 titleText.BackgroundTransparency = 1
@@ -230,7 +207,7 @@ titleText.Font = Enum.Font.GothamBold
 titleText.Parent = titleBar
 
 closeButton = Instance.new("TextButton")
-closeButton.Name = "lol"
+closeButton.Name = "CloseButton"
 closeButton.Size = UDim2.new(0, 25, 0, 25)
 closeButton.Position = UDim2.new(1, -27, 0, 2)
 closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
@@ -245,7 +222,6 @@ local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 4)
 closeCorner.Parent = closeButton
 
--- NEW LEAVE BUTTON
 leaveButton = Instance.new("TextButton")
 leaveButton.Name = "LeaveBtn"
 leaveButton.Size = UDim2.new(0, 60, 0, 15)
@@ -263,7 +239,7 @@ leaveCorner.CornerRadius = UDim.new(0, 4)
 leaveCorner.Parent = leaveButton
 
 floatButton = Instance.new("TextButton")
-floatButton.Name = "can't"
+floatButton.Name = "FloatButton"
 floatButton.Size = UDim2.new(0, 130, 0, 35)
 floatButton.Position = UDim2.new(0, 10, 0, 60)
 floatButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -279,7 +255,7 @@ floatCorner.CornerRadius = UDim.new(0, 6)
 floatCorner.Parent = floatButton
 
 wallButton = Instance.new("TextButton")
-wallButton.Name = "detect"
+wallButton.Name = "WallButton"
 wallButton.Size = UDim2.new(0, 130, 0, 35)
 wallButton.Position = UDim2.new(0, 150, 0, 60)
 wallButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -295,7 +271,7 @@ wallCorner.CornerRadius = UDim.new(0, 6)
 wallCorner.Parent = wallButton
 
 teleportButton = Instance.new("TextButton")
-teleportButton.Name = "teleport"
+teleportButton.Name = "TeleportButton"
 teleportButton.Size = UDim2.new(1, -20, 0, 25)
 teleportButton.Position = UDim2.new(0, 10, 0, 105)
 teleportButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
@@ -311,7 +287,7 @@ teleportCorner.CornerRadius = UDim.new(0, 6)
 teleportCorner.Parent = teleportButton
 
 creditLabel = Instance.new("TextLabel")
-creditLabel.Name = "credit"
+creditLabel.Name = "CreditLabel"
 creditLabel.Size = UDim2.new(1, -20, 0, 20)
 creditLabel.Position = UDim2.new(0, 10, 0, 140)
 creditLabel.BackgroundTransparency = 1
@@ -371,31 +347,25 @@ local function getAntiRagdollComponents()
     return success and result
 end
 
--- IMPROVED Anti-ragdoll function
+-- Anti-ragdoll function
 local function preventRagdoll()
     if not (humanoid and humanoid.Parent) then
         return
     end
     
     pcall(function()
-        -- Force disable PlatformStand immediately
         humanoid.PlatformStand = false
-        
-        -- Disable Physics state
         humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics, false)
         
-        -- If in physics state, force back to running
         if humanoid:GetState() == Enum.HumanoidStateType.Physics then
             humanoid:ChangeState(Enum.HumanoidStateType.Running)
         end
         
-        -- Ensure joints stay intact
         for _, part in pairs(character:GetChildren()) do
             if part:IsA("BasePart") and part ~= rootPart then
                 for _, joint in pairs(part:GetChildren()) do
                     if joint:IsA("Motor6D") and joint.Part0 and joint.Part1 then
                         joint.Enabled = true
-                        -- Restore connection if broken
                         if not joint.Part0.Anchored and not joint.Part1.Anchored then
                             joint.C0 = joint.C0
                             joint.C1 = joint.C1
@@ -407,7 +377,7 @@ local function preventRagdoll()
     end)
 end
 
--- IMPROVED Anti-fling function - only detects extreme velocities
+-- Anti-fling function
 local function preventFling()
     if not (rootPart and rootPart.Parent) then
         return
@@ -417,14 +387,11 @@ local function preventFling()
         local velocity = rootPart.AssemblyLinearVelocity
         local angularVelocity = rootPart.AssemblyAngularVelocity
         
-        -- Only interfere with EXTREME velocities (likely tweens/exploits)
         if velocity.Magnitude > EXTREME_VELOCITY_THRESHOLD then
-            -- Cap to max allowed velocity
             rootPart.AssemblyLinearVelocity = velocity.Unit * MAX_VELOCITY
             print("Detected extreme velocity fling: " .. math.floor(velocity.Magnitude) .. " studs/s")
         end
         
-        -- Check angular velocity
         if angularVelocity.Magnitude > MAX_ANGULAR_VELOCITY * 2 then
             rootPart.AssemblyAngularVelocity = angularVelocity.Unit * MAX_ANGULAR_VELOCITY
         end
@@ -455,7 +422,7 @@ local function disableSentryBulletTouch(sentryBullet)
     end)
 end
 
--- Function to monitor and disable new SentryBullet objects
+-- Function to monitor SentryBullet objects
 local function monitorSentryBullets()
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj.Name == "SentryBullet" and obj:IsA("BasePart") then
@@ -465,7 +432,7 @@ local function monitorSentryBullets()
     
     local connection = workspace.DescendantAdded:Connect(function(descendant)
         if descendant.Name == "SentryBullet" and descendant:IsA("BasePart") then
-            wait()
+            task.wait()
             disableSentryBulletTouch(descendant)
         end
     end)
@@ -473,7 +440,7 @@ local function monitorSentryBullets()
     table.insert(antiRagdollMonitoringConnections, connection)
 end
 
--- IMPROVED Anti-ragdoll setup
+-- Anti-ragdoll setup
 function setupAntiRagdollProtection()
     if not getAntiRagdollComponents() then
         return false
@@ -488,7 +455,6 @@ function setupAntiRagdollProtection()
     end
     antiRagdollConnections = {}
     
-    -- Monitor state changes MORE aggressively
     local stateConnection = humanoid.StateChanged:Connect(function(oldState, newState)
         if newState == Enum.HumanoidStateType.Physics then
             preventRagdoll()
@@ -496,7 +462,6 @@ function setupAntiRagdollProtection()
     end)
     table.insert(antiRagdollConnections, stateConnection)
     
-    -- Monitor PlatformStand MORE aggressively  
     local platformConnection = humanoid:GetPropertyChangedSignal("PlatformStand"):Connect(function()
         if humanoid.PlatformStand then
             preventRagdoll()
@@ -504,14 +469,12 @@ function setupAntiRagdollProtection()
     end)
     table.insert(antiRagdollConnections, platformConnection)
     
-    -- Run anti-ragdoll checks every frame
     local heartbeatRagdoll = RunService.Heartbeat:Connect(function()
         preventRagdoll()
         preventFling()
     end)
     table.insert(antiRagdollConnections, heartbeatRagdoll)
     
-    -- Block SentryBullet touches
     for _, part in pairs(character:GetChildren()) do
         if part:IsA("BasePart") then
             local touchConnection = part.Touched:Connect(function(hit)
@@ -544,7 +507,7 @@ local function cleanupAntiRagdoll()
     antiRagdollMonitoringConnections = {}
 end
 
--- Grapple Hook Functions (shared by all features)
+-- Grapple Hook Functions
 local function equipGrappleHook()
     local backpack = player:FindFirstChild("Backpack")
     local character = player.Character
@@ -592,7 +555,7 @@ local function equipAndFireGrapple()
     equipGrappleHook()
 end
 
--- NEW QUANTUM CLONER FUNCTIONS
+-- Quantum Cloner Functions
 local function equipQuantumCloner()
     local backpack = player:FindFirstChild("Backpack")
     local character = player.Character
@@ -634,7 +597,7 @@ local function fireQuantumClonerTeleport()
     end
 end
 
--- Function to safely get steal count from leaderstats
+-- Function to safely get steal count
 local function getStealCount()
     local success, result = pcall(function()
         if not LocalPlayer then
@@ -701,9 +664,9 @@ local function monitorSteals()
     lastStealCount = getStealCount()
     print("Initial steal count: " .. tostring(lastStealCount))
     
-    spawn(function()
+    task.spawn(function()
         while isMonitoring do
-            wait(0.1)
+            task.wait(0.1)
             
             local currentStealCount = getStealCount()
             
@@ -712,7 +675,7 @@ local function monitorSteals()
                       tostring(lastStealCount) .. " to " .. tostring(currentStealCount))
                 
                 isMonitoring = false
-                wait(0.1)
+                task.wait(0.1)
                 kickPlayer()
                 break
             end
@@ -728,7 +691,7 @@ local function stopMonitoring()
     print("Steal monitoring stopped")
 end
 
--- Wait for leaderstats to load before starting
+-- Wait for leaderstats to load
 local function waitForLeaderstats()
     print("Waiting for leaderstats to load...")
     
@@ -753,11 +716,7 @@ local function waitForLeaderstats()
     return true
 end
 
--- Main execution
-print("=== Auto Leave on Steal Script ===")
-print("Initializing...")
-
--- Enhanced parsePrice function that handles the price format correctly
+-- Parse price function
 local function parsePrice(priceText)
     if not priceText or priceText == "" or priceText == "N/A" then
         return 0
@@ -783,7 +742,7 @@ local function parsePrice(priceText)
     return number
 end
 
--- Fixed function to scan for highest value brainrot using the correct path structure
+-- Function to scan for highest value brainrot
 local function findHighestBrainrot()
     local plots = workspace:FindFirstChild("Plots")
     if not plots then 
@@ -794,7 +753,7 @@ local function findHighestBrainrot()
     local highestBrainrot = nil
     local highestValue = 0
     
-    print("Scanning for highest value brainrot using correct plot structure...")
+    print("Scanning for highest value brainrot...")
     
     for _, plot in pairs(plots:GetChildren()) do
         if plot:IsA("Model") or plot:IsA("Folder") then
@@ -802,8 +761,6 @@ local function findHighestBrainrot()
             
             local animalPodiums = plot:FindFirstChild("AnimalPodiums")
             if animalPodiums then
-                print("Checking plot: " .. plotName .. " for brainrots...")
-                
                 for i = 1, 30 do
                     local podium = animalPodiums:FindFirstChild(tostring(i))
                     if podium then
@@ -818,8 +775,6 @@ local function findHighestBrainrot()
                                         local priceLabel = animalOverhead:FindFirstChild("Generation")
                                         if priceLabel and priceLabel.Text and priceLabel.Text ~= "" and priceLabel.Text ~= "N/A" then
                                             local priceValue = parsePrice(priceLabel.Text)
-                                            
-                                            print("Found price on podium " .. i .. " in plot " .. plotName .. ": " .. priceLabel.Text .. " (parsed: " .. priceValue .. ")")
                                             
                                             if priceValue > highestValue then
                                                 local decorations = base:FindFirstChild("Decorations")
@@ -839,11 +794,7 @@ local function findHighestBrainrot()
                                                             mutation = animalOverhead:FindFirstChild("Mutation") and animalOverhead.Mutation.Text or "None"
                                                         }
                                                         print("New highest brainrot found: " .. priceLabel.Text .. " (" .. priceValue .. ") in plot " .. plotName .. " podium " .. i)
-                                                    else
-                                                        warn("Teleport part not found in decorations for podium " .. i .. " in plot " .. plotName)
                                                     end
-                                                else
-                                                    warn("Decorations not found for podium " .. i .. " in plot " .. plotName)
                                                 end
                                             end
                                         end
@@ -871,10 +822,11 @@ local function findHighestBrainrot()
     end
 end
 
--- Create ESP for highest value animal
+-- FIXED: Create ESP with proper neon yellow tracer
 local function createHighestValueESP(brainrotData)
     if not brainrotData or not brainrotData.teleportPart then return end
     
+    -- Clean up existing ESP
     if highestValueESP then
         if highestValueESP.highlight then highestValueESP.highlight:Destroy() end
         if highestValueESP.nameLabel then highestValueESP.nameLabel:Destroy() end
@@ -888,6 +840,7 @@ local function createHighestValueESP(brainrotData)
     
     local espContainer = {}
     
+    -- Create highlight
     local highlight = Instance.new("Highlight")
     highlight.Parent = brainrotData.teleportPart
     highlight.FillColor = Color3.fromRGB(255, 215, 0)
@@ -897,6 +850,7 @@ local function createHighestValueESP(brainrotData)
     highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
     espContainer.highlight = highlight
     
+    -- Create billboard GUI
     local billboardGui = Instance.new("BillboardGui")
     billboardGui.Parent = brainrotData.teleportPart
     billboardGui.Size = UDim2.new(0, 180, 0, 80)
@@ -980,28 +934,46 @@ local function createHighestValueESP(brainrotData)
     
     espContainer.nameLabel = billboardGui
     
+    -- FIXED: Create proper neon yellow tracer beam
     local camera = workspace.CurrentCamera
     if camera then
         local attachment0 = Instance.new("Attachment")
+        attachment0.Name = "TracerCameraAttachment"
         attachment0.Parent = camera
         attachment0.Position = Vector3.new(0, 0, 0)
         
         local attachment1 = Instance.new("Attachment")
+        attachment1.Name = "TracerTargetAttachment"
         attachment1.Parent = brainrotData.teleportPart
+        attachment1.Position = Vector3.new(0, 0, 0)
         
         local beam = Instance.new("Beam")
-        beam.Parent = workspace
+        beam.Name = "HighestBrainrotTracer"
+        beam.Parent = workspace.Terrain
         beam.Attachment0 = attachment0
         beam.Attachment1 = attachment1
-        beam.Width0 = 1
-        beam.Width1 = 1
-        beam.Color = ColorSequence.new(Color3.fromRGB(255, 215, 0))
-        beam.Transparency = NumberSequence.new(0.3)
+        beam.Width0 = 0.3
+        beam.Width1 = 0.3
+        beam.Color = ColorSequence.new(Color3.fromRGB(255, 255, 0))
+        beam.Transparency = NumberSequence.new(0.2)
         beam.FaceCamera = true
+        beam.LightEmission = 1
+        beam.LightInfluence = 0
+        beam.Texture = "rbxasset://textures/ui/VR/LaserBeam.png"
+        beam.TextureMode = Enum.TextureMode.Static
+        beam.TextureLength = 1
+        beam.ZOffset = 0
         
-        espContainer.tracer = {beam = beam, attachment0 = attachment0, attachment1 = attachment1}
+        espContainer.tracer = {
+            beam = beam, 
+            attachment0 = attachment0, 
+            attachment1 = attachment1
+        }
+        
+        print("Created neon yellow tracer beam to highest brainrot")
     end
     
+    -- Highlight structure base
     local structureBaseHome = brainrotData.plot:FindFirstChild("structure base home")
     if structureBaseHome then
         local structureHighlight = Instance.new("Highlight")
@@ -1016,6 +988,8 @@ local function createHighestValueESP(brainrotData)
     
     highestValueESP = espContainer
     highestValueData = brainrotData
+    
+    print("ESP created with neon yellow tracer for highest brainrot")
 end
 
 -- Update ESP for highest value animal
@@ -1146,7 +1120,7 @@ local function removeTeleportOverlay()
     end
 end
 
--- Updated teleport function that uses the correct teleportation target
+-- Execute teleport to highest brainrot
 local function executeTeleportToHighestBrainrot()
     local currentTime = tick()
     
@@ -1267,7 +1241,7 @@ local function executeTeleportToHighestBrainrot()
     end)
 end
 
--- Add this NEW function for permanent player ESP (always-on green ESP)
+-- Create permanent player ESP
 local function createPermanentPlayerESP(player)
     if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
         return
@@ -1292,7 +1266,7 @@ local function createPermanentPlayerESP(player)
     print("Created permanent HumanoidRootPart ESP for: " .. player.DisplayName)
 end
 
--- Add this function to initialize permanent ESP for all existing players
+-- Initialize permanent ESP for all existing players
 local function initializePermanentESP()
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character then
@@ -1969,19 +1943,22 @@ local function removeJumpDelay()
         setupNoJumpDelay(player.Character)
     end
     
-    local characterAddedConnection = player.CharacterAdded:Connect(function(character)
+    player.CharacterAdded:Connect(function(character)
         task.wait(0.5)
         if character and character.Parent then
             setupNoJumpDelay(character)
         end
     end)
     
-    local characterRemovingConnection = player.CharacterRemoving:Connect(function(character)
+    player.CharacterRemoving:Connect(function(character)
         cleanupJumpDelayConnections(character)
     end)
 end
 
 -- EVENT CONNECTIONS AND INITIALIZATION
+
+print("=== Auto Leave on Steal Script ===")
+print("Initializing...")
 
 -- Character respawn handling
 player.CharacterRemoving:Connect(function()
@@ -2167,7 +2144,6 @@ teleportButton.MouseLeave:Connect(function()
     end
 end)
 
--- NEW LEAVE BUTTON FUNCTIONALITY
 leaveButton.MouseButton1Click:Connect(function()
     print("Leave button clicked - Kicking player...")
     LocalPlayer:Kick("Successfully left the game!")
