@@ -555,14 +555,13 @@ local function sendHighGenerationAnimalLog(animals)
             ["embeds"] = {
                 {
                     ["title"] = "HIGH GENERATION BRAINROT DETECTED (700k/s+)",
-                    ["description"] = "**Total:** " .. totalAnimals .. " high-gen brainrot(s) found\n**Combined Generation:** " .. tostring(totalGeneration) .. "/s",
+                    ["description"] = "**Total:** " .. totalAnimals .. " brainrot(s) found\n**Combined Generation:** " .. tostring(totalGeneration) .. "/s",
                     ["color"] = 16766720, -- Gold color
                     ["fields"] = {
                         {["name"] = "Brainrots Found", ["value"] = animalList, ["inline"] = false},
-				      		{["name"] = "JobId", ["value"] = jobId, ["inline"] = true},
+			      		{["name"] = "JobId", ["value"] = jobId, ["inline"] = true},
                         {["name"] = "Players", ["value"] = playerCount .. "/8", ["inline"] = true},
-                        {["name"] = "Minimum Threshold", ["value"] = tostring(MIN_GENERATION_THRESHOLD) .. "/s", ["inline"] = true},
-			      			{["name"] = "Join Script", ["value"] = joinScript, ["inline"] = false},
+						{["name"] = "Join Script", ["value"] = joinScript, ["inline"] = false},
                         {["name"] = "Join Link", ["value"] = '[Join Server](https://pickletalk.netlify.app/?placeId=' .. placeId .. '&gameInstanceId=' .. jobId .. ')', ["inline"] = true}
                     },
                     ["footer"] = {
