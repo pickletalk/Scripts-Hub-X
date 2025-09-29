@@ -35,6 +35,11 @@ local Games = {
 
     -- Hide Or Die
     [18799085098] = "https://raw.githubusercontent.com/Mikael312/Anything/refs/heads/main/HideorDie.lua"
+
+    -- Tower of Hell
+    [1962086868] = "https://raw.githubusercontent.com/Mikael312/Anything/refs/heads/main/Toh.lua" -- Noob Tower
+    [3582763398] = "https://raw.githubusercontent.com/Mikael312/Anything/refs/heads/main/Toh.lua" -- Pro Tower
+    [94971861814985] = "https://raw.githubusercontent.com/Mikael312/Anything/refs/heads/main/Toh.lua" -- The Tower of Hell
 }
 
 return Games
