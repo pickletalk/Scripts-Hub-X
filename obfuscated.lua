@@ -343,7 +343,7 @@ function createESP(object, animalName, plotName, animalData)
         local mutationLabel = Instance.new("TextLabel")
         mutationLabel.Parent = containerFrame
         mutationLabel.Size = UDim2.new(1, 0, 0.15, 0)
-        mutationLabel.Position = UDim2.new(0, 0, 0, 0)
+        mutationLabel.Position = UDim2.new(0, 0, 0.15, 0)
         mutationLabel.BackgroundTransparency = 1
         mutationLabel.Text = animalData and animalData.mutation or ""
         mutationLabel.TextColor3 = Color3.new(1, 1, 1) -- White
