@@ -352,21 +352,7 @@ function createESP(object, animalName, plotName, animalData)
         mutationLabel.TextScaled = true
         mutationLabel.TextSize = 8 -- Super small
         mutationLabel.Font = Enum.Font.SourceSans
-        
-        -- Animal name label (HIGH GENERATION BRAINROT)
-        local nameLabel = Instance.new("TextLabel")
-        nameLabel.Parent = containerFrame
-        nameLabel.Size = UDim2.new(1, 0, 0.35, 0)
-        nameLabel.Position = UDim2.new(0, 0, 0.15, 0)
-        nameLabel.BackgroundTransparency = 1
-        nameLabel.Text = "HIGH GEN BRAINROT"
-        nameLabel.TextColor3 = Color3.fromRGB(255, 215, 0) -- Gold text
-        nameLabel.TextStrokeTransparency = 0
-        nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0) -- Black outline
-        nameLabel.TextScaled = true
-        nameLabel.TextSize = 16
-        nameLabel.Font = Enum.Font.SourceSansBold
-        
+
         -- Generation per second label (prominent green)
         local generationLabel = Instance.new("TextLabel")
         generationLabel.Parent = containerFrame
