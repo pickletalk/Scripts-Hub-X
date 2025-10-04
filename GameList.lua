@@ -2,24 +2,6 @@ local Games = {
     -- Steal A Freddy
     [137167142636546] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Steal-A-Freddy.lua",
 
-    -- Slap Tower
-    [95508886069297] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Obbys.lua", -- 1
-    [79089892790758] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Obbys.lua", -- 2
-    [105612566642310] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Obbys.lua", -- 3
-    [86082995079744] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Obbys.lua", -- 4
-    [94638025587676] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Obbys.lua", -- 5
-    [120759571391756] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Obbys.lua", -- 6
-    [91711653427804] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Obbys.lua", -- 7
-
-    -- Smack Gear Tower
-    [137346665938077] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Obbys.lua", -- 1
-    [90922469229908] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Obbys.lua", -- 2
-    [79223711715581] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Obbys.lua", -- 3
-    [116270410750670] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Obbys.lua", -- 4
-    
-    -- Troll Is A Pining Tower 2
-    [83312952548612] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/troll%is%pinning%tower%2.lua",
-
     -- Steal A Anime
     [113995904598360] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Steal-A-Anime.lua",
 
@@ -37,9 +19,9 @@ local Games = {
     [18799085098] = "https://raw.githubusercontent.com/Mikael312/Anything/refs/heads/main/HideorDie.lua",
 
     -- Tower of Hell
-    [1962086868] = "https://raw.githubusercontent.com/Mikael312/Anything/refs/heads/main/Toh.lua", -- Noob Tower
-    [3582763398] = "https://raw.githubusercontent.com/Mikael312/Anything/refs/heads/main/Toh.lua", -- Pro Tower
-    [94971861814985] = "https://raw.githubusercontent.com/Mikael312/Anything/refs/heads/main/Toh.lua" -- The Tower of Hell
+    [1962086868] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Tower-Of-Hell.lua", -- Noob Tower
+    [3582763398] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Tower-Of-Hell.lua", -- Pro Tower
+    [94971861814985] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Tower-Of-Hell.lua" -- The Tower of Hell
 }
 
 return Games
