@@ -3,16 +3,16 @@ local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/pickl
   -- or loadstring(...) if needed
 
 -- Create a window with title and transparency
-local Window = Library.CreateWindow({
+local Window = Library:CreateWindow({
     Name = "Scripts Hub X Official",
     Transparency = 0
 })
 
 -- Main tab with different UI controls
-local MainTab = Window.CreateTab("Main")
+local MainTab = Window:CreateTab("Main")
 
 -- Toggle example
-MainTab.CreateToggle({
+MainTab:CreateToggle({
     Name = "Auto Farm",
     Default = false,
     Callback = function(value)
@@ -21,7 +21,7 @@ MainTab.CreateToggle({
 })
 
 -- Button example
-MainTab.CreateButton({
+MainTab:CreateButton({
     Name = "Click Me",
     Callback = function()
         print("Button clicked!")
@@ -29,7 +29,7 @@ MainTab.CreateButton({
 })
 
 -- Input example
-MainTab.CreateInput({
+MainTab:CreateInput({
     Name = "Player Name",
     PlaceholderText = "Enter player name...",
     Type = "string",
@@ -40,7 +40,7 @@ MainTab.CreateInput({
 })
 
 -- Toggle with input example
-MainTab.CreateToggleWithInput({
+MainTab:CreateToggleWithInput({
     Name = "Speed Hack",
     ToggleDefault = false,
     InputType = "int",
@@ -52,7 +52,7 @@ MainTab.CreateToggleWithInput({
 })
 
 -- Button with input example
-MainTab.CreateButtonWithInput({
+MainTab:CreateButtonWithInput({
     Name = "Teleport to Position",
     InputType = "int",
     InputDefault = 100,
@@ -63,10 +63,10 @@ MainTab.CreateButtonWithInput({
 })
 
 -- Settings tab for configuration
-local SettingsTab = Window.CreateTab("Settings")
+local SettingsTab = Window:CreateTab("Settings")
 
 -- Save configuration button
-SettingsTab.CreateButton({
+SettingsTab:CreateButton({
     Name = "Save Configuration",
     Callback = function()
         -- Implementation inside library handles saving
@@ -75,7 +75,7 @@ SettingsTab.CreateButton({
 })
 
 -- Load configuration button
-SettingsTab.CreateButton({
+SettingsTab:CreateButton({
     Name = "Load Configuration",
     Callback = function()
         -- Implementation inside library handles loading
@@ -84,7 +84,7 @@ SettingsTab.CreateButton({
 })
 
 -- Transparency toggle
-SettingsTab.CreateToggle({
+SettingsTab:CreateToggle({
     Name = "Transparency Mode",
     Default = (Window.Transparency > 0),
     Callback = function(value)
@@ -95,7 +95,7 @@ SettingsTab.CreateToggle({
 -- Theme-Changing dropdown imitation (basic example)
 local themeNames = {"Atlantic","Galaxy","Sunset","Ocean","Forest","Midnight","Cherry","Emerald","Gold","Arctic"}
 local currentThemeIndex = 1
-SettingsTab.CreateButton({
+SettingsTab:CreateButton({
     Name = "Change Theme",
     Callback = function()
         currentThemeIndex = currentThemeIndex + 1
@@ -107,9 +107,9 @@ SettingsTab.CreateButton({
 })
 
 -- Misc tab with credits and Discord info
-local MiscTab = Window.CreateTab("Misc")
+local MiscTab = Window:CreateTab("Misc")
 
-MiscTab.CreateButton({
+MiscTab:CreateButton({
     Name = "Copy Discord Invite",
     Callback = function()
         setclipboard("https://discord.gg/bpsNUH5sVb")  -- Sets clipboard with invite
