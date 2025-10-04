@@ -1208,7 +1208,7 @@ local function executeTeleportToHighestBrainrot()
                 fireQuantumCloner()
         
                 -- Wait 3 seconds
-                task.wait(3)
+                task.wait(1)
         
                 if not teleportEnabled then
                     removeTeleportOverlay()
