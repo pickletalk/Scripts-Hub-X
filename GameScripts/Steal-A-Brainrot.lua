@@ -2301,7 +2301,6 @@ end)
 aimbotConnection = RunService.Heartbeat:Connect(function()
     if aimbotEnabled then
         currentTarget = getClosestPlayer()
-        print("=== AIMBOT ACTIVATED ===")
     end
 end)
 
