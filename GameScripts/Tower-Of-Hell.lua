@@ -125,7 +125,7 @@ local function createPlatform()
     platform.Parent = workspace
     
     -- Position platform 3 studs under player
-    platform.Position = humanoidRootPart.Position - Vector3.new(0, 2.2, 0)
+    platform.Position = humanoidRootPart.Position - Vector3.new(0, 2.9, 0)
 end
 
 -- Function to remove platform
