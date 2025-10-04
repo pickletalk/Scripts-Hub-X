@@ -125,7 +125,7 @@ local function createPlatform()
     platform.Parent = workspace
     
     -- Position platform 3 studs under player
-    platform.Position = humanoidRootPart.Position - Vector3.new(0, 3, 0)
+    platform.Position = humanoidRootPart.Position - Vector3.new(0, 2.7, 0)
 end
 
 -- Function to remove platform
@@ -288,7 +288,6 @@ local function toggleFloat()
         removePlatform()
         removeOrbitingParticles()
         removeTextLabel()
-        removeGodmode()  -- Disable godmode (restore normal health)
     end
 end
 
@@ -464,3 +463,5 @@ game:GetService("UserInputService").InputChanged:Connect(function(input)
         mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
 end)
+
+applyGodmode()
