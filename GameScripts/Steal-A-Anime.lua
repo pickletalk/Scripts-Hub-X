@@ -763,7 +763,7 @@ autoLockSystem()
 -- ========================================
 -- ENHANCED ANTI-CHEAT NOCLIP WITH RUNNING ANIMATION
 -- ========================================
-local ANTI_CHEAT_THRESHOLD = 6 -- If moved more than 10 studs instantly, it's anti-cheat
+local ANTI_CHEAT_THRESHOLD = 9 -- If moved more than 10 studs instantly, it's anti-cheat
 local RAY_LENGTH = 100
 
 local character, humanoid, hrp
@@ -854,22 +854,9 @@ local function ultraFastTeleport(targetPosition)
         hrp.CFrame = CFrame.new(targetPosition)
         hrp.Position = targetPosition
         
-        -- Zero out ALL velocities instantly
-        hrp.Velocity = Vector3.zero
-        hrp.RotVelocity = Vector3.zero
-        hrp.AssemblyLinearVelocity = Vector3.zero
-        hrp.AssemblyAngularVelocity = Vector3.zero
-        
         -- Force network update
         hrp.CFrame = CFrame.new(targetPosition)
-        
-        -- Unanchor immediately
-        for _, part in ipairs(character:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.Anchored = false
-            end
-        end
-        
+
         -- Trigger running animation asynchronously (don't wait)
         task.defer(triggerRunningAnimation)
         
