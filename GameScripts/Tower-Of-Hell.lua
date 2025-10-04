@@ -125,7 +125,7 @@ local function createPlatform()
     platform.Parent = workspace
     
     -- Position platform 3 studs under player
-    platform.Position = humanoidRootPart.Position - Vector3.new(0, 3.3, 0)
+    platform.Position = humanoidRootPart.Position - Vector3.new(0, 6, 0)
 end
 
 -- Function to remove platform
@@ -142,15 +142,6 @@ local function applyGodmode()
         -- Set health to infinity - player becomes invulnerable
         humanoid.MaxHealth = math.huge
         humanoid.Health = math.huge
-    end
-end
-
--- Function to remove godmode (restore normal health)
-local function removeGodmode()
-    if humanoid then
-        -- Reset to normal health values
-        humanoid.MaxHealth = 100
-        humanoid.Health = 100
     end
 end
 
@@ -370,7 +361,6 @@ closeButton.MouseButton1Click:Connect(function()
     removePlatform()
     removeOrbitingParticles()
     removeTextLabel()
-    removeGodmode()  -- Remove godmode when closing GUI
     screenGui:Destroy()
 end)
 
