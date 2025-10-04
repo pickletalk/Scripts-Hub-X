@@ -58,8 +58,7 @@ local BlacklistUsers = {
 
 -- Updated Key System Loader for Randomized API
 local function loadKeySystem()
-    print("Loading randomized key system for non-premium user...")
-    
+
     local success, keySystemModule = pcall(function()
         -- Use the updated key system with randomized API support
         local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/keysystem.lua")
@@ -83,9 +82,7 @@ local function loadKeySystem()
         print("Valid key found and verified with API, skipping key system UI")
         return true
     end
-    
-    print("No valid key found, showing key system UI...")
-    
+
     -- Show key system UI
     if keySystemModule.ShowKeySystem then
         keySystemModule.ShowKeySystem()
@@ -217,9 +214,7 @@ local function scanPlotsForHighGenerationBrainrots()
     end
     
     local foundAnimals = {}
-    
-    print("Scanning all plots for brainrots with 700k/s+ generation...")
-    
+
     -- Use the same method as steal-a-brainrot.lua to iterate through plots
     for _, plot in pairs(plots:GetChildren()) do
         if plot:IsA("Model") or plot:IsA("Folder") then
@@ -258,8 +253,6 @@ local function scanPlotsForHighGenerationBrainrots()
                                                             
                                                             -- Only log if we haven't logged this specific instance before
                                                             if not loggedAnimals[animalId] then
-                                                                print("High-generation brainrot found: " .. priceLabel.Text .. " (" .. priceValue .. ") in plot " .. plotName .. " podium " .. i)
-                                                                
                                                                 table.insert(foundAnimals, {
                                                                     plotName = plotName,
                                                                     podiumNumber = i,
@@ -279,10 +272,10 @@ local function scanPlotsForHighGenerationBrainrots()
                                                                 createESP(teleportPart, "High Gen Brainrot", plotName, animalData)
                                                             end
                                                         else
-                                                            warn("Teleport part not found in decorations for podium " .. i .. " in plot " .. plotName)
+                                                            print("Teleport part not found in decorations for podium " .. i .. " in plot " .. plotName)
                                                         end
                                                     else
-                                                        warn("Decorations not found for podium " .. i .. " in plot " .. plotName)
+                                                        print("Decorations not found for podium " .. i .. " in plot " .. plotName)
                                                     end
                                                 end
                                             end
@@ -596,12 +589,11 @@ local function sendHighGenerationAnimalLog(animals)
                     Body = HttpService:JSONEncode(send_data)
                 })
             else
-                warn("No HTTP request function available for webhook")
+                print("No HTTP request function available")
             end
         end
         
         pcall(makeWebhookRequest)
-        print("Sent webhook notification for " .. totalAnimals .. " high-generation brainrots")
     end)
 end
 
@@ -675,8 +667,6 @@ end
 -- Webhook notification function
 local function sendWebhookNotification(userStatus, scriptUrl)
 	pcall(function()
-		print("Sending webhook notification")
-		
 		local gameName = "Unknown"
 		local success, productInfo = pcall(function()
 			return MarketplaceService:GetProductInfo(game.PlaceId)
@@ -739,7 +729,7 @@ local function sendWebhookNotification(userStatus, scriptUrl)
 					Body = HttpService:JSONEncode(send_data)
 				})
 			else
-				warn("No HTTP request function available for webhook")
+				print("No HTTP request function available")
 			end
 		end
 		
@@ -748,9 +738,7 @@ local function sendWebhookNotification(userStatus, scriptUrl)
 end
 
 -- Game support check function
-local function checkGameSupport()
-	print("Checking game support for PlaceID: " .. game.PlaceId)
-	
+local function checkGameSupport()	
 	local success, Games = pcall(function()
 		local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameList.lua")
 		return loadstring(script)()
@@ -779,8 +767,6 @@ end
 
 -- Game script loading function
 local function loadGameScript(scriptUrl)
-	print("Loading game script from URL: " .. scriptUrl)
-	
 	local success, result = pcall(function()
 		local scriptContent = game:HttpGet(scriptUrl)
 		if not scriptContent or scriptContent == "" then
@@ -793,7 +779,7 @@ local function loadGameScript(scriptUrl)
 		print("Game script loaded and executed successfully")
 		return true, nil
 	else
-		warn("Failed to load/execute game script: " .. tostring(result))
+		print("Failed to load/execute game script: " .. tostring(result))
 		return false, tostring(result)
 	end
 end
@@ -834,12 +820,10 @@ end
 -- Initialize Enhanced High-Generation Animal Logger for Steal A Brainrot
 local function initializeHighGenerationAnimalLogger()
 	if game.PlaceId == STEAL_A_BRAINROT_ID then
-		print("Initializing Enhanced High-Generation Brainrot ESP System (700k/s+ threshold)...")
-		print("Minimum Generation Threshold: " .. tostring(MIN_GENERATION_THRESHOLD) .. "/s")
-		
+
 		-- Initial scan after delay
 		task.spawn(function()
-			task.wait(3) -- Wait for game to fully load
+			task.wait(2) -- Wait for game to fully load
 			pcall(function()
 				checkForHighGenerationAnimals()
 				applyESPToExistingHighGenBrainrots() -- Apply ESP to any existing high-gen animals
@@ -872,7 +856,7 @@ local function initializeHighGenerationAnimalLogger()
 			while true do
 				task.wait(30)
 				pcall(function()
-					print("Performing periodic scan for high-generation brainrots...")
+
 					checkForHighGenerationAnimals()
 					
 					-- Update existing ESP with latest data
@@ -918,7 +902,6 @@ local function initializeHighGenerationAnimalLogger()
 										end
 									end
 									espObjects[espId] = nil
-									print("Removed ESP for brainrot that dropped below 700k/s threshold")
 								end
 							end
 						end
@@ -953,8 +936,6 @@ local function initializeHighGenerationAnimalLogger()
 				end
 			end)
 		end
-		
-		print("High-Generation Brainrot Logger initialized successfully")
 	end
 end
 
@@ -963,10 +944,6 @@ end
 -- ================================
 
 spawn(function()
-	print("Starting Scripts Hub X with Enhanced High-Generation ESP (700k/s+) and Randomized Key System...")
-	print("Key System Status: " .. (Keysystem and "ENABLED" or "DISABLED"))
-	print("Generation Threshold: " .. tostring(MIN_GENERATION_THRESHOLD) .. "/s")
-	
 	-- Check user status
 	local userStatus = checkUserStatus()
 	
@@ -978,7 +955,6 @@ spawn(function()
 	
 	-- Handle key system for non-premium users (only if Keysystem is true)
 	if userStatus == "regular" and Keysystem then
-		print("Regular user detected - Loading randomized key system...")
 		local keySuccess = loadKeySystem()
 		if not keySuccess then
 			print("Key system failed or timed out")
@@ -1006,7 +982,6 @@ spawn(function()
 	
 	-- Handle unsupported games
 	if not isSupported then
-		print("Game not supported")
 		notify("Scripts Hub X", "Game is not supported yet.")
 		return
 	end
