@@ -1208,7 +1208,7 @@ local function executeTeleportToHighestBrainrot()
                 fireQuantumCloner()
         
                 -- Wait 3 seconds
-                task.wait(1)
+                task.wait(0.2)
         
                 if not teleportEnabled then
                     removeTeleportOverlay()
@@ -1217,7 +1217,7 @@ local function executeTeleportToHighestBrainrot()
         
                 -- SPAM TELEPORT SUPER FAST FOR 1 SECOND
                 local startTime = tick()
-                while tick() - startTime < 1 do
+                while tick() - startTime < 0.8 do
                     character.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
                     fireQuantumClonerTeleport()
                     RunService.Heartbeat:Wait() -- Fastest possible wait
