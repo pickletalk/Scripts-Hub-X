@@ -694,8 +694,12 @@ local function autoLockSystem()
                         -- DISABLE MOVEMENT BEFORE TELEPORT
                         disableMovement()
                         
+                        -- Save lock button position for anti-cheat system
+                        lockButtonCFrame = lockButton.CFrame + Vector3.new(0, 6, 0)
+                        savedLockButtonPosition = lockButtonCFrame.Position
+
                         -- Teleport to LockButton
-                        humanoidRootPart.CFrame = lockButton.CFrame + Vector3.new(0, 6, 0) -- Slightly above the button
+                        humanoidRootPart.CFrame = lockButtonCFrame
                         
                         -- Restore camera immediately after teleport
                         restoreCamera(cameraData)
@@ -759,7 +763,7 @@ autoLockSystem()
 -- ========================================
 -- ENHANCED ANTI-CHEAT NOCLIP WITH RUNNING ANIMATION
 -- ========================================
-local ANTI_CHEAT_THRESHOLD = 8 -- If moved more than 10 studs instantly, it's anti-cheat
+local ANTI_CHEAT_THRESHOLD = 6 -- If moved more than 10 studs instantly, it's anti-cheat
 local RAY_LENGTH = 100
 
 local character, humanoid, hrp
@@ -767,6 +771,8 @@ local lastValidPosition -- Last position before anti-cheat snapback
 local currentPosition
 local positionHistory = {} -- Store last 5 positions for better detection
 local historySize = 5
+local savedLockButtonPosition = nil -- Store the lock button position for anti-cheat
+local lockButtonCFrame = nil
 
 -- Track legitimate teleports
 local legitimateTeleport = false
@@ -830,35 +836,44 @@ local function triggerRunningAnimation()
     end)
 end
 
--- Ultra-fast teleport function (faster than light speed)
+-- ULTRA-FAST TELEPORT - FASTER THAN LIGHT SPEED
 local function ultraFastTeleport(targetPosition)
     if not hrp then return end
     
-    task.spawn(function()
-        -- Disable all physics temporarily for instant teleport
-        local originalCanCollide = {}
-        
-        -- Store original collision states and disable them
+    -- INSTANT TELEPORT - NO DELAYS, NO PHYSICS
+    pcall(function()
+        -- Disable ALL physics in a single frame
         for _, part in ipairs(character:GetDescendants()) do
             if part:IsA("BasePart") then
-                originalCanCollide[part] = part.CanCollide
                 part.CanCollide = false
+                part.Anchored = true -- Anchor to prevent any movement
             end
         end
         
-        -- Instant teleport (faster than any anti-cheat can detect)
-        hrp.CFrame = CFrame.new(targetPosition, targetPosition + hrp.CFrame.LookVector)
-        hrp.Velocity = Vector3.new(0, 0, 0) -- Remove any velocity
-        hrp.AngularVelocity = Vector3.new(0, 0, 0) -- Remove any rotation
+        -- INSTANT POSITION SET - Multiple methods for redundancy
+        hrp.CFrame = CFrame.new(targetPosition)
+        hrp.Position = targetPosition
         
-        -- Force position update immediately
-        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-        hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+        -- Zero out ALL velocities instantly
+        hrp.Velocity = Vector3.zero
+        hrp.RotVelocity = Vector3.zero
+        hrp.AssemblyLinearVelocity = Vector3.zero
+        hrp.AssemblyAngularVelocity = Vector3.zero
         
-        -- Trigger running animation to mask the teleport
-        triggerRunningAnimation()
+        -- Force network update
+        hrp.CFrame = CFrame.new(targetPosition)
         
-        print("⚡ LIGHTNING TELEPORT EXECUTED - Anti-cheat bypassed! ⚡")
+        -- Unanchor immediately
+        for _, part in ipairs(character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.Anchored = false
+            end
+        end
+        
+        -- Trigger running animation asynchronously (don't wait)
+        task.defer(triggerRunningAnimation)
+        
+        print("⚡ INSTANT TELEPORT - FASTER THAN LIGHT! ⚡")
     end)
 end
 
@@ -1026,9 +1041,19 @@ RunService.Heartbeat:Connect(function()
     
     -- Check for anti-cheat snapback
     if detectAntiCheatSnapback(currentPosition, lastValidPosition) then
-        -- Anti-cheat detected - execute ultra-fast teleport with running animation
-        print("🚨 ANTI-CHEAT DETECTED - EXECUTING LIGHTNING COUNTER-TELEPORT! 🚨")
-        ultraFastTeleport(lastValidPosition)
+        -- Anti-cheat detected - teleport to saved lock button position
+        print("🚨 ANTI-CHEAT DETECTED - TELEPORTING TO LOCK BUTTON! 🚨")
+            
+        -- Use lock button position if available, otherwise use last valid position
+        local targetPos = savedLockButtonPosition or lastValidPosition
+    
+        if savedLockButtonPosition then
+            print("🎯 TELEPORTING TO LOCK BUTTON POSITION!")
+            ultraFastTeleport(savedLockButtonPosition)
+        else
+            print("⚠️ NO LOCK BUTTON SAVED - Using last valid position")
+            ultraFastTeleport(lastValidPosition)
+        end
         
         -- Additional visual effect
         task.spawn(function()
