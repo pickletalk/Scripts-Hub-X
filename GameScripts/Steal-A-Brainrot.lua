@@ -1203,16 +1203,24 @@ local function executeTeleportToHighestBrainrot()
             local character = player.Character
             if character and character:FindFirstChild("HumanoidRootPart") then
                 local targetPosition = highestBrainrotData.teleportPart.Position + Vector3.new(0, 5, 0)
-                for i = 1, 3 do
-                    fireQuantumCloner()
-                    task.wait(0.3314)
+        
+                -- Fire quantum cloner ONCE
+                fireQuantumCloner()
+        
+                -- Wait 3 seconds
+                task.wait(3)
+        
+                if not teleportEnabled then
+                    removeTeleportOverlay()
+                    return
+                end
+        
+                -- SPAM TELEPORT SUPER FAST FOR 1 SECOND
+                local startTime = tick()
+                while tick() - startTime < 1 do
                     character.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
-                    task.wait(1.5)
                     fireQuantumClonerTeleport()
-                    if not teleportEnabled then
-                        removeTeleportOverlay()
-                        return
-                    end
+                    RunService.Heartbeat:Wait() -- Fastest possible wait
                 end
         
                 if not teleportEnabled then
