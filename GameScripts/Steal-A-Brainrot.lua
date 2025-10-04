@@ -1902,6 +1902,105 @@ local function updateAllPlots()
     end
 end
 
+-- AIMBOT SYSTEM (Auto-targets closest player)
+local aimbotEnabled = true
+local currentTarget = nil
+local aimbotConnection = nil
+
+local function getClosestPlayer()
+    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        return nil
+    end
+    
+    local myPosition = LocalPlayer.Character.HumanoidRootPart.Position
+    local closestPlayer = nil
+    local closestDistance = math.huge
+    
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local targetHRP = player.Character:FindFirstChild("HumanoidRootPart")
+            local targetHead = player.Character:FindFirstChild("Head")
+            
+            if targetHRP and targetHead and player.Character:FindFirstChild("Humanoid") then
+                local humanoid = player.Character.Humanoid
+                if humanoid.Health > 0 then
+                    local distance = (myPosition - targetHRP.Position).Magnitude
+                    
+                    if distance < closestDistance then
+                        closestDistance = distance
+                        closestPlayer = player
+                    end
+                end
+            end
+        end
+    end
+    
+    return closestPlayer
+end
+
+local function getTargetPosition(target)
+    if not target or not target.Character then
+        return nil
+    end
+    
+    local head = target.Character:FindFirstChild("Head")
+    if head then
+        return head.Position
+    end
+    
+    local hrp = target.Character:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        return hrp.Position
+    end
+    
+    return nil
+end
+
+-- Hook into RemoteEvents to redirect attacks
+local originalNamecall
+originalNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+    local args = {...}
+    local method = getnamecallmethod()
+    
+    if aimbotEnabled and method == "FireServer" then
+        local remoteName = tostring(self)
+        
+        -- Check if this is a combat-related remote
+        if remoteName:find("Attack") or remoteName:find("RE/UseItem") or remoteName:find("RE\UseItem") or remoteName:find("Laser") or remoteName:find("UseItem") or remoteName:find("Damage") or remoteName:find("Hit") or remoteName:find("Combat") or remoteName:find("Shoot") then
+            currentTarget = getClosestPlayer()
+            
+            if currentTarget then
+                local targetPos = getTargetPosition(currentTarget)
+                if targetPos then
+                    -- Redirect the attack to closest player's position
+                    if #args > 0 then
+                        -- If first arg is a position/CFrame, replace it
+                        if typeof(args[1]) == "Vector3" then
+                            args[1] = targetPos
+                        elseif typeof(args[1]) == "CFrame" then
+                            args[1] = CFrame.new(targetPos)
+                        end
+                        -- If there's a target parameter, replace it
+                        for i, arg in ipairs(args) do
+                            if typeof(arg) == "Instance" and arg:IsA("Player") then
+                                args[i] = currentTarget
+                            elseif typeof(arg) == "Instance" and arg:IsA("Model") then
+                                args[i] = currentTarget.Character
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    return originalNamecall(self, unpack(args))
+end)
+
+-- Mouse click redirect
+local mouse = LocalPlayer:GetMouse()
+local originalMouseButton1Down = mouse.Button1Down
+
 -- Jump delay removal functions
 local jumpDelayConnections = {}
 
@@ -1964,9 +2063,6 @@ local function removeJumpDelay()
 end
 
 -- EVENT CONNECTIONS AND INITIALIZATION
-
-print("=== Auto Leave on Steal Script ===")
-print("Initializing...")
 
 -- Character respawn handling
 player.CharacterRemoving:Connect(function()
@@ -2192,6 +2288,26 @@ closeButton.MouseButton1Click:Connect(function()
     screenGui:Destroy()
     
     print("Script closed and cleaned up")
+end)
+
+mouse.Button1Down:Connect(function()
+    if aimbotEnabled then
+        currentTarget = getClosestPlayer()
+        if currentTarget then
+            local targetPos = getTargetPosition(currentTarget)
+            if targetPos then
+                print("Aimbot locked onto: " .. currentTarget.DisplayName .. " at distance: " .. math.floor((LocalPlayer.Character.HumanoidRootPart.Position - targetPos).Magnitude))
+            end
+        end
+    end
+end)
+
+-- Continuous target tracking
+aimbotConnection = RunService.Heartbeat:Connect(function()
+    if aimbotEnabled then
+        currentTarget = getClosestPlayer()
+        print("=== AIMBOT ACTIVATED ===")
+    end
 end)
 
 addHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
