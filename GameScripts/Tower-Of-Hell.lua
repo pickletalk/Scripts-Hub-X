@@ -7,9 +7,9 @@ screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 -- Create draggable frame with background
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 250, 0, 100)  -- Increased width to accommodate Discord button
-mainFrame.Position = UDim2.new(0.5, -125, 0.5, -50)  -- Adjusted position for new width
-mainFrame.BackgroundColor3 = Color3.fromRGB(68, 68, 68)  -- #444444
+mainFrame.Size = UDim2.new(0, 250, 0, 100)
+mainFrame.Position = UDim2.new(0.5, -125, 0.5, -50)
+mainFrame.BackgroundColor3 = Color3.fromRGB(68, 68, 68)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
 mainFrame.Draggable = true
@@ -23,7 +23,7 @@ frameCorner.Parent = mainFrame
 -- Create title label
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Name = "Title"
-titleLabel.Size = UDim2.new(0, 250, 0, 30)  -- Adjusted width
+titleLabel.Size = UDim2.new(0, 250, 0, 30)
 titleLabel.Position = UDim2.new(0, 0, 0, 5)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Text = "Tower of Hell"
@@ -35,11 +35,11 @@ titleLabel.Parent = mainFrame
 -- Create subtitle label
 local subtitleLabel = Instance.new("TextLabel")
 subtitleLabel.Name = "Subtitle"
-subtitleLabel.Size = UDim2.new(0, 250, 0, 20)  -- Adjusted width
+subtitleLabel.Size = UDim2.new(0, 250, 0, 20)
 subtitleLabel.Position = UDim2.new(0, 0, 0, 35)
 subtitleLabel.BackgroundTransparency = 1
-subtitleLabel.Text = "Script Hub X"  -- Fixed: Correctly set subtitle text
-subtitleLabel.TextColor3 = Color3.fromRGB(136, 136, 136)  -- #888888
+subtitleLabel.Text = "Script Hub X"
+subtitleLabel.TextColor3 = Color3.fromRGB(136, 136, 136)
 subtitleLabel.Font = Enum.Font.SourceSans
 subtitleLabel.TextSize = 14
 subtitleLabel.Parent = mainFrame
@@ -49,7 +49,7 @@ local toggleButton = Instance.new("TextButton")
 toggleButton.Name = "Toggle"
 toggleButton.Size = UDim2.new(0, 120, 0, 30)
 toggleButton.Position = UDim2.new(0, 15, 0, 60)
-toggleButton.BackgroundColor3 = Color3.fromRGB(190, 190, 190)  -- #BEBEBE
+toggleButton.BackgroundColor3 = Color3.fromRGB(190, 190, 190)
 toggleButton.BorderSizePixel = 0
 toggleButton.Text = "Infinite Jump: OFF"
 toggleButton.TextColor3 = Color3.new(0, 0, 0)
@@ -75,10 +75,10 @@ discordButton.Parent = mainFrame
 local closeButton = Instance.new("TextButton")
 closeButton.Name = "Close"
 closeButton.Size = UDim2.new(0, 25, 0, 25)
-closeButton.Position = UDim2.new(0, 215, 0, 5)  -- Adjusted position for new width
+closeButton.Position = UDim2.new(0, 215, 0, 5)
 closeButton.BackgroundTransparency = 1
 closeButton.Text = "X"
-closeButton.TextColor3 = Color3.fromRGB(136, 136, 136)  -- #888888
+closeButton.TextColor3 = Color3.fromRGB(136, 136, 136)
 closeButton.Font = Enum.Font.SourceSansBold
 closeButton.TextSize = 18
 closeButton.Parent = mainFrame
@@ -102,15 +102,17 @@ local notificationCorner = Instance.new("UICorner")
 notificationCorner.CornerRadius = UDim.new(0, 8)
 notificationCorner.Parent = notificationLabel
 
--- Float functionality
+-- Infinite Jump functionality variables
 local floatEnabled = false
 local platform = nil
+local orbitingParticles = {}
+local textLabel = nil
 local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
--- Function to create invisible platform
+-- Function to create invisible platform (3 studs under player)
 local function createPlatform()
     if platform then return end
     
@@ -122,8 +124,8 @@ local function createPlatform()
     platform.CanCollide = true
     platform.Parent = workspace
     
-    -- Position platform under player
-    platform.Position = humanoidRootPart.Position - Vector3.new(0, 1.7, 0)
+    -- Position platform 3 studs under player
+    platform.Position = humanoidRootPart.Position - Vector3.new(0, 3.3, 0)
 end
 
 -- Function to remove platform
@@ -134,7 +136,142 @@ local function removePlatform()
     end
 end
 
--- Function to toggle float feature
+-- Function to apply godmode (infinite health using math.huge)
+local function applyGodmode()
+    if humanoid then
+        -- Set health to infinity - player becomes invulnerable
+        humanoid.MaxHealth = math.huge
+        humanoid.Health = math.huge
+    end
+end
+
+-- Function to remove godmode (restore normal health)
+local function removeGodmode()
+    if humanoid then
+        -- Reset to normal health values
+        humanoid.MaxHealth = 100
+        humanoid.Health = 100
+    end
+end
+
+-- Function to create orbiting particles around player (like in the image)
+local function createOrbitingParticles()
+    -- Clear existing particles
+    for _, particle in ipairs(orbitingParticles) do
+        particle:Destroy()
+    end
+    orbitingParticles = {}
+    
+    -- Create 12 orbiting particles around the player
+    local numParticles = 12
+    local radius = 3
+    
+    for i = 1, numParticles do
+        -- Create neon particle
+        local particle = Instance.new("Part")
+        particle.Name = "OrbitParticle"
+        particle.Size = Vector3.new(0.4, 0.4, 0.4)
+        particle.Shape = Enum.PartType.Ball
+        particle.Material = Enum.Material.Neon
+        particle.Color = Color3.fromRGB(0, 170, 255)  -- Neon blue
+        particle.Transparency = 0.2
+        particle.Anchored = true
+        particle.CanCollide = false
+        particle.Parent = workspace
+        
+        -- Add blue sparkle particle emitter
+        local particleEmitter = Instance.new("ParticleEmitter")
+        particleEmitter.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+        particleEmitter.Color = ColorSequence.new(Color3.fromRGB(0, 170, 255), Color3.fromRGB(100, 200, 255))
+        particleEmitter.Size = NumberSequence.new(0.3, 0)
+        particleEmitter.Transparency = NumberSequence.new(0, 1)
+        particleEmitter.Lifetime = NumberRange.new(0.5, 1)
+        particleEmitter.Rate = 30
+        particleEmitter.Speed = NumberRange.new(1, 3)
+        particleEmitter.SpreadAngle = Vector2.new(360, 360)
+        particleEmitter.Rotation = NumberRange.new(0, 360)
+        particleEmitter.RotSpeed = NumberRange.new(-200, 200)
+        particleEmitter.LightEmission = 1
+        particleEmitter.Parent = particle
+        
+        -- Add point light for glow effect
+        local pointLight = Instance.new("PointLight")
+        pointLight.Color = Color3.fromRGB(0, 170, 255)
+        pointLight.Brightness = 2
+        pointLight.Range = 8
+        pointLight.Parent = particle
+        
+        -- Store initial angle for this particle
+        particle:SetAttribute("InitialAngle", (i - 1) * (360 / numParticles))
+        
+        table.insert(orbitingParticles, particle)
+    end
+end
+
+-- Function to remove orbiting particles
+local function removeOrbitingParticles()
+    for _, particle in ipairs(orbitingParticles) do
+        particle:Destroy()
+    end
+    orbitingParticles = {}
+end
+
+-- Function to create "INFINITE JUMP" text label above player
+local function createTextLabel()
+    if textLabel then return end
+    
+    -- Create attachment point on character
+    local attachment = Instance.new("Attachment")
+    attachment.Name = "TextAttachment"
+    attachment.Parent = humanoidRootPart
+    attachment.Position = Vector3.new(0, 4, 0)
+    
+    -- Create billboard GUI
+    local billboardGui = Instance.new("BillboardGui")
+    billboardGui.Name = "InfiniteJumpLabel"
+    billboardGui.Adornee = attachment
+    billboardGui.Size = UDim2.new(0, 250, 0, 60)
+    billboardGui.StudsOffset = Vector3.new(0, 0, 0)
+    billboardGui.AlwaysOnTop = true
+    billboardGui.Parent = humanoidRootPart
+    
+    -- Create text label with "INFINITE JUMP" text
+    local textFrame = Instance.new("TextLabel")
+    textFrame.Size = UDim2.new(1, 0, 1, 0)
+    textFrame.BackgroundTransparency = 1
+    textFrame.Text = "INFINITE JUMP"
+    textFrame.TextColor3 = Color3.fromRGB(0, 170, 255)  -- Neon blue
+    textFrame.Font = Enum.Font.GothamBold
+    textFrame.TextSize = 24
+    textFrame.TextStrokeTransparency = 0
+    textFrame.TextStrokeColor3 = Color3.new(0, 0, 0)  -- Black outline
+    textFrame.Parent = billboardGui
+    
+    -- Add neon glow effect using UIStroke
+    local uiStroke = Instance.new("UIStroke")
+    uiStroke.Color = Color3.fromRGB(0, 170, 255)
+    uiStroke.Thickness = 3
+    uiStroke.Transparency = 0.2
+    uiStroke.Parent = textFrame
+    
+    textLabel = billboardGui
+end
+
+-- Function to remove text label
+local function removeTextLabel()
+    if textLabel then
+        textLabel:Destroy()
+        textLabel = nil
+    end
+    
+    -- Remove attachment if exists
+    local attachment = humanoidRootPart:FindFirstChild("TextAttachment")
+    if attachment then
+        attachment:Destroy()
+    end
+end
+
+-- Function to toggle infinite jump feature (with godmode)
 local function toggleFloat()
     floatEnabled = not floatEnabled
     toggleButton.Text = floatEnabled and "Infinite Jump: ON" or "Infinite Jump: OFF"
@@ -142,12 +279,16 @@ local function toggleFloat()
     -- Change button color when active
     if floatEnabled then
         toggleButton.BackgroundColor3 = Color3.fromRGB(50, 150, 50)  -- Green when ON
+        createPlatform()
+        createOrbitingParticles()
+        createTextLabel()
+        applyGodmode()  -- Enable godmode (infinite health)
     else
-        toggleButton.BackgroundColor3 = Color3.fromRGB(190, 190, 190)  -- #BEBEBE when OFF
-    end
-    
-    if not floatEnabled then
+        toggleButton.BackgroundColor3 = Color3.fromRGB(190, 190, 190)  -- Gray when OFF
         removePlatform()
+        removeOrbitingParticles()
+        removeTextLabel()
+        removeGodmode()  -- Disable godmode (restore normal health)
     end
 end
 
@@ -162,7 +303,6 @@ local function copyDiscordLink()
         setclipboard(discordLink)
     else
         -- Fallback for executors without clipboard functions
-        local http = game:GetService("HttpService")
         local gui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
         local clipboardFrame = Instance.new("Frame")
         clipboardFrame.Size = UDim2.new(0, 300, 0, 200)
@@ -196,19 +336,19 @@ local function copyDiscordLink()
         instructions.TextScaled = true
         instructions.Parent = clipboardFrame
         
-        local closeButton = Instance.new("TextButton")
-        closeButton.Size = UDim2.new(0, 80, 0, 30)
-        closeButton.Position = UDim2.new(0, 110, 0, 140)
-        closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-        closeButton.Text = "Close"
-        closeButton.TextColor3 = Color3.new(1, 1, 1)
-        closeButton.Parent = clipboardFrame
+        local closeBtn = Instance.new("TextButton")
+        closeBtn.Size = UDim2.new(0, 80, 0, 30)
+        closeBtn.Position = UDim2.new(0, 110, 0, 140)
+        closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+        closeBtn.Text = "Close"
+        closeBtn.TextColor3 = Color3.new(1, 1, 1)
+        closeBtn.Parent = clipboardFrame
         
         local buttonCorner = Instance.new("UICorner")
         buttonCorner.CornerRadius = UDim.new(0, 5)
-        buttonCorner.Parent = closeButton
+        buttonCorner.Parent = closeBtn
         
-        closeButton.MouseButton1Click:Connect(function()
+        closeBtn.MouseButton1Click:Connect(function()
             clipboardFrame:Destroy()
         end)
         
@@ -219,29 +359,9 @@ local function copyDiscordLink()
     notificationLabel.Visible = true
     
     -- Hide notification after 3 seconds
-    game:GetService("Debris"):AddItem(notificationLabel, 3)
+    task.wait(3)
+    notificationLabel.Visible = false
 end
-
--- Track player state
-local lastState = humanoid:GetState()
-
--- Function to handle state changes
-local function onStateChanged(oldState, newState)
-    -- Create platform when entering freefall state
-    if floatEnabled and newState == Enum.HumanoidStateType.Freefall then
-        createPlatform()
-    end
-    
-    -- Remove platform when landing
-    if newState == Enum.HumanoidStateType.Landed then
-        removePlatform()
-    end
-    
-    lastState = newState
-end
-
--- Connect state changed event
-humanoid.StateChanged:Connect(onStateChanged)
 
 -- Button connections
 toggleButton.MouseButton1Click:Connect(toggleFloat)
@@ -249,6 +369,9 @@ discordButton.MouseButton1Click:Connect(copyDiscordLink)
 
 closeButton.MouseButton1Click:Connect(function()
     removePlatform()
+    removeOrbitingParticles()
+    removeTextLabel()
+    removeGodmode()  -- Remove godmode when closing GUI
     screenGui:Destroy()
 end)
 
@@ -258,28 +381,53 @@ player.CharacterAdded:Connect(function(newCharacter)
     humanoid = character:WaitForChild("Humanoid")
     humanoidRootPart = character:WaitForChild("HumanoidRootPart")
     
-    -- Reconnect state changed event for new character
-    humanoid.StateChanged:Connect(onStateChanged)
-    
-    -- Update last state
-    lastState = humanoid:GetState()
+    -- Reset infinite jump state on respawn
+    if floatEnabled then
+        removePlatform()
+        removeOrbitingParticles()
+        removeTextLabel()
+        task.wait(0.1)
+        createPlatform()
+        createOrbitingParticles()
+        createTextLabel()
+        applyGodmode()  -- Reapply godmode after respawn if still enabled
+    end
 end)
 
--- Update platform position and apply slow fall effect
-game:GetService("RunService").Heartbeat:Connect(function()
-    if floatEnabled and humanoid:GetState() == Enum.HumanoidStateType.Freefall then
-        -- Apply slow fall effect
-        local currentVelocity = humanoidRootPart.Velocity
-        -- Cap downward velocity to create slow fall effect
-        humanoidRootPart.Velocity = Vector3.new(
-            currentVelocity.X, 
-            math.max(currentVelocity.Y, -1),  -- Slow fall speed
-            currentVelocity.Z
-        )
-        
-        -- Update platform position if it exists
+-- Main loop: Update platform position and animate orbiting particles
+local angleOffset = 0
+game:GetService("RunService").Heartbeat:Connect(function(deltaTime)
+    if floatEnabled and humanoidRootPart then
+        -- Update platform position to follow player (3 studs under)
         if platform then
-            platform.Position = humanoidRootPart.Position - Vector3.new(0, 1.7, 0)
+            platform.Position = humanoidRootPart.Position - Vector3.new(0, 3, 0)
+        end
+        
+        -- Animate orbiting particles around player
+        angleOffset = angleOffset + (deltaTime * 120)  -- Rotation speed
+        if angleOffset >= 360 then
+            angleOffset = angleOffset - 360
+        end
+        
+        local radius = 3
+        for i, particle in ipairs(orbitingParticles) do
+            if particle and particle.Parent then
+                local initialAngle = particle:GetAttribute("InitialAngle") or 0
+                local currentAngle = initialAngle + angleOffset
+                
+                -- Calculate position in circle around player
+                local radians = math.rad(currentAngle)
+                local x = math.cos(radians) * radius
+                local z = math.sin(radians) * radius
+                
+                -- Position particle around player at their height
+                particle.Position = humanoidRootPart.Position + Vector3.new(x, 0, z)
+            end
+        end
+        
+        -- Ensure godmode stays active (reapply if health changes)
+        if humanoid.Health ~= math.huge then
+            applyGodmode()
         end
     end
 end)
