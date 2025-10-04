@@ -389,7 +389,7 @@ game:GetService("RunService").Heartbeat:Connect(function(deltaTime)
     if floatEnabled and humanoidRootPart then
         -- Update platform position to follow player (3 studs under)
         if platform then
-            platform.Position = humanoidRootPart.Position - Vector3.new(0, 3.5, 0)
+            platform.Position = humanoidRootPart.Position - Vector3.new(0, 3.3, 0)
         end
         
         -- Animate orbiting particles around player
