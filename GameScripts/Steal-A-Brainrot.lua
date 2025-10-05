@@ -1205,6 +1205,8 @@ local function executeTeleportToHighestBrainrot()
                 local targetPosition = highestBrainrotData.teleportPart.Position + Vector3.new(0, 5, 0)
 
                 fireQuantumCloner()
+
+                task.wait(0.05)
                     
                 if not teleportEnabled then
                     removeTeleportOverlay()
@@ -1213,9 +1215,8 @@ local function executeTeleportToHighestBrainrot()
         
                 -- SPAM TELEPORT SUPER FAST FOR 1 SECOND
                 local startTime = tick()
-                while tick() - startTime < 0.8 do
+                while tick() - startTime < 0.9 do
                     character.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
-                    fireQuantumClonerTeleport()
                     RunService.Heartbeat:Wait() -- Fastest possible wait
                 end
         
@@ -1223,6 +1224,9 @@ local function executeTeleportToHighestBrainrot()
                     removeTeleportOverlay()
                     return
                 end
+
+                task.wait(1)
+                fireQuantumClonerTeleport()
                 
                 print("Teleported to highest brainrot at: " .. tostring(targetPosition))
                 print("   Plot: " .. highestBrainrotData.plotName .. " | Podium: " .. highestBrainrotData.podiumNumber)
