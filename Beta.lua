@@ -2596,7 +2596,3 @@ UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
         kickPlayer()
     end
 end)
-
-print("✅ Steal A Brainrot - WindUI Edition Loaded!")
-print("📌 Made by PickleTalk")
-print("🔗 Discord: https://discord.gg/bpsNUH5sVb")
