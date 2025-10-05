@@ -94,13 +94,7 @@ local Window = WindUI:CreateWindow({
     Icon = "rbxassetid://10723407389",
     Author = "by PickleTalk",
     Folder = "StealABrainrotConfig",
-    Size = UDim2.fromOffset(580, 480),
-    KeySystem = {
-        Key = "StealBrainrot2025",
-        Note = "Join our Discord for the key!",
-        URL = "https://discord.gg/bpsNUH5sVb",
-        SaveKey = true
-    },
+    Size = UDim2.fromOffset(550, 450),
     Transparent = false,
     Theme = "Dark",
     SideBarWidth = 170,
