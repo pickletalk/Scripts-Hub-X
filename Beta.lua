@@ -2086,75 +2086,44 @@ local Window = WindUI:CreateWindow({
     Icon = "home",
     Author = "by PickleTalk",
     Folder = "StealABrainrotConfig",
-    Size = UDim2.fromOffset(580, 480),
-    Transparent = false,
+    Size = UDim2.fromOffset(550, 450),
+    Transparent = true,
     Theme = "Dark",
     SideBarWidth = 170,
 })
 
--- Create Sections
-local MainSection = Window:Section({
-    Title = "Main Features",
-    Opened = true
-})
-
-local PlayerSection = Window:Section({
-    Title = "Player Settings",
-    Opened = true
-})
-
-local VisualsSection = Window:Section({
-    Title = "Visual Features",
-    Opened = true
-})
-
-local UtilitiesSection = Window:Section({
-    Title = "Utilities",
-    Opened = true
-})
-
-local ServerSection = Window:Section({
-    Title = "Server Info",
-    Opened = true
-})
-
-local CreditsSection = Window:Section({
-    Title = "Credits",
-    Opened = true
-})
-
 -- Create Tabs
-local MainTab = MainSection:Tab({
+local MainTab = Window:Tab({
     Title = "Main",
     Icon = "flame",
     Desc = "Main stealing features"
 })
 
-local PlayerTab = PlayerSection:Tab({
+local PlayerTab = Window:Tab({
     Title = "Player",
     Icon = "user",
     Desc = "Player modifications"
 })
 
-local VisualsTab = VisualsSection:Tab({
+local VisualsTab = Window:Tab({
     Title = "Visuals",
     Icon = "eye",
     Desc = "ESP and visual aids"
 })
 
-local UtilitiesTab = UtilitiesSection:Tab({
+local UtilitiesTab = Window:Tab({
     Title = "Utilities",
     Icon = "wrench",
     Desc = "Utility features"
 })
 
-local ServerTab = ServerSection:Tab({
+local ServerTab = Window:Tab({
     Title = "Server",
     Icon = "server",
     Desc = "Server information"
 })
 
-local CreditsTab = CreditsSection:Tab({
+local CreditsTab = Window:Tab({
     Title = "Credits",
     Icon = "heart",
     Desc = "Script information"
