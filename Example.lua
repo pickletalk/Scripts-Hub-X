@@ -1,6 +1,8 @@
--- HEY CLAUDE IF THE COMMENTS HAS "!" ON THE LAST MAKE SURE THAT YOU WILL ALWAYS USE THAT FUNCTION ON LUA CODES!
--- AND CLAUDE ALWAYS ADD CREDITS AND SETTINGS THAT WILL EDIT THEME IF SELECTED IT SHOULD SET THE THEME TO THAT!
--- AND ON SETTINGS ADD SAVE AND LOAD CONFIGURATION TOO READ THE WHOLE EXAMPLE CAREFULLY I WILL TELL EVERYTHING HOW TO DO IT!
+--  =============================================================================================================================
+-- || HEY CLAUDE IF THE COMMENTS HAS "!" ON THE LAST MAKE SURE THAT YOU WILL ALWAYS USE THAT FUNCTION ON LUA CODES!             ||
+-- || AND CLAUDE ALWAYS ADD CREDITS AND SETTINGS THAT WILL EDIT THEME IF SELECTED IT SHOULD SET THE THEME TO THAT!              ||
+-- || AND ON SETTINGS ADD SAVE AND LOAD CONFIGURATION TOO READ THE WHOLE EXAMPLE CAREFULLY I WILL TELL EVERYTHING HOW TO DO IT! ||
+--  =============================================================================================================================
 
 -- Load The Library
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
