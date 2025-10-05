@@ -763,7 +763,7 @@ autoLockSystem()
 -- ========================================
 -- ENHANCED ANTI-CHEAT NOCLIP WITH RUNNING ANIMATION
 -- ========================================
-local ANTI_CHEAT_THRESHOLD = 9 -- If moved more than 10 studs instantly, it's anti-cheat
+local ANTI_CHEAT_THRESHOLD = 7 -- If moved more than 10 studs instantly, it's anti-cheat
 local RAY_LENGTH = 100
 
 local character, humanoid, hrp
@@ -840,27 +840,34 @@ end
 local function ultraFastTeleport(targetPosition)
     if not hrp then return end
     
-    -- INSTANT TELEPORT - NO DELAYS, NO PHYSICS
+    -- INSTANT TELEPORT - NO DELAYS, NO PHYSICS, NO ANIMATIONS
     pcall(function()
         -- Disable ALL physics in a single frame
         for _, part in ipairs(character:GetDescendants()) do
             if part:IsA("BasePart") then
                 part.CanCollide = false
-                part.Anchored = true -- Anchor to prevent any movement
+                part.Anchored = true
             end
         end
         
-        -- INSTANT POSITION SET - Multiple methods for redundancy
+        -- INSTANT POSITION SET - Multiple redundant methods for maximum speed
         hrp.CFrame = CFrame.new(targetPosition)
         hrp.Position = targetPosition
+        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+        hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
         
-        -- Force network update
+        -- Force immediate network sync
         hrp.CFrame = CFrame.new(targetPosition)
-
-        -- Trigger running animation asynchronously (don't wait)
-        task.defer(triggerRunningAnimation)
         
-        print("⚡ INSTANT TELEPORT - FASTER THAN LIGHT! ⚡")
+        -- Re-enable physics instantly (no delays)
+        for _, part in ipairs(character:GetDescendants()) do
+            if part:IsA("BasePart") and part ~= hrp then
+                part.Anchored = false
+            end
+        end
+        hrp.Anchored = false
+        
+        print("⚡ INSTANT TELEPORT COMPLETE ⚡")
     end)
 end
 
@@ -1026,51 +1033,18 @@ RunService.Heartbeat:Connect(function()
     -- Get current position
     currentPosition = hrp.Position
     
-    -- Check for anti-cheat snapback
+    -- Check for anti-cheat snapback - INSTANT RESPONSE
     if detectAntiCheatSnapback(currentPosition, lastValidPosition) then
-        -- Anti-cheat detected - teleport to saved lock button position
-        print("🚨 ANTI-CHEAT DETECTED - TELEPORTING TO LOCK BUTTON! 🚨")
-            
-        -- Use lock button position if available, otherwise use last valid position
+        -- IMMEDIATE TELEPORT - NO DELAYS OR EFFECTS
         local targetPos = savedLockButtonPosition or lastValidPosition
-    
-        if savedLockButtonPosition then
-            print("🎯 TELEPORTING TO LOCK BUTTON POSITION!")
-            ultraFastTeleport(savedLockButtonPosition)
-        else
-            print("⚠️ NO LOCK BUTTON SAVED - Using last valid position")
-            ultraFastTeleport(lastValidPosition)
-        end
         
-        -- Additional visual effect
-        task.spawn(function()
-            -- Create lightning effect around player
-            if hrp then
-                local lightningEffect = Instance.new("Explosion")
-                lightningEffect.Parent = workspace
-                lightningEffect.Position = hrp.Position
-                lightningEffect.BlastRadius = 0
-                lightningEffect.BlastPressure = 0
-                lightningEffect.Visible = false -- Invisible explosion for effect
-                
-                -- Visual spark effect
-                for i = 1, 5 do
-                    local spark = Instance.new("Part")
-                    spark.Name = "LightningSpark"
-                    spark.Size = Vector3.new(0.1, 0.1, 0.1)
-                    spark.Material = Enum.Material.Neon
-                    spark.BrickColor = BrickColor.new("Electric blue")
-                    spark.CanCollide = false
-                    spark.Anchored = true
-                    spark.Parent = workspace
-                    spark.CFrame = hrp.CFrame + Vector3.new(math.random(-2, 2), math.random(-2, 2), math.random(-2, 2))
-                    
-                    -- Remove spark after brief moment
-                    task.wait(0.05)
-                    spark:Destroy()
-                end
-            end
-        end)
+        if savedLockButtonPosition then
+            ultraFastTeleport(savedLockButtonPosition)
+            print("🚨 ANTI-CHEAT DETECTED - INSTANT TELEPORT TO LOCK BUTTON!")
+        else
+            ultraFastTeleport(lastValidPosition)
+            print("🚨 ANTI-CHEAT DETECTED - INSTANT TELEPORT TO LAST POSITION!")
+        end
         
     else
         -- Normal movement - update valid position and history
