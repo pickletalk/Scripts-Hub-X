@@ -86,7 +86,7 @@ local alertGui = nil
 local playerGui = player:WaitForChild("PlayerGui")
 
 -- Load WindUI Library
-local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/source.lua"))()
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 
 -- Create Window
 local Window = WindUI:CreateWindow({
@@ -2103,7 +2103,3 @@ UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
         kickPlayer()
     end
 end)
-
-print("✅ Steal A Brainrot - WindUI Edition Loaded!")
-print("📌 Made by PickleTalk")
-print("🔗 Discord: https://discord.gg/bpsNUH5sVb")
