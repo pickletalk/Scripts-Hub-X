@@ -1,544 +1,239 @@
--- This is just an example.
+-- HEY CLAUDE IF THE COMMENTS HAS "!" ON THE LAST MAKE SURE THAT YOU WILL ALWAYS USE THAT FUNCTION ON LUA CODES!
+-- AND CLAUDE ALWAYS ADD CREDITS AND SETTINGS THAT WILL EDIT THEME IF SELECTED IT SHOULD SET THE THEME TO THAT!
+-- AND ON SETTINGS ADD SAVE AND LOAD CONFIGURATION TOO READ THE WHOLE EXAMPLE CAREFULLY I WILL TELL EVERYTHING HOW TO DO IT!
 
-local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+-- Load The Library
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
-local Localization = WindUI:Localization({
-    Enabled = true,
-    Prefix = "loc:",
-    DefaultLanguage = "en",
-    Translations = {
-        ["en"] = {
-            ["WINDUI_EXAMPLE"] = "WindUI Example",
-            ["WELCOME"] = "Welcome to WindUI!",
-            ["LIB_DESC"] = "Beautiful UI library for Roblox",
-            ["SETTINGS"] = "Settings",
-            ["APPEARANCE"] = "Appearance",
-            ["FEATURES"] = "Features",
-            ["UTILITIES"] = "Utilities",
-            ["UI_ELEMENTS"] = "UI Elements",
-            ["CONFIGURATION"] = "Configuration",
-            ["SAVE_CONFIG"] = "Save Configuration",
-            ["LOAD_CONFIG"] = "Load Configuration",
-            ["THEME_SELECT"] = "Select Theme",
-            ["TRANSPARENCY"] = "Window Transparency",
-            ["LOCKED_TAB"] = "Locked Tab"
-        }
-    }
+-- Example Creating Themes FOR THE SETTINGS THEME PICKER! MUST HAVE DIFFERENTS
+WindUI:AddTheme({
+    Name = "My Theme", -- theme name
+    
+    Accent = Color3.fromHex("#18181b"),
+    Dialog = Color3.fromHex("#161616"),
+    Outline = Color3.fromHex("#FFFFFF"),
+    Text = Color3.fromHex("#FFFFFF"),
+    Placeholder = Color3.fromHex("#7a7a7a"),
+    Background = Color3.fromHex("#101010"),
+    Button = Color3.fromHex("#52525b"),
+    Icon = Color3.fromHex("#a1a1aa")
 })
 
-WindUI.TransparencyValue = 0.2
-WindUI:SetTheme("Dark")
+-- Example Setting the theme
+WindUI:SetTheme("My Theme")
 
-local function gradient(text, startColor, endColor)
-    local result = ""
-    for i = 1, #text do
-        local t = (i - 1) / (#text - 1)
-        local r = math.floor((startColor.R + (endColor.R - startColor.R) * t) * 255)
-        local g = math.floor((startColor.G + (endColor.G - startColor.G) * t) * 255)
-        local b = math.floor((startColor.B + (endColor.B - startColor.B) * t) * 255)
-        result = result .. string.format('<font color="rgb(%d,%d,%d)">%s</font>', r, g, b, text:sub(i, i))
-    end
-    return result
-end
+-- Creating Window!
+local Window = WindUI:CreateWindow({
+    Title = "Scripts Hub X | Official",
+    Icon = "door-open", -- lucide icon
+    Author = "by PickleTalk and Mhicel",
+    Folder = "Scripts Hub X",
+    Transparent = true,
+    Theme = "Dark",
+})
 
+-- Window must always transparent!
+Window:ToggleTransparency(true)
+
+-- CONFIG MANAGER!
+local ConfigManager = Window.ConfigManager
+
+-- Example Creating Config!
+local myConfig = ConfigManager:CreateConfig("Scripts Hub X")
+
+-- REGISTERING ELEMENTS!
+myConfig:Register("SpecialNameExample", Element)
+-- EXAMPLE REGISTER USAGE!
+local ToggleElement = Tabs.ConfigTab:Toggle({
+    Title = "Toggle",
+    Desc = "Config Test Toggle",
+    Callback = function(v) print("Toggle Changed: " .. tostring(v)) end
+})
+
+-- register
+--                 | Element name (no spaces)    | Element          |
+myConfig:Register( "toggleNameExample",          ToggleElement      )
+
+-- EXAMPLE SAVING CONFIG FOR SAVE CONFIGURATION BUTTON ON SETTINGS!
+myConfig:Save()
+
+-- EXAMPLE LOADING CONFIG FOR SAVE CONFIGURATION BUTTON ON SETTINGS!
+myConfig:Load()
+
+-- Editing the minimized!
+Window:EditOpenButton({
+    Title = "Scripts Hub X | Official",
+    Icon = "monitor",
+    CornerRadius = UDim.new(0,16),
+    StrokeThickness = 2,
+    Color = ColorSequence.new( -- gradient
+        Color3.fromHex("FF0F7B"), 
+        Color3.fromHex("F89B29")
+    ),
+    OnlyMobile = false,
+    Enabled = true,
+    Draggable = true,
+})
+
+-- Example Creating Tabs
+local Tab = Window:Tab({
+    Title = "Tab Title",
+    Icon = "bird", -- optional
+    Locked = false,
+})
+
+-- Adding window pop up!
 WindUI:Popup({
-    Title = gradient("WindUI Demo", Color3.fromHex("#6A11CB"), Color3.fromHex("#2575FC")),
-    Icon = "sparkles",
-    Content = "loc:LIB_DESC",
+    Title = "Scripts Hub X | Official",
+    Icon = "info",
+    Content = "Join to our discord server to be always updated!",
     Buttons = {
         {
-            Title = "Get Started",
+            Title = "Cancel",
+            Callback = function() end,
+            Variant = "Tertiary",
+        },
+        {
+            Title = "Continue",
             Icon = "arrow-right",
+            Callback = function() end, -- edit this that will copy the discord https://discord.gg/bpsNUH5sVb!
             Variant = "Primary",
-            Callback = function() end
         }
     }
 })
 
-
-local Window = WindUI:CreateWindow({
-    Title = "loc:WINDUI_EXAMPLE",
-    Icon = "geist:window",
-    Author = "loc:WELCOME",
-    Folder = "WindUI_Example",
-    Size = UDim2.fromOffset(580, 490),
-    Theme = "Dark",
-    
-    HidePanelBackground = false,
-    NewElements = false,
-    -- Background = WindUI:Gradient({
-    --     ["0"] = { Color = Color3.fromHex("#0f0c29"), Transparency = 1 },
-    --     ["100"] = { Color = Color3.fromHex("#302b63"), Transparency = 0.9 },
-    -- }, {
-    --     Rotation = 45,
-    -- }),
-    --Background = "video:https://cdn.discordapp.com/attachments/1337368451865645096/1402703845657673878/VID_20250616_180732_158.webm?ex=68958a01&is=68943881&hm=164c5b04d1076308b38055075f7eb0653c1d73bec9bcee08e918a31321fe3058&",
-    User = {
-        Enabled = true,
-        Anonymous = true,
-        Callback = function()
-            WindUI:Notify({
-                Title = "User Profile",
-                Content = "User profile clicked!",
-                Duration = 3
-            })
-        end
-    },
-    Acrylic = false,
-    HideSearchBar = false,
-    SideBarWidth = 200,
-
-})
-
-Window.User:SetAnonymous(true)
---Window.User:Disable()
-
-Window:SetIconSize(48)
-
-Window:Tag({
-    Title = "v1.6.4",
-    Color = Color3.fromHex("#30ff6a")
-})
-Window:Tag({
-    Title = "Beta",
-    Color = Color3.fromHex("#315dff")
-})
-local TimeTag = Window:Tag({
-    Title = "--:--",
-    Radius = 0,
-    --Color = Color3.fromHex("#000000"),
-    Color = WindUI:Gradient({
-        ["0"]   = { Color = Color3.fromHex("#FF0F7B"), Transparency = 0 },
-        ["100"] = { Color = Color3.fromHex("#F89B29"), Transparency = 0 },
-    }, {
-        Rotation = 45,
-    }),
-})
-
-
-local hue = 0
-
--- Rainbow effect & Time 
-task.spawn(function()
-	while true do
-		local now = os.date("*t")
-		local hours = string.format("%02d", now.hour)
-		local minutes = string.format("%02d", now.min)
-		
-		hue = (hue + 0.01) % 1
-		local color = Color3.fromHSV(hue, 1, 1)
-		
-		TimeTag:SetTitle(hours .. ":" .. minutes)
-		--TimeTag:SetColor(color)
-
-		task.wait(0.06)
-	end
-end)
-
-
-Window:CreateTopbarButton("theme-switcher", "moon", function()
-    WindUI:SetTheme(WindUI:GetCurrentTheme() == "Dark" and "Light" or "Dark")
-    WindUI:Notify({
-        Title = "Theme Changed",
-        Content = "Current theme: "..WindUI:GetCurrentTheme(),
-        Duration = 2
-    })
-end, 990)
-
-local Sections = {
-    Main = Window:Section({ Title = "loc:FEATURES", Opened = true }),
-    Settings = Window:Section({ Title = "loc:SETTINGS", Opened = true }),
-    Utilities = Window:Section({ Title = "loc:UTILITIES", Opened = true })
-}
-
-local Tabs = {
-    Elements = Sections.Main:Tab({ Title = "loc:UI_ELEMENTS", Icon = "layout-grid", Desc = "UI Elements Example" }),
-    Appearance = Sections.Settings:Tab({ Title = "loc:APPEARANCE", Icon = "brush" }),
-    Config = Sections.Utilities:Tab({ Title = "loc:CONFIGURATION", Icon = "settings" }),
-    LockedTab1 = Window:Tab({ Title = "loc:LOCKED_TAB", Icon = "bird", Locked = true, }),
-    LockedTab2 = Window:Tab({ Title = "loc:LOCKED_TAB", Icon = "bird", Locked = true, }),
-    LockedTab3 = Window:Tab({ Title = "loc:LOCKED_TAB", Icon = "bird", Locked = true, }),
-    LockedTab4 = Window:Tab({ Title = "loc:LOCKED_TAB", Icon = "bird", Locked = true, }),
-    LockedTab5 = Window:Tab({ Title = "loc:LOCKED_TAB", Icon = "bird", Locked = true, }),
-}
-
--- Tabs.Elements:Paragraph({
---     Title = "Interactive Components",
---     Desc = "Explore WindUI's powerful elements",
---     Image = "component",
---     ImageSize = 20,
---     Color = Color3.fromHex("#30ff6a"),
--- })
-
-Tabs.Elements:Section({
-    Title = "Interactive Components",
-    TextSize = 20,
-})
-
-Tabs.Elements:Section({
-    Title = "Explore WindUI's powerful elements",
-    TextSize = 16,
-    TextTransparency = .25,
-})
-
-Tabs.Elements:Divider()
-
-local ElementsSection = Tabs.Elements:Section({
-    Title = "Section Example",
+-- Example Creating notification 
+WindUI:Notify({
+    Title = "Notification Title",
+    Content = "Notification Content example!",
+    Duration = 3, -- 3 seconds
     Icon = "bird",
 })
 
-local toggleState = false
-local featureToggle = ElementsSection:Toggle({
-    Title = "Enable Features",
-    --Desc = "Unlocks additional functionality",
-    Value = false,
-    Callback = function(state) 
-        toggleState = state
-        WindUI:Notify({
-            Title = "Features",
-            Content = state and "Features Enabled" or "Features Disabled",
-            Icon = state and "check" or "x",
-            Duration = 2
-        })
-    end
-})
-
-local intensitySlider = ElementsSection:Slider({
-    Title = "Effect Intensity",
-    Desc = "Adjust the effect strength",
-    Value = { Min = 0, Max = 100, Default = 50 },
-    Callback = function(value)
-        print("Intensity set to:", value)
-    end
-})
-
-local values = {}
-
-for i = 1, 40 do
-    table.insert(values, "Test " .. i)
-end
-
-ElementsSection:Space()
-
-
-local testDropdown = ElementsSection:Dropdown({
-    Title = "Dropdown test",
-    Values = values,
-    Value = "Test 1",
-    Callback = function(option)
-        -- WindUI:Notify({
-        --     Title = "Dropdown",
-        --     Content = "Selected: "..option,
-        --     Duration = 2
-        -- })
-    end
-})
-
-testDropdown:Refresh(values)
-
-ElementsSection:Divider()
-
-ElementsSection:Button({
-    Title = "Show Notification",
-    Icon = "bell",
+-- Example Creating buttons
+local Button = Tab:Button({
+    Title = "Button",
+    Desc = "Test Button",
+    Locked = false,
     Callback = function()
-        WindUI:Notify({
-            Title = "Hello WindUI!",
-            Content = "This is a sample notification",
-            Icon = "bell",
-            Duration = 3
-        })
+        -- ...
     end
 })
 
-ElementsSection:Colorpicker({
-    Title = "Select Color",
-    --Desc = "Select coloe",
-    Default = Color3.fromHex("#30ff6a"),
-    Transparency = 0, -- enable transparency
-    Callback = function(color, transparency)
-        WindUI:Notify({
-            Title = "Color Changed",
-            Content = "New color: "..color:ToHex().."\nTransparency: "..transparency,
-            Duration = 2
-        })
+-- EXAMPLE FOR THE SETTINFS COLOR PICKER!
+local Colorpicker = Tab:Colorpicker({
+    Title = "Colorpicker",
+    Desc = "Select Up Color That Fits Your Ui Style!",
+    Default = Color3.fromRGB(0, 255, 0),
+    Transparency = 0,
+    Locked = false,
+    Callback = function(color) 
+        print("Background color: " .. tostring(color))
     end
 })
 
-ElementsSection:Code({
-    Title = "my_code.luau",
-    Code = [[print("Hello world!")]],
-    OnCopy = function()
-        print("Copied to clipboard!")
-    end
-})
-
-Tabs.Appearance:Paragraph({
-    Title = "Customize Interface",
-    Desc = "Personalize your experience",
-    Image = "palette",
-    ImageSize = 20,
-    Color = "White"
-})
-
-local themes = {}
-for themeName, _ in pairs(WindUI:GetThemes()) do
-    table.insert(themes, themeName)
-end
-table.sort(themes)
-
-local canchangetheme = true
-local canchangedropdown = true
-
-
-
-local themeDropdown = Tabs.Appearance:Dropdown({
-    Title = "loc:THEME_SELECT",
-    Values = themes,
-    SearchBarEnabled = true,
-    MenuWidth = 280,
-    Value = "Dark",
-    Callback = function(theme)
-        canchangedropdown = false
-        WindUI:SetTheme(theme)
-        WindUI:Notify({
-            Title = "Theme Applied",
-            Content = theme,
-            Icon = "palette",
-            Duration = 2
-        })
-        canchangedropdown = true
-    end
-})
-
-local transparencySlider = Tabs.Appearance:Slider({
-    Title = "loc:TRANSPARENCY",
-    Value = { 
-        Min = 0,
-        Max = 1,
-        Default = 0.2,
+-- Example Creating Dropdown
+local Dropdown = Tab:Dropdown({
+    Title = "Advanced Dropdown",
+    Values = {
+        {
+            Title = "Category A",
+            Icon = "bird"
+        },
+        {
+            Title = "Category B",
+            Icon = "house"
+        },
+        {
+            Title = "Category C",
+            Icon = "droplet"
+        },
     },
-    Step = 0.1,
-    Callback = function(value)
-        WindUI.TransparencyValue = tonumber(value)
-        Window:ToggleTransparency(tonumber(value) > 0)
+    Value = "Category A",
+    Callback = function(option) 
+        print("Category selected: " .. option.Title .. " with icon " .. option.Icon) 
     end
 })
 
-local ThemeToggle = Tabs.Appearance:Toggle({
-    Title = "Enable Dark Mode",
-    Desc = "Use dark color scheme",
-    Value = true,
-    Callback = function(state)
-        if canchangetheme then
-            WindUI:SetTheme(state and "Dark" or "Light")
-        end
-        if canchangedropdown then
-            themeDropdown:Select(state and "Dark" or "Light")
-        end
+-- to refresh the dropdown
+Dropdown:Refresh({ "New Category A", "New Category B" })
+
+-- Example Creating Input
+local Input = Tab:Input({
+    Title = "Input",
+    Desc = "Input Description",
+    Value = "Default value",
+    InputIcon = "bird",
+    Type = "Input", -- or "Textarea"
+    Placeholder = "Enter text...",
+    Callback = function(input) 
+        print("text entered: " .. input)
     end
 })
 
-WindUI:OnThemeChange(function(theme)
-    canchangetheme = false
-    ThemeToggle:Set(theme == "Dark")
-    canchangetheme = true
-end)
-
-
-Tabs.Appearance:Button({
-    Title = "Create New Theme",
-    Icon = "plus",
-    Callback = function()
-        Window:Dialog({
-            Title = "Create Theme",
-            Content = "This feature is coming soon!",
-            Buttons = {
-                {
-                    Title = "OK",
-                    Variant = "Primary"
-                }
-            }
-        })
+-- Example Setting A Keybind
+local Keybind = Tab:Keybind({
+    Title = "Keybind",
+    Desc = "Keybind to open ui",
+    Value = "G",
+    Callback = function(v)
+        Window:SetToggleKey(Enum.KeyCode[v])
     end
 })
 
-Tabs.Config:Paragraph({
-    Title = "Configuration Manager",
-    Desc = "Save and load your settings",
-    Image = "save",
-    ImageSize = 20,
-    Color = "White"
-})
-
-local configName = "default"
-local configFile = nil
-local MyPlayerData = {
-    name = "Player1",
-    level = 1,
-    inventory = { "sword", "shield", "potion" }
-}
-
-Tabs.Config:Input({
-    Title = "Config Name",
-    Value = configName,
-    Callback = function(value)
-        configName = value or "default"
-    end
-})
-
-local ConfigManager = Window.ConfigManager
-if ConfigManager then
-    ConfigManager:Init(Window)
-    
-    Tabs.Config:Button({
-        Title = "loc:SAVE_CONFIG",
-        Icon = "save",
-        Variant = "Primary",
-        Callback = function()
-            configFile = ConfigManager:CreateConfig(configName)
-            
-            configFile:Register("featureToggle", featureToggle)
-            configFile:Register("intensitySlider", intensitySlider)
-            configFile:Register("testDropdown", testDropdown)
-            configFile:Register("themeDropdown", themeDropdown)
-            configFile:Register("transparencySlider", transparencySlider)
-            
-            configFile:Set("playerData", MyPlayerData)
-            configFile:Set("lastSave", os.date("%Y-%m-%d %H:%M:%S"))
-            
-            if configFile:Save() then
-                WindUI:Notify({ 
-                    Title = "loc:SAVE_CONFIG", 
-                    Content = "Saved as: "..configName,
-                    Icon = "check",
-                    Duration = 3
-                })
-            else
-                WindUI:Notify({ 
-                    Title = "Error", 
-                    Content = "Failed to save config",
-                    Icon = "x",
-                    Duration = 3
-                })
-            end
-        end
-    })
-
-    Tabs.Config:Button({
-        Title = "loc:LOAD_CONFIG",
-        Icon = "folder",
-        Callback = function()
-            configFile = ConfigManager:CreateConfig(configName)
-            local loadedData = configFile:Load()
-            
-            if loadedData then
-                if loadedData.playerData then
-                    MyPlayerData = loadedData.playerData
-                end
-                
-                local lastSave = loadedData.lastSave or "Unknown"
-                WindUI:Notify({ 
-                    Title = "loc:LOAD_CONFIG", 
-                    Content = "Loaded: "..configName.."\nLast save: "..lastSave,
-                    Icon = "refresh-cw",
-                    Duration = 5
-                })
-                
-                Tabs.Config:Paragraph({
-                    Title = "Player Data",
-                    Desc = string.format("Name: %s\nLevel: %d\nInventory: %s", 
-                        MyPlayerData.name, 
-                        MyPlayerData.level, 
-                        table.concat(MyPlayerData.inventory, ", "))
-                })
-            else
-                WindUI:Notify({ 
-                    Title = "Error", 
-                    Content = "Failed to load config",
-                    Icon = "x",
-                    Duration = 3
-                })
-            end
-        end
-    })
-else
-    Tabs.Config:Paragraph({
-        Title = "Config Manager Not Available",
-        Desc = "This feature requires ConfigManager",
-        Image = "alert-triangle",
-        ImageSize = 20,
-        Color = "White"
-    })
-end
-
-
-local footerSection = Window:Section({ Title = "WindUI " .. WindUI.Version })
-Tabs.Config:Paragraph({
-    Title = "Github Repository",
-    Desc = "github.com/Footagesus/WindUI",
-    Image = "github",
-    ImageSize = 20,
-    Color = "Grey",
+-- EXAMPLE CREATING CREDITS PARAGRAPH!
+local Paragraph = Tab:Paragraph({
+    Title = "Scripts Hub X | Official",
+    Desc = "Made by PickleTalk and Mhicel Join to our discord server to be always updated",
+    Color = "Red",
+    Image = "",
+    ImageSize = 30,
+    Thumbnail = "",
+    ThumbnailSize = 80,
+    Locked = false,
     Buttons = {
         {
-            Title = "Copy Link",
-            Icon = "copy",
-            Variant = "Tertiary",
-            Callback = function()
-                setclipboard("https://github.com/Footagesus/WindUI")
-                WindUI:Notify({
-                    Title = "Copied!",
-                    Content = "GitHub link copied to clipboard",
-                    Duration = 2
-                })
-            end
+            Icon = "bird",
+            Title = "Button",
+            Callback = function() print("1 Button") end,
         }
     }
 })
 
-Window:OnClose(function()
-    print("Window closed")
+-- AND ADD THUMBNAIL
+Paragraph:SetThumbnail("rbxassetid://86472170233220")
+
+-- AND AFTER THE PARAGRAPH ALWAYS ADD BUTTON THAT WILL MAKE THEM COPY THE DISCORD SERVER! https://discord.gg/bpsNUH5sVb
+
+-- Example Making Slider
+local Slider = Tab:Slider({
+    Title = "Slider",
     
-    if ConfigManager and configFile then
-        configFile:Set("playerData", MyPlayerData)
-        configFile:Set("lastSave", os.date("%Y-%m-%d %H:%M:%S"))
-        configFile:Save()
-        print("Config auto-saved on close")
-    end
-end)
-
-Window:OnDestroy(function()
-    print("Window destroyed")
-end)
-
-Window:OnOpen(function()
-    print("Window opened")
-end)
-
-
-
--- lock all elements
-Window:UnlockAll()
-
--- unlock all elements
---Window:UnlockAll()
-
--- unlock all elements in tab
-task.wait(0.05)
---  no working :( idk why 
--- Tabs.Elements:LockAll()
-
-if Window:GetUnlocked() and #Window:GetUnlocked() > 0 then
-    print("Locked Elements in Window: ")
-    for _, lockedelement in next, Window:GetUnlocked() do
-        local title = lockedelement.Title
-        if string.find(title, Localization.Prefix) then
-            local translations = Localization.Translations[WindUI.Creator.Language] or Localization.Translations[Localization.DefaultLanguage]
-            title = translations[ title:gsub("^" .. Localization.Prefix, "") ]
-        end
-        print("- " .. (title or "Unknown"))
-    end
+    -- To make float number supported, 
+    -- make the Step a float number.
+    -- example: Step = 0.1
+    Step = 1,
     
-end
+    Value = {
+        Min = 20,
+        Max = 120,
+        Default = 70,
+    },
+    Callback = function(value)
+        print(value)
+    end
+})
+
+-- Example Creating Toggle
+local Toggle = Tab:Toggle({
+    Title = "Toggle",
+    Desc = "Toggle Description",
+    Icon = "bird",
+    Type = "Checkbox",
+    Default = false,
+    Callback = function(state) 
+        print("Toggle Activated" .. tostring(state))
+    end
+})
+
+-- CLAUDE IF YOU STILL UNDERSTAND MY EXAMPLES FEEL FREE TO GO TO THE SITE https://footagesus.github.io/WindUI-Docs/docs/faq TO EXPLORE MORE
