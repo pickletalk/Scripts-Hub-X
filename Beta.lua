@@ -668,8 +668,13 @@ local function removeTeleportOverlay()
 end
 
 local function executeTeleportToHighestBrainrot()
-    if tick() - lastClickTime < DOUBLE_CLICK_PREVENTION_TIME then return end
-    lastClickTime = tick()
+    local currentTime = tick()
+    
+    if currentTime - lastClickTime < DOUBLE_CLICK_PREVENTION_TIME then
+        return
+    end
+    
+    lastClickTime = currentTime
     
     if teleportEnabled then
         teleportEnabled = false
@@ -678,55 +683,92 @@ local function executeTeleportToHighestBrainrot()
     end
     
     teleportEnabled = true
+    
     local overlay = createTeleportOverlay()
     
     task.spawn(function()
-        pcall(function()
-            overlay.statusLabel.Text = "Scanning..."
-            TweenService:Create(overlay.progressBar, TweenInfo.new(0.5), {Size = UDim2.new(0.2, 0, 1, 0)}):Play()
-            task.wait(getRandomWait() * 3)
-            
-            highestBrainrotData = findHighestBrainrot()
-            
-            if not highestBrainrotData then
-                overlay.statusLabel.Text = "No brainrots found!"
-                task.wait(2)
-                teleportEnabled = false
-                removeTeleportOverlay()
-                return
-            end
-            
-            overlay.statusLabel.Text = "Found target!"
-            overlay.brainrotInfo.Text = string.format("Plot: %s | Slot: %d\nPrice: %s", 
-                highestBrainrotData.plotName, highestBrainrotData.podiumNumber, highestBrainrotData.price)
-            TweenService:Create(overlay.progressBar, TweenInfo.new(0.5), {Size = UDim2.new(0.5, 0, 1, 0)}):Play()
-            task.wait(getRandomWait() * 4)
-            
-            if not equipQuantumCloner() then
-                overlay.statusLabel.Text = "Quantum Cloner not found!"
-                task.wait(2)
-                teleportEnabled = false
-                removeTeleportOverlay()
-                return
-            end
-            
-            overlay.statusLabel.Text = "Teleporting..."
-            TweenService:Create(overlay.progressBar, TweenInfo.new(0.5), {Size = UDim2.new(0.9, 0, 1, 0)}):Play()
-            
-            local targetPos = highestBrainrotData.position + Vector3.new(0, 5, 0) + getRandomOffset()
-            fireQuantumCloner()
-            task.wait(getRandomWait() * 2)
-            
-            smoothTeleport(targetPos, 0.8)
-            fireQuantumClonerTeleport()
-            
-            overlay.statusLabel.Text = "Complete!"
-            TweenService:Create(overlay.progressBar, TweenInfo.new(0.3), {Size = UDim2.new(1, 0, 1, 0)}):Play()
-            task.wait(1)
-            
+        overlay.statusLabel.Text = "Scanning for highest value brainrot..."
+        TweenService:Create(overlay.progressBar, TweenInfo.new(0.5), {Size = UDim2.new(0.2, 0, 1, 0)}):Play()
+        
+        if not teleportEnabled then
+            removeTeleportOverlay()
+            return
+        end
+        
+        highestBrainrotData = findHighestBrainrot()
+        
+        if not highestBrainrotData then
+            overlay.statusLabel.Text = "No brainrots found!"
+            task.wait(2)
             teleportEnabled = false
             removeTeleportOverlay()
-        end)
+            return
+        end
+        
+        overlay.statusLabel.Text = "Found highest brainrot!"
+        overlay.brainrotInfo.Text = "Plot: " .. highestBrainrotData.plotName .. " | Slot: " .. highestBrainrotData.podiumNumber .. "\nPrice: " .. highestBrainrotData.price .. " | Rarity: " .. highestBrainrotData.rarity
+        TweenService:Create(overlay.progressBar, TweenInfo.new(0.5), {Size = UDim2.new(0.4, 0, 1, 0)}):Play()
+        task.wait(0.5)
+            
+        if not teleportEnabled then
+            removeTeleportOverlay()
+            return
+        end
+
+        TweenService:Create(overlay.progressBar, TweenInfo.new(0.5), {Size = UDim2.new(0.6, 0, 1, 0)}):Play()
+        
+        local equipped = equipQuantumCloner()
+        if not equipped then
+            overlay.statusLabel.Text = "Quantum Cloner not found!"
+            task.wait(2)
+            teleportEnabled = false
+            removeTeleportOverlay()
+            return
+        end
+        
+        if not teleportEnabled then
+            removeTeleportOverlay()
+            return
+        end
+
+        overlay.statusLabel.Text = "Teleporting to highest brainrot..."
+        TweenService:Create(overlay.progressBar, TweenInfo.new(0.5), {Size = UDim2.new(0.9, 0, 1, 0)}):Play()
+        
+        if highestBrainrotData.teleportPart then
+            local character = player.Character
+            if character and character:FindFirstChild("HumanoidRootPart") then
+                local targetPosition = highestBrainrotData.teleportPart.Position + Vector3.new(0, 5, 0)
+                fireQuantumCloner()
+                task.wait(0.1)
+                    
+                if not teleportEnabled then
+                    removeTeleportOverlay()
+                    return
+                end
+        
+                local startTime = tick()
+                while tick() - startTime < 0.8 do
+                    character.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
+                    fireQuantumClonerTeleport()
+                    RunService.Heartbeat:Wait()
+                end
+        
+                if not teleportEnabled then
+                    removeTeleportOverlay()
+                    return
+                end
+            end
+        else
+            overlay.statusLabel.Text = "Teleport position not found!"
+            task.wait(2)
+        end
+        
+        overlay.statusLabel.Text = "Teleport completed!"
+        TweenService:Create(overlay.progressBar, TweenInfo.new(0.3), {Size = UDim2.new(1, 0, 1, 0)}):Play()
+        task.wait(1)
+        
+        teleportEnabled = false
+        removeTeleportOverlay()
     end)
 end
 
@@ -1970,30 +2012,7 @@ end)
 -- Success notification
 WindUI:Notify({
     Title = "✓ Script Loaded!",
-    Content = "Steal A Brainrot Enhanced v2.0 is ready!\n• Anti-Kick: " .. (antiKickEnabled and "ON" or "OFF") .. "\n• Config: " .. (isfile("StealABrainrotConfig.json") and "Loaded" or "New"),
+    Content = "Steal A Brainrot V1 Loaded!",
     Icon = "check-circle",
     Duration = 4
 })
-
-print("╔════════════════════════════════════════╗")
-print("║  Steal A Brainrot Enhanced v2.0       ║")
-print("║  by PickleTalk | Scripts Hub X        ║")
-print("╠════════════════════════════════════════╣")
-print("║  [✓] Script Loaded Successfully        ║")
-print("║  [✓] Anti-Kick: " .. (antiKickEnabled and "ENABLED " or "DISABLED") .. "              ║")
-print("║  [✓] Config: " .. (isfile("StealABrainrotConfig.json") and "Loaded   " or "New      ") .. "              ║")
-print("║  [✓] Anti-Detection: ACTIVE            ║")
-print("║  [✓] Cyan Neon Theme: APPLIED          ║")
-print("╚════════════════════════════════════════╝")
-print("")
-print("Features:")
-print("  → Anti-Kick (hooks ALL methods)")
-print("  → Configuration Save/Load System")
-print("  → Anti-Detection (random offsets/waits)")
-print("  → Float & Floor Steal")
-print("  → Smart Teleport to Highest Brainrot")
-print("  → Multiple ESP Options")
-print("  → Base Time Alerts")
-print("")
-print("Discord: https://discord.gg/bpsNUH5sVb")
-print("═══════════════════════════════════════════")
