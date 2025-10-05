@@ -1661,6 +1661,422 @@ local function removeJumpDelay()
     end)
 end
 
+-- UI Storage
+local floatUI = nil
+local floorStealUI = nil
+
+-- Function to create draggable Float UI
+local function createFloatUI()
+    if floatUI then
+        floatUI:Destroy()
+    end
+    
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "FloatUI"
+    screenGui.Parent = playerGui
+    screenGui.ResetOnSpawn = false
+    
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Name = "MainFrame"
+    mainFrame.Size = UDim2.new(0, 280, 0, 120)
+    mainFrame.Position = UDim2.new(0.5, -140, 0.3, -60)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Parent = screenGui
+    
+    local mainCorner = Instance.new("UICorner")
+    mainCorner.CornerRadius = UDim.new(0, 12)
+    mainCorner.Parent = mainFrame
+    
+    -- Title Bar
+    local titleBar = Instance.new("Frame")
+    titleBar.Name = "TitleBar"
+    titleBar.Size = UDim2.new(1, 0, 0, 40)
+    titleBar.Position = UDim2.new(0, 0, 0, 0)
+    titleBar.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+    titleBar.BorderSizePixel = 0
+    titleBar.Parent = mainFrame
+    
+    local titleCorner = Instance.new("UICorner")
+    titleCorner.CornerRadius = UDim.new(0, 12)
+    titleCorner.Parent = titleBar
+    
+    local titleFix = Instance.new("Frame")
+    titleFix.Size = UDim2.new(1, 0, 0, 12)
+    titleFix.Position = UDim2.new(0, 0, 1, -12)
+    titleFix.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+    titleFix.BorderSizePixel = 0
+    titleFix.Parent = titleBar
+    
+    local titleText = Instance.new("TextLabel")
+    titleText.Name = "TitleText"
+    titleText.Size = UDim2.new(1, -80, 1, 0)
+    titleText.Position = UDim2.new(0, 15, 0, 0)
+    titleText.BackgroundTransparency = 1
+    titleText.Text = "Float Settings"
+    titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    titleText.TextSize = 16
+    titleText.Font = Enum.Font.GothamBold
+    titleText.TextXAlignment = Enum.TextXAlignment.Left
+    titleText.Parent = titleBar
+    
+    local closeButton = Instance.new("TextButton")
+    closeButton.Name = "CloseButton"
+    closeButton.Size = UDim2.new(0, 30, 0, 30)
+    closeButton.Position = UDim2.new(1, -35, 0, 5)
+    closeButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+    closeButton.Text = "✕"
+    closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    closeButton.TextSize = 18
+    closeButton.Font = Enum.Font.GothamBold
+    closeButton.BorderSizePixel = 0
+    closeButton.Parent = titleBar
+    
+    local closeCorner = Instance.new("UICorner")
+    closeCorner.CornerRadius = UDim.new(0, 8)
+    closeCorner.Parent = closeButton
+    
+    -- Toggle Container
+    local toggleFrame = Instance.new("Frame")
+    toggleFrame.Size = UDim2.new(1, -20, 0, 50)
+    toggleFrame.Position = UDim2.new(0, 10, 0, 55)
+    toggleFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+    toggleFrame.BorderSizePixel = 0
+    toggleFrame.Parent = mainFrame
+    
+    local toggleCorner = Instance.new("UICorner")
+    toggleCorner.CornerRadius = UDim.new(0, 10)
+    toggleCorner.Parent = toggleFrame
+    
+    local toggleLabel = Instance.new("TextLabel")
+    toggleLabel.Size = UDim2.new(1, -70, 1, 0)
+    toggleLabel.Position = UDim2.new(0, 15, 0, 0)
+    toggleLabel.BackgroundTransparency = 1
+    toggleLabel.Text = "Enable Float"
+    toggleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    toggleLabel.TextSize = 14
+    toggleLabel.Font = Enum.Font.Gotham
+    toggleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    toggleLabel.Parent = toggleFrame
+    
+    local toggleButton = Instance.new("TextButton")
+    toggleButton.Name = "ToggleButton"
+    toggleButton.Size = UDim2.new(0, 50, 0, 30)
+    toggleButton.Position = UDim2.new(1, -60, 0.5, -15)
+    toggleButton.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+    toggleButton.Text = ""
+    toggleButton.BorderSizePixel = 0
+    toggleButton.Parent = toggleFrame
+    
+    local toggleButtonCorner = Instance.new("UICorner")
+    toggleButtonCorner.CornerRadius = UDim.new(1, 0)
+    toggleButtonCorner.Parent = toggleButton
+    
+    local toggleCircle = Instance.new("Frame")
+    toggleCircle.Name = "Circle"
+    toggleCircle.Size = UDim2.new(0, 22, 0, 22)
+    toggleCircle.Position = UDim2.new(0, 4, 0.5, -11)
+    toggleCircle.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+    toggleCircle.BorderSizePixel = 0
+    toggleCircle.Parent = toggleButton
+    
+    local circleCorner = Instance.new("UICorner")
+    circleCorner.CornerRadius = UDim.new(1, 0)
+    circleCorner.Parent = toggleCircle
+    
+    -- Toggle State
+    local isEnabled = platformEnabled
+    
+    local function updateToggleVisuals()
+        if isEnabled then
+            TweenService:Create(toggleButton, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(0, 200, 100)}):Play()
+            TweenService:Create(toggleCircle, TweenInfo.new(0.3), {Position = UDim2.new(1, -26, 0.5, -11)}):Play()
+        else
+            TweenService:Create(toggleButton, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(60, 60, 65)}):Play()
+            TweenService:Create(toggleCircle, TweenInfo.new(0.3), {Position = UDim2.new(0, 4, 0.5, -11)}):Play()
+        end
+    end
+    
+    updateToggleVisuals()
+    
+    toggleButton.MouseButton1Click:Connect(function()
+        isEnabled = not isEnabled
+        updateToggleVisuals()
+        
+        if isEnabled then
+            enablePlatform()
+            WindUI:Notify({
+                Title = "Float Enabled",
+                Content = "Floating platform activated!",
+                Icon = "check",
+                Duration = 2
+            })
+        else
+            disablePlatform()
+            WindUI:Notify({
+                Title = "Float Disabled",
+                Content = "Floating platform deactivated!",
+                Icon = "x",
+                Duration = 2
+            })
+        end
+    end)
+    
+    -- Close button functionality
+    closeButton.MouseButton1Click:Connect(function()
+        screenGui:Destroy()
+        floatUI = nil
+    end)
+    
+    closeButton.MouseEnter:Connect(function()
+        closeButton.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
+    end)
+    
+    closeButton.MouseLeave:Connect(function()
+        closeButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+    end)
+    
+    -- Dragging functionality
+    local dragging = false
+    local dragStart = nil
+    local startPos = nil
+    
+    local function updateDrag(input)
+        local delta = input.Position - dragStart
+        mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+    
+    titleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = mainFrame.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    
+    titleBar.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            if dragging then
+                updateDrag(input)
+            end
+        end
+    end)
+    
+    floatUI = screenGui
+end
+
+-- Function to create draggable Floor Steal UI
+local function createFloorStealUI()
+    if floorStealUI then
+        floorStealUI:Destroy()
+    end
+    
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "FloorStealUI"
+    screenGui.Parent = playerGui
+    screenGui.ResetOnSpawn = false
+    
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Name = "MainFrame"
+    mainFrame.Size = UDim2.new(0, 280, 0, 120)
+    mainFrame.Position = UDim2.new(0.5, -140, 0.4, -60)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Parent = screenGui
+    
+    local mainCorner = Instance.new("UICorner")
+    mainCorner.CornerRadius = UDim.new(0, 12)
+    mainCorner.Parent = mainFrame
+    
+    -- Title Bar
+    local titleBar = Instance.new("Frame")
+    titleBar.Name = "TitleBar"
+    titleBar.Size = UDim2.new(1, 0, 0, 40)
+    titleBar.Position = UDim2.new(0, 0, 0, 0)
+    titleBar.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+    titleBar.BorderSizePixel = 0
+    titleBar.Parent = mainFrame
+    
+    local titleCorner = Instance.new("UICorner")
+    titleCorner.CornerRadius = UDim.new(0, 12)
+    titleCorner.Parent = titleBar
+    
+    local titleFix = Instance.new("Frame")
+    titleFix.Size = UDim2.new(1, 0, 0, 12)
+    titleFix.Position = UDim2.new(0, 0, 1, -12)
+    titleFix.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+    titleFix.BorderSizePixel = 0
+    titleFix.Parent = titleBar
+    
+    local titleText = Instance.new("TextLabel")
+    titleText.Name = "TitleText"
+    titleText.Size = UDim2.new(1, -80, 1, 0)
+    titleText.Position = UDim2.new(0, 15, 0, 0)
+    titleText.BackgroundTransparency = 1
+    titleText.Text = "Floor Steal Settings"
+    titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    titleText.TextSize = 16
+    titleText.Font = Enum.Font.GothamBold
+    titleText.TextXAlignment = Enum.TextXAlignment.Left
+    titleText.Parent = titleBar
+    
+    local closeButton = Instance.new("TextButton")
+    closeButton.Name = "CloseButton"
+    closeButton.Size = UDim2.new(0, 30, 0, 30)
+    closeButton.Position = UDim2.new(1, -35, 0, 5)
+    closeButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+    closeButton.Text = "✕"
+    closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    closeButton.TextSize = 18
+    closeButton.Font = Enum.Font.GothamBold
+    closeButton.BorderSizePixel = 0
+    closeButton.Parent = titleBar
+    
+    local closeCorner = Instance.new("UICorner")
+    closeCorner.CornerRadius = UDim.new(0, 8)
+    closeCorner.Parent = closeButton
+    
+    -- Toggle Container
+    local toggleFrame = Instance.new("Frame")
+    toggleFrame.Size = UDim2.new(1, -20, 0, 50)
+    toggleFrame.Position = UDim2.new(0, 10, 0, 55)
+    toggleFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+    toggleFrame.BorderSizePixel = 0
+    toggleFrame.Parent = mainFrame
+    
+    local toggleCorner = Instance.new("UICorner")
+    toggleCorner.CornerRadius = UDim.new(0, 10)
+    toggleCorner.Parent = toggleFrame
+    
+    local toggleLabel = Instance.new("TextLabel")
+    toggleLabel.Size = UDim2.new(1, -70, 1, 0)
+    toggleLabel.Position = UDim2.new(0, 15, 0, 0)
+    toggleLabel.BackgroundTransparency = 1
+    toggleLabel.Text = "Enable Floor Steal"
+    toggleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    toggleLabel.TextSize = 14
+    toggleLabel.Font = Enum.Font.Gotham
+    toggleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    toggleLabel.Parent = toggleFrame
+    
+    local toggleButton = Instance.new("TextButton")
+    toggleButton.Name = "ToggleButton"
+    toggleButton.Size = UDim2.new(0, 50, 0, 30)
+    toggleButton.Position = UDim2.new(1, -60, 0.5, -15)
+    toggleButton.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+    toggleButton.Text = ""
+    toggleButton.BorderSizePixel = 0
+    toggleButton.Parent = toggleFrame
+    
+    local toggleButtonCorner = Instance.new("UICorner")
+    toggleButtonCorner.CornerRadius = UDim.new(1, 0)
+    toggleButtonCorner.Parent = toggleButton
+    
+    local toggleCircle = Instance.new("Frame")
+    toggleCircle.Name = "Circle"
+    toggleCircle.Size = UDim2.new(0, 22, 0, 22)
+    toggleCircle.Position = UDim2.new(0, 4, 0.5, -11)
+    toggleCircle.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+    toggleCircle.BorderSizePixel = 0
+    toggleCircle.Parent = toggleButton
+    
+    local circleCorner = Instance.new("UICorner")
+    circleCorner.CornerRadius = UDim.new(1, 0)
+    circleCorner.Parent = toggleCircle
+    
+    -- Toggle State
+    local isEnabled = wallTransparencyEnabled
+    
+    local function updateToggleVisuals()
+        if isEnabled then
+            TweenService:Create(toggleButton, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(255, 120, 0)}):Play()
+            TweenService:Create(toggleCircle, TweenInfo.new(0.3), {Position = UDim2.new(1, -26, 0.5, -11)}):Play()
+        else
+            TweenService:Create(toggleButton, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(60, 60, 65)}):Play()
+            TweenService:Create(toggleCircle, TweenInfo.new(0.3), {Position = UDim2.new(0, 4, 0.5, -11)}):Play()
+        end
+    end
+    
+    updateToggleVisuals()
+    
+    toggleButton.MouseButton1Click:Connect(function()
+        isEnabled = not isEnabled
+        updateToggleVisuals()
+        
+        if isEnabled then
+            enableWallTransparency()
+            WindUI:Notify({
+                Title = "Floor Steal Enabled",
+                Content = "Floor stealing mode activated!",
+                Icon = "check",
+                Duration = 2
+            })
+        else
+            disableWallTransparency()
+            WindUI:Notify({
+                Title = "Floor Steal Disabled",
+                Content = "Floor stealing mode deactivated!",
+                Icon = "x",
+                Duration = 2
+            })
+        end
+    end)
+    
+    -- Close button functionality
+    closeButton.MouseButton1Click:Connect(function()
+        screenGui:Destroy()
+        floorStealUI = nil
+    end)
+    
+    closeButton.MouseEnter:Connect(function()
+        closeButton.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
+    end)
+    
+    closeButton.MouseLeave:Connect(function()
+        closeButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+    end)
+    
+    -- Dragging functionality
+    local dragging = false
+    local dragStart = nil
+    local startPos = nil
+    
+    local function updateDrag(input)
+        local delta = input.Position - dragStart
+        mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+    
+    titleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = mainFrame.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    
+    titleBar.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            if dragging then
+                updateDrag(input)
+            end
+        end
+    end)
+    
+    floorStealUI = screenGui
+end
+
 -- Load WindUI Library
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 
@@ -1745,53 +2161,21 @@ local CreditsTab = CreditsSection:Tab({
 })
 
 -- MAIN TAB
-MainTab:Toggle({
+MainTab:Button({
     Title = "Float",
-    Desc = "Enable floating platform",
-    Value = false,
-    Callback = function(value)
-        if value then
-            enablePlatform()
-            WindUI:Notify({
-                Title = "Float Enabled",
-                Content = "Floating platform activated!",
-                Icon = "check",
-                Duration = 2
-            })
-        else
-            disablePlatform()
-            WindUI:Notify({
-                Title = "Float Disabled",
-                Content = "Floating platform deactivated!",
-                Icon = "x",
-                Duration = 2
-            })
-        end
+    Desc = "Open floating platform controls",
+    Icon = "layers",
+    Callback = function()
+        createFloatUI()
     end
 })
 
-MainTab:Toggle({
+MainTab:Button({
     Title = "Floor Steal",
-    Desc = "Enable floor transparency stealing",
-    Value = false,
-    Callback = function(value)
-        if value then
-            enableWallTransparency()
-            WindUI:Notify({
-                Title = "Floor Steal Enabled",
-                Content = "Floor stealing mode activated!",
-                Icon = "check",
-                Duration = 2
-            })
-        else
-            disableWallTransparency()
-            WindUI:Notify({
-                Title = "Floor Steal Disabled",
-                Content = "Floor stealing mode deactivated!",
-                Icon = "x",
-                Duration = 2
-            })
-        end
+    Desc = "Open floor stealing controls",
+    Icon = "box",
+    Callback = function()
+        createFloorStealUI()
     end
 })
 
