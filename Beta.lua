@@ -2149,13 +2149,3 @@ WindUI:Popup({
         }
     }
 })
-
--- ========================================
--- INITIALIZATION
--- ========================================
-WindUI:Notify({
-    Title = "Hub Loaded Successfully!",
-    Content = "Ultra-fast noclip + Fixed god mode + Anti-void active!",
-    Duration = 3,
-    Icon = "check",
-})
