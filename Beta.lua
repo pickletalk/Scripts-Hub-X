@@ -1222,7 +1222,7 @@ local CreditsParagraph = CreditsTab:Paragraph({
     Title = "Steal A Anime Hub | Official",
     Desc = "Made by PickleTalk and Mhicel. Join our discord server to be always updated with the latest features and scripts!",
     Color = "Gray",
-    Thumbnail = "rbxassetid://74135635728836",
+    Thumbnail = "rbxassestid://74135635728836",
     ThumbnailSize = 80,
     Buttons = {
         {
@@ -1364,7 +1364,3 @@ WindUI:Notify({
     Duration = 3,
     Icon = "check",
 })
-
-print("🗡️ Steal A Anime Hub Loaded Successfully! 🗡️")
-print("Made by PickleTalk and Mhicel")
-print("All features start DISABLED - enable what you need!")
