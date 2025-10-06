@@ -2146,7 +2146,7 @@ autoLockSystem()
 WindUI:Popup({
     Title = "Steal A Anime Hub v2.0",
     Icon = "sword",
-    Content = "FIXED: Speed-aware noclip + Simplified anti-void (auto-works)! Enable features from tabs.",
+    Content = "FIXED: Speed + Simplified anti-void! Enable features from tabs.",
     Buttons = {
         {
             Title = "Close",
