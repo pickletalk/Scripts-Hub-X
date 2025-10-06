@@ -193,7 +193,7 @@ WindUI:SetTheme("Anime Dark")
 -- CREATING WINDOW
 -- ========================================
 local Window = WindUI:CreateWindow({
-    Title = "Steal A Anime Hub | Official",
+    Title = "Steal A Anime | SHX Official",
     Icon = "sword",
     Author = "by PickleTalk and Mhicel",
     Folder = "StealAnimeHub",
@@ -209,7 +209,7 @@ local myConfig = ConfigManager:CreateConfig("StealAnimeConfig")
 
 -- Edit minimized button
 Window:EditOpenButton({
-    Title = "Steal A Anime Hub",
+    Title = "Steal A Anime",
     Icon = "sword",
     CornerRadius = UDim.new(0,16),
     StrokeThickness = 2,
@@ -1759,7 +1759,3 @@ WindUI:Notify({
     Duration = 3,
     Icon = "check",
 })
-
-print("Steal A Anime Hub Loaded Successfully!")
-print("Made by PickleTalk and Mhicel")
-print("Fixed: Low GFX Restore, Speed FPS Optimization, getcustomasset")
