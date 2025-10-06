@@ -1476,7 +1476,7 @@ local FOVSlider = PlayerTab:Slider({
 })
 
 local SpeedToggle = PlayerTab:Toggle({
-    Title = "Speed Changer (Optimized)",
+    Title = "Speed Changer (Beta)",
     Desc = "Custom walk speed with anti-detect spoofer - no FPS drop!",
     Default = false,
     Callback = function(state)
@@ -1571,7 +1571,7 @@ local FullBrightToggle = OptimizationsTab:Toggle({
 })
 
 local LowGFXToggle = OptimizationsTab:Toggle({
-    Title = "Low GFX Mode (Fixed)",
+    Title = "Low GFX Mode",
     Desc = "Convert all parts to SmoothPlastic - restores when disabled!",
     Default = false,
     Callback = function(state)
@@ -1755,7 +1755,7 @@ WindUI:Popup({
 -- ========================================
 WindUI:Notify({
     Title = "Hub Loaded!",
-    Content = "All fixes applied: Low GFX restore, Speed optimized, Custom image!",
+    Content = "All fixes applied: Low GFX restore, Speed optimized!",
     Duration = 3,
     Icon = "check",
 })
