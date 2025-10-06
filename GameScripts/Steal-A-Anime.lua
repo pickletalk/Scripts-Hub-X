@@ -695,7 +695,7 @@ local function autoLockSystem()
                         disableMovement()
                         
                         -- Save lock button position for anti-cheat system
-                        lockButtonCFrame = lockButton.CFrame + Vector3.new(0, 6, 0)
+                        lockButtonCFrame = lockButton.CFrame + Vector3.new(0, 4, 0)
                         savedLockButtonPosition = lockButtonCFrame.Position
 
                         -- Teleport to LockButton
