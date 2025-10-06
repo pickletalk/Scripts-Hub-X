@@ -1,5 +1,5 @@
 -- ========================================
--- STEAL A ANIME - WINDUI HUB (FIXED v2)
+-- STEAL A ANIME - WINDUI HUB (V1)
 -- Made by PickleTalk and Mhicel
 -- Fixed: Speed-Aware Anti-Cheat + Simplified Anti-Void
 -- ========================================
@@ -2146,7 +2146,7 @@ autoLockSystem()
 WindUI:Popup({
     Title = "Steal A Anime Hub v1.393.716",
     Icon = "sword",
-    Content = "FIXED: Speed-aware noclip + Simplified anti-void (auto-works)! Enable features from tabs.",
+    Content = "New Update: Bypassed Speed + Bypassed Noclip + Simplified anti-void! Enable features from tabs.",
     Buttons = {
         {
             Title = "Close",
