@@ -88,7 +88,7 @@ local Tab = Window:Tab({
 WindUI:Popup({
     Title = "Scripts Hub X | Official",
     Icon = "info",
-    Content = "Join to our discord server to be always updated!",
+    Content = "Hello! Thank You for using Scripts Hub X, Join our discord server yo je always updated",
     Buttons = {
         {
             Title = "Cancel",
@@ -98,7 +98,7 @@ WindUI:Popup({
         {
             Title = "Continue",
             Icon = "arrow-right",
-            Callback = function() end, -- edit this that will copy the discord https://discord.gg/bpsNUH5sVb!
+            Callback = function() end, 
             Variant = "Primary",
         }
     }
