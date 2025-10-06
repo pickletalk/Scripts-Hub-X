@@ -1053,7 +1053,7 @@ local function autoLockSystem()
                             
                             task.wait(0.8)
                             
-                            local lockButtonPos = lockButton.CFrame + Vector3.new(0, 4, 0)
+                            local lockButtonPos = lockButton.CFrame + Vector3.new(0, 4.5, 0)
                             NoclipData.SavedLockButtonPosition = lockButtonPos.Position
                             
                             ultraFastTeleport(lockButtonPos.Position)
@@ -1859,7 +1859,7 @@ local AutoLockToggle = MainTab:Toggle({
 
 local GodModeToggle = MainTab:Toggle({
     Title = "God Mode (FIXED)",
-    Desc = "Infinite health - frame-by-frame restoration!",
+    Desc = "Infinite health!",
     Default = false,
     Callback = function(state)
         toggleGodMode(state)
@@ -1867,8 +1867,8 @@ local GodModeToggle = MainTab:Toggle({
 })
 
 local AntiVoidToggle = MainTab:Toggle({
-    Title = "Anti-Void (SIMPLIFIED)",
-    Desc = "Auto-prevents falling below Y=-50 | No manual setup needed!",
+    Title = "Anti-Void",
+    Desc = "Auto-prevents falling to the void!",
     Default = false,
     Callback = function(state)
         toggleAntiVoid(state)
@@ -1907,8 +1907,8 @@ local FOVSlider = PlayerTab:Slider({
 })
 
 local SpeedToggle = PlayerTab:Toggle({
-    Title = "Speed Changer (FIXED)",
-    Desc = "Works with noclip! Speed-aware anti-cheat detection.",
+    Title = "Speed Changer (TURN OFF IF NOCLIP IS ON)",
+    Desc = "Fully bypassed anti cheat for the speed changer!",
     Default = false,
     Callback = function(state)
         toggleSpeed(state)
@@ -1920,7 +1920,7 @@ local SpeedSlider = PlayerTab:Slider({
     Step = 1,
     Value = {
         Min = 16,
-        Max = 200,
+        Max = 100,
         Default = 16,
     },
     Callback = function(value)
@@ -1929,8 +1929,8 @@ local SpeedSlider = PlayerTab:Slider({
 })
 
 local NoclipToggle = PlayerTab:Toggle({
-    Title = "Noclip (SPEED-AWARE)",
-    Desc = "Smart anti-cheat that adapts to your speed!",
+    Title = "Noclip (TURN OFF IF YOUR USING SPEED)",
+    Desc = "Fully bypassed anti cheat for noclip!",
     Default = false,
     Callback = function(state)
         toggleNoclip(state)
@@ -1959,7 +1959,7 @@ myConfig:Register("AntiRagdoll", AntiRagdollToggle)
 
 local PlayerESPToggle = VisualTab:Toggle({
     Title = "Player ESP",
-    Desc = "Show clean outline and small name above all players",
+    Desc = "Show clean outline and small name above all players!",
     Default = false,
     Callback = function(state)
         togglePlayerESP(state)
@@ -1968,7 +1968,7 @@ local PlayerESPToggle = VisualTab:Toggle({
 
 local BaseTimeESPToggle = VisualTab:Toggle({
     Title = "Base Time ESP",
-    Desc = "Show countdown timers on ALL bases (1-8)",
+    Desc = "Show countdown timers on ALL bases!",
     Default = false,
     Callback = function(state)
         toggleBaseTimeESP(state)
@@ -2003,7 +2003,7 @@ local FullBrightToggle = OptimizationsTab:Toggle({
 
 local LowGFXToggle = OptimizationsTab:Toggle({
     Title = "Low GFX Mode (Fixed)",
-    Desc = "Saves original GFX and restores when disabled!",
+    Desc = "Make your GFX low for more fps!",
     Default = false,
     Callback = function(state)
         toggleLowGFX(state)
@@ -2038,7 +2038,7 @@ local CreditsParagraph = CreditsTab:Paragraph({
     Desc = "Made by PickleTalk and Mhicel. Join our discord server to be always updated with the latest features and scripts!",
     Color = "Red",
     Thumbnail = "rbxassetid://74135635728836",
-    ThumbnailSize = 80,
+    ThumbnailSize = 140,
     Buttons = {
         {
             Icon = "users",
@@ -2144,7 +2144,7 @@ autoLockSystem()
 -- WELCOME POPUP
 -- ========================================
 WindUI:Popup({
-    Title = "Steal A Anime Hub v2.0",
+    Title = "Steal A Anime Hub v1.393.716",
     Icon = "sword",
     Content = "FIXED: Speed-aware noclip + Simplified anti-void (auto-works)! Enable features from tabs.",
     Buttons = {
