@@ -1221,8 +1221,8 @@ myConfig:Register("FullBright", FullBrightToggle)
 local CreditsParagraph = CreditsTab:Paragraph({
     Title = "Steal A Anime Hub | Official",
     Desc = "Made by PickleTalk and Mhicel. Join our discord server to be always updated with the latest features and scripts!",
-    Color = "Red",
-    Thumbnail = "rbxassetid://86472170233220",
+    Color = "Gray",
+    Thumbnail = "rbxassetid://74135635728836",
     ThumbnailSize = 80,
     Buttons = {
         {
