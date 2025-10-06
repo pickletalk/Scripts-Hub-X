@@ -2078,7 +2078,7 @@ autoLockSystem()
 -- WELCOME POPUP
 -- ========================================
 WindUI:Popup({
-    Title = "Steal A Anime Hub v3.0",
+    Title = "Steal A Anime Hub v1.353.492",
     Icon = "sword",
     Content = "FIXED: Velocity-based teleport detection! Instant recovery with zero delay.",
     Buttons = {
