@@ -209,7 +209,7 @@ local myConfig = ConfigManager:CreateConfig("StealAnimeConfig")
 
 -- Edit minimized button
 Window:EditOpenButton({
-    Title = "Steal A Anime Hub",
+    Title = "Steal A Anime",
     Icon = "sword",
     CornerRadius = UDim.new(0,16),
     StrokeThickness = 2,
@@ -1526,7 +1526,7 @@ local CreditsParagraph = CreditsTab:Paragraph({
     Title = "Steal A Anime Hub | Official",
     Desc = "Made by PickleTalk and Mhicel. Join our discord server to be always updated with the latest features and scripts!",
     Color = "Red",
-    Thumbnail = "rbxassetid://86472170233220",
+    Thumbnail = "rbxassestid://86472170233220",
     ThumbnailSize = 80,
     Buttons = {
         {
@@ -1668,7 +1668,3 @@ WindUI:Notify({
     Duration = 3,
     Icon = "check",
 })
-
-print("🗡️ Steal A Anime Hub Loaded Successfully! 🗡️")
-print("Made by PickleTalk and Mhicel")
-print("✅ Fixed: Steal Helper UI, Speed Spoofer, Credits Thumbnail, Low GFX")
