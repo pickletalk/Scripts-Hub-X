@@ -1040,16 +1040,7 @@ WindUI:Popup({
 -- ========================================
 WindUI:Notify({
     Title = "Hub Loaded!",
-    Content = "Steal A Anime Hub has been successfully loaded!",
+    Content = "Steal A Anime Script has been successfully loaded!",
     Duration = 3,
     Icon = "check",
 })
-
--- Initialize default enabled features from original script
-toggleAutoLock(true)
-toggleAntiRagdoll(true)
-toggleAntiKick(true)
-
-print("🗡️ Steal A Anime Hub Loaded Successfully! 🗡️")
-print("Made by PickleTalk and Mhicel")
-print("Features: God Mode, Auto Lock, Anti Kick, ESP, and more!")
