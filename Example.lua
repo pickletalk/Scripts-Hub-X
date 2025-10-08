@@ -210,7 +210,7 @@ local ToggleElement = Tabs.ConfigTab:Toggle({
 })
 
 -- register
---                 | Element name (no spaces)    | Element          |
+--                 | Element name (no spaces)    | Element          |!
 myConfig:Register( "toggleNameExample",          ToggleElement      )
 
 -- EXAMPLE SAVING CONFIG FOR SAVE CONFIGURATION BUTTON ON SETTINGS!
@@ -221,8 +221,8 @@ myConfig:Load()
 
 -- Editing the minimized!
 Window:EditOpenButton({
-    Title = "Scripts Hub X | Official",
-    Icon = "monitor",
+    Title = "Scripts Hub X | Official", -- Must be always this title!
+    Icon = "monitor", -- must be this icon always!
     CornerRadius = UDim.new(0,16),
     StrokeThickness = 2,
     Color = ColorSequence.new( -- gradient
@@ -241,7 +241,7 @@ local Tab = Window:Tab({
     Locked = false,
 })
 
--- Adding window pop up!
+-- Adding window pop up! DON'T CHANGE ANYTHING JUST ALWAYS USE THIS POP UP!
 WindUI:Popup({
     Title = "Scripts Hub X | Official",
     Icon = "info",
@@ -397,7 +397,7 @@ local Toggle = Tab:Toggle({
 
 
 -- ========================================
--- CREDITS TAB ELEMENTS
+-- CREDITS TAB ELEMENTS ALWAYS!!!!
 -- ========================================
 
 local CreditsParagraph = CreditsTab:Paragraph({
@@ -424,7 +424,7 @@ local CreditsParagraph = CreditsTab:Paragraph({
 })
 
 -- ========================================
--- SETTINGS TAB ELEMENTS
+-- SETTINGS TAB ELEMENTS ALWAYSSSS!!!
 -- ========================================
 
 local SaveConfigButton = SettingsTab:Button({
@@ -499,7 +499,7 @@ myConfig:Register("ThemeColor", ThemeColorPicker)
 WindUI:Popup({
     Title = "Steal A Anime Hub v1.4",
     Icon = "sword",
-    Content = "New Update: (the new updates!)",
+    Content = "New Update: (the new updates!)", -- USE SIMPLE WORDS LIKE ADDED NOCLIP, BYPASS NOCLIP, ETC.!
     Buttons = {
         {
             Title = "Close",
