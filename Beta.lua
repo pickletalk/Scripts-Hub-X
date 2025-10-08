@@ -1,7 +1,7 @@
 --  =============================================================================================================================
--- || STEAL A CLOWN - SCRIPTS HUB X | OFFICIAL                                                                              ||
--- || Created by PickleTalk and Mhicel                                                                                      ||
--- || Discord: https://discord.gg/bpsNUH5sVb                                                                                ||
+-- || STEAL A CLOWN - SCRIPTS HUB X | OFFICIAL                                                                             ||
+-- || Created by PickleTalk                                                                                     ||
+-- || Discord: https://discord.gg/bpsNUH5sVb                                                                               ||
 --  =============================================================================================================================
 
 -- Load The Library
@@ -1405,7 +1405,7 @@ local InfJumpToggle = PlayerTab:Toggle({
 })
 
 local SpeedToggle = PlayerTab:Toggle({
-    Title = "Speed Boost",
+    Title = "Speed",
     Desc = "Increase your walk speed",
     Icon = "gauge",
     Type = "Checkbox",
@@ -1431,8 +1431,12 @@ local SpeedSlider = PlayerTab:Slider({
     end
 })
 
-local BaseTimerUIToggle = PlayerTab:Toggle({
-    Title = "Base Timer Display",
+-- ========================================
+-- VISUAL TAB ELEMENTS
+-- ========================================
+
+local BaseTimerUIToggle = VisualTab:Toggle({
+    Title = "Base Remaining Time Esp",
     Desc = "Shows your base remaining time on screen",
     Icon = "timer",
     Type = "Checkbox",
@@ -1441,10 +1445,6 @@ local BaseTimerUIToggle = PlayerTab:Toggle({
         toggleBaseTimerUI(state)
     end
 })
-
--- ========================================
--- VISUAL TAB ELEMENTS
--- ========================================
 
 local PlayerESPToggle = VisualTab:Toggle({
     Title = "Player ESP",
@@ -1511,7 +1511,7 @@ local JobIdInput = ServerInfoTab:Input({
 })
 
 local PlayerCountParagraph = ServerInfoTab:Paragraph({
-    Title = "Players in Server",
+    Title = "Players",
     Desc = tostring(#Players:GetPlayers()) .. " players currently online",
     Color = "Green",
 })
@@ -1820,16 +1820,6 @@ WindUI:Popup({
             Variant = "Primary",
         }
     }
-})
-
--- ========================================
--- INITIALIZATION NOTIFICATION
--- ========================================
-WindUI:Notify({
-    Title = "Scripts Hub X Loaded!",
-    Content = "Steal A Clown script loaded successfully! Join our Discord for updates!",
-    Duration = 5,
-    Icon = "check-circle",
 })
 
 -- Initialize player plot detection
