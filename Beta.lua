@@ -1,6 +1,6 @@
 -- ============================================================================
 -- || Scripts Hub X - Steal A Clown Edition                                  ||
--- || Made by PickleTalk and Mhicel                                          ||
+-- || Made by PickleTalk                                                     ||
 -- || Discord: https://discord.gg/bpsNUH5sVb                                 ||
 -- ============================================================================
 
@@ -1668,7 +1668,3 @@ else
         Icon = "alert-triangle",
     })
 end
-
-print("Scripts Hub X - Steal A Clown loaded successfully!")
-print("Made by PickleTalk and Mhicel")
-print("Discord: https://discord.gg/bpsNUH5sVb")
