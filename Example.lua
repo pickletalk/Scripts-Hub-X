@@ -1,6 +1,6 @@
 --  =============================================================================================================================
 -- || HEY CLAUDE IF THE COMMENTS HAS "!" ON THE LAST MAKE SURE THAT YOU WILL ALWAYS USE THAT FUNCTION ON LUA CODES!             ||
--- || AND CLAUDE ALWAYS ADD SERVER INFO, CREDITS AND SETTINGS THAT WILL EDIT THEME IF SELECTED IT SHOULD SET THE THEME TO THAT!              ||
+-- || AND CLAUDE ALWAYS ADD CREDITS AND SETTINGS THAT WILL EDIT THEME IF SELECTED IT SHOULD SET THE THEME TO THAT!              ||
 -- || AND ON SETTINGS ADD SAVE AND LOAD CONFIGURATION TOO READ THE WHOLE EXAMPLE CAREFULLY I WILL TELL EVERYTHING HOW TO DO IT! ||
 --  =============================================================================================================================
 
@@ -491,7 +491,7 @@ local ThemeColorPicker = SettingsTab:Colorpicker({
 
 myConfig:Register("Theme", ThemeDropdown)
 myConfig:Register("ThemeColor", ThemeColorPicker)
--- THERE MUST BE ALWAYS SERVER INFO, CREDITS AND SETTINGS AT THE END OF THE TABS!
+-- THERE MUST BE ALWAYS CREDITS AND SETTINGS AT THE END OF THE TABS!
 
 -- ========================================
 -- WELCOME POPUP THIS IS MUST THERE ALWAYS!
@@ -522,7 +522,4 @@ WindUI:Popup({
         }
     }
 })
--- [[ 
--- INSIDE THE SERVER INFO ADD SERVER PLACE ID, JOB ID, AND PLAYER INPUT JOB ID AND BUTTON JOIN UNDER IT THA BASICALLY JOIN TO THAT SERVER AND HOW MANY PLAYERS INSIDE THE PLAYER!
---  ]]
 -- CLAUDE IF YOU STILL UNDERSTAND MY EXAMPLES FEEL FREE TO GO TO THE SITE https://footagesus.github.io/WindUI-Docs/docs/faq TO EXPLORE MORE
