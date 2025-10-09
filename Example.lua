@@ -1,11 +1,12 @@
---  =============================================================================================================================
--- || HEY CLAUDE IF THE COMMENTS HAS "!" ON THE LAST MAKE SURE THAT YOU WILL ALWAYS USE THAT FUNCTION ON LUA CODES!             ||
--- || AND CLAUDE ALWAYS ADD CREDITS AND SETTINGS THAT WILL EDIT THEME IF SELECTED IT SHOULD SET THE THEME TO THAT!              ||
--- || AND ON SETTINGS ADD SAVE AND LOAD CONFIGURATION TOO READ THE WHOLE EXAMPLE CAREFULLY I WILL TELL EVERYTHING HOW TO DO IT! ||
--- || AND DO NOT ADD PRINTS ON INITIALIZATION ONLY ON ERRORS/DEBUGS!                                                            ||
--- || AND DON'T ADD WELCOME NOTIFICATION SINCE WE ALREADY HAVE WINDOW POPUP NOTIFICATION FOR UPDATES AND DISCORD JOIN!          ||
--- || AND DON'T ADD COMMENTS TELLS HOW DOES THAT PART WORKS, ONLY COMMENT WHAT IS THIS LINE OF CODE NOT HOW THAT LINE WORKSN!   ||
---  =============================================================================================================================
+--  =========================================================================================================================================================
+-- || HEY CLAUDE IF THE COMMENTS HAS "!" ON THE LAST MAKE SURE THAT YOU WILL ALWAYS USE THAT FUNCTION ON LUA CODES!                                         ||
+-- || AND CLAUDE ALWAYS ADD CREDITS AND SETTINGS THAT WILL EDIT THEME IF SELECTED IT SHOULD SET THE THEME TO THAT!                                          ||
+-- || AND ON SETTINGS ADD SAVE AND LOAD CONFIGURATION TOO READ THE WHOLE EXAMPLE CAREFULLY I WILL TELL EVERYTHING HOW TO DO IT!                             ||
+-- || AND DO NOT ADD PRINTS ON INITIALIZATION ONLY ON ERRORS/DEBUGS!                                                                                        ||
+-- || AND DON'T ADD WELCOME NOTIFICATION SINCE WE ALREADY HAVE WINDOW POPUP NOTIFICATION FOR UPDATES AND DISCORD JOIN!                                      ||
+-- || AND DON'T ADD COMMENTS TELLS HOW DOES THAT PART WORKS, ONLY COMMENT WHAT IS THIS LINE OF CODE NOT HOW THAT LINE WORKSN!                               ||
+-- || AND ON TOGGLE BUTTON, OR BUTTON NOTIFICATION DON'T NOTIFY HOW IT WORKS JUST TELL SIMPLE THING LIKE "ANTI VOID IS ON, YOU NOW CANNOT FALL TO THE VOID" ||
+--  =========================================================================================================================================================
 
 -- Load The Library
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
