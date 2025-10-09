@@ -1,6 +1,6 @@
 -- ============================================================================
--- || Scripts Hub X - Steal A Clown Edition                                  ||
--- || Made by PickleTalk and Mhicel                                          ||
+-- || Scripts Hub X - Steal A Clown                                          ||
+-- || Made by PickleTalk.                                                    ||
 -- || Discord: https://discord.gg/bpsNUH5sVb                                 ||
 -- ============================================================================
 
