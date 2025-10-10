@@ -2202,7 +2202,6 @@ local ServerInfoParagraph = MiscTab:Paragraph({
     Title = "Server Information",
     Desc = string.format(
         "Game: Steal A Clown\nPlace ID: %d\nJob ID: %s\nPlayers: %d/%d",
-        gameName,
         game.PlaceId,
         game.JobId,
         currentPlayers,
@@ -2218,7 +2217,6 @@ task.spawn(function()
         ServerInfoParagraph:Set({
             Desc = string.format(
                 "Game: Steal A Clown\nPlace ID: %d\nJob ID: %s\nPlayers: %d/%d",
-                gameName,
                 game.PlaceId,
                 game.JobId,
                 currentPlayers,
