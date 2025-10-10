@@ -2409,7 +2409,7 @@ local SettingsTab = Window:Tab({
 -- MAIN TAB ELEMENTS
 -- ========================================
 local StealHighestButton = MainTab:Button({
-    Title = "Steal Highest Clown",
+    Title = "Steal Highest Clown (NEW)",
     Desc = "Steal the highest generation clown once",
     Callback = function()
         stealHighestClown()
@@ -2417,7 +2417,7 @@ local StealHighestButton = MainTab:Button({
 })
 
 local AutoStealToggle = MainTab:Toggle({
-    Title = "Auto Steal (NEW)",
+    Title = "Auto Steal",
     Desc = "Automatically steal clowns from highest to lowest price",
     Default = false,
     Callback = function(state)
@@ -2426,7 +2426,7 @@ local AutoStealToggle = MainTab:Toggle({
 })
 
 local InstantStealToggle = MainTab:Toggle({
-    Title = "Instant Steal (NEW)",
+    Title = "Instant Steal",
     Desc = "Auto collect when you steal a clown",
     Default = false,
     Callback = function(state)
@@ -2444,7 +2444,7 @@ local StealUIToggle = MainTab:Toggle({
 })
 
 local AntiStealToggle = MainTab:Toggle({
-    Title = "Anti Steal",
+    Title = "Anti Steal (NEW)",
     Desc = "Automatically attack players stealing from your base",
     Default = false,
     Callback = function(state)
@@ -2781,7 +2781,7 @@ myConfig:Register("AntiKick", AntiKickToggle)
 -- WELCOME POPUP
 -- ========================================
 WindUI:Popup({
-    Title = "Steal A Clown V1.5.342",
+    Title = "Steal A Clown V1.5.529",
     Icon = "sword",
     Content = "New Update: Improved Anti Ragdoll, Fixed Auto Lock, And fixed other bugs!",
     Buttons = {
