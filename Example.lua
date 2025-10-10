@@ -245,7 +245,7 @@ local Tab = Window:Tab({
     Locked = false,
 })
 
--- Adding window pop up! DON'T CHANGE ANYTHING JUST ALWAYS USE THIS POP UP!
+-- Example Adding window pop up
 WindUI:Popup({
     Title = "Scripts Hub X | Official",
     Icon = "info",
@@ -344,7 +344,7 @@ local Keybind = Tab:Keybind({
     end
 })
 
--- EXAMPLE CREATING CREDITS PARAGRAPH!
+-- EXAMPLE CREATING CREDITS PARAGRAPH
 local Paragraph = Tab:Paragraph({
     Title = "Scripts Hub X | Official",
     Desc = "Made by PickleTalk and Mhicel Join to our discord server to be always updated",
@@ -403,9 +403,8 @@ local Toggle = Tab:Toggle({
 -- ========================================
 -- CREDITS TAB ELEMENTS ALWAYS!!!!
 -- ========================================
-
 local CreditsParagraph = CreditsTab:Paragraph({
-    Title = "Steal A Anime Hub | Official",
+    Title = "Scripts Hub X | Official | Official",
     Desc = "Made by PickleTalk and Mhicel. Join our discord server to be always updated with the latest features and scripts!",
     Color = "Red",
     Thumbnail = "rbxassetid://74135635728836",
@@ -501,7 +500,7 @@ myConfig:Register("ThemeColor", ThemeColorPicker)
 -- WELCOME POPUP THIS IS MUST THERE ALWAYS!
 -- ========================================
 WindUI:Popup({
-    Title = "Steal A Anime Hub v1.4",
+    Title = "(game name) (script version)",
     Icon = "sword",
     Content = "New Update: (the new updates!)", -- USE SIMPLE WORDS LIKE ADDED NOCLIP, BYPASS NOCLIP, ETC.!
     Buttons = {
