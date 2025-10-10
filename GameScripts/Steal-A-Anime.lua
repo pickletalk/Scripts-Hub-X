@@ -2010,7 +2010,7 @@ myConfig:Register("LowGFX", LowGFXToggle)
 
 local CreditsParagraph = CreditsTab:Paragraph({
     Title = "Steal A Anime Hub | Official",
-    Desc = "Made by PickleTalk and Mhicel. Join our discord server to be always updated with the latest features and scripts!",
+    Desc = "Made by PickleTalk. Join our discord server to be always updated with the latest features and scripts!",
     Color = "Red",
     Thumbnail = "rbxassetid://74135635728836",
     ThumbnailSize = 140,
