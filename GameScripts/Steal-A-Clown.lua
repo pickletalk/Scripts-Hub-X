@@ -221,6 +221,7 @@ Window:EditOpenButton({
 -- GLOBAL STATES
 -- ========================================
 local States = {
+    InstantSteal = false,
     StealUI = false,
     AutoCollect = false,
     FastInteraction = false,
@@ -489,6 +490,62 @@ local function toggleStealUI(state)
             StealUIScreen:Destroy()
             StealUIScreen = nil
         end
+    end
+end
+
+-- ========================================
+-- INSTANT STEAL
+-- ========================================
+local function toggleInstantSteal(state)
+    States.InstantSteal = state
+    
+    if state then
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        local remoteEvent = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"):WaitForChild("RE/39c0ed9f-fd96-4f2c-89c8-b7a9b2d44d2e")
+        
+        Connections.InstantSteal = remoteEvent.OnClientEvent:Connect(function(...)
+            if not States.InstantSteal then return end
+            
+            task.spawn(function()
+                local character = LocalPlayer.Character
+                local root = character and character:FindFirstChild("HumanoidRootPart")
+                
+                if not root then return end
+                
+                local plotName = getPlayerPlot()
+                if not plotName then return end
+                
+                local plots = Workspace:FindFirstChild("Plots")
+                local plot = plots and plots:FindFirstChild(plotName)
+                local deliveryHitbox = plot and plot:FindFirstChild("DeliveryHitbox")
+                
+                if deliveryHitbox then
+                    local savedPosition = root.CFrame
+                    root.CFrame = deliveryHitbox.CFrame
+                    task.wait(0.1)
+                    root.CFrame = savedPosition
+                end
+            end)
+        end)
+        
+        WindUI:Notify({
+            Title = "Instant Steal",
+            Content = "Instant steal monitoring enabled!",
+            Duration = 3,
+            Icon = "zap",
+        })
+    else
+        if Connections.InstantSteal then
+            Connections.InstantSteal:Disconnect()
+            Connections.InstantSteal = nil
+        end
+        
+        WindUI:Notify({
+            Title = "Instant Steal",
+            Content = "Instant steal monitoring disabled!",
+            Duration = 3,
+            Icon = "x",
+        })
     end
 end
 
@@ -1610,6 +1667,15 @@ local SettingsTab = Window:Tab({
 -- ========================================
 -- MAIN TAB ELEMENTS
 -- ========================================
+local InstantStealToggle = MainTab:Toggle({
+    Title = "Instant Steal",
+    Desc = "Auto collect when you steal a clown",
+    Default = false,
+    Callback = function(state)
+        toggleInstantSteal(state)
+    end
+})
+
 local StealUIToggle = MainTab:Toggle({
     Title = "Steal UI",
     Desc = "Show/Hide the steal button UI",
@@ -1732,6 +1798,7 @@ local SpeedSlider = PlayerTab:Slider({
     end
 })
 
+myConfig:Register("InstantSteal", InstantStealToggle)
 myConfig:Register("NoClip", NoClipToggle)
 myConfig:Register("AntiRagdoll", AntiRagdollToggle)
 myConfig:Register("InfiniteJump", InfiniteJumpToggle)
