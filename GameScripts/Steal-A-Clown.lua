@@ -743,7 +743,7 @@ local function toggleAntiSteal(state)
                                                                         if not theirRoot then break end
                                                                         
                                                                         -- Super fast teleport to player
-                                                                        hrp.CFrame = theirRoot.CFrame * CFrame.new(0, 0, 3)
+                                                                        hrp.CFrame = theirRoot.CFrame * CFrame.new(0, 0, 0)
                                                                         
                                                                         -- Equip Tung Bat
                                                                         local bat = LocalPlayer.Backpack:FindFirstChild("Tung Bat")
