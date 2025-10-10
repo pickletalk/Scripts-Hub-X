@@ -409,24 +409,6 @@ local function hopToRandomServer()
     end)
 end
 
-local function getGameName()
-    local success, result = pcall(function()
-        local url = string.format("https://games.roblox.com/v1/games?universeIds=%d", game.PlaceId)
-        local response = game:HttpGet(url)
-        local data = HttpService:JSONDecode(response)
-        if data and data.data and data.data[1] then
-            return data.data[1].name
-        end
-        return "Unknown Game"
-    end)
-    
-    if success then
-        return result
-    else
-        return "Unknown Game"
-    end
-end
-
 -- ========================================
 -- STEAL UI (REDESIGNED LIKE STEAL-A-ANIME)
 -- ========================================
@@ -672,7 +654,7 @@ local function toggleInstantSteal(state)
 
                         if deliveryHitbox then
                             local savedPosition = root.CFrame
-                            task.wait(0.4)
+                            task.wait(0.5)
                             root.CFrame = deliveryHitbox.CFrame
                             task.wait(0.4)
                             root.CFrame = savedPosition
@@ -820,12 +802,9 @@ local function toggleAutoSteal(state)
                                 
                                 if proximityPrompt then
                                     root.CFrame = podioPart.CFrame + Vector3.new(0, 3, 0)
-                                    task.wait(0.1)
+                                    task.wait(0.25)
                                     
                                     fireproximityprompt(proximityPrompt)
-                                    task.wait(0.1)
-                                    fireproximityprompt(proximityPrompt)
-                                    task.wait(0.2)
                                     
                                     WindUI:Notify({
                                         Title = "Auto Steal",
@@ -834,7 +813,7 @@ local function toggleAutoSteal(state)
                                         Icon = "zap",
                                     })
                
-                                    task.wait(0.81)
+                                    task.wait(0.91)
                                 end
                             end
                         end
@@ -2223,7 +2202,7 @@ local maxPlayers = Players.MaxPlayers
 local ServerInfoParagraph = MiscTab:Paragraph({
     Title = "Server Information",
     Desc = string.format(
-        "Game: %s\nPlace ID: %d\nJob ID: %s\nPlayers: %d/%d",
+        "Game: Steal A Clown\nPlace ID: %d\nJob ID: %s\nPlayers: %d/%d",
         gameName,
         game.PlaceId,
         game.JobId,
@@ -2239,7 +2218,7 @@ task.spawn(function()
         local currentPlayers = #Players:GetPlayers()
         ServerInfoParagraph:Set({
             Desc = string.format(
-                "Game: %s\nPlace ID: %d\nJob ID: %s\nPlayers: %d/%d",
+                "Game: Steal A Clown\nPlace ID: %d\nJob ID: %s\nPlayers: %d/%d",
                 gameName,
                 game.PlaceId,
                 game.JobId,
