@@ -2230,9 +2230,7 @@ local ServerInfoParagraph = MiscTab:Paragraph({
         currentPlayers,
         maxPlayers
     ),
-    Color = "Blue",
-    Thumbnail = "rbxassetid://74135635728836",
-    ThumbnailSize = 100,
+    Color = "Gray",
 })
 
 -- Update player count every 5 seconds
