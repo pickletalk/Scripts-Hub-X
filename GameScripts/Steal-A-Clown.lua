@@ -800,10 +800,11 @@ local function toggleAntiSteal(state)
                                                                         
                                                                         mouse1click()
                                                                         hrp.CFrame = theirRoot.CFrame * CFrame.new(0, 0, 0)
+                                                                        task.wait(0.3)
                                                                                 
                                                                     end
 
-                                                                    task.wait(0.6)
+                                                                    task.wait(0.05)
                                                                     
                                                                     -- Clean up tracking
                                                                     attackingTargets[podiumKey] = nil
