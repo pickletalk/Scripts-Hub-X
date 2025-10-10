@@ -625,13 +625,15 @@ local function toggleStealUI(state)
 end
 
 -- ========================================
--- ANTI STEAL
+-- ANTI STEAL (IMPROVED)
 -- ========================================
 local function toggleAntiSteal(state)
     States.AntiSteal = state
     
     if state then
         Connections.AntiSteal = task.spawn(function()
+            local attackingTargets = {} -- Track which podiums are being defended
+            
             while States.AntiSteal do
                 local character = LocalPlayer.Character
                 local root = character and character:FindFirstChild("HumanoidRootPart")
@@ -659,6 +661,8 @@ local function toggleAntiSteal(state)
                 
                 if animalPodiums then
                     for i = 1, 30 do
+                        if not States.AntiSteal then break end
+                        
                         local podium = animalPodiums:FindFirstChild(tostring(i))
                         
                         if podium then
@@ -673,56 +677,102 @@ local function toggleAntiSteal(state)
                                             local stolen = animalOverhead:FindFirstChild("Stolen")
                                             
                                             if stolen and stolen.Visible then
-                                                -- Someone is stealing from this podium!
-                                                local podio = base:FindFirstChild("Podio")
-                                                if podio then
-                                                    local podioPart = podio:FindFirstChild("Part")
-                                                    if podioPart then
-                                                        -- Find players within 20 studs
-                                                        for _, player in pairs(Players:GetPlayers()) do
-                                                            if player ~= LocalPlayer and player.Character then
-                                                                local theirRoot = player.Character:FindFirstChild("HumanoidRootPart")
-                                                                if theirRoot then
-                                                                    local distance = (theirRoot.Position - podioPart.Position).Magnitude
-                                                                    
-                                                                    if distance <= 20 then
-                                                                        WindUI:Notify({
-                                                                            Title = "Anti Steal",
-                                                                            Content = string.format("Attacking %s stealing from podium %d!", player.DisplayName, i),
-                                                                            Duration = 2,
-                                                                            Icon = "shield",
-                                                                        })
+                                                -- Podium is being stolen!
+                                                local podiumKey = plotName .. "_" .. tostring(i)
+                                                
+                                                -- Check if already attacking this podium
+                                                if not attackingTargets[podiumKey] then
+                                                    attackingTargets[podiumKey] = true
+                                                    
+                                                    -- Find closest player
+                                                    local podio = base:FindFirstChild("Podio")
+                                                    if podio then
+                                                        local podioPart = podio:FindFirstChild("Part")
+                                                        if podioPart then
+                                                            local closestPlayer = nil
+                                                            local closestDistance = 15
+                                                            
+                                                            for _, player in pairs(Players:GetPlayers()) do
+                                                                if player ~= LocalPlayer and player.Character then
+                                                                    local theirRoot = player.Character:FindFirstChild("HumanoidRootPart")
+                                                                    if theirRoot then
+                                                                        local distance = (theirRoot.Position - podioPart.Position).Magnitude
                                                                         
-                                                                        -- Attack loop
-                                                                        for attack = 1, 5 do
-                                                                            if not States.AntiSteal then break end
-                                                                            
-                                                                            -- Teleport to thief
-                                                                            root.CFrame = theirRoot.CFrame * CFrame.new(0, 0, 3)
-                                                                            
-                                                                            -- Equip Tung Bat
-                                                                            local bat = LocalPlayer.Backpack:FindFirstChild("Tung Bat")
-                                                                            if not bat then
-                                                                                bat = character:FindFirstChild("Tung Bat")
-                                                                            end
-                                                                            
-                                                                            if bat and bat.Parent == LocalPlayer.Backpack then
-                                                                                character.Humanoid:EquipTool(bat)
-                                                                            end
-                                                                            
-                                                                            -- Simulate click
-                                                                            task.wait(0.1)
-                                                                            mouse1click()
-                                                                            task.wait(0.2)
+                                                                        if distance <= closestDistance then
+                                                                            closestPlayer = player
+                                                                            closestDistance = distance
                                                                         end
-                                                                        
-                                                                        break
                                                                     end
                                                                 end
+                                                            end
+                                                            
+                                                            if closestPlayer then
+                                                                -- Start attack loop in separate task
+                                                                task.spawn(function()
+                                                                    local targetPlayer = closestPlayer
+                                                                    local targetName = targetPlayer.DisplayName
+                                                                    
+                                                                    WindUI:Notify({
+                                                                        Title = "Anti Steal Active",
+                                                                        Content = string.format("Defending podium %d from %s!", i, targetName),
+                                                                        Duration = 2,
+                                                                        Icon = "shield",
+                                                                    })
+                                                                    
+                                                                    -- Attack until podium is no longer stolen
+                                                                    while States.AntiSteal do
+                                                                        -- Check if still stolen
+                                                                        if not stolen or not stolen.Visible then
+                                                                            WindUI:Notify({
+                                                                                Title = "Anti Steal",
+                                                                                Content = string.format("Podium %d is safe!", i),
+                                                                                Duration = 2,
+                                                                                Icon = "check",
+                                                                            })
+                                                                            break
+                                                                        end
+                                                                        
+                                                                        local char = LocalPlayer.Character
+                                                                        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                                                                        
+                                                                        if not hrp or not targetPlayer.Character then
+                                                                            break
+                                                                        end
+                                                                        
+                                                                        local theirRoot = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+                                                                        if not theirRoot then break end
+                                                                        
+                                                                        -- Super fast teleport to player
+                                                                        hrp.CFrame = theirRoot.CFrame * CFrame.new(0, 0, 3)
+                                                                        
+                                                                        -- Equip Tung Bat
+                                                                        local bat = LocalPlayer.Backpack:FindFirstChild("Tung Bat")
+                                                                        if bat then
+                                                                            char.Humanoid:EquipTool(bat)
+                                                                        else
+                                                                            bat = char:FindFirstChild("Tung Bat")
+                                                                        end
+                                                                        
+                                                                        -- Rapid clicking
+                                                                        for click = 1, 3 do
+                                                                            mouse1click()
+                                                                            task.wait(0.05)
+                                                                        end
+                                                                        
+                                                                        task.wait(0.1)
+                                                                    end
+                                                                    
+                                                                    -- Clean up tracking
+                                                                    attackingTargets[podiumKey] = nil
+                                                                end)
                                                             end
                                                         end
                                                     end
                                                 end
+                                            else
+                                                -- Podium not stolen, clear tracking
+                                                local podiumKey = plotName .. "_" .. tostring(i)
+                                                attackingTargets[podiumKey] = nil
                                             end
                                         end
                                     end
@@ -732,7 +782,7 @@ local function toggleAntiSteal(state)
                     end
                 end
                 
-                task.wait(0.5)
+                task.wait(0.1) -- Check very frequently
             end
         end)
         
@@ -775,26 +825,27 @@ local function stealHighestClown()
             return
         end
         
+        -- Use the same scan function as Auto Steal
         local clownList = scanAllClowns()
         
         if #clownList == 0 then
             WindUI:Notify({
                 Title = "Steal Highest",
-                Content = "No clowns found!",
+                Content = "No clowns found in any base!",
                 Duration = 3,
                 Icon = "alert-circle",
             })
             return
         end
         
-        -- Get the highest generation clown (first in sorted list)
+        -- Get the highest generation clown (first in already sorted list)
         local highestClown = clownList[1]
         local podium = highestClown.PodiumObject
         
         if not podium or not podium.Parent then
             WindUI:Notify({
                 Title = "Steal Highest",
-                Content = "Podium not found!",
+                Content = "Target podium not available!",
                 Duration = 3,
                 Icon = "x",
             })
@@ -811,27 +862,42 @@ local function stealHighestClown()
                 local podioPart = podio:FindFirstChild("Part")
                 local promptAttachment = spawn:FindFirstChild("PromptAttachment")
                 
+                -- Verify the animal is still there
+                local attachment = spawn:FindFirstChild("Attachment")
+                local animalStillThere = attachment and attachment:FindFirstChild("AnimalOverhead")
+                
+                if not animalStillThere then
+                    WindUI:Notify({
+                        Title = "Steal Highest",
+                        Content = "Clown disappeared before steal!",
+                        Duration = 3,
+                        Icon = "x",
+                    })
+                    return
+                end
+                
                 if podioPart and promptAttachment then
                     local proximityPrompt = promptAttachment:FindFirstChild("ProximityPrompt")
                     
                     if proximityPrompt and proximityPrompt.Enabled then
-                        -- Teleport to the clown
-                        root.CFrame = podioPart.CFrame + Vector3.new(0, 3, 0)
-                        task.wait(0.2)
-                        
-                        -- Fire the prompt
-                        fireproximityprompt(proximityPrompt)
-                        
                         WindUI:Notify({
                             Title = "Steal Highest",
-                            Content = string.format("Stealing Gen %d clown from %s", highestClown.Generation, highestClown.PlotName),
-                            Duration = 3,
+                            Content = string.format("Stealing Gen %d from %s...", highestClown.Generation, highestClown.PlotName),
+                            Duration = 2,
                             Icon = "zap",
                         })
                         
+                        -- Teleport to the clown (same as Auto Steal)
+                        root.CFrame = podioPart.CFrame + Vector3.new(0, 3, 0)
+                        task.wait(0.2)
+                        
+                        -- Fire the prompt (same as Auto Steal)
+                        fireproximityprompt(proximityPrompt)
+                        
+                        -- Simple delay (same as Auto Steal)
                         task.wait(0.6)
                         
-                        -- Deliver to base
+                        -- Deliver to base (same as Auto Steal)
                         local plotName = getPlayerPlot()
                         if plotName then
                             local plots = Workspace:FindFirstChild("Plots")
@@ -844,9 +910,16 @@ local function stealHighestClown()
                                 
                                 WindUI:Notify({
                                     Title = "Steal Highest",
-                                    Content = "Successfully delivered!",
+                                    Content = string.format("Gen %d clown delivered!", highestClown.Generation),
                                     Duration = 3,
                                     Icon = "check",
+                                })
+                            else
+                                WindUI:Notify({
+                                    Title = "Steal Highest",
+                                    Content = "Delivery hitbox not found!",
+                                    Duration = 3,
+                                    Icon = "alert-circle",
                                 })
                             end
                         end
@@ -2781,7 +2854,7 @@ myConfig:Register("AntiKick", AntiKickToggle)
 -- WELCOME POPUP
 -- ========================================
 WindUI:Popup({
-    Title = "Steal A Clown V1.5.529",
+    Title = "Steal A Clown V1.5.614",
     Icon = "sword",
     Content = "New Update: Added Steal Highest Clown and Anti Steal!",
     Buttons = {
