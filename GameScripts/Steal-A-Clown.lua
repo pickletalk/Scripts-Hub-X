@@ -568,8 +568,16 @@ local function scanAllClowns()
     
     if not plots then return clownList end
     
+    -- Get player's own plot to skip it
+    local playerPlotName = getPlayerPlot()
+    
     for _, plot in pairs(plots:GetChildren()) do
         if plot:IsA("Model") then
+            -- SKIP PLAYER'S OWN PLOT
+            if plot.Name == playerPlotName then
+                continue  -- Skip to next plot
+            end
+            
             local animalPodiums = plot:FindFirstChild("AnimalPodiums")
             
             if animalPodiums then
@@ -585,17 +593,18 @@ local function scanAllClowns()
                                 if attachment then
                                     local animalOverhead = attachment:FindFirstChild("AnimalOverhead")
                                     if animalOverhead then
-                                        local priceLabel = animalOverhead:FindFirstChild("Price")
+                                        -- CHANGED FROM Price TO Generation
+                                        local generationLabel = animalOverhead:FindFirstChild("Generation")
                                         
-                                        if priceLabel and priceLabel:IsA("TextLabel") then
-                                            local priceText = priceLabel.Text
-                                            local priceValue = tonumber(priceText:match("%d+"))
+                                        if generationLabel and generationLabel:IsA("TextLabel") then
+                                            local generationText = generationLabel.Text
+                                            local generationValue = tonumber(generationText:match("%d+"))
                                             
-                                            if priceValue then
+                                            if generationValue then
                                                 table.insert(clownList, {
                                                     PlotName = plot.Name,
                                                     PodiumNumber = tostring(i),
-                                                    Price = priceValue,
+                                                    Generation = generationValue,  -- Changed from Price
                                                     PodiumObject = podium
                                                 })
                                             end
@@ -610,8 +619,9 @@ local function scanAllClowns()
         end
     end
     
+    -- Sort from highest to lowest generation
     table.sort(clownList, function(a, b)
-        return a.Price > b.Price
+        return a.Generation > b.Generation  -- Changed from Price
     end)
     
     return clownList
@@ -672,10 +682,12 @@ local function toggleAutoSteal(state)
                                     
                                     fireproximityprompt(proximityPrompt)
                                     task.wait(0.1)
+                                    fireproximityprompt(proximityPrompt)
+                                    task.wait(0.2)
                                     
                                     WindUI:Notify({
                                         Title = "Auto Steal",
-                                        Content = string.format("Stealing $%d clown from %s", clownData.Price, clownData.PlotName),
+                                        Content = string.format("Stealing Gen %d clown from %s", clownData.Generation, clownData.PlotName),
                                         Duration = 2,
                                         Icon = "zap",
                                     })
