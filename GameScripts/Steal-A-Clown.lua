@@ -1473,6 +1473,7 @@ local function toggleAutoLock(state)
     if state then
         local lastTimeText = ""
         local stuckAt1sTime = 0
+        local stuckAt2sTime = 0
         
         Connections.AutoLock = RunService.Heartbeat:Connect(function()
             local plotName = getPlayerPlot()
@@ -1501,11 +1502,11 @@ local function toggleAutoLock(state)
             
             local currentTimeText = remaining.Text
 
-            if currentTimeText == "1s" or currentTimeText == "2s" then
-                if lastTimeText ~= "1s" or lastTimeText ~= "2s" then
+            if currentTimeText == "1s" then
+                if lastTimeText ~= "1s" then
                     stuckAt1sTime = tick()
                 else
-                    if tick() - stuckAt1sTime >= 1.2 then
+                    if tick() - stuckAt1sTime >= 1.5 then
                         local hitbox = plotBlock:FindFirstChild("Hitbox")
                         if hitbox then
                             local character = LocalPlayer.Character
@@ -1521,8 +1522,33 @@ local function toggleAutoLock(state)
                     end
                 end
             else
-                if lastTimeText == "1s" or lastTimeText == "2s" then
+                if lastTimeText == "1s" then
                     stuckAt1sTime = 0
+                end
+            end
+
+            if currentTimeText == "2s" then
+                if lastTimeText ~= "2s" then
+                    stuckAt2sTime = tick()
+                else
+                    if tick() - stuckAt2sTime >= 1.5 then
+                        local hitbox = plotBlock:FindFirstChild("Hitbox")
+                        if hitbox then
+                            local character = LocalPlayer.Character
+                            if character then
+                                local root = character:FindFirstChild("HumanoidRootPart")
+                                if root then
+                                    firetouchinterest(root, hitbox, 0)
+                                    task.wait(0.1)
+                                    firetouchinterest(root, hitbox, 1)
+                                end
+                            end
+                        end
+                    end
+                end
+            else
+                if lastTimeText == "2s" then
+                    stuckAt2sTime = 0
                 end
             end
                 
@@ -1548,7 +1574,7 @@ local function toggleAutoLock(state)
                 firetouchinterest(root, hitbox, 0)
                 task.wait(0.1)
                 firetouchinterest(root, hitbox, 1)
-                
+
             end
             
             lastTimeText = currentTimeText
