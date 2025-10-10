@@ -2524,6 +2524,201 @@ local function toggleAntiKick(state)
     })
 end
 
+-- ========================================
+-- OPTIMIZATIONS TAB FEATURES
+-- ========================================
+
+local function toggleFullBright(state)
+    States.FullBright = state
+    
+    if state then
+        Lighting.Brightness = 2
+        Lighting.ClockTime = 14
+        Lighting.FogEnd = 100000
+        Lighting.GlobalShadows = false
+        Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
+        Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+    else
+        Lighting.Brightness = 1
+        Lighting.ClockTime = 14
+        Lighting.FogEnd = 100000
+        Lighting.GlobalShadows = true
+        Lighting.OutdoorAmbient = Color3.fromRGB(127, 127, 127)
+        Lighting.Ambient = Color3.fromRGB(0, 0, 0)
+    end
+end
+
+local function saveOriginalGFX()
+    if next(LowGFXStorage.SavedLighting) == nil then
+        LowGFXStorage.SavedLighting = {
+            GlobalShadows = Lighting.GlobalShadows,
+            ShadowSoftness = Lighting.ShadowSoftness,
+        }
+    end
+    
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        local objId = tostring(obj:GetDebugId())
+        
+        if not LowGFXStorage.SavedProperties[objId] then
+            if obj:IsA("BasePart") then
+                LowGFXStorage.SavedProperties[objId] = {
+                    Object = obj,
+                    Material = obj.Material,
+                    CastShadow = obj.CastShadow,
+                    Reflectance = obj.Reflectance,
+                }
+            elseif obj:IsA("MeshPart") then
+                LowGFXStorage.SavedProperties[objId] = {
+                    Object = obj,
+                    Material = obj.Material,
+                    TextureID = obj.TextureID,
+                    CastShadow = obj.CastShadow,
+                }
+            elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") then
+                LowGFXStorage.SavedProperties[objId] = {
+                    Object = obj,
+                    Enabled = obj.Enabled,
+                }
+            elseif obj:IsA("Decal") or obj:IsA("Texture") then
+                LowGFXStorage.SavedProperties[objId] = {
+                    Object = obj,
+                    Transparency = obj.Transparency,
+                }
+            end
+        end
+    end
+end
+
+local function applyLowGFX()
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            obj.Material = Enum.Material.SmoothPlastic
+            obj.CastShadow = false
+            obj.Reflectance = 0
+        elseif obj:IsA("MeshPart") then
+            obj.Material = Enum.Material.SmoothPlastic
+            obj.TextureID = ""
+        elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") then
+            obj.Enabled = false
+        elseif obj:IsA("Decal") or obj:IsA("Texture") then
+            obj.Transparency = 1
+        end
+    end
+    
+    Lighting.GlobalShadows = false
+    Lighting.ShadowSoftness = 0
+end
+
+local function restoreOriginalGFX()
+    for objId, data in pairs(LowGFXStorage.SavedProperties) do
+        local obj = data.Object
+        
+        if obj and obj.Parent then
+            pcall(function()
+                if obj:IsA("BasePart") then
+                    obj.Material = data.Material
+                    obj.CastShadow = data.CastShadow
+                    obj.Reflectance = data.Reflectance
+                elseif obj:IsA("MeshPart") then
+                    obj.Material = data.Material
+                    obj.TextureID = data.TextureID
+                    obj.CastShadow = data.CastShadow
+                elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") then
+                    obj.Enabled = data.Enabled
+                elseif obj:IsA("Decal") or obj:IsA("Texture") then
+                    obj.Transparency = data.Transparency
+                end
+            end)
+        end
+    end
+    
+    if LowGFXStorage.SavedLighting.GlobalShadows ~= nil then
+        Lighting.GlobalShadows = LowGFXStorage.SavedLighting.GlobalShadows
+        Lighting.ShadowSoftness = LowGFXStorage.SavedLighting.ShadowSoftness
+    end
+    
+    LowGFXStorage.SavedProperties = {}
+    LowGFXStorage.SavedLighting = {}
+end
+
+local function toggleLowGFX(state)
+    States.LowGFX = state
+    
+    if state then
+        saveOriginalGFX()
+        applyLowGFX()
+        
+        Connections.LowGFX = Workspace.DescendantAdded:Connect(function(obj)
+            if States.LowGFX then
+                if obj:IsA("BasePart") then
+                    obj.Material = Enum.Material.SmoothPlastic
+                    obj.CastShadow = false
+                    obj.Reflectance = 0
+                elseif obj:IsA("MeshPart") then
+                    obj.Material = Enum.Material.SmoothPlastic
+                    obj.TextureID = ""
+                end
+            end
+        end)
+        
+        WindUI:Notify({
+            Title = "Low GFX Enabled",
+            Content = "Graphics optimized! Original settings saved.",
+            Duration = 3,
+            Icon = "zap",
+        })
+    else
+        if Connections.LowGFX then
+            Connections.LowGFX:Disconnect()
+            Connections.LowGFX = nil
+        end
+        
+        restoreOriginalGFX()
+        
+        WindUI:Notify({
+            Title = "Low GFX Disabled",
+            Content = "Original graphics restored!",
+            Duration = 3,
+            Icon = "check",
+        })
+    end
+end
+
+local function clearFogs()
+    for _, obj in pairs(Lighting:GetDescendants()) do
+        if obj:IsA("Atmosphere") then
+            obj:Destroy()
+        end
+    end
+    
+    Lighting.FogEnd = math.huge
+    
+    WindUI:Notify({
+        Title = "Fogs Cleared",
+        Content = "All fog effects have been removed!",
+        Duration = 3,
+        Icon = "check",
+    })
+end
+
+local function removeShadows()
+    Lighting.GlobalShadows = false
+    Lighting.ShadowSoftness = 0
+    
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            obj.CastShadow = false
+        end
+    end
+    
+    WindUI:Notify({
+        Title = "Shadows Removed",
+        Content = "All shadows have been disabled!",
+        Duration = 3,
+        Icon = "check",
+    })
+end
+
 local function saveConfiguration()
     myConfig:Save()
     
@@ -2567,6 +2762,11 @@ local PlayerTab = Window:Tab({
 local VisualTab = Window:Tab({
     Title = "Visual",
     Icon = "eye",
+})
+
+local OptimizationsTab = Window:Tab({
+    Title = "Optimizations",
+    Icon = "zap",
 })
 
 local CreditsTab = Window:Tab({
@@ -2799,6 +2999,47 @@ myConfig:Register("BaseTimeESP", BaseTimeESPToggle)
 myConfig:Register("BaseRemainingTimeESP", BaseRemainingTimeToggle)
 
 -- ========================================
+-- OPTIMIZATIONS TAB ELEMENTS
+-- ========================================
+
+local FullBrightToggle = OptimizationsTab:Toggle({
+    Title = "Full Bright",
+    Desc = "Make everything bright, no more darkness!",
+    Default = false,
+    Callback = function(state)
+        toggleFullBright(state)
+    end
+})
+
+local LowGFXToggle = OptimizationsTab:Toggle({
+    Title = "Low GFX Mode (Fixed)",
+    Desc = "Make your GFX low for more fps!",
+    Default = false,
+    Callback = function(state)
+        toggleLowGFX(state)
+    end
+})
+
+local ClearFogsButton = OptimizationsTab:Button({
+    Title = "Clear Fogs",
+    Desc = "Remove all fog effects from the game",
+    Callback = function()
+        clearFogs()
+    end
+})
+
+local RemoveShadowsButton = OptimizationsTab:Button({
+    Title = "Remove Shadows",
+    Desc = "Disable all shadows for better performance",
+    Callback = function()
+        removeShadows()
+    end
+})
+
+myConfig:Register("FullBright", FullBrightToggle)
+myConfig:Register("LowGFX", LowGFXToggle)
+
+-- ========================================
 -- CREDITS TAB ELEMENTS
 -- ========================================
 local CreditsParagraph = CreditsTab:Paragraph({
@@ -2960,7 +3201,7 @@ myConfig:Register("AntiKick", AntiKickToggle)
 -- WELCOME POPUP
 -- ========================================
 WindUI:Popup({
-    Title = "Steal A Clown V1.5.782",
+    Title = "Steal A Clown V1.5.821",
     Icon = "sword",
     Content = "New Update: Added Steal Highest Clown and Anti Steal!",
     Buttons = {
