@@ -220,13 +220,6 @@ Window:EditOpenButton({
 -- ========================================
 -- GLOBAL STATES
 -- ========================================
-
--- Low GFX Storage (must be initialized before States)
-local LowGFXStorage = {
-    SavedProperties = {},
-    SavedLighting = {},
-}
-
 local States = {
     AntiSteal = false,
     AutoSteal = false,
@@ -249,9 +242,13 @@ local States = {
     BaseRemainingTimeESP = false,
     AntiKick = false,
     CurrentTheme = "Anime Dark",
+    FullBright = false,
+    LowGFX = false,
 }
 
-local Connections = {}
+local Connections = {
+    LowGFX = nil,
+}
 local ESPObjects = {
     Players = {},
     Bases = {},
@@ -260,6 +257,12 @@ local ESPObjects = {
 local StealUIScreen = nil
 local BaseTimeUIScreen = nil
 local InstantStealHook = nil
+
+-- Low GFX Storage
+local LowGFXStorage = {
+    SavedProperties = {},
+    SavedLighting = {},
+}
 
 -- ========================================
 -- UTILITY FUNCTIONS
@@ -3219,7 +3222,7 @@ myConfig:Register("AntiKick", AntiKickToggle)
 -- WELCOME POPUP
 -- ========================================
 WindUI:Popup({
-    Title = "Steal A Clown V1.5.823",
+    Title = "Steal A Clown V1.5.826",
     Icon = "sword",
     Content = "New Update: Added Steal Highest Clown and Anti Steal!",
     Buttons = {
