@@ -740,16 +740,40 @@ local function createBaseESP(plotSign, plotName)
     
     ESPObjects.Bases[plotName] = {}
     
-    local highlight = Instance.new("Highlight")
-    highlight.Name = "BaseESPHighlight"
-    highlight.FillColor = Color3.fromRGB(0, 255, 0)
-    highlight.FillTransparency = 0.7
-    highlight.OutlineColor = Color3.fromRGB(0, 255, 0)
-    highlight.OutlineTransparency = 0
-    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-    highlight.Parent = plotSign
+    -- Get plot owner name from the sign
+    local ownerName = plotName
+    local plots = Workspace:FindFirstChild("Plots")
+        if plots then
+            for _, plot in pairs(plots:GetChildren()) do
+                if plot:IsA("Model") then
+                    local plotSign = plot:FindFirstChild("PlotSign")
+                    if plotSign then
+                        ownerName = textLabel.Text
+                    end
+                end
+            end
+        end
+    end
     
-    table.insert(ESPObjects.Bases[plotName], highlight)
+    -- Create BillboardGui for ESP text
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "BaseESPBillboard"
+    billboard.Size = UDim2.new(0, 150, 0, 40)
+    billboard.StudsOffset = Vector3.new(0, 5, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Parent = plotSign
+    
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = ownerName
+    textLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+    textLabel.TextStrokeTransparency = 0.5
+    textLabel.TextScaled = true
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.Parent = billboard
+    
+    table.insert(ESPObjects.Bases[plotName], billboard)
 end
 
 local function toggleBaseESP(state)
@@ -1465,6 +1489,24 @@ local function toggleSpeed(state)
     if state then
         WalkSpeedSpoof:SetWalkSpeed(States.SpeedValue)
         
+        if not Connections.SpeedRespawn then
+            Connections.SpeedRespawn = LocalPlayer.CharacterAdded:Connect(function(character)
+                local humanoid = character:WaitForChild("Humanoid")
+                task.wait(0.5)
+                
+                if States.SpeedEnabled then
+                    WalkSpeedSpoof:SetWalkSpeed(States.SpeedValue)
+                    
+                    WindUI:Notify({
+                        Title = "Speed",
+                        Content = "Speed reapplied after respawn!",
+                        Duration = 2,
+                        Icon = "check",
+                    })
+                end
+            end)
+        end
+        
         WindUI:Notify({
             Title = "Speed",
             Content = "Speed enabled!",
@@ -1473,6 +1515,11 @@ local function toggleSpeed(state)
         })
     else
         WalkSpeedSpoof:RestoreWalkSpeed()
+
+        if Connections.SpeedRespawn then
+            Connections.SpeedRespawn:Disconnect()
+            Connections.SpeedRespawn = nil
+        end
         
         WindUI:Notify({
             Title = "Speed",
