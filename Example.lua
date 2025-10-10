@@ -15,7 +15,7 @@ local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/rel
 -- THEMES (10+ COLOR VARIATIONS) THERE MUST BE ALWAYS THEME DROP DOWN!
 -- ========================================
 WindUI:AddTheme({
-    Name = "Anime Dark",
+    Name = "Dark",
     Accent = Color3.fromHex("#FF0F7B"),
     Dialog = Color3.fromHex("#161616"),
     Outline = Color3.fromHex("#FF0F7B"),
@@ -27,7 +27,7 @@ WindUI:AddTheme({
 })
 
 WindUI:AddTheme({
-    Name = "Anime Light",
+    Name = "Light",
     Accent = Color3.fromHex("#F89B29"),
     Dialog = Color3.fromHex("#f5f5f5"),
     Outline = Color3.fromHex("#F89B29"),
@@ -183,7 +183,7 @@ WindUI:AddTheme({
 })
 
 -- Set default theme
-WindUI:SetTheme("Anime Dark")
+WindUI:SetTheme("Dark")
 
 -- Creating Window!
 local Window = WindUI:CreateWindow({
@@ -192,7 +192,7 @@ local Window = WindUI:CreateWindow({
     Author = "by PickleTalk and Mhicel",
     Folder = "Scripts Hub X",
     Transparent = true,
-    Theme = "Anime Dark",
+    Theme = "Dark",
 })
 
 -- Window must always transparent!
@@ -243,26 +243,6 @@ local Tab = Window:Tab({
     Title = "Tab Title",
     Icon = "bird", -- optional
     Locked = false,
-})
-
--- Example Adding window pop up
-WindUI:Popup({
-    Title = "Scripts Hub X | Official",
-    Icon = "info",
-    Content = "Hello! Thank You for using Scripts Hub X, Join our discord server yo je always updated",
-    Buttons = {
-        {
-            Title = "Cancel",
-            Callback = function() end,
-            Variant = "Tertiary",
-        },
-        {
-            Title = "Continue",
-            Icon = "arrow-right",
-            Callback = function() end, 
-            Variant = "Primary",
-        }
-    }
 })
 
 -- Example Creating notification 
@@ -344,7 +324,7 @@ local Keybind = Tab:Keybind({
     end
 })
 
--- EXAMPLE CREATING CREDITS PARAGRAPH
+-- Example creating paragraph
 local Paragraph = Tab:Paragraph({
     Title = "Scripts Hub X | Official",
     Desc = "Made by PickleTalk and Mhicel Join to our discord server to be always updated",
@@ -363,8 +343,8 @@ local Paragraph = Tab:Paragraph({
     }
 })
 
--- AND ADD THUMBNAIL
-Paragraph:SetThumbnail("rbxassetid://86472170233220")
+-- example adding thumbnail
+Paragraph:SetThumbnail("rbxassetid:(texture id)")
 
 -- AND AFTER THE PARAGRAPH ALWAYS ADD BUTTON THAT WILL MAKE THEM COPY THE DISCORD SERVER! https://discord.gg/bpsNUH5sVb
 
