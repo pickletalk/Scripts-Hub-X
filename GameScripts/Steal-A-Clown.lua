@@ -250,6 +250,7 @@ local ESPObjects = {
 }
 local StealUIScreen = nil
 local BaseTimeUIScreen = nil
+local InstantStealHook = nil
 
 -- ========================================
 -- UTILITY FUNCTIONS
@@ -496,8 +497,6 @@ end
 -- ========================================
 -- INSTANT STEAL (HOOKED VERSION)
 -- ========================================
-local InstantStealHook = nil
-
 local function toggleInstantSteal(state)
     States.InstantSteal = state
     
