@@ -387,6 +387,17 @@ local States = {
     LowGFX = false,
 }
 
+-- Connections Storage!
+local Connections = {
+    LowGFX = nil,
+}
+
+-- Low GFX Storage!
+local LowGFXStorage = {
+    SavedProperties = {},
+    SavedLighting = {},
+}
+
 -- ========================================
 -- OPTIMIZATIONS TAB FEATURES
 -- ========================================
