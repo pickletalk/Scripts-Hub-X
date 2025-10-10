@@ -681,12 +681,17 @@ myConfig:Register("ThemeColor", ThemeColorPicker)
 -- THERE MUST BE ALWAYS CREDITS AND SETTINGS AT THE END OF THE TABS!
 
 -- ========================================
--- WELCOME POPUP THIS IS MUST THERE ALWAYS!
+-- WELCOME POPUP AND TAG THIS IS MUST THERE ALWAYS!
 -- ========================================
+Window:Tag({
+    Title = "V(script version)",
+    Color = Color3.fromHex("#30ff6a"),
+    Radius = 13,
+})
 WindUI:Popup({
-    Title = "(game name) (script version)",
+    Title = "(game name)",
     Icon = "sword",
-    Content = "New Update: (the new updates!)", -- USE SIMPLE WORDS LIKE ADDED NOCLIP, BYPASS NOCLIP, ETC.!
+    Content = "New Update: (the new update)!", -- USE SIMPLE WORDS LIKE ADDED NOCLIP, BYPASS NOCLIP, IMPROVE ANT VOID, ETC.!
     Buttons = {
         {
             Title = "Close",
