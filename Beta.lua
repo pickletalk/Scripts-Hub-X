@@ -572,7 +572,7 @@ local function toggleAntiVoid(state)
             local hrp = character:FindFirstChild("HumanoidRootPart")
             if not hrp then return end
             
-            if hrp.Position.Y < -30 then
+            if hrp.Position.Y < -15 then
                 local rayOrigin = Vector3.new(hrp.Position.X, 100, hrp.Position.Z)
                 local rayDirection = Vector3.new(0, -500, 0)
                 local rayParams = RaycastParams.new()
@@ -1020,20 +1020,27 @@ end
 -- ========================================
 local function toggleFastInteraction(state)
     States.FastInteraction = state
-    
+
     if state then
-        Connections.FastInteraction = RunService.Heartbeat:Connect(function()
-            for _, v in pairs(Workspace:GetDescendants()) do
-                if v:IsA("ProximityPrompt") then
-                    v.HoldDuration = 0
-                    v.MaxActivationDistance = 25
-                end
+        for _, v in pairs(workspace:GetDescendants()) do
+            if v:IsA("ProximityPrompt") then
+                v.HoldDuration = 0
+                v.RequiresLineOfSight = false
+                v.MaxActivationDistance = 25
+            end
+        end
+
+        Connections.FastInteraction = workspace.DescendantAdded:Connect(function(v)
+            if v:IsA("ProximityPrompt") then
+                v.HoldDuration = 0
+                v.RequiresLineOfSight = false
+                v.MaxActivationDistance = 25
             end
         end)
-        
+
         WindUI:Notify({
             Title = "Fast Interaction",
-            Content = "Fast interaction enabled!",
+            Content = "Instant interaction enabled!",
             Duration = 3,
             Icon = "check",
         })
@@ -1042,10 +1049,10 @@ local function toggleFastInteraction(state)
             Connections.FastInteraction:Disconnect()
             Connections.FastInteraction = nil
         end
-        
+
         WindUI:Notify({
             Title = "Fast Interaction",
-            Content = "Fast interaction disabled!",
+            Content = "Instant interaction disabled!",
             Duration = 3,
             Icon = "x",
         })
