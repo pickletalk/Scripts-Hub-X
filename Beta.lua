@@ -190,10 +190,10 @@ WindUI:SetTheme("Anime Dark")
 -- CREATE WINDOW
 -- ========================================
 local Window = WindUI:CreateWindow({
-    Title = "Steal A Clown Hub | Official",
+    Title = "Steal A Clown SHX | Official",
     Icon = "sword",
-    Author = "by PickleTalk and Mhicel",
-    Folder = "StealClownHub",
+    Author = "by PickleTalk",
+    Folder = "StealClownSHX",
     Transparent = true,
     Theme = "Anime Dark",
 })
@@ -204,7 +204,7 @@ local ConfigManager = Window.ConfigManager
 local myConfig = ConfigManager:CreateConfig("StealClownConfig")
 
 Window:EditOpenButton({
-    Title = "Steal A Clown",
+    Title = "Scripts Hub X | Official",
     Icon = "sword",
     CornerRadius = UDim.new(0,16),
     StrokeThickness = 2,
@@ -1742,7 +1742,7 @@ myConfig:Register("BaseRemainingTimeESP", BaseRemainingTimeToggle)
 -- CREDITS TAB ELEMENTS
 -- ========================================
 local CreditsParagraph = CreditsTab:Paragraph({
-    Title = "Steal A Clown Hub | Official",
+    Title = "Scripts Hub X | Official",
     Desc = "Made by PickleTalk and Mhicel. Join our discord server to be always updated with the latest features and scripts!",
     Color = "Red",
     Thumbnail = "rbxassetid://74135635728836",
@@ -1846,7 +1846,7 @@ myConfig:Register("AntiKick", AntiKickToggle)
 -- WELCOME POPUP
 -- ========================================
 WindUI:Popup({
-    Title = "Steal A Clown Hub v1.0",
+    Title = "Steal A Clown v1.0",
     Icon = "sword",
     Content = "Fixed version with complete features! All visual ESP working, Anti-Void fixed, Auto Collect added!",
     Buttons = {
