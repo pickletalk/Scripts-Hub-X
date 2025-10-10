@@ -654,9 +654,9 @@ local function toggleInstantSteal(state)
 
                         if deliveryHitbox then
                             local savedPosition = root.CFrame
-                            task.wait(0.6)
+                            task.wait(0.4)
                             root.CFrame = deliveryHitbox.CFrame
-                            task.wait(0.5)
+                            task.wait(0.3)
                             root.CFrame = savedPosition
                         end
                     end)
@@ -751,15 +751,13 @@ local function scanAllClowns()
     return clownList
 end
 
+-- ========================================
+-- AUTO STEAL (HIGHEST TO LOWEST) - FIXED
+-- ========================================
 local function toggleAutoSteal(state)
     States.AutoSteal = state
     
     if state then
-        if not States.InstantSteal then
-            States.InstantSteal = true
-            toggleInstantSteal(true)
-        end
-        
         Connections.AutoSteal = task.spawn(function()
             while States.AutoSteal do
                 local character = LocalPlayer.Character
@@ -787,6 +785,12 @@ local function toggleAutoSteal(state)
                     if not States.AutoSteal then break end
                     
                     local podium = clownData.PodiumObject
+                    
+                    -- Check if podium still exists and has the animal
+                    if not podium or not podium.Parent then
+                        continue
+                    end
+                    
                     local base = podium:FindFirstChild("Base")
                     
                     if base then
@@ -797,13 +801,23 @@ local function toggleAutoSteal(state)
                             local podioPart = podio:FindFirstChild("Part")
                             local promptAttachment = spawn:FindFirstChild("PromptAttachment")
                             
+                            -- Verify the animal is still there
+                            local attachment = spawn:FindFirstChild("Attachment")
+                            local animalStillThere = attachment and attachment:FindFirstChild("AnimalOverhead")
+                            
+                            if not animalStillThere then
+                                continue -- Skip if animal is already gone
+                            end
+                            
                             if podioPart and promptAttachment then
                                 local proximityPrompt = promptAttachment:FindFirstChild("ProximityPrompt")
                                 
-                                if proximityPrompt then
-                                    root.CFrame = podioPart.CFrame + Vector3.new(0, 3, 0)
-                                    task.wait(0.25)
+                                if proximityPrompt and proximityPrompt.Enabled then
+                                    -- Teleport to the clown
+                                    root.CFrame = podioPart.CFrame + Vector3.new(0, 2, 0)
+                                    task.wait(0.3)
                                     
+                                    -- Fire the prompt
                                     fireproximityprompt(proximityPrompt)
                                     
                                     WindUI:Notify({
@@ -813,14 +827,60 @@ local function toggleAutoSteal(state)
                                         Icon = "zap",
                                     })
                
-                                    task.wait(1.11)
+                                    -- Wait for the steal animation to complete
+                                    task.wait(0.3)
+                                    
+                                    -- Check if we actually picked it up
+                                    local pickedUp = false
+                                    for i = 1, 10 do
+                                        attachment = spawn:FindFirstChild("Attachment")
+                                        animalStillThere = attachment and attachment:FindFirstChild("AnimalOverhead")
+                                        
+                                        if not animalStillThere then
+                                            pickedUp = true
+                                            break
+                                        end
+                                        task.wait(0.1)
+                                    end
+                                    
+                                    if pickedUp then
+                                        -- Now deliver to base (built-in, not using Instant Steal)
+                                        local plotName = getPlayerPlot()
+                                        if plotName then
+                                            local plots = Workspace:FindFirstChild("Plots")
+                                            local plot = plots and plots:FindFirstChild(plotName)
+                                            local deliveryHitbox = plot and plot:FindFirstChild("DeliveryHitbox")
+                                            
+                                            if deliveryHitbox then
+                                                -- Teleport to delivery
+                                                root.CFrame = deliveryHitbox.CFrame
+                                                task.wait(0.1)
+
+                                                WindUI:Notify({
+                                                    Title = "Auto Steal",
+                                                    Content = "Delivered to base!",
+                                                    Duration = 1,
+                                                    Icon = "check",
+                                                })
+                                            end
+                                        end
+                                        
+                                        -- Wait before going to next clown
+                                        task.wait(0.3)
+                                    else
+                                        WindUI:Notify({
+                                            Title = "Auto Steal",
+                                            Content = "Failed to pick up clown, retrying...",
+                                            Duration = 2,
+                                            Icon = "x",
+                                        })
+                                        task.wait(1)
+                                    end
                                 end
                             end
                         end
                     end
                 end
-
-                task.wait(2)
             end
         end)
         
@@ -834,11 +894,6 @@ local function toggleAutoSteal(state)
         if Connections.AutoSteal then
             task.cancel(Connections.AutoSteal)
             Connections.AutoSteal = nil
-        end
-
-        if States.InstantSteal then
-            States.InstantSteal = false
-            toggleInstantSteal(false)
         end
         
         WindUI:Notify({
