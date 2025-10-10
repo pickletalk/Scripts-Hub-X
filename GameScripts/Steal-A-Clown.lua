@@ -824,7 +824,7 @@ local function toggleAutoSteal(state)
                                     })
                
                                     -- Simple delay
-                                    task.wait(0.5)
+                                    task.wait(0.6)
                                     
                                     -- Deliver to base
                                     local plotName = getPlayerPlot()
@@ -835,7 +835,7 @@ local function toggleAutoSteal(state)
                                         
                                         if deliveryHitbox then
                                             root.CFrame = deliveryHitbox.CFrame
-                                            task.wait(0.3)
+                                            task.wait(0.4)
                                         end
                                     end
                                     
@@ -1471,67 +1471,53 @@ local function toggleAutoLock(state)
     States.AutoLock = state
     
     if state then
-        local lastLockTime = 0
-        
         Connections.AutoLock = RunService.Heartbeat:Connect(function()
-            -- Add cooldown to prevent spam (lock once every 2 seconds)
-            if tick() - lastLockTime < 2 then
-                return
-            end
-            
             local plotName = getPlayerPlot()
-            if plotName then
-                local plots = Workspace:FindFirstChild("Plots")
-                local plot = plots and plots:FindFirstChild(plotName)
+            if not plotName then return end
+            
+            local plots = Workspace:FindFirstChild("Plots")
+            if not plots then return end
+            
+            local plot = plots:FindFirstChild(plotName)
+            if not plot then return end
+            
+            local purchases = plot:FindFirstChild("Purchases")
+            if not purchases then return end
+            
+            local plotBlock = purchases:FindFirstChild("PlotBlock")
+            if not plotBlock then return end
+            
+            local main = plotBlock:FindFirstChild("Main")
+            if not main then return end
+            
+            local billboard = main:FindFirstChild("BillboardGui")
+            if not billboard then return end
+            
+            local remaining = billboard:FindFirstChild("RemainingTime")
+            if not remaining then return end
+
+            if remaining.Text == "0s" then
+                local hitbox = plotBlock:FindFirstChild("Hitbox")
+                if not hitbox then return end
                 
-                if plot then
-                    local purchases = plot:FindFirstChild("Purchases")
-                    if purchases then
-                        local plotBlock = purchases:FindFirstChild("PlotBlock")
-                        if plotBlock then
-                            local main = plotBlock:FindFirstChild("Main")
-                            if main then
-                                local billboard = main:FindFirstChild("BillboardGui")
-                                if billboard then
-                                    local remaining = billboard:FindFirstChild("RemainingTime")
-                                    
-                                    -- Check for both "0s" and "0" as text
-                                    if remaining and (remaining.Text == "0s" or remaining.Text == "0") then
-                                        local hitbox = plotBlock:FindFirstChild("Hitbox")
-                                        if hitbox then
-                                            local character = LocalPlayer.Character
-                                            local root = character and character:FindFirstChild("HumanoidRootPart")
-                                            
-                                            if root then
-                                                -- Method 1: Try firetouchinterest
-                                                if hitbox:FindFirstChild("TouchInterest") then
-                                                    firetouchinterest(root, hitbox, 0)
-                                                    task.wait(0.1)
-                                                    firetouchinterest(root, hitbox, 1)
-                                                end
-                                                
-                                                -- Method 2: Try teleporting to hitbox as backup
-                                                local oldPos = root.CFrame
-                                                root.CFrame = hitbox.CFrame
-                                                task.wait(0.2)
-                                                root.CFrame = oldPos
-                                                
-                                                lastLockTime = tick()
-                                                
-                                                WindUI:Notify({
-                                                    Title = "Auto Lock",
-                                                    Content = "Base locked!",
-                                                    Duration = 2,
-                                                    Icon = "lock",
-                                                })
-                                            end
-                                        end
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
+                local character = LocalPlayer.Character
+                if not character then return end
+                
+                local root = character:FindFirstChild("HumanoidRootPart")
+                if not root then return end
+                
+                -- Save current position
+                local savedPosition = root.CFrame
+                
+                -- Teleport to hitbox
+                root.CFrame = hitbox.CFrame
+                
+                -- Wait
+                task.wait(0.1)
+                
+                -- Teleport back
+                root.CFrame = savedPosition
+                
             end
         end)
         
@@ -2476,16 +2462,10 @@ myConfig:Register("AntiKick", AntiKickToggle)
 -- ========================================
 -- WELCOME POPUP
 -- ========================================
-Window:Tag({
-    Title = "v1.5.4",
-    Color = Color3.fromHex("#30ff6a"),
-    Radius = 13, -- from 0 to 13
-})
-
 WindUI:Popup({
-    Title = "Steal A Clown",
+    Title = "Steal A Clown V1.4.3",
     Icon = "sword",
-    Content = "New Update: Added Instant Steal, Improved Anti Void!, added Auto Steal",
+    Content = "New Update: Improved Anti Ragdoll, Fixed Auto Lock, And fixed other bugs!",
     Buttons = {
         {
             Title = "Close",
