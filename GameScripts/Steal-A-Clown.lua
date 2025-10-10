@@ -668,9 +668,10 @@ local function toggleAutoSteal(state)
                                 
                                 if proximityPrompt then
                                     root.CFrame = podioPart.CFrame + Vector3.new(0, 3, 0)
-                                    task.wait(0.1)
+                                    task.wait(0.3)
                                     
                                     fireproximityprompt(proximityPrompt)
+                                    task.wait(0.1)
                                     
                                     WindUI:Notify({
                                         Title = "Auto Steal",
@@ -679,7 +680,7 @@ local function toggleAutoSteal(state)
                                         Icon = "zap",
                                     })
                
-                                    task.wait(0.5)
+                                    task.wait(0.55)
                                 end
                             end
                         end
