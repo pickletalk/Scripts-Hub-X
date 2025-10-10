@@ -221,6 +221,7 @@ Window:EditOpenButton({
 -- GLOBAL STATES
 -- ========================================
 local States = {
+    AutoSteal = false,
     InstantSteal = false,
     StealUI = false,
     AutoCollect = false,
@@ -552,6 +553,163 @@ local function toggleInstantSteal(state)
         WindUI:Notify({
             Title = "Instant Steal",
             Content = "Instant steal disabled!",
+            Duration = 3,
+            Icon = "x",
+        })
+    end
+end
+
+-- ========================================
+-- AUTO STEAL (HIGHEST TO LOWEST)
+-- ========================================
+local function scanAllClowns()
+    local clownList = {}
+    local plots = Workspace:FindFirstChild("Plots")
+    
+    if not plots then return clownList end
+    
+    for _, plot in pairs(plots:GetChildren()) do
+        if plot:IsA("Model") then
+            local animalPodiums = plot:FindFirstChild("AnimalPodiums")
+            
+            if animalPodiums then
+                for i = 1, 30 do
+                    local podium = animalPodiums:FindFirstChild(tostring(i))
+                    
+                    if podium then
+                        local base = podium:FindFirstChild("Base")
+                        if base then
+                            local spawn = base:FindFirstChild("Spawn")
+                            if spawn then
+                                local attachment = spawn:FindFirstChild("Attachment")
+                                if attachment then
+                                    local animalOverhead = attachment:FindFirstChild("AnimalOverhead")
+                                    if animalOverhead then
+                                        local priceLabel = animalOverhead:FindFirstChild("Price")
+                                        
+                                        if priceLabel and priceLabel:IsA("TextLabel") then
+                                            local priceText = priceLabel.Text
+                                            local priceValue = tonumber(priceText:match("%d+"))
+                                            
+                                            if priceValue then
+                                                table.insert(clownList, {
+                                                    PlotName = plot.Name,
+                                                    PodiumNumber = tostring(i),
+                                                    Price = priceValue,
+                                                    PodiumObject = podium
+                                                })
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    table.sort(clownList, function(a, b)
+        return a.Price > b.Price
+    end)
+    
+    return clownList
+end
+
+local function toggleAutoSteal(state)
+    States.AutoSteal = state
+    
+    if state then
+        if not States.InstantSteal then
+            States.InstantSteal = true
+            toggleInstantSteal(true)
+        end
+        
+        Connections.AutoSteal = task.spawn(function()
+            while States.AutoSteal do
+                local character = LocalPlayer.Character
+                local root = character and character:FindFirstChild("HumanoidRootPart")
+                
+                if not root then
+                    task.wait(1)
+                    continue
+                end
+                
+                local clownList = scanAllClowns()
+                
+                if #clownList == 0 then
+                    WindUI:Notify({
+                        Title = "Auto Steal",
+                        Content = "No clowns found! Waiting...",
+                        Duration = 2,
+                        Icon = "alert-circle",
+                    })
+                    task.wait(5)
+                    continue
+                end
+         
+                for _, clownData in ipairs(clownList) do
+                    if not States.AutoSteal then break end
+                    
+                    local podium = clownData.PodiumObject
+                    local base = podium:FindFirstChild("Base")
+                    
+                    if base then
+                        local podio = base:FindFirstChild("Podio")
+                        local spawn = base:FindFirstChild("Spawn")
+                        
+                        if podio and spawn then
+                            local podioPart = podio:FindFirstChild("Part")
+                            local promptAttachment = spawn:FindFirstChild("PromptAttachment")
+                            
+                            if podioPart and promptAttachment then
+                                local proximityPrompt = promptAttachment:FindFirstChild("ProximityPrompt")
+                                
+                                if proximityPrompt then
+                                    root.CFrame = podioPart.CFrame + Vector3.new(0, 3, 0)
+                                    task.wait(0.1)
+                                    
+                                    fireproximityprompt(proximityPrompt)
+                                    
+                                    WindUI:Notify({
+                                        Title = "Auto Steal",
+                                        Content = string.format("Stealing $%d clown from %s", clownData.Price, clownData.PlotName),
+                                        Duration = 2,
+                                        Icon = "zap",
+                                    })
+               
+                                    task.wait(0.5)
+                                end
+                            end
+                        end
+                    end
+                end
+
+                task.wait(2)
+            end
+        end)
+        
+        WindUI:Notify({
+            Title = "Auto Steal",
+            Content = "Auto steal enabled!",
+            Duration = 3,
+            Icon = "check",
+        })
+    else
+        if Connections.AutoSteal then
+            task.cancel(Connections.AutoSteal)
+            Connections.AutoSteal = nil
+        end
+
+        if States.InstantSteal then
+            States.InstantSteal = false
+            toggleInstantSteal(false)
+        end
+        
+        WindUI:Notify({
+            Title = "Auto Steal",
+            Content = "Auto steal disabled!",
             Duration = 3,
             Icon = "x",
         })
@@ -1676,6 +1834,15 @@ local SettingsTab = Window:Tab({
 -- ========================================
 -- MAIN TAB ELEMENTS
 -- ========================================
+local AutoStealToggle = MainTab:Toggle({
+    Title = "Auto Steal (NEW)",
+    Desc = "Automatically steal clowns from highest to lowest price",
+    Default = false,
+    Callback = function(state)
+        toggleAutoSteal(state)
+    end
+})
+
 local InstantStealToggle = MainTab:Toggle({
     Title = "Instant Steal (NEW)",
     Desc = "Auto collect when you steal a clown",
@@ -1739,6 +1906,7 @@ local AutoLockToggle = MainTab:Toggle({
     end
 })
 
+myConfig:Register("AutoSteal", AutoStealToggle)
 myConfig:Register("StealUI", StealUIToggle)
 myConfig:Register("AutoCollect", AutoCollectToggle)
 myConfig:Register("FastInteraction", FastInteractionToggle)
@@ -1969,7 +2137,7 @@ myConfig:Register("AntiKick", AntiKickToggle)
 WindUI:Popup({
     Title = "Steal A Clown v1.0",
     Icon = "sword",
-    Content = "New Update: Added Instant Steal, Improved Anti Void!",
+    Content = "New Update: Added Instant Steal, Improved Anti Void!, added Auto Steal",
     Buttons = {
         {
             Title = "Close",
