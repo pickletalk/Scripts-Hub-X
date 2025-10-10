@@ -1,5 +1,5 @@
 -- ========================================
--- STEAL A CLOWN HUB - FIXED VERSION
+-- STEAL A CLOWN - FIXED VERSION
 -- Made by PickleTalk and Mhicel
 -- ========================================
 
