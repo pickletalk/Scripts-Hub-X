@@ -637,7 +637,7 @@ local function toggleAntiVoid(state)
             local hrp = character:FindFirstChild("HumanoidRootPart")
             if not hrp then return end
             
-            if hrp.Position.Y < -30 then
+            if hrp.Position.Y < -10 then
                 local rayOrigin = Vector3.new(hrp.Position.X, 100, hrp.Position.Z)
                 local rayDirection = Vector3.new(0, -500, 0)
                 local rayParams = RaycastParams.new()
@@ -1968,7 +1968,7 @@ myConfig:Register("AntiKick", AntiKickToggle)
 WindUI:Popup({
     Title = "Steal A Clown v1.0",
     Icon = "sword",
-    Content = "Fixed version with complete features! All visual ESP working, Anti-Void fixed, Auto Collect added!",
+    Content = "New Update: Added Instant Steal, Improved Anti Void!",
     Buttons = {
         {
             Title = "Close",
