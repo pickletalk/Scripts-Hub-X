@@ -2527,7 +2527,6 @@ end
 -- ========================================
 -- OPTIMIZATIONS TAB FEATURES
 -- ========================================
-
 local function toggleFullBright(state)
     States.FullBright = state
     
@@ -3012,7 +3011,7 @@ local FullBrightToggle = OptimizationsTab:Toggle({
 })
 
 local LowGFXToggle = OptimizationsTab:Toggle({
-    Title = "Low GFX Mode (Fixed)",
+    Title = "Low GFX Mode",
     Desc = "Make your GFX low for more fps!",
     Default = false,
     Callback = function(state)
