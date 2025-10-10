@@ -522,9 +522,10 @@ local function toggleInstantSteal(state)
                         local plots = Workspace:FindFirstChild("Plots")
                         local plot = plots and plots:FindFirstChild(plotName)
                         local deliveryHitbox = plot and plot:FindFirstChild("DeliveryHitbox")
-                        
+
                         if deliveryHitbox then
                             local savedPosition = root.CFrame
+                            task.wait(0.2)
                             root.CFrame = deliveryHitbox.CFrame
                             task.wait(0.1)
                             root.CFrame = savedPosition
@@ -1797,9 +1798,9 @@ local SpeedSlider = PlayerTab:Slider({
     Title = "Speed Value",
     Step = 1,
     Value = {
-        Min = 16,
-        Max = 100,
-        Default = 16,
+        Min = 34,
+        Max = 200,
+        Default = 34,
     },
     Callback = function(value)
         updateSpeedValue(value)
