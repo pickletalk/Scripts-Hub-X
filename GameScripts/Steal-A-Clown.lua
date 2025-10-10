@@ -528,7 +528,7 @@ local function toggleInstantSteal(state)
                             local savedPosition = root.CFrame
                             task.wait(0.4)
                             root.CFrame = deliveryHitbox.CFrame
-                            task.wait(0.1)
+                            task.wait(0.2)
                             root.CFrame = savedPosition
                         end
                     end)
@@ -668,7 +668,7 @@ local function toggleAutoSteal(state)
                                 
                                 if proximityPrompt then
                                     root.CFrame = podioPart.CFrame + Vector3.new(0, 3, 0)
-                                    task.wait(0.3)
+                                    task.wait(0.1)
                                     
                                     fireproximityprompt(proximityPrompt)
                                     task.wait(0.1)
@@ -680,7 +680,7 @@ local function toggleAutoSteal(state)
                                         Icon = "zap",
                                     })
                
-                                    task.wait(0.55)
+                                    task.wait(0.5)
                                 end
                             end
                         end
