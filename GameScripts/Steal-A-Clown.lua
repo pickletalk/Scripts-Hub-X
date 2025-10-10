@@ -244,6 +244,15 @@ local States = {
     CurrentTheme = "Anime Dark",
     FullBright = false,
     LowGFX = false,
+    TouchFling = false,
+    ClickFling = false,
+    TargetFling = false,
+    TargetFlingPlayer = nil,
+    MassFling = false,
+    PushPlayers = false,
+    OrbitPlayers = false,
+    AttachToPlayer = false,
+    AttachedPlayer = nil,
 }
 
 local Connections = {
@@ -2740,6 +2749,430 @@ local function removeShadows()
     })
 end
 
+-- ========================================
+-- TROLL FEATURES
+-- ========================================
+
+-- Touch Fling
+local function toggleTouchFling(state)
+    States.TouchFling = state
+    
+    if state then
+        Connections.TouchFling = RunService.Heartbeat:Connect(function()
+            local character = LocalPlayer.Character
+            if not character then return end
+            
+            local hrp = character:FindFirstChild("HumanoidRootPart")
+            if not hrp then return end
+            
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    local theirHrp = player.Character:FindFirstChild("HumanoidRootPart")
+                    local theirHumanoid = player.Character:FindFirstChild("Humanoid")
+                    
+                    if theirHrp and theirHumanoid and theirHumanoid.Health > 0 then
+                        local distance = (hrp.Position - theirHrp.Position).Magnitude
+                        
+                        if distance <= 8 then
+                            local direction = (theirHrp.Position - hrp.Position).Unit
+                            local bodyVelocity = Instance.new("BodyVelocity")
+                            bodyVelocity.MaxForce = Vector3.new(100000, 100000, 100000)
+                            bodyVelocity.Velocity = direction * 300 + Vector3.new(0, 200, 0)
+                            bodyVelocity.Parent = theirHrp
+                            
+                            game:GetService("Debris"):AddItem(bodyVelocity, 0.15)
+                            task.wait(0.5)
+                        end
+                    end
+                end
+            end
+        end)
+        
+        WindUI:Notify({
+            Title = "Touch Fling",
+            Content = "Touch fling enabled!",
+            Duration = 3,
+            Icon = "zap",
+        })
+    else
+        if Connections.TouchFling then
+            Connections.TouchFling:Disconnect()
+            Connections.TouchFling = nil
+        end
+        
+        WindUI:Notify({
+            Title = "Touch Fling",
+            Content = "Touch fling disabled!",
+            Duration = 3,
+            Icon = "x",
+        })
+    end
+end
+
+-- Click Fling
+local function toggleClickFling(state)
+    States.ClickFling = state
+    
+    if state then
+        local Mouse = LocalPlayer:GetMouse()
+        
+        Connections.ClickFling = Mouse.Button1Down:Connect(function()
+            if not States.ClickFling then return end
+            
+            local target = Mouse.Target
+            if not target then return end
+            
+            local player = Players:GetPlayerFromCharacter(target.Parent)
+            if not player or player == LocalPlayer then return end
+            
+            local character = LocalPlayer.Character
+            if not character then return end
+            
+            local hrp = character:FindFirstChild("HumanoidRootPart")
+            local theirHrp = player.Character:FindFirstChild("HumanoidRootPart")
+            
+            if hrp and theirHrp then
+                -- Teleport to them
+                local oldPos = hrp.CFrame
+                hrp.CFrame = theirHrp.CFrame * CFrame.new(0, 0, 3)
+                task.wait(0.1)
+                
+                -- Fling them
+                local direction = (theirHrp.Position - hrp.Position).Unit
+                local bodyVelocity = Instance.new("BodyVelocity")
+                bodyVelocity.MaxForce = Vector3.new(100000, 100000, 100000)
+                bodyVelocity.Velocity = direction * 350 + Vector3.new(0, 250, 0)
+                bodyVelocity.Parent = theirHrp
+                
+                game:GetService("Debris"):AddItem(bodyVelocity, 0.2)
+                
+                task.wait(0.2)
+                hrp.CFrame = oldPos
+                
+                WindUI:Notify({
+                    Title = "Click Fling",
+                    Content = string.format("Flung %s!", player.DisplayName),
+                    Duration = 2,
+                    Icon = "zap",
+                })
+            end
+        end)
+        
+        WindUI:Notify({
+            Title = "Click Fling",
+            Content = "Click on players to fling them!",
+            Duration = 3,
+            Icon = "mouse-pointer-click",
+        })
+    else
+        if Connections.ClickFling then
+            Connections.ClickFling:Disconnect()
+            Connections.ClickFling = nil
+        end
+        
+        WindUI:Notify({
+            Title = "Click Fling",
+            Content = "Click fling disabled!",
+            Duration = 3,
+            Icon = "x",
+        })
+    end
+end
+
+-- Target Fling
+local function toggleTargetFling(state)
+    States.TargetFling = state
+    
+    if state and States.TargetFlingPlayer then
+        Connections.TargetFling = task.spawn(function()
+            while States.TargetFling do
+                local targetPlayer = Players:FindFirstChild(States.TargetFlingPlayer)
+                
+                if not targetPlayer or not targetPlayer.Character then
+                    task.wait(1)
+                    continue
+                end
+                
+                local character = LocalPlayer.Character
+                if not character then
+                    task.wait(1)
+                    continue
+                end
+                
+                local hrp = character:FindFirstChild("HumanoidRootPart")
+                local theirHrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+                
+                if hrp and theirHrp then
+                    local oldPos = hrp.CFrame
+                    hrp.CFrame = theirHrp.CFrame * CFrame.new(0, 2, 0)
+                    task.wait(0.08)
+                    
+                    local direction = (theirHrp.Position - hrp.Position).Unit
+                    local bodyVelocity = Instance.new("BodyVelocity")
+                    bodyVelocity.MaxForce = Vector3.new(100000, 100000, 100000)
+                    bodyVelocity.Velocity = direction * 400 + Vector3.new(0, 300, 0)
+                    bodyVelocity.Parent = theirHrp
+                    
+                    game:GetService("Debris"):AddItem(bodyVelocity, 0.15)
+                    
+                    task.wait(0.15)
+                    hrp.CFrame = oldPos
+                end
+                
+                task.wait(0.5)
+            end
+        end)
+        
+        WindUI:Notify({
+            Title = "Target Fling",
+            Content = string.format("Continuously flinging %s!", States.TargetFlingPlayer),
+            Duration = 3,
+            Icon = "target",
+        })
+    else
+        if Connections.TargetFling then
+            task.cancel(Connections.TargetFling)
+            Connections.TargetFling = nil
+        end
+        
+        if not state then
+            WindUI:Notify({
+                Title = "Target Fling",
+                Content = "Target fling disabled!",
+                Duration = 3,
+                Icon = "x",
+            })
+        end
+    end
+end
+
+-- Mass Fling
+local function toggleMassFling(state)
+    States.MassFling = state
+    
+    if state then
+        Connections.MassFling = task.spawn(function()
+            while States.MassFling do
+                local character = LocalPlayer.Character
+                if not character then
+                    task.wait(1)
+                    continue
+                end
+                
+                local hrp = character:FindFirstChild("HumanoidRootPart")
+                if not hrp then
+                    task.wait(1)
+                    continue
+                end
+                
+                local flingCount = 0
+                
+                for _, player in pairs(Players:GetPlayers()) do
+                    if player ~= LocalPlayer and player.Character then
+                        local theirHrp = player.Character:FindFirstChild("HumanoidRootPart")
+                        
+                        if theirHrp then
+                            local distance = (hrp.Position - theirHrp.Position).Magnitude
+                            
+                            if distance <= 25 then
+                                local direction = (theirHrp.Position - hrp.Position).Unit
+                                local bodyVelocity = Instance.new("BodyVelocity")
+                                bodyVelocity.MaxForce = Vector3.new(100000, 100000, 100000)
+                                bodyVelocity.Velocity = direction * 350 + Vector3.new(0, 250, 0)
+                                bodyVelocity.Parent = theirHrp
+                                
+                                game:GetService("Debris"):AddItem(bodyVelocity, 0.15)
+                                flingCount = flingCount + 1
+                            end
+                        end
+                    end
+                end
+                
+                if flingCount > 0 then
+                    WindUI:Notify({
+                        Title = "Mass Fling",
+                        Content = string.format("Flung %d players!", flingCount),
+                        Duration = 1.5,
+                        Icon = "zap",
+                    })
+                end
+                
+                task.wait(1)
+            end
+        end)
+        
+        WindUI:Notify({
+            Title = "Mass Fling",
+            Content = "Mass fling enabled! (25 stud range)",
+            Duration = 3,
+            Icon = "users",
+        })
+    else
+        if Connections.MassFling then
+            task.cancel(Connections.MassFling)
+            Connections.MassFling = nil
+        end
+        
+        WindUI:Notify({
+            Title = "Mass Fling",
+            Content = "Mass fling disabled!",
+            Duration = 3,
+            Icon = "x",
+        })
+    end
+end
+
+-- Push Players
+local function togglePushPlayers(state)
+    States.PushPlayers = state
+    
+    if state then
+        Connections.PushPlayers = RunService.Heartbeat:Connect(function()
+            local character = LocalPlayer.Character
+            if not character then return end
+            
+            local hrp = character:FindFirstChild("HumanoidRootPart")
+            if not hrp then return end
+            
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    local theirHrp = player.Character:FindFirstChild("HumanoidRootPart")
+                    
+                    if theirHrp then
+                        local distance = (hrp.Position - theirHrp.Position).Magnitude
+                        
+                        if distance <= 15 then
+                            local direction = (theirHrp.Position - hrp.Position).Unit
+                            local bodyVelocity = Instance.new("BodyVelocity")
+                            bodyVelocity.MaxForce = Vector3.new(100000, 0, 100000)
+                            bodyVelocity.Velocity = direction * 50
+                            bodyVelocity.Parent = theirHrp
+                            
+                            game:GetService("Debris"):AddItem(bodyVelocity, 0.1)
+                        end
+                    end
+                end
+            end
+        end)
+        
+        WindUI:Notify({
+            Title = "Push Players",
+            Content = "Push players enabled!",
+            Duration = 3,
+            Icon = "move",
+        })
+    else
+        if Connections.PushPlayers then
+            Connections.PushPlayers:Disconnect()
+            Connections.PushPlayers = nil
+        end
+        
+        WindUI:Notify({
+            Title = "Push Players",
+            Content = "Push players disabled!",
+            Duration = 3,
+            Icon = "x",
+        })
+    end
+end
+
+-- Orbit Players
+local function toggleOrbitPlayers(state)
+    States.OrbitPlayers = state
+    
+    if state then
+        local angle = 0
+        
+        Connections.OrbitPlayers = RunService.Heartbeat:Connect(function()
+            local character = LocalPlayer.Character
+            if not character then return end
+            
+            local hrp = character:FindFirstChild("HumanoidRootPart")
+            if not hrp then return end
+            
+            angle = angle + 0.05
+            
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    local theirHrp = player.Character:FindFirstChild("HumanoidRootPart")
+                    
+                    if theirHrp then
+                        local distance = (hrp.Position - theirHrp.Position).Magnitude
+                        
+                        if distance <= 20 then
+                            local offset = CFrame.new(hrp.Position) * CFrame.Angles(0, angle, 0) * CFrame.new(0, 0, 10)
+                            theirHrp.CFrame = CFrame.new(offset.Position, hrp.Position)
+                        end
+                    end
+                end
+            end
+        end)
+        
+        WindUI:Notify({
+            Title = "Orbit Players",
+            Content = "Making nearby players orbit you!",
+            Duration = 3,
+            Icon = "orbit",
+        })
+    else
+        if Connections.OrbitPlayers then
+            Connections.OrbitPlayers:Disconnect()
+            Connections.OrbitPlayers = nil
+        end
+        
+        WindUI:Notify({
+            Title = "Orbit Players",
+            Content = "Orbit disabled!",
+            Duration = 3,
+            Icon = "x",
+        })
+    end
+end
+
+-- Attach to Player
+local function toggleAttachToPlayer(state)
+    States.AttachToPlayer = state
+    
+    if state and States.AttachedPlayer then
+        Connections.AttachToPlayer = RunService.Heartbeat:Connect(function()
+            local targetPlayer = Players:FindFirstChild(States.AttachedPlayer)
+            
+            if not targetPlayer or not targetPlayer.Character then return end
+            
+            local character = LocalPlayer.Character
+            if not character then return end
+            
+            local hrp = character:FindFirstChild("HumanoidRootPart")
+            local theirHrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+            
+            if hrp and theirHrp then
+                hrp.CFrame = theirHrp.CFrame * CFrame.new(0, 3, 0)
+            end
+        end)
+        
+        WindUI:Notify({
+            Title = "Attach to Player",
+            Content = string.format("Attached to %s!", States.AttachedPlayer),
+            Duration = 3,
+            Icon = "link",
+        })
+    else
+        if Connections.AttachToPlayer then
+            Connections.AttachToPlayer:Disconnect()
+            Connections.AttachToPlayer = nil
+        end
+        
+        if not state then
+            WindUI:Notify({
+                Title = "Attach to Player",
+                Content = "Detached from player!",
+                Duration = 3,
+                Icon = "x",
+            })
+        end
+    end
+end
+
 local function saveConfiguration()
     myConfig:Save()
     
@@ -2773,6 +3206,11 @@ end
 local MainTab = Window:Tab({
     Title = "Main",
     Icon = "home",
+})
+
+local TrollTab = Window:Tab({
+    Title = "Troll",
+    Icon = "skull",
 })
 
 local PlayerTab = Window:Tab({
@@ -2905,6 +3343,152 @@ myConfig:Register("FastInteraction", FastInteractionToggle)
 myConfig:Register("Desync", DesyncToggle)
 myConfig:Register("AntiVoid", AntiVoidToggle)
 myConfig:Register("AutoLock", AutoLockToggle)
+
+-- ========================================
+-- TROLL TAB ELEMENTS
+-- ========================================
+local TouchFlingToggle = TrollTab:Toggle({
+    Title = "Touch Fling",
+    Desc = "Fling anyone who gets close to you (8 studs)",
+    Default = false,
+    Callback = function(state)
+        toggleTouchFling(state)
+    end
+})
+
+local ClickFlingToggle = TrollTab:Toggle({
+    Title = "Click Fling",
+    Desc = "Click on players to fling them",
+    Default = false,
+    Callback = function(state)
+        toggleClickFling(state)
+    end
+})
+
+local MassFlingToggle = TrollTab:Toggle({
+    Title = "Mass Fling",
+    Desc = "Fling all nearby players (25 stud range)",
+    Default = false,
+    Callback = function(state)
+        toggleMassFling(state)
+    end
+})
+
+local PushPlayersToggle = TrollTab:Toggle({
+    Title = "Push Players",
+    Desc = "Constantly push nearby players away",
+    Default = false,
+    Callback = function(state)
+        togglePushPlayers(state)
+    end
+})
+
+local OrbitPlayersToggle = TrollTab:Toggle({
+    Title = "Orbit Players",
+    Desc = "Make nearby players orbit around you",
+    Default = false,
+    Callback = function(state)
+        toggleOrbitPlayers(state)
+    end
+})
+
+-- Get player names for dropdown
+local function getPlayerNames()
+    local names = {}
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            table.insert(names, {Title = player.Name, Icon = "user"})
+        end
+    end
+    return names
+end
+
+local TargetFlingDropdown = TrollTab:Dropdown({
+    Title = "Select Target Player",
+    Values = getPlayerNames(),
+    Value = nil,
+    Callback = function(option)
+        States.TargetFlingPlayer = option.Title
+        
+        if States.TargetFling then
+            toggleTargetFling(false)
+            task.wait(0.1)
+            toggleTargetFling(true)
+        end
+    end
+})
+
+local TargetFlingToggle = TrollTab:Toggle({
+    Title = "Target Fling",
+    Desc = "Continuously fling selected player",
+    Default = false,
+    Callback = function(state)
+        if not States.TargetFlingPlayer and state then
+            WindUI:Notify({
+                Title = "Target Fling",
+                Content = "Please select a player first!",
+                Duration = 3,
+                Icon = "alert-circle",
+            })
+            return
+        end
+        toggleTargetFling(state)
+    end
+})
+
+local AttachPlayerDropdown = TrollTab:Dropdown({
+    Title = "Select Player to Attach",
+    Values = getPlayerNames(),
+    Value = nil,
+    Callback = function(option)
+        States.AttachedPlayer = option.Title
+        
+        if States.AttachToPlayer then
+            toggleAttachToPlayer(false)
+            task.wait(0.1)
+            toggleAttachToPlayer(true)
+        end
+    end
+})
+
+local AttachToPlayerToggle = TrollTab:Toggle({
+    Title = "Attach to Player",
+    Desc = "Stick to selected player",
+    Default = false,
+    Callback = function(state)
+        if not States.AttachedPlayer and state then
+            WindUI:Notify({
+                Title = "Attach to Player",
+                Content = "Please select a player first!",
+                Duration = 3,
+                Icon = "alert-circle",
+            })
+            return
+        end
+        toggleAttachToPlayer(state)
+    end
+})
+
+-- Update dropdowns when players join/leave
+Players.PlayerAdded:Connect(function()
+    task.wait(1)
+    TargetFlingDropdown:Set({Values = getPlayerNames()})
+    AttachPlayerDropdown:Set({Values = getPlayerNames()})
+end)
+
+Players.PlayerRemoving:Connect(function()
+    task.wait(1)
+    TargetFlingDropdown:Set({Values = getPlayerNames()})
+    AttachPlayerDropdown:Set({Values = getPlayerNames()})
+end)
+
+myConfig:Register("TouchFling", TouchFlingToggle)
+myConfig:Register("ClickFling", ClickFlingToggle)
+myConfig:Register("MassFling", MassFlingToggle)
+myConfig:Register("PushPlayers", PushPlayersToggle)
+myConfig:Register("OrbitPlayers", OrbitPlayersToggle)
+myConfig:Register("TargetFling", TargetFlingToggle)
+myConfig:Register("AttachToPlayer", AttachToPlayerToggle)
 
 -- ========================================
 -- PLAYER TAB ELEMENTS
@@ -3222,7 +3806,7 @@ myConfig:Register("AntiKick", AntiKickToggle)
 -- WELCOME POPUP
 -- ========================================
 WindUI:Popup({
-    Title = "Steal A Clown V1.5.826",
+    Title = "Steal A Clown V1.8.254",
     Icon = "sword",
     Content = "New Update: Added Steal Highest Clown and Anti Steal!",
     Buttons = {
