@@ -654,7 +654,7 @@ local function toggleInstantSteal(state)
 
                         if deliveryHitbox then
                             local savedPosition = root.CFrame
-                            task.wait(0.5)
+                            task.wait(0.6)
                             root.CFrame = deliveryHitbox.CFrame
                             task.wait(0.5)
                             root.CFrame = savedPosition
@@ -813,7 +813,7 @@ local function toggleAutoSteal(state)
                                         Icon = "zap",
                                     })
                
-                                    task.wait(1.1)
+                                    task.wait(1.11)
                                 end
                             end
                         end
