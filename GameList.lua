@@ -21,7 +21,10 @@ local Games = {
     -- Tower of Hell
     [1962086868] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Tower-Of-Hell.lua", -- Noob Tower
     [3582763398] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Tower-Of-Hell.lua", -- Pro Tower
-    [94971861814985] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Tower-Of-Hell.lua" -- The Tower of Hell
+    [94971861814985] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Tower-Of-Hell.lua", -- The Tower of Hell
+
+    -- Steal A Clown
+    [86754403332185] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Steal-A-Clown.lua"
 }
 
 return Games
