@@ -283,6 +283,36 @@ local function getPlayerPlot()
 end
 
 -- ========================================
+-- CONVERT GENERATION VALUE (k, m, b, t support)
+-- ========================================
+local function convertGenerationValue(text)
+    if not text then return 0 end
+    
+    -- Remove "/s" if present
+    text = text:gsub("/s", "")
+    
+    -- Convert to lowercase for easier matching
+    local lowerText = text:lower()
+    
+    -- Extract number and suffix
+    local number = tonumber(lowerText:match("[%d%.]+"))
+    if not number then return 0 end
+    
+    -- Check for suffix and multiply accordingly
+    if lowerText:match("t") then
+        return number * 1000000000000 -- trillion
+    elseif lowerText:match("b") then
+        return number * 1000000000 -- billion
+    elseif lowerText:match("m") then
+        return number * 1000000 -- million
+    elseif lowerText:match("k") then
+        return number * 1000 -- thousand
+    else
+        return number -- no suffix, return as is
+    end
+end
+
+-- ========================================
 -- SERVER HOP FUNCTIONS
 -- ========================================
 local TeleportService = game:GetService("TeleportService")
@@ -767,16 +797,15 @@ local function toggleAntiSteal(state)
                                                                         else
                                                                             bat = char:FindFirstChild("Tung Bat")
                                                                         end
-                                                                        
-                                                                        -- Super fast teleport to player
-                                                                        hrp.CFrame = theirRoot.CFrame * CFrame.new(0, 0, 0)
-                                                                        
+                                                                    
                                                                         -- Click middle of screen (rapid fire)
-                                                                        for click = 1, 2 do
+                                                                        for click = 1, 3 do
                                                                             mouse1click()
                                                                             hrp.CFrame = theirRoot.CFrame * CFrame.new(0, 0, 0)
                                                                         end
                                                                     end
+
+                                                                    task.wait(0.3)
                                                                     
                                                                     -- Clean up tracking
                                                                     attackingTargets[podiumKey] = nil
@@ -843,6 +872,7 @@ local function stealHighestClown()
         
         -- Scan ALL plots and ALL podiums for highest generation
         local highestGen = 0
+        local highestGenText = ""
         local highestPlotName = nil
         local highestPodiumNum = nil
         
@@ -882,10 +912,11 @@ local function stealHighestClown()
                                             
                                             if generationLabel and generationLabel:IsA("TextLabel") then
                                                 local generationText = generationLabel.Text
-                                                local generationValue = tonumber(generationText:match("%d+"))
+                                                local generationValue = convertGenerationValue(generationText)
                                                 
                                                 if generationValue and generationValue > highestGen then
                                                     highestGen = generationValue
+                                                    highestGenText = generationText
                                                     highestPlotName = plot.Name
                                                     highestPodiumNum = tostring(i)
                                                 end
@@ -900,7 +931,7 @@ local function stealHighestClown()
             end
         end
         
-        if not highestPlotName or not highestPodiumNum then
+        if not highestPlotName or not highestPodiumNum or highestGen == 0 then
             WindUI:Notify({
                 Title = "Steal Highest",
                 Content = "No brainrots found!",
@@ -912,7 +943,7 @@ local function stealHighestClown()
         
         WindUI:Notify({
             Title = "Steal Highest",
-            Content = string.format("Found Gen %d at %s podium %s!", highestGen, highestPlotName, highestPodiumNum),
+            Content = string.format("Found %s at %s podium %s!", highestGenText, highestPlotName, highestPodiumNum),
             Duration = 2,
             Icon = "search",
         })
@@ -954,7 +985,7 @@ local function stealHighestClown()
         
         -- Teleport to the brainrot
         root.CFrame = podioPart.CFrame + Vector3.new(0, 3, 0)
-        task.wait(0.2)
+        task.wait(0.3)
         
         -- Fire the prompt
         if fireproximityprompt then
@@ -967,7 +998,7 @@ local function stealHighestClown()
         
         WindUI:Notify({
             Title = "Steal Highest",
-            Content = string.format("Stealing Gen %d...", highestGen),
+            Content = string.format("Stealing %s...", highestGenText),
             Duration = 2,
             Icon = "zap",
         })
@@ -987,7 +1018,7 @@ local function stealHighestClown()
                     
                     WindUI:Notify({
                         Title = "Steal Highest",
-                        Content = string.format("Gen %d delivered!", highestGen),
+                        Content = string.format("%s delivered!", highestGenText),
                         Duration = 3,
                         Icon = "check",
                     })
@@ -1097,13 +1128,14 @@ local function scanAllClowns()
                                         
                                         if generationLabel and generationLabel:IsA("TextLabel") then
                                             local generationText = generationLabel.Text
-                                            local generationValue = tonumber(generationText:match("%d+"))
+                                            local generationValue = convertGenerationValue(generationText)
                                             
-                                            if generationValue then
+                                            if generationValue and generationValue > 0 then
                                                 table.insert(clownList, {
                                                     PlotName = plot.Name,
                                                     PodiumNumber = tostring(i),
                                                     Generation = generationValue,
+                                                    GenerationText = generationText, -- Keep original text for display
                                                     PodiumObject = podium
                                                 })
                                             end
@@ -1118,6 +1150,7 @@ local function scanAllClowns()
         end
     end
     
+    -- Sort from HIGHEST to LOWEST
     table.sort(clownList, function(a, b)
         return a.Generation > b.Generation
     end)
@@ -1203,7 +1236,7 @@ local function toggleAutoSteal(state)
                                 
                                 WindUI:Notify({
                                     Title = "Auto Steal",
-                                    Content = string.format("Stealing Gen %d from %s", highestClown.Generation, highestClown.PlotName),
+                                    Content = string.format("Stealing %s from %s", highestClown.GenerationText, highestClown.PlotName),
                                     Duration = 2,
                                     Icon = "zap",
                                 })
@@ -2923,7 +2956,7 @@ myConfig:Register("AntiKick", AntiKickToggle)
 -- WELCOME POPUP
 -- ========================================
 WindUI:Popup({
-    Title = "Steal A Clown V1.5.664",
+    Title = "Steal A Clown V1.5.729",
     Icon = "sword",
     Content = "New Update: Added Steal Highest Clown and Anti Steal!",
     Buttons = {
