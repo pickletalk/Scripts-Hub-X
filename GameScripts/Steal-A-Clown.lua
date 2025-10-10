@@ -220,6 +220,13 @@ Window:EditOpenButton({
 -- ========================================
 -- GLOBAL STATES
 -- ========================================
+
+-- Low GFX Storage (must be initialized before States)
+local LowGFXStorage = {
+    SavedProperties = {},
+    SavedLighting = {},
+}
+
 local States = {
     AntiSteal = false,
     AutoSteal = false,
@@ -790,23 +797,35 @@ local function toggleAntiSteal(state)
                                                                         local theirRoot = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
                                                                         if not theirRoot then break end
                                                                         
-                                                                        -- Equip Tung Bat first
+                                                                        -- Equip Tung Bat and attack properly
                                                                         local bat = LocalPlayer.Backpack:FindFirstChild("Tung Bat")
-                                                                        if bat then
-                                                                            char.Humanoid:EquipTool(bat)
-                                                                        else
+                                                                        if not bat then
                                                                             bat = char:FindFirstChild("Tung Bat")
                                                                         end
-                                                                        
-                                                                        mouse1click()
-                                                                        hrp.CFrame = theirRoot.CFrame * CFrame.new(0, 0, 0)
-                                                                        mouse1click()
-                                                                        hrp.CFrame = theirRoot.CFrame * CFrame.new(0, 0, 0)
-                                                                        mouse1click()
-                                                                        hrp.CFrame = theirRoot.CFrame * CFrame.new(0, 0, 0)
-                                                                        mouse1click()
-                                                                        task.wait(0.05)
                                                                                 
+                                                                        if bat then
+                                                                            -- Equip if in backpack
+                                                                            if bat.Parent == LocalPlayer.Backpack then
+                                                                                char.Humanoid:EquipTool(bat)
+                                                                                task.wait(0.1)
+                                                                            end
+    
+                                                                            -- Teleport directly on top of target
+                                                                            hrp.CFrame = theirRoot.CFrame * CFrame.new(0, 2, 0)
+                                                                            task.wait(0.05)
+    
+                                                                            -- Activate the tool directly (no mouse clickin
+                                                                            if bat:FindFirstChild("Handle") then
+                                                                                bat:Activate()
+                                                                                task.wait(0.05)
+                                                                                bat:Activate(
+                                                                                task.wait(0.05)
+                                                                                bat:Activate()
+                                                                            end
+                                                                        else    -- No bat found, just teleport on them rapidly
+                                                                            hrp.CFrame = theirRoot.CFrame * CFrame.new(0, 2, 0)
+                                                                            task.wait(0.05)
+                                                                        end                                 
                                                                     end
 
                                                                     task.wait(0.05)
