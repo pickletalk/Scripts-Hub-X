@@ -805,7 +805,7 @@ local function toggleAntiSteal(state)
                                                                         mouse1click()
                                                                         hrp.CFrame = theirRoot.CFrame * CFrame.new(0, 0, 0)
                                                                         mouse1click()
-                                                                        task.wait(0.13)
+                                                                        task.wait(0.05)
                                                                                 
                                                                     end
 
