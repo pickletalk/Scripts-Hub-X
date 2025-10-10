@@ -674,7 +674,7 @@ local function toggleInstantSteal(state)
                             local savedPosition = root.CFrame
                             task.wait(0.4)
                             root.CFrame = deliveryHitbox.CFrame
-                            task.wait(0.3)
+                            task.wait(0.4)
                             root.CFrame = savedPosition
                         end
                     end)
@@ -714,14 +714,12 @@ local function scanAllClowns()
     
     if not plots then return clownList end
     
-    -- Get player's own plot to skip it
     local playerPlotName = getPlayerPlot()
     
     for _, plot in pairs(plots:GetChildren()) do
         if plot:IsA("Model") then
-            -- SKIP PLAYER'S OWN PLOT
             if plot.Name == playerPlotName then
-                continue  -- Skip to next plot
+                continue
             end
             
             local animalPodiums = plot:FindFirstChild("AnimalPodiums")
@@ -739,7 +737,6 @@ local function scanAllClowns()
                                 if attachment then
                                     local animalOverhead = attachment:FindFirstChild("AnimalOverhead")
                                     if animalOverhead then
-                                        -- CHANGED FROM Price TO Generation
                                         local generationLabel = animalOverhead:FindFirstChild("Generation")
                                         
                                         if generationLabel and generationLabel:IsA("TextLabel") then
@@ -750,7 +747,7 @@ local function scanAllClowns()
                                                 table.insert(clownList, {
                                                     PlotName = plot.Name,
                                                     PodiumNumber = tostring(i),
-                                                    Generation = generationValue,  -- Changed from Price
+                                                    Generation = generationValue,
                                                     PodiumObject = podium
                                                 })
                                             end
@@ -765,9 +762,8 @@ local function scanAllClowns()
         end
     end
     
-    -- Sort from highest to lowest generation
     table.sort(clownList, function(a, b)
-        return a.Generation > b.Generation  -- Changed from Price
+        return a.Generation > b.Generation
     end)
     
     return clownList
@@ -838,7 +834,7 @@ local function toggleAutoSteal(state)
                                         Icon = "zap",
                                     })
                
-                                    task.wait(0.71)
+                                    task.wait(0.81)
                                 end
                             end
                         end
