@@ -574,9 +574,7 @@ local ServerInfoParagraph = MiscTab:Paragraph({
         currentPlayers,
         maxPlayers
     ),
-    Color = "Blue",
-    Thumbnail = "rbxassetid://74135635728836",
-    ThumbnailSize = 100,
+    Color = "Gray",
 })
 
 task.spawn(function()
