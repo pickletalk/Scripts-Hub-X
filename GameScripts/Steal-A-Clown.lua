@@ -797,16 +797,13 @@ local function toggleAntiSteal(state)
                                                                         else
                                                                             bat = char:FindFirstChild("Tung Bat")
                                                                         end
-                                                                    
-                                                                        -- Click middle of screen (rapid fire)
-                                                                        for click = 1, 3 do
-                                                                            mouse1click()
-                                                                            hrp.CFrame = theirRoot.CFrame * CFrame.new(0, 0, 0)
-                                                                            task.wait(0.2)
-                                                                        end
+                                                                        
+                                                                        mouse1click()
+                                                                        hrp.CFrame = theirRoot.CFrame * CFrame.new(0, 0, 0)
+                                                                                
                                                                     end
 
-                                                                    task.wait(0.5)
+                                                                    task.wait(0.4)
                                                                     
                                                                     -- Clean up tracking
                                                                     attackingTargets[podiumKey] = nil
