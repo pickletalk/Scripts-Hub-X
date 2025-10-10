@@ -2783,7 +2783,7 @@ myConfig:Register("AntiKick", AntiKickToggle)
 WindUI:Popup({
     Title = "Steal A Clown V1.5.529",
     Icon = "sword",
-    Content = "New Update: Improved Anti Ragdoll, Fixed Auto Lock, And fixed other bugs!",
+    Content = "New Update: Added Steal Highest Clown and Anti Steal!",
     Buttons = {
         {
             Title = "Close",
