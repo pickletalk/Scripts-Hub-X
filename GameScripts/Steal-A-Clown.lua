@@ -2196,14 +2196,14 @@ local CreditsParagraph = CreditsTab:Paragraph({
 -- MISC TAB ELEMENTS
 -- ========================================
 local currentPlayers = #Players:GetPlayers()
-local maxPlayers = Players.MaxPlayers
+local maxPlayers = Players.MaxPlayers or 0
 
 local ServerInfoParagraph = MiscTab:Paragraph({
     Title = "Server Information",
     Desc = string.format(
         "Game: Steal A Clown\nPlace ID: %d\nJob ID: %s\nPlayers: %d/%d",
-        game.PlaceId,
-        game.JobId,
+        game.PlaceId or 0,
+        tostring(game.JobId or "N/A"),
         currentPlayers,
         maxPlayers
     ),
@@ -2214,15 +2214,19 @@ task.spawn(function()
     while true do
         task.wait(5)
         local currentPlayers = #Players:GetPlayers()
-        ServerInfoParagraph:Set({
-            Desc = string.format(
-                "Game: Steal A Clown\nPlace ID: %d\nJob ID: %s\nPlayers: %d/%d",
-                game.PlaceId,
-                game.JobId,
-                currentPlayers,
-                maxPlayers
-            )
-        })
+        local maxPlayers = Players.MaxPlayers or 0
+        
+        pcall(function()
+            ServerInfoParagraph:Set({
+                Desc = string.format(
+                    "Game: Steal A Clown\nPlace ID: %d\nJob ID: %s\nPlayers: %d/%d",
+                    game.PlaceId or 0,
+                    tostring(game.JobId or "N/A"),
+                    currentPlayers,
+                    maxPlayers
+                )
+            })
+        end)
     end
 end)
 
