@@ -680,7 +680,7 @@ local function toggleAutoSteal(state)
                                         Icon = "zap",
                                     })
                
-                                    task.wait(0.5)
+                                    task.wait(0.61)
                                 end
                             end
                         end
