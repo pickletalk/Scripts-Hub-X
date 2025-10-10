@@ -656,7 +656,7 @@ local function toggleInstantSteal(state)
                             local savedPosition = root.CFrame
                             task.wait(0.5)
                             root.CFrame = deliveryHitbox.CFrame
-                            task.wait(0.4)
+                            task.wait(0.5)
                             root.CFrame = savedPosition
                         end
                     end)
@@ -813,7 +813,7 @@ local function toggleAutoSteal(state)
                                         Icon = "zap",
                                     })
                
-                                    task.wait(0.91)
+                                    task.wait(1.1)
                                 end
                             end
                         end
@@ -2195,7 +2195,6 @@ local CreditsParagraph = CreditsTab:Paragraph({
 -- ========================================
 -- MISC TAB ELEMENTS
 -- ========================================
-local gameName = getGameName()
 local currentPlayers = #Players:GetPlayers()
 local maxPlayers = Players.MaxPlayers
 
