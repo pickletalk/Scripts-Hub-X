@@ -741,16 +741,14 @@ local function createBaseESP(plotSign, plotName)
     ESPObjects.Bases[plotName] = {}
     
     -- Get plot owner name from the sign
-    local ownerName = plotName
-    local plots = Workspace:FindFirstChild("Plots")
-        if plots then
-            for _, plot in pairs(plots:GetChildren()) do
-                if plot:IsA("Model") then
-                    local plotSign = plot:FindFirstChild("PlotSign")
-                    if plotSign then
-                        ownerName = textLabel.Text
-                    end
-                end
+    local ownerName = "Unknown"
+    local surfaceGui = plotSign:FindFirstChild("SurfaceGui")
+    if surfaceGui then
+        local frame = surfaceGui:FindFirstChild("Frame")
+        if frame then
+            local textLabel = frame:FindFirstChild("TextLabel")
+            if textLabel then
+                ownerName = textLabel.Text
             end
         end
     end
