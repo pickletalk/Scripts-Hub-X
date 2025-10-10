@@ -507,24 +507,6 @@ local function hopToRandomServer()
     end)
 end
 
-local function getGameName()
-    local success, result = pcall(function()
-        local url = string.format("https://games.roblox.com/v1/games?universeIds=%d", game.PlaceId)
-        local response = game:HttpGet(url)
-        local data = HttpService:JSONDecode(response)
-        if data and data.data and data.data[1] then
-            return data.data[1].name
-        end
-        return "Unknown Game"
-    end)
-    
-    if success then
-        return result
-    else
-        return "Unknown Game"
-    end
-end
-
 -- MISC TAB ALWAYSSS!
 local MiscTab = Window:Tab({
     Title = "Misc",
@@ -560,21 +542,19 @@ local CreditsParagraph = CreditsTab:Paragraph({
 -- ========================================
 -- MISC TAB ELEMENTS ALWAYSSSS!!!
 -- ========================================
-local gameName = getGameName()
 local currentPlayers = #Players:GetPlayers()
 local maxPlayers = Players.MaxPlayers
 
 local ServerInfoParagraph = MiscTab:Paragraph({
     Title = "Server Information",
     Desc = string.format(
-        "Game: %s\nPlace ID: %d\nJob ID: %s\nPlayers: %d/%d",
+        "Game: (Game Name)\nPlace ID: %d\nJob ID: %s\nPlayers: %d/%d",
         gameName,
         game.PlaceId,
         game.JobId,
         currentPlayers,
         maxPlayers
     ),
-    Color = "Gray",
 })
 
 task.spawn(function()
@@ -583,7 +563,7 @@ task.spawn(function()
         local currentPlayers = #Players:GetPlayers()
         ServerInfoParagraph:Set({
             Desc = string.format(
-                "Game: %s\nPlace ID: %d\nJob ID: %s\nPlayers: %d/%d",
+                "Game: (Game Name)\nPlace ID: %d\nJob ID: %s\nPlayers: %d/%d",
                 gameName,
                 game.PlaceId,
                 game.JobId,
@@ -681,15 +661,10 @@ myConfig:Register("ThemeColor", ThemeColorPicker)
 -- THERE MUST BE ALWAYS CREDITS AND SETTINGS AT THE END OF THE TABS!
 
 -- ========================================
--- WELCOME POPUP AND TAG THIS IS MUST THERE ALWAYS!
+-- WELCOME POPUP THIS IS MUST THERE ALWAYS!
 -- ========================================
-Window:Tag({
-    Title = "V(script version)",
-    Color = Color3.fromHex("#30ff6a"),
-    Radius = 13,
-})
 WindUI:Popup({
-    Title = "(game name)",
+    Title = "(game name) V(script version)",
     Icon = "sword",
     Content = "New Update: (the new update)!", -- USE SIMPLE WORDS LIKE ADDED NOCLIP, BYPASS NOCLIP, IMPROVE ANT VOID, ETC.!
     Buttons = {
