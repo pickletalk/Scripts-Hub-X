@@ -2230,7 +2230,6 @@ local ServerInfoParagraph = MiscTab:Paragraph({
         currentPlayers,
         maxPlayers
     ),
-    Color = "Gray",
 })
 
 -- Update player count every 5 seconds
@@ -2348,8 +2347,14 @@ myConfig:Register("AntiKick", AntiKickToggle)
 -- ========================================
 -- WELCOME POPUP
 -- ========================================
+Window:Tag({
+    Title = "v1.5.4",
+    Color = Color3.fromHex("#30ff6a"),
+    Radius = 13, -- from 0 to 13
+})
+
 WindUI:Popup({
-    Title = "Steal A Clown v1.0",
+    Title = "Steal A Clown",
     Icon = "sword",
     Content = "New Update: Added Instant Steal, Improved Anti Void!, added Auto Steal",
     Buttons = {
