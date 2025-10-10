@@ -290,7 +290,7 @@ local NoclipData = {
     CurrentPosition = nil,
     PositionHistory = {},
     HistorySize = 5,
-    AntiCheatThreshold = 7,
+    AntiCheatThreshold = 6,
     RayLength = 100,
     TeleportCooldown = 0,
     IsAutoLocking = false,
@@ -299,7 +299,7 @@ local NoclipData = {
 
 -- Anti-Void Storage (SIMPLIFIED)
 local AntiVoidData = {
-    VoidThreshold = -50,
+    VoidThreshold = -40,
     LastValidPosition = nil,
 }
 
