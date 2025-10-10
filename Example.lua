@@ -379,6 +379,12 @@ local Toggle = Tab:Toggle({
     end
 })
 
+-- Low GFX Storage (must be initialized before States)!!!
+local LowGFXStorage = {
+    SavedProperties = {},
+    SavedLighting = {},
+}
+
 -- ========================================
 -- OPTIMIZATIONS TAB FEATURES
 -- ========================================
