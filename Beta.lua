@@ -171,7 +171,7 @@ WindUI:AddTheme({
 WindUI:SetTheme("Anime Dark")
 
 local Window = WindUI:CreateWindow({
-    Title = "Steal A Anime Hub | Official",
+    Title = "Steal A Clown Hub | Official",
     Icon = "sword",
     Author = "by PickleTalk and Mhicel",
     Folder = "Scripts Hub X",
@@ -300,8 +300,8 @@ local function findRemoteEvent()
 end
 
 local InstantTeleportToggle = MainTab:Toggle({
-    Title = "Instant Teleport",
-    Desc = "Automatically teleport to delivery and back",
+    Title = "Instant Steal",
+    Desc = "Automatically steal a clown",
     Icon = "zap",
     Type = "Checkbox",
     Default = false,
@@ -309,7 +309,7 @@ local InstantTeleportToggle = MainTab:Toggle({
         States.InstantTeleport = state
         if state then
             WindUI:Notify({
-                Title = "Instant Teleport",
+                Title = "Instant Steal",
                 Content = "Instant teleport enabled",
                 Duration = 3,
                 Icon = "check",
@@ -365,8 +365,8 @@ local InstantTeleportToggle = MainTab:Toggle({
             end
         else
             WindUI:Notify({
-                Title = "Instant Teleport",
-                Content = "Instant teleport disabled",
+                Title = "Instant Steal",
+                Content = "Instant steal disabled",
                 Duration = 3,
                 Icon = "x",
             })
@@ -486,7 +486,7 @@ local ManualStealToggle = MainTab:Toggle({
 
 local FastInteractionToggle = MainTab:Toggle({
     Title = "Fast Interaction",
-    Desc = "Instant proximity prompt interaction",
+    Desc = "Instant interaction",
     Icon = "zap-off",
     Type = "Checkbox",
     Default = false,
@@ -564,7 +564,7 @@ local DesyncToggle = MainTab:Toggle({
 
 local AntiVoidToggle = MainTab:Toggle({
     Title = "Anti Void",
-    Desc = "Creates platform below you",
+    Desc = "Prevents you from falling to the void!",
     Icon = "shield",
     Type = "Checkbox",
     Default = false,
@@ -587,7 +587,7 @@ local AntiVoidToggle = MainTab:Toggle({
             end
             WindUI:Notify({
                 Title = "Anti Void",
-                Content = "Anti void platform created",
+                Content = "Anti void on!",
                 Duration = 3,
                 Icon = "check",
             })
@@ -598,7 +598,7 @@ local AntiVoidToggle = MainTab:Toggle({
             end
             WindUI:Notify({
                 Title = "Anti Void",
-                Content = "Anti void platform removed",
+                Content = "Anti void off!",
                 Duration = 3,
                 Icon = "x",
             })
@@ -608,7 +608,7 @@ local AntiVoidToggle = MainTab:Toggle({
 
 local AutoLockToggle = MainTab:Toggle({
     Title = "Auto Lock",
-    Desc = "Automatically lock plot when timer hits 0s",
+    Desc = "Automatically lock base when timer hits 0s",
     Icon = "lock",
     Type = "Checkbox",
     Default = false,
@@ -713,10 +713,10 @@ local NoClipToggle = PlayerTab:Toggle({
 
 local AntiRagdollToggle = PlayerTab:Toggle({
     Title = "Anti Ragdoll",
-    Desc = "Prevents ragdoll state",
+    Desc = "Prevents ragdoll",
     Icon = "user-check",
     Type = "Checkbox",
-    Default = false,
+    fault = false,
     Callback = function(state)
         States.AntiRagdoll = state
         if state then
@@ -759,7 +759,7 @@ local AntiRagdollToggle = PlayerTab:Toggle({
 local originalJumpPower = nil
 local InfiniteJumpToggle = PlayerTab:Toggle({
     Title = "Infinite Jump",
-    Desc = "Jump infinitely in the air",
+    Desc = "Jump infinitely",
     Icon = "arrow-up",
     Type = "Checkbox",
     Default = false,
@@ -1174,7 +1174,7 @@ local BaseESPToggle = VisualTab:Toggle({
 
 local BaseTimeESPToggle = VisualTab:Toggle({
     Title = "Base Time ESP",
-    Desc = "Show plot remaining times",
+    Desc = "Show all plot remaining time",
     Icon = "clock",
     Type = "Checkbox",
     Default = false,
@@ -1321,7 +1321,7 @@ local BaseRemainingTimeToggle = VisualTab:Toggle({
 })
 
 local CreditsParagraph = CreditsTab:Paragraph({
-    Title = "Steal A Anime Hub | Official",
+    Title = "Scripts Hub X | Official",
     Desc = "Made by PickleTalk and Mhicel. Join our discord server to be always updated with the latest features and scripts!",
     Color = "Red",
     Thumbnail = "rbxassetid://74135635728836",
@@ -1456,9 +1456,9 @@ myConfig:Register("Theme", ThemeDropdown)
 myConfig:Register("ThemeColor", ThemeColorPicker)
 
 WindUI:Popup({
-    Title = "Steal A Anime Hub v1.5",
+    Title = "Steal A Clown V1",
     Icon = "sword",
-    Content = "New Update: Added Instant Teleport, Manual Steal, Fast Interaction, Desync, Anti Void, Auto Lock, No Clip, Anti Ragdoll, Infinite Jump, God Mode, Speed, Player ESP, Base ESP, Base Time ESP",
+    content = "New Update: Added Instant Teleport, Manual Steal, Fast Interaction, Desync, And More!",
     Buttons = {
         {
             Title = "Close",
