@@ -246,6 +246,8 @@ local States = {
     LowGFX = false,
     AntiRagdoll = false,
     CurrentTheme = "Anime Dark",
+    InstantSteal = false,
+    InstantSteal = nil,
 }
 
 -- ESP Storage
@@ -552,8 +554,7 @@ local function toggleNoclip(state)
             
             -- INSTANT ANTI-CHEAT CHECK AND RECOVERY (ZERO DELAY)
             if detectAntiCheatSnapback(NoclipData.CurrentPosition, NoclipData.LastValidPosition) then
-                local targetPos = NoclipData.SavedLockButtonPosition or NoclipData.LastValidPosition
-                ultraFastTeleport(targetPos)
+                ultraFastTeleport(NoclipData.LastValidPosition)
                 print("⚡ ANTI-CHEAT BLOCKED - INSTANT RECOVERY!")
             else
                 NoclipData.LastValidPosition = NoclipData.CurrentPosition
@@ -584,6 +585,59 @@ local function toggleNoclip(state)
                 end
             end
         end
+    end
+end
+
+-- ========================================
+-- INSTANT STEAL LOGICS 
+-- ========================================
+-- INSTANT STEAL SYSTEM
+local function toggleInstantSteal(state)
+    States.InstantSteal = state
+    
+    if state then
+        Connections.InstantSteal = RunService.Heartbeat:Connect(function()
+            if not States.InstantSteal then return end
+            
+            pcall(function()
+                local plotNumber = findPlayerPlot()
+                if not plotNumber then return end
+                
+                local basesFolder = Workspace:FindFirstChild("Bases")
+                if not basesFolder then return end
+                
+                local plot = basesFolder:FindFirstChild(plotNumber)
+                if not plot then return end
+                
+                local stealCollect2 = plot:FindFirstChild("StealCollect2")
+                if not stealCollect2 then return end
+                
+                local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+                if not root then return end
+                
+                firetouchinterest(stealCollect2, root, 0)
+                firetouchinterest(stealCollect2, root, 1)
+            end)
+        end)
+        
+        WindUI:Notify({
+            Title = "Instant Steal Enabled",
+            Content = "Auto-stealing anime continuously!",
+            Duration = 3,
+            Icon = "zap",
+        })
+    else
+        if Connections.InstantSteal then
+            Connections.InstantSteal:Disconnect()
+            Connections.InstantSteal = nil
+        end
+        
+        WindUI:Notify({
+            Title = "Instant Steal Disabled",
+            Content = "Auto-steal stopped.",
+            Duration = 3,
+            Icon = "zap-off",
+        })
     end
 end
 
@@ -1676,7 +1730,7 @@ local function toggleLowGFX(state)
         
         WindUI:Notify({
             Title = "Low GFX Enabled",
-            Content = "Graphics optimized! Original settings saved.",
+            Content = "Graphics optimized!",
             Duration = 3,
             Icon = "zap",
         })
@@ -1816,9 +1870,17 @@ local SettingsTab = Window:Tab({
 -- ========================================
 -- MAIN TAB ELEMENTS
 -- ========================================
+local InstantStealToggle = MainTab:Toggle({
+    Title = "Instant Steal",
+    Desc = "Instant Auto Steal A Anime!",
+    Default = false,
+    Callback = function(state)
+        toggleInstantSteal(state)
+    end
+})
 
 local StealHelperToggle = MainTab:Toggle({
-    Title = "Steal Helper UI",
+    Title = "Manual Steal Ui",
     Desc = "Show/Hide the steal button UI with full functionality",
     Default = false,
     Callback = function(state)
@@ -1836,7 +1898,7 @@ local AutoLockToggle = MainTab:Toggle({
 })
 
 local GodModeToggle = MainTab:Toggle({
-    Title = "God Mode (FIXED)",
+    Title = "God Mode",
     Desc = "Infinite health!",
     Default = false,
     Callback = function(state)
@@ -1857,6 +1919,7 @@ myConfig:Register("StealHelper", StealHelperToggle)
 myConfig:Register("AutoLock", AutoLockToggle)
 myConfig:Register("GodMode", GodModeToggle)
 myConfig:Register("AntiVoid", AntiVoidToggle)
+myConfig:Register("InstantSteal", InstantStealToggle)
 
 -- ========================================
 -- PLAYER TAB ELEMENTS
@@ -1907,8 +1970,8 @@ local SpeedSlider = PlayerTab:Slider({
 })
 
 local NoclipToggle = PlayerTab:Toggle({
-    Title = "Noclip (ULTRA-FAST V2)",
-    Desc = "Lightning-fast noclip with instant anti-cheat recovery!",
+    Title = "Noclip",
+    Desc = "Noclip bypassed anti cheat, do not turn on if speed changer is on!",
     Default = false,
     Callback = function(state)
         toggleNoclip(state)
@@ -1937,7 +2000,7 @@ myConfig:Register("AntiRagdoll", AntiRagdollToggle)
 
 local PlayerESPToggle = VisualTab:Toggle({
     Title = "Player ESP",
-    Desc = "Show clean outline and small name above all players!",
+    Desc = "Show outline and small name esp above all players!",
     Default = false,
     Callback = function(state)
         togglePlayerESP(state)
@@ -1955,7 +2018,7 @@ local BaseTimeESPToggle = VisualTab:Toggle({
 
 local BaseTimeAlertToggle = VisualTab:Toggle({
     Title = "Base Time Alert",
-    Desc = "Small clean alarm when your base unlocks in 10 seconds",
+    Desc = "Alarm when your base unlocks in 10 seconds",
     Default = false,
     Callback = function(state)
         toggleBaseTimeAlert(state)
@@ -1980,7 +2043,7 @@ local FullBrightToggle = OptimizationsTab:Toggle({
 })
 
 local LowGFXToggle = OptimizationsTab:Toggle({
-    Title = "Low GFX Mode (Fixed)",
+    Title = "Low GFX Mod",
     Desc = "Make your GFX low for more fps!",
     Default = false,
     Callback = function(state)
