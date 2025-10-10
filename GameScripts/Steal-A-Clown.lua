@@ -1676,7 +1676,7 @@ local SettingsTab = Window:Tab({
 -- MAIN TAB ELEMENTS
 -- ========================================
 local InstantStealToggle = MainTab:Toggle({
-    Title = "Instant Steal",
+    Title = "Instant Steal (NEW)",
     Desc = "Auto collect when you steal a clown",
     Default = false,
     Callback = function(state)
