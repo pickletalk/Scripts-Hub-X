@@ -221,6 +221,7 @@ Window:EditOpenButton({
 -- GLOBAL STATES
 -- ========================================
 local States = {
+    AntiSteal = false,
     AutoSteal = false,
     InstantSteal = false,
     StealUI = false,
@@ -621,6 +622,246 @@ local function toggleStealUI(state)
             StealUIScreen = nil
         end
     end
+end
+
+-- ========================================
+-- ANTI STEAL
+-- ========================================
+local function toggleAntiSteal(state)
+    States.AntiSteal = state
+    
+    if state then
+        Connections.AntiSteal = task.spawn(function()
+            while States.AntiSteal do
+                local character = LocalPlayer.Character
+                local root = character and character:FindFirstChild("HumanoidRootPart")
+                
+                if not root then
+                    task.wait(0.5)
+                    continue
+                end
+                
+                local plotName = getPlayerPlot()
+                if not plotName then
+                    task.wait(0.5)
+                    continue
+                end
+                
+                local plots = Workspace:FindFirstChild("Plots")
+                local plot = plots and plots:FindFirstChild(plotName)
+                
+                if not plot then
+                    task.wait(0.5)
+                    continue
+                end
+                
+                local animalPodiums = plot:FindFirstChild("AnimalPodiums")
+                
+                if animalPodiums then
+                    for i = 1, 30 do
+                        local podium = animalPodiums:FindFirstChild(tostring(i))
+                        
+                        if podium then
+                            local base = podium:FindFirstChild("Base")
+                            if base then
+                                local spawn = base:FindFirstChild("Spawn")
+                                if spawn then
+                                    local attachment = spawn:FindFirstChild("Attachment")
+                                    if attachment then
+                                        local animalOverhead = attachment:FindFirstChild("AnimalOverhead")
+                                        if animalOverhead then
+                                            local stolen = animalOverhead:FindFirstChild("Stolen")
+                                            
+                                            if stolen and stolen.Visible then
+                                                -- Someone is stealing from this podium!
+                                                local podio = base:FindFirstChild("Podio")
+                                                if podio then
+                                                    local podioPart = podio:FindFirstChild("Part")
+                                                    if podioPart then
+                                                        -- Find players within 20 studs
+                                                        for _, player in pairs(Players:GetPlayers()) do
+                                                            if player ~= LocalPlayer and player.Character then
+                                                                local theirRoot = player.Character:FindFirstChild("HumanoidRootPart")
+                                                                if theirRoot then
+                                                                    local distance = (theirRoot.Position - podioPart.Position).Magnitude
+                                                                    
+                                                                    if distance <= 20 then
+                                                                        WindUI:Notify({
+                                                                            Title = "Anti Steal",
+                                                                            Content = string.format("Attacking %s stealing from podium %d!", player.DisplayName, i),
+                                                                            Duration = 2,
+                                                                            Icon = "shield",
+                                                                        })
+                                                                        
+                                                                        -- Attack loop
+                                                                        for attack = 1, 5 do
+                                                                            if not States.AntiSteal then break end
+                                                                            
+                                                                            -- Teleport to thief
+                                                                            root.CFrame = theirRoot.CFrame * CFrame.new(0, 0, 3)
+                                                                            
+                                                                            -- Equip Tung Bat
+                                                                            local bat = LocalPlayer.Backpack:FindFirstChild("Tung Bat")
+                                                                            if not bat then
+                                                                                bat = character:FindFirstChild("Tung Bat")
+                                                                            end
+                                                                            
+                                                                            if bat and bat.Parent == LocalPlayer.Backpack then
+                                                                                character.Humanoid:EquipTool(bat)
+                                                                            end
+                                                                            
+                                                                            -- Simulate click
+                                                                            task.wait(0.1)
+                                                                            mouse1click()
+                                                                            task.wait(0.2)
+                                                                        end
+                                                                        
+                                                                        break
+                                                                    end
+                                                                end
+                                                            end
+                                                        end
+                                                    end
+                                                end
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+                
+                task.wait(0.5)
+            end
+        end)
+        
+        WindUI:Notify({
+            Title = "Anti Steal",
+            Content = "Anti steal protection enabled!",
+            Duration = 3,
+            Icon = "shield",
+        })
+    else
+        if Connections.AntiSteal then
+            task.cancel(Connections.AntiSteal)
+            Connections.AntiSteal = nil
+        end
+        
+        WindUI:Notify({
+            Title = "Anti Steal",
+            Content = "Anti steal protection disabled!",
+            Duration = 3,
+            Icon = "x",
+        })
+    end
+end
+
+-- ========================================
+-- STEAL HIGHEST CLOWN (SINGLE ACTION)
+-- ========================================
+local function stealHighestClown()
+    task.spawn(function()
+        local character = LocalPlayer.Character
+        local root = character and character:FindFirstChild("HumanoidRootPart")
+        
+        if not root then
+            WindUI:Notify({
+                Title = "Steal Highest",
+                Content = "Character not found!",
+                Duration = 3,
+                Icon = "x",
+            })
+            return
+        end
+        
+        local clownList = scanAllClowns()
+        
+        if #clownList == 0 then
+            WindUI:Notify({
+                Title = "Steal Highest",
+                Content = "No clowns found!",
+                Duration = 3,
+                Icon = "alert-circle",
+            })
+            return
+        end
+        
+        -- Get the highest generation clown (first in sorted list)
+        local highestClown = clownList[1]
+        local podium = highestClown.PodiumObject
+        
+        if not podium or not podium.Parent then
+            WindUI:Notify({
+                Title = "Steal Highest",
+                Content = "Podium not found!",
+                Duration = 3,
+                Icon = "x",
+            })
+            return
+        end
+        
+        local base = podium:FindFirstChild("Base")
+        
+        if base then
+            local podio = base:FindFirstChild("Podio")
+            local spawn = base:FindFirstChild("Spawn")
+            
+            if podio and spawn then
+                local podioPart = podio:FindFirstChild("Part")
+                local promptAttachment = spawn:FindFirstChild("PromptAttachment")
+                
+                if podioPart and promptAttachment then
+                    local proximityPrompt = promptAttachment:FindFirstChild("ProximityPrompt")
+                    
+                    if proximityPrompt and proximityPrompt.Enabled then
+                        -- Teleport to the clown
+                        root.CFrame = podioPart.CFrame + Vector3.new(0, 3, 0)
+                        task.wait(0.2)
+                        
+                        -- Fire the prompt
+                        fireproximityprompt(proximityPrompt)
+                        
+                        WindUI:Notify({
+                            Title = "Steal Highest",
+                            Content = string.format("Stealing Gen %d clown from %s", highestClown.Generation, highestClown.PlotName),
+                            Duration = 3,
+                            Icon = "zap",
+                        })
+                        
+                        task.wait(0.6)
+                        
+                        -- Deliver to base
+                        local plotName = getPlayerPlot()
+                        if plotName then
+                            local plots = Workspace:FindFirstChild("Plots")
+                            local plot = plots and plots:FindFirstChild(plotName)
+                            local deliveryHitbox = plot and plot:FindFirstChild("DeliveryHitbox")
+                            
+                            if deliveryHitbox then
+                                root.CFrame = deliveryHitbox.CFrame
+                                task.wait(0.4)
+                                
+                                WindUI:Notify({
+                                    Title = "Steal Highest",
+                                    Content = "Successfully delivered!",
+                                    Duration = 3,
+                                    Icon = "check",
+                                })
+                            end
+                        end
+                    else
+                        WindUI:Notify({
+                            Title = "Steal Highest",
+                            Content = "Proximity prompt not available!",
+                            Duration = 3,
+                            Icon = "x",
+                        })
+                    end
+                end
+            end
+        end
+    end)
 end
 
 -- ========================================
@@ -2167,6 +2408,14 @@ local SettingsTab = Window:Tab({
 -- ========================================
 -- MAIN TAB ELEMENTS
 -- ========================================
+local StealHighestButton = MainTab:Button({
+    Title = "Steal Highest Clown",
+    Desc = "Steal the highest generation clown once",
+    Callback = function()
+        stealHighestClown()
+    end
+})
+
 local AutoStealToggle = MainTab:Toggle({
     Title = "Auto Steal (NEW)",
     Desc = "Automatically steal clowns from highest to lowest price",
@@ -2191,6 +2440,15 @@ local StealUIToggle = MainTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleStealUI(state)
+    end
+})
+
+local AntiStealToggle = MainTab:Toggle({
+    Title = "Anti Steal",
+    Desc = "Automatically attack players stealing from your base",
+    Default = false,
+    Callback = function(state)
+        toggleAntiSteal(state)
     end
 })
 
@@ -2239,6 +2497,7 @@ local AutoLockToggle = MainTab:Toggle({
     end
 })
 
+myConfig:Register("AntiSteal", AntiStealToggle)
 myConfig:Register("AutoSteal", AutoStealToggle)
 myConfig:Register("StealUI", StealUIToggle)
 myConfig:Register("AutoCollect", AutoCollectToggle)
