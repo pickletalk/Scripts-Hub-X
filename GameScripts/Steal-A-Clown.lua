@@ -840,7 +840,7 @@ local function toggleAutoSteal(state)
                                     end
                                     
                                     -- Wait before next clown
-                                    task.wait(0.2)
+                                    task.wait(0.35)
                                 end
                             end
                         end
