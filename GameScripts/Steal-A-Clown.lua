@@ -821,7 +821,7 @@ local function toggleAntiSteal(state)
                                                                             if bat:FindFirstChild("Handle") then
                                                                                 bat:Activate()
                                                                                 task.wait(0.05)
-                                                                                bat:Activate(
+                                                                                bat:Activate()
                                                                                 task.wait(0.05)
                                                                                 bat:Activate()
                                                                             end
