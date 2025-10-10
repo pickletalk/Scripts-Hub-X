@@ -676,8 +676,11 @@ local function toggleAntiSteal(state)
                                         if animalOverhead then
                                             local stolen = animalOverhead:FindFirstChild("Stolen")
                                             
-                                            if stolen and stolen.Visible then
-                                                -- Podium is being stolen!
+                                            -- Check if brainrot exists
+                                            local brainrotExists = animalOverhead:FindFirstChild("Generation") ~= nil
+                                            
+                                            if stolen and stolen.Visible and brainrotExists then
+                                                -- Podium is being stolen and brainrot exists!
                                                 local podiumKey = plotName .. "_" .. tostring(i)
                                                 
                                                 -- Check if already attacking this podium
@@ -719,8 +722,23 @@ local function toggleAntiSteal(state)
                                                                         Icon = "shield",
                                                                     })
                                                                     
-                                                                    -- Attack until podium is no longer stolen
+                                                                    -- Attack until podium is no longer stolen OR brainrot disappears
                                                                     while States.AntiSteal do
+                                                                        -- Check if brainrot still exists
+                                                                        local currentAttachment = spawn:FindFirstChild("Attachment")
+                                                                        local currentOverhead = currentAttachment and currentAttachment:FindFirstChild("AnimalOverhead")
+                                                                        local currentGeneration = currentOverhead and currentOverhead:FindFirstChild("Generation")
+                                                                        
+                                                                        if not currentGeneration then
+                                                                            WindUI:Notify({
+                                                                                Title = "Anti Steal",
+                                                                                Content = string.format("Brainrot on podium %d is gone!", i),
+                                                                                Duration = 2,
+                                                                                Icon = "check",
+                                                                            })
+                                                                            break
+                                                                        end
+                                                                        
                                                                         -- Check if still stolen
                                                                         if not stolen or not stolen.Visible then
                                                                             WindUI:Notify({
@@ -742,10 +760,7 @@ local function toggleAntiSteal(state)
                                                                         local theirRoot = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
                                                                         if not theirRoot then break end
                                                                         
-                                                                        -- Super fast teleport to player
-                                                                        hrp.CFrame = theirRoot.CFrame * CFrame.new(0, 0, 0)
-                                                                        
-                                                                        -- Equip Tung Bat
+                                                                        -- Equip Tung Bat first
                                                                         local bat = LocalPlayer.Backpack:FindFirstChild("Tung Bat")
                                                                         if bat then
                                                                             char.Humanoid:EquipTool(bat)
@@ -753,13 +768,14 @@ local function toggleAntiSteal(state)
                                                                             bat = char:FindFirstChild("Tung Bat")
                                                                         end
                                                                         
-                                                                        -- Rapid clicking
-                                                                        for click = 1, 3 do
-                                                                            mouse1click()
-                                                                            task.wait(0.05)
-                                                                        end
+                                                                        -- Super fast teleport to player
+                                                                        hrp.CFrame = theirRoot.CFrame * CFrame.new(0, 0, 0)
                                                                         
-                                                                        task.wait(0.1)
+                                                                        -- Click middle of screen (rapid fire)
+                                                                        for click = 1, 2 do
+                                                                            mouse1click()
+                                                                            hrp.CFrame = theirRoot.CFrame * CFrame.new(0, 0, 0)
+                                                                        end
                                                                     end
                                                                     
                                                                     -- Clean up tracking
@@ -770,7 +786,7 @@ local function toggleAntiSteal(state)
                                                     end
                                                 end
                                             else
-                                                -- Podium not stolen, clear tracking
+                                                -- Podium not stolen or brainrot gone, clear tracking
                                                 local podiumKey = plotName .. "_" .. tostring(i)
                                                 attackingTargets[podiumKey] = nil
                                             end
@@ -808,7 +824,7 @@ local function toggleAntiSteal(state)
 end
 
 -- ========================================
--- STEAL HIGHEST CLOWN (SINGLE ACTION)
+-- STEAL HIGHEST BRAINROT (SINGLE ACTION)
 -- ========================================
 local function stealHighestClown()
     task.spawn(function()
@@ -825,119 +841,156 @@ local function stealHighestClown()
             return
         end
         
-        -- Use the same scan function as Auto Steal
-        local clownList = scanAllClowns()
+        -- Scan ALL plots and ALL podiums for highest generation
+        local highestGen = 0
+        local highestPlotName = nil
+        local highestPodiumNum = nil
         
-        if #clownList == 0 then
+        local plots = Workspace:FindFirstChild("Plots")
+        if not plots then
             WindUI:Notify({
                 Title = "Steal Highest",
-                Content = "No clowns found in any base!",
-                Duration = 3,
-                Icon = "alert-circle",
-            })
-            return
-        end
-        
-        -- Get the highest generation clown (first in already sorted list)
-        local highestClown = clownList[1]
-        local podium = highestClown.PodiumObject
-        
-        if not podium or not podium.Parent then
-            WindUI:Notify({
-                Title = "Steal Highest",
-                Content = "Target podium not available!",
+                Content = "No plots found!",
                 Duration = 3,
                 Icon = "x",
             })
             return
         end
         
-        local base = podium:FindFirstChild("Base")
+        local playerPlotName = getPlayerPlot()
         
-        if base then
-            local podio = base:FindFirstChild("Podio")
-            local spawn = base:FindFirstChild("Spawn")
-            
-            if podio and spawn then
-                local podioPart = podio:FindFirstChild("Part")
-                local promptAttachment = spawn:FindFirstChild("PromptAttachment")
+        -- Check all plots
+        for _, plot in pairs(plots:GetChildren()) do
+            if plot:IsA("Model") and plot.Name ~= playerPlotName then
+                local animalPodiums = plot:FindFirstChild("AnimalPodiums")
                 
-                -- Verify the animal is still there
-                local attachment = spawn:FindFirstChild("Attachment")
-                local animalStillThere = attachment and attachment:FindFirstChild("AnimalOverhead")
-                
-                if not animalStillThere then
-                    WindUI:Notify({
-                        Title = "Steal Highest",
-                        Content = "Clown disappeared before steal!",
-                        Duration = 3,
-                        Icon = "x",
-                    })
-                    return
-                end
-                
-                if podioPart and promptAttachment then
-                    local proximityPrompt = promptAttachment:FindFirstChild("ProximityPrompt")
-                    
-                    if proximityPrompt and proximityPrompt.Enabled then
-                        WindUI:Notify({
-                            Title = "Steal Highest",
-                            Content = string.format("Stealing Gen %d from %s...", highestClown.Generation, highestClown.PlotName),
-                            Duration = 2,
-                            Icon = "zap",
-                        })
+                if animalPodiums then
+                    -- Check all podiums (1-30)
+                    for i = 1, 30 do
+                        local podium = animalPodiums:FindFirstChild(tostring(i))
                         
-                        -- Teleport to the clown (same as Auto Steal)
-                        root.CFrame = podioPart.CFrame + Vector3.new(0, 3, 0)
-                        task.wait(0.2)
-                        
-                        -- Fire the prompt (same as Auto Steal)
-                        if fireproximityprompt then
-                            fireproximityprompt(proximityPrompt)
-                        else
-                            -- Alternative method
-                            proximityPrompt:InputHoldBegin()
-                            task.wait(proximityPrompt.HoldDuration or 0.5)
-                            proximityPrompt:InputHoldEnd()
-                        end
-                        
-                        -- Simple delay (same as Auto Steal)
-                        task.wait(0.6)
-                        
-                        -- Deliver to base (same as Auto Steal)
-                        local plotName = getPlayerPlot()
-                        if plotName then
-                            local plots = Workspace:FindFirstChild("Plots")
-                            local plot = plots and plots:FindFirstChild(plotName)
-                            local deliveryHitbox = plot and plot:FindFirstChild("DeliveryHitbox")
-                            
-                            if deliveryHitbox then
-                                root.CFrame = deliveryHitbox.CFrame
-                                task.wait(0.4)
-                                
-                                WindUI:Notify({
-                                    Title = "Steal Highest",
-                                    Content = string.format("Gen %d clown delivered!", highestClown.Generation),
-                                    Duration = 3,
-                                    Icon = "check",
-                                })
-                            else
-                                WindUI:Notify({
-                                    Title = "Steal Highest",
-                                    Content = "Delivery hitbox not found!",
-                                    Duration = 3,
-                                    Icon = "alert-circle",
-                                })
+                        if podium then
+                            local base = podium:FindFirstChild("Base")
+                            if base then
+                                local spawn = base:FindFirstChild("Spawn")
+                                if spawn then
+                                    local attachment = spawn:FindFirstChild("Attachment")
+                                    if attachment then
+                                        local animalOverhead = attachment:FindFirstChild("AnimalOverhead")
+                                        if animalOverhead then
+                                            local generationLabel = animalOverhead:FindFirstChild("Generation")
+                                            
+                                            if generationLabel and generationLabel:IsA("TextLabel") then
+                                                local generationText = generationLabel.Text
+                                                local generationValue = tonumber(generationText:match("%d+"))
+                                                
+                                                if generationValue and generationValue > highestGen then
+                                                    highestGen = generationValue
+                                                    highestPlotName = plot.Name
+                                                    highestPodiumNum = tostring(i)
+                                                end
+                                            end
+                                        end
+                                    end
+                                end
                             end
                         end
-                    else
-                        WindUI:Notify({
-                            Title = "Steal Highest",
-                            Content = "Proximity prompt not available!",
-                            Duration = 3,
-                            Icon = "x",
-                        })
                     end
+                end
+            end
+        end
+        
+        if not highestPlotName or not highestPodiumNum then
+            WindUI:Notify({
+                Title = "Steal Highest",
+                Content = "No brainrots found!",
+                Duration = 3,
+                Icon = "alert-circle",
+            })
+            return
+        end
+        
+        WindUI:Notify({
+            Title = "Steal Highest",
+            Content = string.format("Found Gen %d at %s podium %s!", highestGen, highestPlotName, highestPodiumNum),
+            Duration = 2,
+            Icon = "search",
+        })
+        
+        -- Now steal it
+        local targetPlot = plots:FindFirstChild(highestPlotName)
+        if not targetPlot then return end
+        
+        local animalPodiums = targetPlot:FindFirstChild("AnimalPodiums")
+        if not animalPodiums then return end
+        
+        local targetPodium = animalPodiums:FindFirstChild(highestPodiumNum)
+        if not targetPodium then return end
+        
+        local base = targetPodium:FindFirstChild("Base")
+        if not base then return end
+        
+        local podio = base:FindFirstChild("Podio")
+        local spawn = base:FindFirstChild("Spawn")
+        
+        if not podio or not spawn then return end
+        
+        local podioPart = podio:FindFirstChild("Part")
+        local promptAttachment = spawn:FindFirstChild("PromptAttachment")
+        
+        if not podioPart or not promptAttachment then return end
+        
+        local proximityPrompt = promptAttachment:FindFirstChild("ProximityPrompt")
+        
+        if not proximityPrompt or not proximityPrompt.Enabled then
+            WindUI:Notify({
+                Title = "Steal Highest",
+                Content = "Proximity prompt not available!",
+                Duration = 3,
+                Icon = "x",
+            })
+            return
+        end
+        
+        -- Teleport to the brainrot
+        root.CFrame = podioPart.CFrame + Vector3.new(0, 3, 0)
+        task.wait(0.2)
+        
+        -- Fire the prompt
+        if fireproximityprompt then
+            fireproximityprompt(proximityPrompt)
+        else
+            proximityPrompt:InputHoldBegin()
+            task.wait(proximityPrompt.HoldDuration or 0.5)
+            proximityPrompt:InputHoldEnd()
+        end
+        
+        WindUI:Notify({
+            Title = "Steal Highest",
+            Content = string.format("Stealing Gen %d...", highestGen),
+            Duration = 2,
+            Icon = "zap",
+        })
+        
+        task.wait(0.6)
+        
+        -- Deliver to your base
+        local myPlotName = getPlayerPlot()
+        if myPlotName then
+            local myPlot = plots:FindFirstChild(myPlotName)
+            if myPlot then
+                local deliveryHitbox = myPlot:FindFirstChild("DeliveryHitbox")
+                
+                if deliveryHitbox then
+                    root.CFrame = deliveryHitbox.CFrame
+                    task.wait(0.4)
+                    
+                    WindUI:Notify({
+                        Title = "Steal Highest",
+                        Content = string.format("Gen %d delivered!", highestGen),
+                        Duration = 3,
+                        Icon = "check",
+                    })
                 end
             end
         end
