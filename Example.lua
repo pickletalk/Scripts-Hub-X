@@ -187,10 +187,10 @@ WindUI:SetTheme("Dark")
 
 -- Creating Window!
 local Window = WindUI:CreateWindow({
-    Title = "(gameName) SHX | Official",
+    Title = "(gameName) SHX | Official", -- ALWAS LIKE THIS CHANGE THE GAMENAME TO THE PROVIDED GAME
     Icon = "sword", -- lucide icon
     Author = "by PickleTalk and Mhicel",
-    Folder = "Scripts Hub X",
+    Folder = "Scripts Hub X", -- ALWAYS SCRIPTS HUB X!
     Transparent = true,
     Theme = "Dark",
 })
@@ -202,7 +202,7 @@ Window:ToggleTransparency(true)
 local ConfigManager = Window.ConfigManager
 
 -- Example Creating Config!
-local myConfig = ConfigManager:CreateConfig("Scripts Hub X")
+local myConfig = ConfigManager:CreateConfig("(game name)")
 
 -- REGISTERING ELEMENTS!
 myConfig:Register("SpecialNameExample", Element)
