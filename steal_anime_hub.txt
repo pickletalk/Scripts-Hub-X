@@ -1,0 +1,1483 @@
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+
+WindUI:AddTheme({
+    Name = "Anime Dark",
+    Accent = Color3.fromHex("#FF0F7B"),
+    Dialog = Color3.fromHex("#161616"),
+    Outline = Color3.fromHex("#FF0F7B"),
+    Text = Color3.fromHex("#FFFFFF"),
+    Placeholder = Color3.fromHex("#7a7a7a"),
+    Background = Color3.fromHex("#101010"),
+    Button = Color3.fromHex("#52525b"),
+    Icon = Color3.fromHex("#FF0F7B")
+})
+
+WindUI:AddTheme({
+    Name = "Anime Light",
+    Accent = Color3.fromHex("#F89B29"),
+    Dialog = Color3.fromHex("#f5f5f5"),
+    Outline = Color3.fromHex("#F89B29"),
+    Text = Color3.fromHex("#000000"),
+    Placeholder = Color3.fromHex("#5a5a5a"),
+    Background = Color3.fromHex("#ffffff"),
+    Button = Color3.fromHex("#e5e5e5"),
+    Icon = Color3.fromHex("#F89B29")
+})
+
+WindUI:AddTheme({
+    Name = "Purple Dream",
+    Accent = Color3.fromHex("#9333EA"),
+    Dialog = Color3.fromHex("#1a1625"),
+    Outline = Color3.fromHex("#A855F7"),
+    Text = Color3.fromHex("#FFFFFF"),
+    Placeholder = Color3.fromHex("#7a7a7a"),
+    Background = Color3.fromHex("#0f0b16"),
+    Button = Color3.fromHex("#4c2a6e"),
+    Icon = Color3.fromHex("#C084FC")
+})
+
+WindUI:AddTheme({
+    Name = "Ocean Blue",
+    Accent = Color3.fromHex("#0EA5E9"),
+    Dialog = Color3.fromHex("#161e28"),
+    Outline = Color3.fromHex("#38BDF8"),
+    Text = Color3.fromHex("#FFFFFF"),
+    Placeholder = Color3.fromHex("#7a7a7a"),
+    Background = Color3.fromHex("#0a1420"),
+    Button = Color3.fromHex("#1e3a5f"),
+    Icon = Color3.fromHex("#7DD3FC")
+})
+
+WindUI:AddTheme({
+    Name = "Forest Green",
+    Accent = Color3.fromHex("#10B981"),
+    Dialog = Color3.fromHex("#16211c"),
+    Outline = Color3.fromHex("#34D399"),
+    Text = Color3.fromHex("#FFFFFF"),
+    Placeholder = Color3.fromHex("#7a7a7a"),
+    Background = Color3.fromHex("#0a1610"),
+    Button = Color3.fromHex("#1e4d3a"),
+    Icon = Color3.fromHex("#6EE7B7")
+})
+
+WindUI:AddTheme({
+    Name = "Crimson Red",
+    Accent = Color3.fromHex("#DC2626"),
+    Dialog = Color3.fromHex("#211616"),
+    Outline = Color3.fromHex("#EF4444"),
+    Text = Color3.fromHex("#FFFFFF"),
+    Placeholder = Color3.fromHex("#7a7a7a"),
+    Background = Color3.fromHex("#180a0a"),
+    Button = Color3.fromHex("#5f1e1e"),
+    Icon = Color3.fromHex("#F87171")
+})
+
+WindUI:AddTheme({
+    Name = "Sunset Orange",
+    Accent = Color3.fromHex("#F97316"),
+    Dialog = Color3.fromHex("#211a16"),
+    Outline = Color3.fromHex("#FB923C"),
+    Text = Color3.fromHex("#FFFFFF"),
+    Placeholder = Color3.fromHex("#7a7a7a"),
+    Background = Color3.fromHex("#18120a"),
+    Button = Color3.fromHex("#5f371e"),
+    Icon = Color3.fromHex("#FDBA74")
+})
+
+WindUI:AddTheme({
+    Name = "Midnight Purple",
+    Accent = Color3.fromHex("#7C3AED"),
+    Dialog = Color3.fromHex("#1a1625"),
+    Outline = Color3.fromHex("#8B5CF6"),
+    Text = Color3.fromHex("#FFFFFF"),
+    Placeholder = Color3.fromHex("#7a7a7a"),
+    Background = Color3.fromHex("#0f0a18"),
+    Button = Color3.fromHex("#3d2a5f"),
+    Icon = Color3.fromHex("#A78BFA")
+})
+
+WindUI:AddTheme({
+    Name = "Cyan Glow",
+    Accent = Color3.fromHex("#06B6D4"),
+    Dialog = Color3.fromHex("#162228"),
+    Outline = Color3.fromHex("#22D3EE"),
+    Text = Color3.fromHex("#FFFFFF"),
+    Placeholder = Color3.fromHex("#7a7a7a"),
+    Background = Color3.fromHex("#0a1418"),
+    Button = Color3.fromHex("#1e4550"),
+    Icon = Color3.fromHex("#67E8F9")
+})
+
+WindUI:AddTheme({
+    Name = "Rose Pink",
+    Accent = Color3.fromHex("#F43F5E"),
+    Dialog = Color3.fromHex("#211619"),
+    Outline = Color3.fromHex("#FB7185"),
+    Text = Color3.fromHex("#FFFFFF"),
+    Placeholder = Color3.fromHex("#7a7a7a"),
+    Background = Color3.fromHex("#180a0f"),
+    Button = Color3.fromHex("#5f1e2d"),
+    Icon = Color3.fromHex("#FDA4AF")
+})
+
+WindUI:AddTheme({
+    Name = "Golden Hour",
+    Accent = Color3.fromHex("#FBBF24"),
+    Dialog = Color3.fromHex("#21200f"),
+    Outline = Color3.fromHex("#FCD34D"),
+    Text = Color3.fromHex("#000000"),
+    Placeholder = Color3.fromHex("#5a5a5a"),
+    Background = Color3.fromHex("#1a1808"),
+    Button = Color3.fromHex("#6b5a1e"),
+    Icon = Color3.fromHex("#FDE68A")
+})
+
+WindUI:AddTheme({
+    Name = "Neon Green",
+    Accent = Color3.fromHex("#22C55E"),
+    Dialog = Color3.fromHex("#162116"),
+    Outline = Color3.fromHex("#4ADE80"),
+    Text = Color3.fromHex("#FFFFFF"),
+    Placeholder = Color3.fromHex("#7a7a7a"),
+    Background = Color3.fromHex("#0a1610"),
+    Button = Color3.fromHex("#1e5f2d"),
+    Icon = Color3.fromHex("#86EFAC")
+})
+
+WindUI:AddTheme({
+    Name = "Electric Blue",
+    Accent = Color3.fromHex("#3B82F6"),
+    Dialog = Color3.fromHex("#161c28"),
+    Outline = Color3.fromHex("#60A5FA"),
+    Text = Color3.fromHex("#FFFFFF"),
+    Placeholder = Color3.fromHex("#7a7a7a"),
+    Background = Color3.fromHex("#0a1220"),
+    Button = Color3.fromHex("#1e3d6b"),
+    Icon = Color3.fromHex("#93C5FD")
+})
+
+WindUI:AddTheme({
+    Name = "Custom",
+    Accent = Color3.fromHex("#FF0F7B"),
+    Dialog = Color3.fromHex("#161616"),
+    Outline = Color3.fromHex("#FF0F7B"),
+    Text = Color3.fromHex("#FFFFFF"),
+    Placeholder = Color3.fromHex("#7a7a7a"),
+    Background = Color3.fromHex("#101010"),
+    Button = Color3.fromHex("#52525b"),
+    Icon = Color3.fromHex("#FF0F7B")
+})
+
+WindUI:SetTheme("Anime Dark")
+
+local Window = WindUI:CreateWindow({
+    Title = "Steal A Anime Hub | Official",
+    Icon = "sword",
+    Author = "by PickleTalk and Mhicel",
+    Folder = "Scripts Hub X",
+    Transparent = true,
+    Theme = "Anime Dark",
+})
+
+Window:ToggleTransparency(true)
+
+local ConfigManager = Window.ConfigManager
+local myConfig = ConfigManager:CreateConfig("Scripts Hub X")
+
+Window:EditOpenButton({
+    Title = "Scripts Hub X | Official",
+    Icon = "monitor",
+    CornerRadius = UDim.new(0,16),
+    StrokeThickness = 2,
+    Color = ColorSequence.new(
+        Color3.fromHex("FF0F7B"), 
+        Color3.fromHex("F89B29")
+    ),
+    OnlyMobile = false,
+    Enabled = true,
+    Draggable = true,
+})
+
+local MainTab = Window:Tab({
+    Title = "Main",
+    Icon = "sword",
+    Locked = false,
+})
+
+local PlayerTab = Window:Tab({
+    Title = "Player",
+    Icon = "user",
+    Locked = false,
+})
+
+local VisualTab = Window:Tab({
+    Title = "Visual",
+    Icon = "eye",
+    Locked = false,
+})
+
+local CreditsTab = Window:Tab({
+    Title = "Credits",
+    Icon = "users",
+    Locked = false,
+})
+
+local SettingsTab = Window:Tab({
+    Title = "Settings",
+    Icon = "settings",
+    Locked = false,
+})
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local States = {
+    CurrentTheme = "Anime Dark",
+    InstantTeleport = false,
+    ManualSteal = false,
+    FastInteraction = false,
+    Desync = false,
+    AntiVoid = false,
+    AutoLock = false,
+    NoClip = false,
+    AntiRagdoll = false,
+    InfiniteJump = false,
+    GodMode = false,
+    SpeedEnabled = false,
+    SpeedValue = 16,
+    PlayerESP = false,
+    BaseESP = false,
+    BaseTimeESP = false,
+    BaseRemainingTimeESP = false,
+}
+
+local Connections = {}
+local ESPObjects = {}
+local ManualStealUI = nil
+local AntiVoidPlatform = nil
+local BaseTimeUI = nil
+
+local function getPlayerPlot()
+    local playerName = LocalPlayer.Name
+    local plots = workspace:FindFirstChild("Plots")
+    if not plots then return nil end
+    
+    for _, plot in pairs(plots:GetChildren()) do
+        if plot:IsA("Model") then
+            local plotSign = plot:FindFirstChild("PlotSign")
+            if plotSign then
+                local surfaceGui = plotSign:FindFirstChild("SurfaceGui")
+                if surfaceGui then
+                    local frame = surfaceGui:FindFirstChild("Frame")
+                    if frame then
+                        local textLabel = frame:FindFirstChild("TextLabel")
+                        if textLabel and textLabel.Text == playerName .. "'s Base" then
+                            return plot.Name
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return nil
+end
+
+local function findRemoteEvent()
+    local net = game.ReplicatedStorage:FindFirstChild("Packages")
+    if net then
+        net = net:FindFirstChild("Net")
+        if net then
+            for _, child in pairs(net:GetChildren()) do
+                if child:IsA("RemoteEvent") and child.Name:match("^RE/") then
+                    return child
+                end
+            end
+        end
+    end
+    return nil
+end
+
+local InstantTeleportToggle = MainTab:Toggle({
+    Title = "Instant Teleport",
+    Desc = "Automatically teleport to delivery and back",
+    Icon = "zap",
+    Type = "Checkbox",
+    Default = false,
+    Callback = function(state)
+        States.InstantTeleport = state
+        if state then
+            WindUI:Notify({
+                Title = "Instant Teleport",
+                Content = "Instant teleport enabled",
+                Duration = 3,
+                Icon = "check",
+            })
+            
+            local remote = findRemoteEvent()
+            if not remote then
+                WindUI:Notify({
+                    Title = "Error",
+                    Content = "RemoteEvent not found",
+                    Duration = 3,
+                    Icon = "x",
+                })
+                return
+            end
+            
+            local plotName = getPlayerPlot()
+            if not plotName then
+                WindUI:Notify({
+                    Title = "Error",
+                    Content = "Player plot not found",
+                    Duration = 3,
+                    Icon = "x",
+                })
+                return
+            end
+            
+            local character = LocalPlayer.Character
+            if not character then return end
+            local hrp = character:FindFirstChild("HumanoidRootPart")
+            if not hrp then return end
+            
+            local oldPos = hrp.CFrame
+            
+            local plot = workspace.Plots:FindFirstChild(plotName)
+            if plot then
+                local deliveryHitbox = plot:FindFirstChild("DeliveryHitbox")
+                if deliveryHitbox then
+                    hrp.CFrame = deliveryHitbox.CFrame
+                    task.wait(0.1)
+                    
+                    local args = {
+                        tick(),
+                        remote.Name,
+                        plotName,
+                        7
+                    }
+                    remote:FireServer(unpack(args))
+                    
+                    task.wait(0.1)
+                    hrp.CFrame = oldPos
+                end
+            end
+        else
+            WindUI:Notify({
+                Title = "Instant Teleport",
+                Content = "Instant teleport disabled",
+                Duration = 3,
+                Icon = "x",
+            })
+        end
+    end
+})
+
+local ManualStealToggle = MainTab:Toggle({
+    Title = "Manual Steal",
+    Desc = "Show draggable steal button",
+    Icon = "hand",
+    Type = "Checkbox",
+    Default = false,
+    Callback = function(state)
+        States.ManualSteal = state
+        if state then
+            local ScreenGui = Instance.new("ScreenGui")
+            ScreenGui.Name = "ManualStealUI"
+            ScreenGui.ResetOnSpawn = false
+            ScreenGui.Parent = game.CoreGui
+            
+            local Button = Instance.new("TextButton")
+            Button.Size = UDim2.new(0, 100, 0, 50)
+            Button.Position = UDim2.new(0.5, -50, 0.8, 0)
+            Button.Text = "Steal"
+            Button.BackgroundColor3 = Color3.fromRGB(255, 15, 123)
+            Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+            Button.Font = Enum.Font.GothamBold
+            Button.TextSize = 18
+            Button.Parent = ScreenGui
+            
+            local Corner = Instance.new("UICorner")
+            Corner.CornerRadius = UDim.new(0, 8)
+            Corner.Parent = Button
+            
+            local dragging = false
+            local dragInput, mousePos, framePos
+            
+            Button.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    dragging = true
+                    mousePos = input.Position
+                    framePos = Button.Position
+                    
+                    input.Changed:Connect(function()
+                        if input.UserInputState == Enum.UserInputState.End then
+                            dragging = false
+                        end
+                    end)
+                end
+            end)
+            
+            Button.InputChanged:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseMovement then
+                    dragInput = input
+                end
+            end)
+            
+            RunService.Heartbeat:Connect(function()
+                if dragging and dragInput then
+                    local delta = dragInput.Position - mousePos
+                    Button.Position = UDim2.new(
+                        framePos.X.Scale,
+                        framePos.X.Offset + delta.X,
+                        framePos.Y.Scale,
+                        framePos.Y.Offset + delta.Y
+                    )
+                end
+            end)
+            
+            Button.MouseButton1Click:Connect(function()
+                local plotName = getPlayerPlot()
+                if not plotName then
+                    WindUI:Notify({
+                        Title = "Error",
+                        Content = "Player plot not found",
+                        Duration = 3,
+                        Icon = "x",
+                    })
+                    return
+                end
+                
+                local character = LocalPlayer.Character
+                if not character then return end
+                local hrp = character:FindFirstChild("HumanoidRootPart")
+                if not hrp then return end
+                
+                local oldPos = hrp.CFrame
+                
+                local plot = workspace.Plots:FindFirstChild(plotName)
+                if plot then
+                    local deliveryHitbox = plot:FindFirstChild("DeliveryHitbox")
+                    if deliveryHitbox then
+                        hrp.CFrame = deliveryHitbox.CFrame
+                        task.wait(1)
+                        hrp.CFrame = oldPos
+                        
+                        WindUI:Notify({
+                            Title = "Manual Steal",
+                            Content = "Steal executed",
+                            Duration = 3,
+                            Icon = "check",
+                        })
+                    end
+                end
+            end)
+            
+            ManualStealUI = ScreenGui
+        else
+            if ManualStealUI then
+                ManualStealUI:Destroy()
+                ManualStealUI = nil
+            end
+        end
+    end
+})
+
+local FastInteractionToggle = MainTab:Toggle({
+    Title = "Fast Interaction",
+    Desc = "Instant proximity prompt interaction",
+    Icon = "zap-off",
+    Type = "Checkbox",
+    Default = false,
+    Callback = function(state)
+        States.FastInteraction = state
+        if state then
+            Connections.FastInteraction = RunService.Heartbeat:Connect(function()
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v:IsA("ProximityPrompt") then
+                        v.HoldDuration = 0
+                        v.MaxActivationDistance = 25
+                    end
+                end
+            end)
+            WindUI:Notify({
+                Title = "Fast Interaction",
+                Content = "Fast interaction enabled",
+                Duration = 3,
+                Icon = "check",
+            })
+        else
+            if Connections.FastInteraction then
+                Connections.FastInteraction:Disconnect()
+            end
+            WindUI:Notify({
+                Title = "Fast Interaction",
+                Content = "Fast interaction disabled",
+                Duration = 3,
+                Icon = "x",
+            })
+        end
+    end
+})
+
+local function setNetworkOwnership(state)
+    local character = LocalPlayer.Character
+    if character then
+        local rootPart = character:FindFirstChild("HumanoidRootPart")
+        if rootPart then
+            if state then
+                sethiddenproperty(rootPart, "NetworkOwnershipRule", Enum.NetworkOwnership.Manual)
+            else
+                sethiddenproperty(rootPart, "NetworkOwnershipRule", Enum.NetworkOwnership.Automatic)
+            end
+        end
+    end
+end
+
+local DesyncToggle = MainTab:Toggle({
+    Title = "Desync",
+    Desc = "Enable network desync",
+    Icon = "wifi-off",
+    Type = "Checkbox",
+    Default = false,
+    Callback = function(state)
+        States.Desync = state
+        setNetworkOwnership(state)
+        if state then
+            WindUI:Notify({
+                Title = "Desync",
+                Content = "Desync enabled",
+                Duration = 3,
+                Icon = "check",
+            })
+        else
+            WindUI:Notify({
+                Title = "Desync",
+                Content = "Desync disabled",
+                Duration = 3,
+                Icon = "x",
+            })
+        end
+    end
+})
+
+local AntiVoidToggle = MainTab:Toggle({
+    Title = "Anti Void",
+    Desc = "Creates platform below you",
+    Icon = "shield",
+    Type = "Checkbox",
+    Default = false,
+    Callback = function(state)
+        States.AntiVoid = state
+        if state then
+            local character = LocalPlayer.Character
+            if character then
+                local hrp = character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    local platform = Instance.new("Part")
+                    platform.Size = Vector3.new(50, 1, 50)
+                    platform.Position = hrp.Position - Vector3.new(0, 15, 0)
+                    platform.Anchored = true
+                    platform.Transparency = 1
+                    platform.CanCollide = true
+                    platform.Parent = workspace
+                    AntiVoidPlatform = platform
+                end
+            end
+            WindUI:Notify({
+                Title = "Anti Void",
+                Content = "Anti void platform created",
+                Duration = 3,
+                Icon = "check",
+            })
+        else
+            if AntiVoidPlatform then
+                AntiVoidPlatform:Destroy()
+                AntiVoidPlatform = nil
+            end
+            WindUI:Notify({
+                Title = "Anti Void",
+                Content = "Anti void platform removed",
+                Duration = 3,
+                Icon = "x",
+            })
+        end
+    end
+})
+
+local AutoLockToggle = MainTab:Toggle({
+    Title = "Auto Lock",
+    Desc = "Automatically lock plot when timer hits 0s",
+    Icon = "lock",
+    Type = "Checkbox",
+    Default = false,
+    Callback = function(state)
+        States.AutoLock = state
+        if state then
+            Connections.AutoLock = RunService.Heartbeat:Connect(function()
+                local plotName = getPlayerPlot()
+                if plotName then
+                    local plot = workspace.Plots:FindFirstChild(plotName)
+                    if plot then
+                        local purchases = plot:FindFirstChild("Purchases")
+                        if purchases then
+                            local plotBlock = purchases:FindFirstChild("PlotBlock")
+                            if plotBlock then
+                                local main = plotBlock:FindFirstChild("Main")
+                                if main then
+                                    local billboard = main:FindFirstChild("BillboardGui")
+                                    if billboard then
+                                        local remaining = billboard:FindFirstChild("RemainingTime")
+                                        if remaining and remaining.Text == "0s" then
+                                            local hitbox = plotBlock:FindFirstChild("Hitbox")
+                                            if hitbox and hitbox:FindFirstChild("TouchInterest") then
+                                                firetouchinterest(LocalPlayer.Character.HumanoidRootPart, hitbox, 0)
+                                                task.wait(0.1)
+                                                firetouchinterest(LocalPlayer.Character.HumanoidRootPart, hitbox, 1)
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+            WindUI:Notify({
+                Title = "Auto Lock",
+                Content = "Auto lock enabled",
+                Duration = 3,
+                Icon = "check",
+            })
+        else
+            if Connections.AutoLock then
+                Connections.AutoLock:Disconnect()
+            end
+            WindUI:Notify({
+                Title = "Auto Lock",
+                Content = "Auto lock disabled",
+                Duration = 3,
+                Icon = "x",
+            })
+        end
+    end
+})
+
+local NoClipToggle = PlayerTab:Toggle({
+    Title = "No Clip",
+    Desc = "Walk through walls",
+    Icon = "ghost",
+    Type = "Checkbox",
+    Default = false,
+    Callback = function(state)
+        States.NoClip = state
+        if state then
+            Connections.NoClip = RunService.Stepped:Connect(function()
+                local character = LocalPlayer.Character
+                if character then
+                    for _, part in pairs(character:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = false
+                        end
+                    end
+                end
+            end)
+            WindUI:Notify({
+                Title = "No Clip",
+                Content = "No clip enabled",
+                Duration = 3,
+                Icon = "check",
+            })
+        else
+            if Connections.NoClip then
+                Connections.NoClip:Disconnect()
+            end
+            local character = LocalPlayer.Character
+            if character then
+                for _, part in pairs(character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = true
+                    end
+                end
+            end
+            WindUI:Notify({
+                Title = "No Clip",
+                Content = "No clip disabled",
+                Duration = 3,
+                Icon = "x",
+            })
+        end
+    end
+})
+
+local AntiRagdollToggle = PlayerTab:Toggle({
+    Title = "Anti Ragdoll",
+    Desc = "Prevents ragdoll state",
+    Icon = "user-check",
+    Type = "Checkbox",
+    Default = false,
+    Callback = function(state)
+        States.AntiRagdoll = state
+        if state then
+            Connections.AntiRagdoll = RunService.Heartbeat:Connect(function()
+                local character = LocalPlayer.Character
+                if character then
+                    local humanoid = character:FindFirstChild("Humanoid")
+                    if humanoid then
+                        humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+                    end
+                end
+            end)
+            WindUI:Notify({
+                Title = "Anti Ragdoll",
+                Content = "Anti ragdoll enabled",
+                Duration = 3,
+                Icon = "check",
+            })
+        else
+            if Connections.AntiRagdoll then
+                Connections.AntiRagdoll:Disconnect()
+            end
+            local character = LocalPlayer.Character
+            if character then
+                local humanoid = character:FindFirstChild("Humanoid")
+                if humanoid then
+                    humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, true)
+                end
+            end
+            WindUI:Notify({
+                Title = "Anti Ragdoll",
+                Content = "Anti ragdoll disabled",
+                Duration = 3,
+                Icon = "x",
+            })
+        end
+    end
+})
+
+local originalJumpPower = nil
+local InfiniteJumpToggle = PlayerTab:Toggle({
+    Title = "Infinite Jump",
+    Desc = "Jump infinitely in the air",
+    Icon = "arrow-up",
+    Type = "Checkbox",
+    Default = false,
+    Callback = function(state)
+        States.InfiniteJump = state
+        if state then
+            local function onCharacterAdded(character)
+                local humanoid = character:WaitForChild("Humanoid")
+                originalJumpPower = humanoid.JumpPower
+            end
+            
+            LocalPlayer.CharacterAdded:Connect(onCharacterAdded)
+            if LocalPlayer.Character then
+                onCharacterAdded(LocalPlayer.Character)
+            end
+            
+            Connections.InfiniteJump = UserInputService.JumpRequest:Connect(function()
+                local character = LocalPlayer.Character
+                if character then
+                    local humanoid = character:FindFirstChildOfClass("Humanoid")
+                    if humanoid and originalJumpPower then
+                        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                        humanoid.JumpPower = originalJumpPower
+                    end
+                end
+            end)
+            WindUI:Notify({
+                Title = "Infinite Jump",
+                Content = "Infinite jump enabled",
+                Duration = 3,
+                Icon = "check",
+            })
+        else
+            if Connections.InfiniteJump then
+                Connections.InfiniteJump:Disconnect()
+            end
+            WindUI:Notify({
+                Title = "Infinite Jump",
+                Content = "Infinite jump disabled",
+                Duration = 3,
+                Icon = "x",
+            })
+        end
+    end
+})
+
+local GodModeToggle = PlayerTab:Toggle({
+    Title = "God Mode",
+    Desc = "Become invincible",
+    Icon = "shield-check",
+    Type = "Checkbox",
+    Default = false,
+    Callback = function(state)
+        States.GodMode = state
+        if state then
+            Connections.GodMode = RunService.Heartbeat:Connect(function()
+                local character = LocalPlayer.Character
+                if character then
+                    local humanoid = character:FindFirstChild("Humanoid")
+                    if humanoid then
+                        humanoid.Health = humanoid.MaxHealth
+                    end
+                end
+            end)
+            WindUI:Notify({
+                Title = "God Mode",
+                Content = "God mode enabled",
+                Duration = 3,
+                Icon = "check",
+            })
+        else
+            if Connections.GodMode then
+                Connections.GodMode:Disconnect()
+            end
+            WindUI:Notify({
+                Title = "God Mode",
+                Content = "God mode disabled",
+                Duration = 3,
+                Icon = "x",
+            })
+        end
+    end
+})
+
+local WalkSpeedSpoof = getgenv().WalkSpeedSpoof
+local Disable = WalkSpeedSpoof and WalkSpeedSpoof.Disable
+if Disable then
+    Disable()
+end
+
+local cloneref = cloneref or function(...)
+    return ...
+end
+
+WalkSpeedSpoof = {}
+
+local split = string.split
+
+local GetDebugIdHandler = Instance.new("BindableFunction")
+local TempHumanoid = Instance.new("Humanoid")
+
+local cachedhumanoids = {}
+
+local CurrentHumanoid
+local newindexhook
+local indexhook
+
+function GetDebugIdHandler.OnInvoke(obj)
+    return obj:GetDebugId()
+end
+
+local function GetDebugId(obj)
+    return GetDebugIdHandler:Invoke(obj)
+end
+
+local function GetWalkSpeed(obj)
+    TempHumanoid.WalkSpeed = obj
+    return TempHumanoid.WalkSpeed
+end
+
+function cachedhumanoids:cacheHumanoid(DebugId, Humanoid)
+    cachedhumanoids[DebugId] = {
+        currentindex = indexhook(Humanoid, "WalkSpeed"),
+        lastnewindex = nil
+    }
+    return self[DebugId]
+end
+
+indexhook = hookmetamethod(game, "__index", function(self, index)
+    if not checkcaller() and typeof(self) == "Instance" then
+        if self:IsA("Humanoid") then
+            local DebugId = GetDebugId(self)
+            local cached = cachedhumanoids[DebugId]
+
+            if self:IsDescendantOf(LocalPlayer.Character) or cached then
+                if type(index) == "string" then
+                    local cleanindex = split(index, "\0")[1]
+
+                    if cleanindex == "WalkSpeed" then
+                        if not cached then
+                            cached = cachedhumanoids:cacheHumanoid(DebugId, self)
+                        end
+
+                        if not (CurrentHumanoid and CurrentHumanoid:IsDescendantOf(game)) then
+                            CurrentHumanoid = cloneref(self)
+                        end
+
+                        return cached.lastnewindex or cached.currentindex
+                    end
+                end
+            end
+        end
+    end
+
+    return indexhook(self, index)
+end)
+
+newindexhook = hookmetamethod(game, "__newindex", function(self, index, newindex)
+    if not checkcaller() and typeof(self) == "Instance" then
+        if self:IsA("Humanoid") then
+            local DebugId = GetDebugId(self)
+            local cached = cachedhumanoids[DebugId]
+
+            if self:IsDescendantOf(LocalPlayer.Character) or cached then
+                if type(index) == "string" then
+                    local cleanindex = split(index, "\0")[1]
+
+                    if cleanindex == "WalkSpeed" then
+                        if not cached then
+                            cached = cachedhumanoids:cacheHumanoid(DebugId, self)
+                        end
+
+                        if not (CurrentHumanoid and CurrentHumanoid:IsDescendantOf(game)) then
+                            CurrentHumanoid = cloneref(self)
+                        end
+                        cached.lastnewindex = GetWalkSpeed(newindex)
+                        return CurrentHumanoid.WalkSpeed
+                    end
+                end
+            end
+        end
+    end
+    
+    return newindexhook(self, index, newindex)
+end)
+
+function WalkSpeedSpoof:Disable()
+    WalkSpeedSpoof:RestoreWalkSpeed()
+    hookmetamethod(game, "__index", indexhook)
+    hookmetamethod(game, "__newindex", newindexhook)
+    GetDebugIdHandler:Destroy()
+    TempHumanoid:Destroy()
+    table.clear(WalkSpeedSpoof)
+    getgenv().WalkSpeedSpoof = nil
+end
+
+function WalkSpeedSpoof:GetHumanoid()
+    return CurrentHumanoid or (function()
+        local char = LocalPlayer.Character
+        local Humanoid = char and char:FindFirstChildWhichIsA("Humanoid") or nil
+        
+        if Humanoid then
+            cachedhumanoids:cacheHumanoid(Humanoid:GetDebugId(), Humanoid)
+            return cloneref(Humanoid)
+        end
+    end)()
+end
+
+function WalkSpeedSpoof:SetWalkSpeed(speed)
+    local Humanoid = WalkSpeedSpoof:GetHumanoid()
+
+    if Humanoid then
+        local connections = {}
+        local function AddConnectionsFromSignal(Signal)
+            for i, v in getconnections(Signal) do
+                if v.State then
+                    v:Disable()
+                    table.insert(connections, v)
+                end
+            end
+        end
+        AddConnectionsFromSignal(Humanoid.Changed)
+        AddConnectionsFromSignal(Humanoid:GetPropertyChangedSignal("WalkSpeed"))
+        Humanoid.WalkSpeed = speed
+        for i, v in connections do
+            v:Enable()
+        end
+    end
+end
+
+function WalkSpeedSpoof:RestoreWalkSpeed()
+    local Humanoid = WalkSpeedSpoof:GetHumanoid()
+    
+    if Humanoid then
+        local cached = cachedhumanoids[Humanoid:GetDebugId()]
+
+        if cached then
+            WalkSpeedSpoof:SetWalkSpeed(cached.lastnewindex or cached.currentindex)
+        end
+    end
+end
+
+getgenv().WalkSpeedSpoof = WalkSpeedSpoof
+
+local SpeedToggle = PlayerTab:Toggle({
+    Title = "Speed",
+    Desc = "Enable speed modification",
+    Icon = "gauge",
+    Type = "Checkbox",
+    Default = false,
+    Callback = function(state)
+        States.SpeedEnabled = state
+        if state then
+            WalkSpeedSpoof:SetWalkSpeed(States.SpeedValue)
+            WindUI:Notify({
+                Title = "Speed",
+                Content = "Speed enabled",
+                Duration = 3,
+                Icon = "check",
+            })
+        else
+            WalkSpeedSpoof:RestoreWalkSpeed()
+            WindUI:Notify({
+                Title = "Speed",
+                Content = "Speed disabled",
+                Duration = 3,
+                Icon = "x",
+            })
+        end
+    end
+})
+
+local SpeedSlider = PlayerTab:Slider({
+    Title = "Speed Value",
+    Step = 1,
+    Value = {
+        Min = 16,
+        Max = 100,
+        Default = 16,
+    },
+    Callback = function(value)
+        States.SpeedValue = value
+        if States.SpeedEnabled then
+            WalkSpeedSpoof:SetWalkSpeed(value)
+        end
+    end
+})
+
+local function createESP(target, name, color)
+    local highlight = Instance.new("Highlight")
+    highlight.Adornee = target
+    highlight.FillColor = color
+    highlight.OutlineColor = color
+    highlight.FillTransparency = 0.5
+    highlight.OutlineTransparency = 0
+    highlight.Parent = target
+    
+    local billboardGui = Instance.new("BillboardGui")
+    billboardGui.Adornee = target
+    billboardGui.Size = UDim2.new(0, 100, 0, 40)
+    billboardGui.StudsOffset = Vector3.new(0, 3, 0)
+    billboardGui.AlwaysOnTop = true
+    billboardGui.Parent = target
+    
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = name
+    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    textLabel.TextStrokeTransparency = 0
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.TextSize = 14
+    textLabel.Parent = billboardGui
+    
+    return {highlight, billboardGui}
+end
+
+local function clearESP()
+    for _, objs in pairs(ESPObjects) do
+        for _, obj in pairs(objs) do
+            obj:Destroy()
+        end
+    end
+    ESPObjects = {}
+end
+
+local PlayerESPToggle = VisualTab:Toggle({
+    Title = "Player ESP",
+    Desc = "See all players through walls",
+    Icon = "users",
+    Type = "Checkbox",
+    Default = false,
+    Callback = function(state)
+        States.PlayerESP = state
+        if state then
+            Connections.PlayerESP = RunService.Heartbeat:Connect(function()
+                for _, player in pairs(Players:GetPlayers()) do
+                    if player ~= LocalPlayer and player.Character then
+                        local character = player.Character
+                        local hrp = character:FindFirstChild("HumanoidRootPart")
+                        if hrp and not ESPObjects[player.UserId] then
+                            ESPObjects[player.UserId] = createESP(character, player.Name, Color3.fromRGB(255, 255, 0))
+                        end
+                    end
+                end
+            end)
+            WindUI:Notify({
+                Title = "Player ESP",
+                Content = "Player ESP enabled",
+                Duration = 3,
+                Icon = "check",
+            })
+        else
+            if Connections.PlayerESP then
+                Connections.PlayerESP:Disconnect()
+            end
+            clearESP()
+            WindUI:Notify({
+                Title = "Player ESP",
+                Content = "Player ESP disabled",
+                Duration = 3,
+                Icon = "x",
+            })
+        end
+    end
+})
+
+local BaseESPToggle = VisualTab:Toggle({
+    Title = "Base ESP",
+    Desc = "See all base plot signs",
+    Icon = "home",
+    Type = "Checkbox",
+    Default = false,
+    Callback = function(state)
+        States.BaseESP = state
+        if state then
+            local plots = workspace:FindFirstChild("Plots")
+            if plots then
+                for _, plot in pairs(plots:GetChildren()) do
+                    if plot:IsA("Model") then
+                        local plotSign = plot:FindFirstChild("PlotSign")
+                        if plotSign and not ESPObjects["base_" .. plot.Name] then
+                            ESPObjects["base_" .. plot.Name] = createESP(plotSign, "Base", Color3.fromRGB(0, 255, 0))
+                        end
+                    end
+                end
+            end
+            WindUI:Notify({
+                Title = "Base ESP",
+                Content = "Base ESP enabled",
+                Duration = 3,
+                Icon = "check",
+            })
+        else
+            for key, objs in pairs(ESPObjects) do
+                if key:match("^base_") then
+                    for _, obj in pairs(objs) do
+                        obj:Destroy()
+                    end
+                    ESPObjects[key] = nil
+                end
+            end
+            WindUI:Notify({
+                Title = "Base ESP",
+                Content = "Base ESP disabled",
+                Duration = 3,
+                Icon = "x",
+            })
+        end
+    end
+})
+
+local BaseTimeESPToggle = VisualTab:Toggle({
+    Title = "Base Time ESP",
+    Desc = "Show plot remaining times",
+    Icon = "clock",
+    Type = "Checkbox",
+    Default = false,
+    Callback = function(state)
+        States.BaseTimeESP = state
+        if state then
+            Connections.BaseTimeESP = RunService.Heartbeat:Connect(function()
+                local plots = workspace:FindFirstChild("Plots")
+                if plots then
+                    for _, plot in pairs(plots:GetChildren()) do
+                        if plot:IsA("Model") then
+                            local purchases = plot:FindFirstChild("Purchases")
+                            if purchases then
+                                local plotBlock = purchases:FindFirstChild("PlotBlock")
+                                if plotBlock then
+                                    local main = plotBlock:FindFirstChild("Main")
+                                    if main then
+                                        local billboard = main:FindFirstChild("BillboardGui")
+                                        if billboard then
+                                            local remaining = billboard:FindFirstChild("RemainingTime")
+                                            if remaining then
+                                                local timeText = remaining.Text
+                                                local seconds = tonumber(timeText:match("%d+"))
+                                                if seconds then
+                                                    if seconds == 0 then
+                                                        remaining.TextColor3 = Color3.fromRGB(0, 255, 0)
+                                                    elseif seconds < 5 then
+                                                        remaining.TextColor3 = Color3.fromRGB(255, 255, 0)
+                                                    elseif seconds < 10 then
+                                                        remaining.TextColor3 = Color3.fromRGB(255, 0, 0)
+                                                    end
+                                                end
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+            WindUI:Notify({
+                Title = "Base Time ESP",
+                Content = "Base time ESP enabled",
+                Duration = 3,
+                Icon = "check",
+            })
+        else
+            if Connections.BaseTimeESP then
+                Connections.BaseTimeESP:Disconnect()
+            end
+            WindUI:Notify({
+                Title = "Base Time ESP",
+                Content = "Base time ESP disabled",
+                Duration = 3,
+                Icon = "x",
+            })
+        end
+    end
+})
+
+local BaseRemainingTimeToggle = VisualTab:Toggle({
+    Title = "Base Remaining Time ESP",
+    Desc = "Show your base time in UI",
+    Icon = "timer",
+    Type = "Checkbox",
+    Default = false,
+    Callback = function(state)
+        States.BaseRemainingTimeESP = state
+        if state then
+            local ScreenGui = Instance.new("ScreenGui")
+            ScreenGui.Name = "BaseTimeUI"
+            ScreenGui.ResetOnSpawn = false
+            ScreenGui.Parent = game.CoreGui
+            
+            local Frame = Instance.new("Frame")
+            Frame.Size = UDim2.new(0, 200, 0, 50)
+            Frame.Position = UDim2.new(0.5, -100, 0, 20)
+            Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+            Frame.BorderSizePixel = 0
+            Frame.Parent = ScreenGui
+            
+            local Corner = Instance.new("UICorner")
+            Corner.CornerRadius = UDim.new(0, 8)
+            Corner.Parent = Frame
+            
+            local TextLabel = Instance.new("TextLabel")
+            TextLabel.Size = UDim2.new(1, 0, 1, 0)
+            TextLabel.BackgroundTransparency = 1
+            TextLabel.Text = "Time: 0s"
+            TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+            TextLabel.Font = Enum.Font.GothamBold
+            TextLabel.TextSize = 18
+            TextLabel.Parent = Frame
+            
+            BaseTimeUI = ScreenGui
+            
+            Connections.BaseRemainingTime = RunService.Heartbeat:Connect(function()
+                local plotName = getPlayerPlot()
+                if plotName then
+                    local plot = workspace.Plots:FindFirstChild(plotName)
+                    if plot then
+                        local purchases = plot:FindFirstChild("Purchases")
+                        if purchases then
+                            local plotBlock = purchases:FindFirstChild("PlotBlock")
+                            if plotBlock then
+                                local main = plotBlock:FindFirstChild("Main")
+                                if main then
+                                    local billboard = main:FindFirstChild("BillboardGui")
+                                    if billboard then
+                                        local remaining = billboard:FindFirstChild("RemainingTime")
+                                        if remaining then
+                                            TextLabel.Text = "Base Time: " .. remaining.Text
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+            WindUI:Notify({
+                Title = "Base Time UI",
+                Content = "Base time UI enabled",
+                Duration = 3,
+                Icon = "check",
+            })
+        else
+            if Connections.BaseRemainingTime then
+                Connections.BaseRemainingTime:Disconnect()
+            end
+            if BaseTimeUI then
+                BaseTimeUI:Destroy()
+                BaseTimeUI = nil
+            end
+            WindUI:Notify({
+                Title = "Base Time UI",
+                Content = "Base time UI disabled",
+                Duration = 3,
+                Icon = "x",
+            })
+        end
+    end
+})
+
+local CreditsParagraph = CreditsTab:Paragraph({
+    Title = "Steal A Anime Hub | Official",
+    Desc = "Made by PickleTalk and Mhicel. Join our discord server to be always updated with the latest features and scripts!",
+    Color = "Red",
+    Thumbnail = "rbxassetid://74135635728836",
+    ThumbnailSize = 140,
+    Buttons = {
+        {
+            Icon = "users",
+            Title = "Discord",
+            Callback = function()
+                setclipboard("https://discord.gg/bpsNUH5sVb")
+                WindUI:Notify({
+                    Title = "Discord Link Copied!",
+                    Content = "Discord invite link copied to clipboard!",
+                    Duration = 3,
+                    Icon = "check",
+                })
+            end,
+        }
+    }
+})
+
+local function saveConfiguration()
+    myConfig:Save()
+    WindUI:Notify({
+        Title = "Configuration Saved",
+        Content = "All settings saved successfully",
+        Duration = 3,
+        Icon = "check",
+    })
+end
+
+local function loadConfiguration()
+    myConfig:Load()
+    WindUI:Notify({
+        Title = "Configuration Loaded",
+        Content = "Settings loaded successfully",
+        Duration = 3,
+        Icon = "check",
+    })
+end
+
+local function changeTheme(themeName)
+    WindUI:SetTheme(themeName)
+    States.CurrentTheme = themeName
+    WindUI:Notify({
+        Title = "Theme Changed",
+        Content = "Theme set to " .. themeName,
+        Duration = 3,
+        Icon = "palette",
+    })
+end
+
+local SaveConfigButton = SettingsTab:Button({
+    Title = "Save Configuration",
+    Desc = "Save all current settings to file",
+    Callback = function()
+        saveConfiguration()
+    end
+})
+
+local LoadConfigButton = SettingsTab:Button({
+    Title = "Load Configuration",
+    Desc = "Load your saved settings from file",
+    Callback = function()
+        loadConfiguration()
+    end
+})
+
+local ThemeDropdown = SettingsTab:Dropdown({
+    Title = "Theme Selector",
+    Values = {
+        {Title = "Anime Dark", Icon = "moon"},
+        {Title = "Anime Light", Icon = "sun"},
+        {Title = "Purple Dream", Icon = "sparkles"},
+        {Title = "Ocean Blue", Icon = "waves"},
+        {Title = "Forest Green", Icon = "tree-deciduous"},
+        {Title = "Crimson Red", Icon = "flame"},
+        {Title = "Sunset Orange", Icon = "sunset"},
+        {Title = "Midnight Purple", Icon = "moon-star"},
+        {Title = "Cyan Glow", Icon = "zap"},
+        {Title = "Rose Pink", Icon = "heart"},
+        {Title = "Golden Hour", Icon = "sun"},
+        {Title = "Neon Green", Icon = "zap-off"},
+        {Title = "Electric Blue", Icon = "sparkle"},
+        {Title = "Custom", Icon = "palette"},
+    },
+    Value = "Anime Dark",
+    Callback = function(option)
+        changeTheme(option.Title)
+    end
+})
+
+local ThemeColorPicker = SettingsTab:Colorpicker({
+    Title = "Custom Theme Color",
+    Desc = "Select a custom accent color for the UI",
+    Default = Color3.fromRGB(255, 15, 123),
+    Callback = function(color)
+        WindUI:AddTheme({
+            Name = "Custom",
+            Accent = color,
+            Dialog = Color3.fromHex("#161616"),
+            Outline = color,
+            Text = Color3.fromHex("#FFFFFF"),
+            Placeholder = Color3.fromHex("#7a7a7a"),
+            Background = Color3.fromHex("#101010"),
+            Button = Color3.fromHex("#52525b"),
+            Icon = color
+        })
+        
+        WindUI:SetTheme("Custom")
+        States.CurrentTheme = "Custom"
+    end
+})
+
+myConfig:Register("InstantTeleport", InstantTeleportToggle)
+myConfig:Register("ManualSteal", ManualStealToggle)
+myConfig:Register("FastInteraction", FastInteractionToggle)
+myConfig:Register("Desync", DesyncToggle)
+myConfig:Register("AntiVoid", AntiVoidToggle)
+myConfig:Register("AutoLock", AutoLockToggle)
+myConfig:Register("NoClip", NoClipToggle)
+myConfig:Register("AntiRagdoll", AntiRagdollToggle)
+myConfig:Register("InfiniteJump", InfiniteJumpToggle)
+myConfig:Register("GodMode", GodModeToggle)
+myConfig:Register("Speed", SpeedToggle)
+myConfig:Register("SpeedValue", SpeedSlider)
+myConfig:Register("PlayerESP", PlayerESPToggle)
+myConfig:Register("BaseESP", BaseESPToggle)
+myConfig:Register("BaseTimeESP", BaseTimeESPToggle)
+myConfig:Register("BaseRemainingTimeESP", BaseRemainingTimeToggle)
+myConfig:Register("Theme", ThemeDropdown)
+myConfig:Register("ThemeColor", ThemeColorPicker)
+
+WindUI:Popup({
+    Title = "Steal A Anime Hub v1.5",
+    Icon = "sword",
+    Content = "New Update: Added Instant Teleport, Manual Steal, Fast Interaction, Desync, Anti Void, Auto Lock, No Clip, Anti Ragdoll, Infinite Jump, God Mode, Speed, Player ESP, Base ESP, Base Time ESP",
+    Buttons = {
+        {
+            Title = "Close",
+            Callback = function() end,
+            Variant = "Tertiary",
+        },
+        {
+            Title = "Join Discord",
+            Icon = "users",
+            Callback = function()
+                setclipboard("https://discord.gg/bpsNUH5sVb")
+                WindUI:Notify({
+                    Title = "Link Copied!",
+                    Content = "Discord invite copied to clipboard!",
+                    Duration = 3,
+                    Icon = "check",
+                })
+            end,
+            Variant = "Primary",
+        }
+    }
+})
