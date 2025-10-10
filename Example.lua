@@ -429,8 +429,8 @@ local LoadConfigButton = SettingsTab:Button({
 local ThemeDropdown = SettingsTab:Dropdown({
     Title = "Theme Selector",
     Values = {
-        {Title = "Anime Dark", Icon = "moon"},
-        {Title = "Anime Light", Icon = "sun"},
+        {Title = "Dark", Icon = "moon"},
+        {Title = "Light", Icon = "sun"},
         {Title = "Purple Dream", Icon = "sparkles"},
         {Title = "Ocean Blue", Icon = "waves"},
         {Title = "Forest Green", Icon = "tree-deciduous"},
@@ -444,7 +444,7 @@ local ThemeDropdown = SettingsTab:Dropdown({
         {Title = "Electric Blue", Icon = "sparkle"},
         {Title = "Custom", Icon = "palette"},
     },
-    Value = "Anime Dark",
+    Value = "Dark",
     Callback = function(option)
         changeTheme(option.Title)
     end
