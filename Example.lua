@@ -379,10 +379,12 @@ local Toggle = Tab:Toggle({
     end
 })
 
--- Low GFX Storage (must be initialized before States)!!!
-local LowGFXStorage = {
-    SavedProperties = {},
-    SavedLighting = {},
+-- ========================================
+-- GLOBAL STATES!!!
+-- ========================================
+local States = {
+    FullBright = false,
+    LowGFX = false,
 }
 
 -- ========================================
