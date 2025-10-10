@@ -494,55 +494,64 @@ local function toggleStealUI(state)
 end
 
 -- ========================================
--- INSTANT STEAL
+-- INSTANT STEAL (HOOKED VERSION)
 -- ========================================
+local InstantStealHook = nil
+
 local function toggleInstantSteal(state)
     States.InstantSteal = state
     
     if state then
         local ReplicatedStorage = game:GetService("ReplicatedStorage")
-        local remoteEvent = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"):WaitForChild("RE/39c0ed9f-fd96-4f2c-89c8-b7a9b2d44d2e")
+        local targetRemote = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"):WaitForChild("RE/39c0ed9f-fd96-4f2c-89c8-b7a9b2d44d2e")
         
-        Connections.InstantSteal = remoteEvent.OnClientEvent:Connect(function(...)
-            if not States.InstantSteal then return end
+        InstantStealHook = hookmetamethod(game, "__namecall", function(self, ...)
+            local method = getnamecallmethod()
+            local args = {...}
             
-            task.spawn(function()
-                local character = LocalPlayer.Character
-                local root = character and character:FindFirstChild("HumanoidRootPart")
-                
-                if not root then return end
-                
-                local plotName = getPlayerPlot()
-                if not plotName then return end
-                
-                local plots = Workspace:FindFirstChild("Plots")
-                local plot = plots and plots:FindFirstChild(plotName)
-                local deliveryHitbox = plot and plot:FindFirstChild("DeliveryHitbox")
-                
-                if deliveryHitbox then
-                    local savedPosition = root.CFrame
-                    root.CFrame = deliveryHitbox.CFrame
-                    task.wait(0.1)
-                    root.CFrame = savedPosition
+            if not checkcaller() and method == "FireServer" and self == targetRemote then
+                if States.InstantSteal then
+                    task.spawn(function()
+                        local character = LocalPlayer.Character
+                        local root = character and character:FindFirstChild("HumanoidRootPart")
+                        
+                        if not root then return end
+                        
+                        local plotName = getPlayerPlot()
+                        if not plotName then return end
+                        
+                        local plots = Workspace:FindFirstChild("Plots")
+                        local plot = plots and plots:FindFirstChild(plotName)
+                        local deliveryHitbox = plot and plot:FindFirstChild("DeliveryHitbox")
+                        
+                        if deliveryHitbox then
+                            local savedPosition = root.CFrame
+                            root.CFrame = deliveryHitbox.CFrame
+                            task.wait(0.1)
+                            root.CFrame = savedPosition
+                        end
+                    end)
                 end
-            end)
+            end
+            
+            return InstantStealHook(self, ...)
         end)
         
         WindUI:Notify({
             Title = "Instant Steal",
-            Content = "Instant steal monitoring enabled!",
+            Content = "Instant steal enabled!",
             Duration = 3,
             Icon = "zap",
         })
     else
-        if Connections.InstantSteal then
-            Connections.InstantSteal:Disconnect()
-            Connections.InstantSteal = nil
+        if InstantStealHook then
+            hookmetamethod(game, "__namecall", InstantStealHook)
+            InstantStealHook = nil
         end
         
         WindUI:Notify({
             Title = "Instant Steal",
-            Content = "Instant steal monitoring disabled!",
+            Content = "Instant steal disabled!",
             Duration = 3,
             Icon = "x",
         })
