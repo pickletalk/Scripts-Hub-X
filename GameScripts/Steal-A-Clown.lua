@@ -803,7 +803,7 @@ local function toggleAntiSteal(state)
                                                                                 
                                                                     end
 
-                                                                    task.wait(0.4)
+                                                                    task.wait(0.6)
                                                                     
                                                                     -- Clean up tracking
                                                                     attackingTargets[podiumKey] = nil
@@ -2954,7 +2954,7 @@ myConfig:Register("AntiKick", AntiKickToggle)
 -- WELCOME POPUP
 -- ========================================
 WindUI:Popup({
-    Title = "Steal A Clown V1.5.773",
+    Title = "Steal A Clown V1.5.776",
     Icon = "sword",
     Content = "New Update: Added Steal Highest Clown and Anti Steal!",
     Buttons = {
