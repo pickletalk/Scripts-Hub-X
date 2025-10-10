@@ -824,7 +824,7 @@ local function toggleAutoSteal(state)
                                     })
                
                                     -- Simple delay
-                                    task.wait(0.4)
+                                    task.wait(0.5)
                                     
                                     -- Deliver to base
                                     local plotName = getPlayerPlot()
