@@ -805,7 +805,7 @@ local function toggleAntiSteal(state)
                                                                         mouse1click()
                                                                         hrp.CFrame = theirRoot.CFrame * CFrame.new(0, 0, 0)
                                                                         mouse1click()
-                                                                        task.wait(0.2)
+                                                                        task.wait(0.13)
                                                                                 
                                                                     end
 
@@ -2960,7 +2960,7 @@ myConfig:Register("AntiKick", AntiKickToggle)
 -- WELCOME POPUP
 -- ========================================
 WindUI:Popup({
-    Title = "Steal A Clown V1.5.776",
+    Title = "Steal A Clown V1.5.782",
     Icon = "sword",
     Content = "New Update: Added Steal Highest Clown and Anti Steal!",
     Buttons = {
