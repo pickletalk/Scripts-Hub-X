@@ -379,9 +379,160 @@ local Toggle = Tab:Toggle({
     end
 })
 
+-- ========================================
+-- SERVER HOP FUNCTIONS ON MISC!!!
+-- ========================================
+local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
+
+local function getServers(cursor)
+    local url = string.format(
+        "https://games.roblox.com/v1/games/%d/servers/Public?sortOrder=Asc&limit=100",
+        game.PlaceId
+    )
+    
+    if cursor then
+        url = url .. "&cursor=" .. cursor
+    end
+    
+    local success, result = pcall(function()
+        return game:HttpGet(url)
+    end)
+    
+    if success then
+        return HttpService:JSONDecode(result)
+    else
+        return nil
+    end
+end
+
+local function getAllServers()
+    local allServers = {}
+    local cursor = nil
+    local attempts = 0
+    
+    repeat
+        local data = getServers(cursor)
+        
+        if data and data.data then
+            for _, server in pairs(data.data) do
+                if server.id ~= game.JobId and server.playing < server.maxPlayers then
+                    table.insert(allServers, server)
+                end
+            end
+            
+            cursor = data.nextPageCursor
+            attempts = attempts + 1
+            task.wait(0.3)
+        else
+            break
+        end
+        
+    until not cursor or attempts >= 10
+    
+    return allServers
+end
+
+local function hopToSmallestServer()
+    WindUI:Notify({
+        Title = "Server Hop",
+        Content = "Finding smallest server...",
+        Duration = 3,
+        Icon = "search",
+    })
+    
+    task.spawn(function()
+        local servers = getAllServers()
+        
+        if #servers == 0 then
+            WindUI:Notify({
+                Title = "Server Hop",
+                Content = "No servers found!",
+                Duration = 3,
+                Icon = "x",
+            })
+            return
+        end
+        
+        table.sort(servers, function(a, b)
+            return a.playing < b.playing
+        end)
+        
+        local targetServer = servers[1]
+        
+        WindUI:Notify({
+            Title = "Server Hop",
+            Content = string.format("Hopping to server with %d/%d players...", targetServer.playing, targetServer.maxPlayers),
+            Duration = 3,
+            Icon = "zap",
+        })
+        
+        task.wait(1)
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, targetServer.id, LocalPlayer)
+    end)
+end
+
+local function hopToRandomServer()
+    WindUI:Notify({
+        Title = "Server Hop",
+        Content = "Finding random server...",
+        Duration = 3,
+        Icon = "search",
+    })
+    
+    task.spawn(function()
+        local servers = getAllServers()
+        
+        if #servers == 0 then
+            WindUI:Notify({
+                Title = "Server Hop",
+                Content = "No servers found!",
+                Duration = 3,
+                Icon = "x",
+            })
+            return
+        end
+        
+        local targetServer = servers[math.random(1, #servers)]
+        
+        WindUI:Notify({
+            Title = "Server Hop",
+            Content = string.format("Hopping to server with %d/%d players...", targetServer.playing, targetServer.maxPlayers),
+            Duration = 3,
+            Icon = "zap",
+        })
+        
+        task.wait(1)
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, targetServer.id, LocalPlayer)
+    end)
+end
+
+local function getGameName()
+    local success, result = pcall(function()
+        local url = string.format("https://games.roblox.com/v1/games?universeIds=%d", game.PlaceId)
+        local response = game:HttpGet(url)
+        local data = HttpService:JSONDecode(response)
+        if data and data.data and data.data[1] then
+            return data.data[1].name
+        end
+        return "Unknown Game"
+    end)
+    
+    if success then
+        return result
+    else
+        return "Unknown Game"
+    end
+end
+
+-- MISC TAB ALWAYSSS!
+local MiscTab = Window:Tab({
+    Title = "Misc",
+    Icon = "info",
+})
 
 -- ========================================
--- CREDITS TAB ELEMENTS ALWAYS!!!!
+-- CREDITS TAB ELEMENTS ALWAYS!!!
 -- ========================================
 local CreditsParagraph = CreditsTab:Paragraph({
     Title = "Scripts Hub X | Official | Official",
@@ -404,6 +555,61 @@ local CreditsParagraph = CreditsTab:Paragraph({
             end,
         }
     }
+})
+
+-- ========================================
+-- MISC TAB ELEMENTS ALWAYSSSS!!!
+-- ========================================
+local gameName = getGameName()
+local currentPlayers = #Players:GetPlayers()
+local maxPlayers = Players.MaxPlayers
+
+local ServerInfoParagraph = MiscTab:Paragraph({
+    Title = "Server Information",
+    Desc = string.format(
+        "Game: %s\nPlace ID: %d\nJob ID: %s\nPlayers: %d/%d",
+        gameName,
+        game.PlaceId,
+        game.JobId,
+        currentPlayers,
+        maxPlayers
+    ),
+    Color = "Blue",
+    Thumbnail = "rbxassetid://74135635728836",
+    ThumbnailSize = 100,
+})
+
+task.spawn(function()
+    while true do
+        task.wait(5)
+        local currentPlayers = #Players:GetPlayers()
+        ServerInfoParagraph:Set({
+            Desc = string.format(
+                "Game: %s\nPlace ID: %d\nJob ID: %s\nPlayers: %d/%d",
+                gameName,
+                game.PlaceId,
+                game.JobId,
+                currentPlayers,
+                maxPlayers
+            )
+        })
+    end
+end)
+
+local SmallServerHopButton = MiscTab:Button({
+    Title = "Hop Small Server",
+    Desc = "Teleport to the smallest available server",
+    Callback = function()
+        hopToSmallestServer()
+    end
+})
+
+local RandomServerHopButton = MiscTab:Button({
+    Title = "Server Hop",
+    Desc = "Teleport to a random non-full server",
+    Callback = function()
+        hopToRandomServer()
+    end
 })
 
 -- ========================================
