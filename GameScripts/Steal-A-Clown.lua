@@ -751,9 +751,6 @@ local function scanAllClowns()
     return clownList
 end
 
--- ========================================
--- AUTO STEAL (HIGHEST TO LOWEST) - FIXED
--- ========================================
 local function toggleAutoSteal(state)
     States.AutoSteal = state
     
@@ -786,7 +783,6 @@ local function toggleAutoSteal(state)
                     
                     local podium = clownData.PodiumObject
                     
-                    -- Check if podium still exists and has the animal
                     if not podium or not podium.Parent then
                         continue
                     end
@@ -806,7 +802,7 @@ local function toggleAutoSteal(state)
                             local animalStillThere = attachment and attachment:FindFirstChild("AnimalOverhead")
                             
                             if not animalStillThere then
-                                continue -- Skip if animal is already gone
+                                continue
                             end
                             
                             if podioPart and promptAttachment then
@@ -814,8 +810,8 @@ local function toggleAutoSteal(state)
                                 
                                 if proximityPrompt and proximityPrompt.Enabled then
                                     -- Teleport to the clown
-                                    root.CFrame = podioPart.CFrame + Vector3.new(0, 2, 0)
-                                    task.wait(0.3)
+                                    root.CFrame = podioPart.CFrame + Vector3.new(0, 3, 0)
+                                    task.wait(0.2)
                                     
                                     -- Fire the prompt
                                     fireproximityprompt(proximityPrompt)
@@ -827,60 +823,31 @@ local function toggleAutoSteal(state)
                                         Icon = "zap",
                                     })
                
-                                    -- Wait for the steal animation to complete
-                                    task.wait(0.3)
+                                    -- Simple delay
+                                    task.wait(0.4)
                                     
-                                    -- Check if we actually picked it up
-                                    local pickedUp = false
-                                    for i = 1, 10 do
-                                        attachment = spawn:FindFirstChild("Attachment")
-                                        animalStillThere = attachment and attachment:FindFirstChild("AnimalOverhead")
+                                    -- Deliver to base
+                                    local plotName = getPlayerPlot()
+                                    if plotName then
+                                        local plots = Workspace:FindFirstChild("Plots")
+                                        local plot = plots and plots:FindFirstChild(plotName)
+                                        local deliveryHitbox = plot and plot:FindFirstChild("DeliveryHitbox")
                                         
-                                        if not animalStillThere then
-                                            pickedUp = true
-                                            break
+                                        if deliveryHitbox then
+                                            root.CFrame = deliveryHitbox.CFrame
+                                            task.wait(0.3)
                                         end
-                                        task.wait(0.1)
                                     end
                                     
-                                    if pickedUp then
-                                        -- Now deliver to base (built-in, not using Instant Steal)
-                                        local plotName = getPlayerPlot()
-                                        if plotName then
-                                            local plots = Workspace:FindFirstChild("Plots")
-                                            local plot = plots and plots:FindFirstChild(plotName)
-                                            local deliveryHitbox = plot and plot:FindFirstChild("DeliveryHitbox")
-                                            
-                                            if deliveryHitbox then
-                                                -- Teleport to delivery
-                                                root.CFrame = deliveryHitbox.CFrame
-                                                task.wait(0.1)
-
-                                                WindUI:Notify({
-                                                    Title = "Auto Steal",
-                                                    Content = "Delivered to base!",
-                                                    Duration = 1,
-                                                    Icon = "check",
-                                                })
-                                            end
-                                        end
-                                        
-                                        -- Wait before going to next clown
-                                        task.wait(0.3)
-                                    else
-                                        WindUI:Notify({
-                                            Title = "Auto Steal",
-                                            Content = "Failed to pick up clown, retrying...",
-                                            Duration = 2,
-                                            Icon = "x",
-                                        })
-                                        task.wait(1)
-                                    end
+                                    -- Wait before next clown
+                                    task.wait(0.2)
                                 end
                             end
                         end
                     end
                 end
+
+                task.wait(2)
             end
         end)
         
@@ -1504,7 +1471,14 @@ local function toggleAutoLock(state)
     States.AutoLock = state
     
     if state then
+        local lastLockTime = 0
+        
         Connections.AutoLock = RunService.Heartbeat:Connect(function()
+            -- Add cooldown to prevent spam (lock once every 2 seconds)
+            if tick() - lastLockTime < 2 then
+                return
+            end
+            
             local plotName = getPlayerPlot()
             if plotName then
                 local plots = Workspace:FindFirstChild("Plots")
@@ -1520,15 +1494,36 @@ local function toggleAutoLock(state)
                                 local billboard = main:FindFirstChild("BillboardGui")
                                 if billboard then
                                     local remaining = billboard:FindFirstChild("RemainingTime")
-                                    if remaining and remaining.Text == "0s" then
+                                    
+                                    -- Check for both "0s" and "0" as text
+                                    if remaining and (remaining.Text == "0s" or remaining.Text == "0") then
                                         local hitbox = plotBlock:FindFirstChild("Hitbox")
-                                        if hitbox and hitbox:FindFirstChild("TouchInterest") then
+                                        if hitbox then
                                             local character = LocalPlayer.Character
                                             local root = character and character:FindFirstChild("HumanoidRootPart")
+                                            
                                             if root then
-                                                firetouchinterest(root, hitbox, 0)
-                                                task.wait(0.1)
-                                                firetouchinterest(root, hitbox, 1)
+                                                -- Method 1: Try firetouchinterest
+                                                if hitbox:FindFirstChild("TouchInterest") then
+                                                    firetouchinterest(root, hitbox, 0)
+                                                    task.wait(0.1)
+                                                    firetouchinterest(root, hitbox, 1)
+                                                end
+                                                
+                                                -- Method 2: Try teleporting to hitbox as backup
+                                                local oldPos = root.CFrame
+                                                root.CFrame = hitbox.CFrame
+                                                task.wait(0.2)
+                                                root.CFrame = oldPos
+                                                
+                                                lastLockTime = tick()
+                                                
+                                                WindUI:Notify({
+                                                    Title = "Auto Lock",
+                                                    Content = "Base locked!",
+                                                    Duration = 2,
+                                                    Icon = "lock",
+                                                })
                                             end
                                         end
                                     end
