@@ -1471,6 +1471,9 @@ local function toggleAutoLock(state)
     States.AutoLock = state
     
     if state then
+        local lastTimeText = ""
+        local stuckAt1sTime = 0
+        
         Connections.AutoLock = RunService.Heartbeat:Connect(function()
             local plotName = getPlayerPlot()
             if not plotName then return end
@@ -1495,35 +1498,65 @@ local function toggleAutoLock(state)
             
             local remaining = billboard:FindFirstChild("RemainingTime")
             if not remaining then return end
+            
+            local currentTimeText = remaining.Text
 
-            if remaining.Text == "0s" then
+            if currentTimeText == "1s" then
+                if lastTimeText ~= "1s" then
+                    stuckAt1sTime = tick()
+                else
+                    if tick() - stuckAt1sTime >= 2 then
+                        local hitbox = plotBlock:FindFirstChild("Hitbox")
+                        if hitbox then
+                            local character = LocalPlayer.Character
+                            if character then
+                                local root = character:FindFirstChild("HumanoidRootPart")
+                                if root then
+                                    firetouchinterest(root, hitbox, 0)
+                                    task.wait(0.1)
+                                    firetouchinterest(root, hitbox, 1)
+                                end
+                            end
+                        end
+                    end
+                end
+            else
+                if lastTimeText == "1s" then
+                    stuckAt1sTime = 0
+                end
+            end
+                
+            if currentTimeText == "0s" then
                 local hitbox = plotBlock:FindFirstChild("Hitbox")
-                if not hitbox then return end
+                if not hitbox then 
+                    lastTimeText = currentTimeText
+                    return 
+                end
                 
                 local character = LocalPlayer.Character
-                if not character then return end
+                if not character then 
+                    lastTimeText = currentTimeText
+                    return 
+                end
                 
                 local root = character:FindFirstChild("HumanoidRootPart")
-                if not root then return end
+                if not root then 
+                    lastTimeText = currentTimeText
+                    return 
+                end
                 
-                -- Save current position
-                local savedPosition = root.CFrame
-                
-                -- Teleport to hitbox
-                root.CFrame = hitbox.CFrame
-                
-                -- Wait
+                firetouchinterest(root, hitbox, 0)
                 task.wait(0.1)
-                
-                -- Teleport back
-                root.CFrame = savedPosition
+                firetouchinterest(root, hitbox, 1)
                 
             end
+            
+            lastTimeText = currentTimeText
         end)
         
         WindUI:Notify({
             Title = "Auto Lock",
-            Content = "Auto lock enabled!",
+            Content = "Auto lock enabled! (With 1s bug detection)",
             Duration = 3,
             Icon = "check",
         })
