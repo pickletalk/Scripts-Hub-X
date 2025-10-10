@@ -1026,7 +1026,7 @@ local function toggleFastInteraction(state)
             for _, v in pairs(Workspace:GetDescendants()) do
                 if v:IsA("ProximityPrompt") then
                     v.HoldDuration = 0
-                    v.MaxActivationDistance = 25
+                    v.MaxActivationDistance = 40
                 end
             end
         end)
