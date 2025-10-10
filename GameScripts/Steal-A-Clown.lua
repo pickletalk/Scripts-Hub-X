@@ -802,10 +802,11 @@ local function toggleAntiSteal(state)
                                                                         for click = 1, 3 do
                                                                             mouse1click()
                                                                             hrp.CFrame = theirRoot.CFrame * CFrame.new(0, 0, 0)
+                                                                            task.wait(0.2)
                                                                         end
                                                                     end
 
-                                                                    task.wait(0.3)
+                                                                    task.wait(0.5)
                                                                     
                                                                     -- Clean up tracking
                                                                     attackingTargets[podiumKey] = nil
@@ -985,7 +986,7 @@ local function stealHighestClown()
         
         -- Teleport to the brainrot
         root.CFrame = podioPart.CFrame + Vector3.new(0, 3, 0)
-        task.wait(0.3)
+        task.wait(0.4)
         
         -- Fire the prompt
         if fireproximityprompt then
@@ -1222,7 +1223,7 @@ local function toggleAutoSteal(state)
                             if proximityPrompt and proximityPrompt.Enabled then
                                 -- Teleport to the clown
                                 root.CFrame = podioPart.CFrame + Vector3.new(0, 3, 0)
-                                task.wait(0.2)
+                                task.wait(0.3)
                                 
                                 -- Fire the prompt
                                 if fireproximityprompt then
@@ -2956,7 +2957,7 @@ myConfig:Register("AntiKick", AntiKickToggle)
 -- WELCOME POPUP
 -- ========================================
 WindUI:Popup({
-    Title = "Steal A Clown V1.5.729",
+    Title = "Steal A Clown V1.5.765",
     Icon = "sword",
     Content = "New Update: Added Steal Highest Clown and Anti Steal!",
     Buttons = {
