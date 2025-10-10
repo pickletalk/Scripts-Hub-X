@@ -1501,11 +1501,11 @@ local function toggleAutoLock(state)
             
             local currentTimeText = remaining.Text
 
-            if currentTimeText == "1s" then
-                if lastTimeText ~= "1s" then
+            if currentTimeText == "1s" or currentTimeText == "2s" then
+                if lastTimeText ~= "1s" or lastTimeText ~= "2s" then
                     stuckAt1sTime = tick()
                 else
-                    if tick() - stuckAt1sTime >= 2 then
+                    if tick() - stuckAt1sTime >= 1.2 then
                         local hitbox = plotBlock:FindFirstChild("Hitbox")
                         if hitbox then
                             local character = LocalPlayer.Character
@@ -1521,7 +1521,7 @@ local function toggleAutoLock(state)
                     end
                 end
             else
-                if lastTimeText == "1s" then
+                if lastTimeText == "1s" or lastTimeText == "2s" then
                     stuckAt1sTime = 0
                 end
             end
