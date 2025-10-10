@@ -892,7 +892,14 @@ local function stealHighestClown()
                         task.wait(0.2)
                         
                         -- Fire the prompt (same as Auto Steal)
-                        fireproximityprompt(proximityPrompt)
+                        if fireproximityprompt then
+                            fireproximityprompt(proximityPrompt)
+                        else
+                            -- Alternative method
+                            proximityPrompt:InputHoldBegin()
+                            task.wait(proximityPrompt.HoldDuration or 0.5)
+                            proximityPrompt:InputHoldEnd()
+                        end
                         
                         -- Simple delay (same as Auto Steal)
                         task.wait(0.6)
@@ -1091,83 +1098,92 @@ local function toggleAutoSteal(state)
                     task.wait(5)
                     continue
                 end
-         
-                for _, clownData in ipairs(clownList) do
-                    if not States.AutoSteal then break end
+                
+                -- ONLY STEAL THE HIGHEST ONE (first in sorted list)
+                local highestClown = clownList[1]
+                
+                if not States.AutoSteal then break end
+                
+                local podium = highestClown.PodiumObject
+                
+                if not podium or not podium.Parent then
+                    task.wait(2)
+                    continue
+                end
+                
+                local base = podium:FindFirstChild("Base")
+                
+                if base then
+                    local podio = base:FindFirstChild("Podio")
+                    local spawn = base:FindFirstChild("Spawn")
                     
-                    local podium = clownData.PodiumObject
-                    
-                    if not podium or not podium.Parent then
-                        continue
-                    end
-                    
-                    local base = podium:FindFirstChild("Base")
-                    
-                    if base then
-                        local podio = base:FindFirstChild("Podio")
-                        local spawn = base:FindFirstChild("Spawn")
+                    if podio and spawn then
+                        local podioPart = podio:FindFirstChild("Part")
+                        local promptAttachment = spawn:FindFirstChild("PromptAttachment")
                         
-                        if podio and spawn then
-                            local podioPart = podio:FindFirstChild("Part")
-                            local promptAttachment = spawn:FindFirstChild("PromptAttachment")
+                        -- Verify the animal is still there
+                        local attachment = spawn:FindFirstChild("Attachment")
+                        local animalStillThere = attachment and attachment:FindFirstChild("AnimalOverhead")
+                        
+                        if not animalStillThere then
+                            task.wait(2)
+                            continue
+                        end
+                        
+                        if podioPart and promptAttachment then
+                            local proximityPrompt = promptAttachment:FindFirstChild("ProximityPrompt")
                             
-                            -- Verify the animal is still there
-                            local attachment = spawn:FindFirstChild("Attachment")
-                            local animalStillThere = attachment and attachment:FindFirstChild("AnimalOverhead")
-                            
-                            if not animalStillThere then
-                                continue
-                            end
-                            
-                            if podioPart and promptAttachment then
-                                local proximityPrompt = promptAttachment:FindFirstChild("ProximityPrompt")
+                            if proximityPrompt and proximityPrompt.Enabled then
+                                -- Teleport to the clown
+                                root.CFrame = podioPart.CFrame + Vector3.new(0, 3, 0)
+                                task.wait(0.2)
                                 
-                                if proximityPrompt and proximityPrompt.Enabled then
-                                    -- Teleport to the clown
-                                    root.CFrame = podioPart.CFrame + Vector3.new(0, 3, 0)
-                                    task.wait(0.2)
-                                    
-                                    -- Fire the prompt
+                                -- Fire the prompt
+                                if fireproximityprompt then
                                     fireproximityprompt(proximityPrompt)
-                                    
-                                    WindUI:Notify({
-                                        Title = "Auto Steal",
-                                        Content = string.format("Stealing Gen %d clown from %s", clownData.Generation, clownData.PlotName),
-                                        Duration = 2,
-                                        Icon = "zap",
-                                    })
-               
-                                    -- Simple delay
-                                    task.wait(0.6)
-                                    
-                                    -- Deliver to base
-                                    local plotName = getPlayerPlot()
-                                    if plotName then
-                                        local plots = Workspace:FindFirstChild("Plots")
-                                        local plot = plots and plots:FindFirstChild(plotName)
-                                        local deliveryHitbox = plot and plot:FindFirstChild("DeliveryHitbox")
-                                        
-                                        if deliveryHitbox then
-                                            root.CFrame = deliveryHitbox.CFrame
-                                            task.wait(0.4)
-                                        end
-                                    end
-                                    
-                                    -- Wait before next clown
-                                    task.wait(0.35)
+                                else
+                                    -- Alternative method
+                                    proximityPrompt:InputHoldBegin()
+                                    task.wait(proximityPrompt.HoldDuration or 0.5)
+                                    proximityPrompt:InputHoldEnd()
                                 end
+                                
+                                WindUI:Notify({
+                                    Title = "Auto Steal",
+                                    Content = string.format("Stealing Gen %d from %s", highestClown.Generation, highestClown.PlotName),
+                                    Duration = 2,
+                                    Icon = "zap",
+                                })
+           
+                                -- Simple delay
+                                task.wait(0.6)
+                                
+                                -- Deliver to base
+                                local plotName = getPlayerPlot()
+                                if plotName then
+                                    local plots = Workspace:FindFirstChild("Plots")
+                                    local plot = plots and plots:FindFirstChild(plotName)
+                                    local deliveryHitbox = plot and plot:FindFirstChild("DeliveryHitbox")
+                                    
+                                    if deliveryHitbox then
+                                        root.CFrame = deliveryHitbox.CFrame
+                                        task.wait(0.4)
+                                    end
+                                end
+                                    
+                                task.wait(0.2)
                             end
                         end
                     end
                 end
 
-                task.wait(2)
+                task.wait(1)
             end
         end)
         
         WindUI:Notify({
             Title = "Auto Steal",
-            Content = "Auto steal enabled!",
+            Content = "Auto steal enabled! (Prioritizing highest gen)",
             Duration = 3,
             Icon = "check",
         })
