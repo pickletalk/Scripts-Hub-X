@@ -3219,7 +3219,7 @@ myConfig:Register("AntiKick", AntiKickToggle)
 -- WELCOME POPUP
 -- ========================================
 WindUI:Popup({
-    Title = "Steal A Clown V1.5.821",
+    Title = "Steal A Clown V1.5.823",
     Icon = "sword",
     Content = "New Update: Added Steal Highest Clown and Anti Steal!",
     Buttons = {
