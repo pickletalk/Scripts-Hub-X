@@ -1605,15 +1605,103 @@ local function toggleAntiRagdoll(state)
     States.AntiRagdoll = state
     
     if state then
-        Connections.AntiRagdoll = RunService.Heartbeat:Connect(function()
-            local character = LocalPlayer.Character
-            if character then
-                local humanoid = character:FindFirstChild("Humanoid")
-                if humanoid then
-                    humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+        local function setupAntiRagdoll(character)
+            if not character then return end
+            
+            local humanoid = character:WaitForChild("Humanoid", 5)
+            if not humanoid then return end
+            
+            -- Disable ragdoll state
+            humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+            humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+            
+            -- Store original Motor6D connections
+            local motors = {}
+            for _, descendant in pairs(character:GetDescendants()) do
+                if descendant:IsA("Motor6D") then
+                    table.insert(motors, {
+                        Motor = descendant,
+                        Part0 = descendant.Part0,
+                        Part1 = descendant.Part1,
+                        C0 = descendant.C0,
+                        C1 = descendant.C1,
+                        Parent = descendant.Parent
+                    })
                 end
             end
+            
+            -- Monitor and prevent ragdoll
+            local connection1 = RunService.Heartbeat:Connect(function()
+                if not States.AntiRagdoll then return end
+                
+                -- Constantly disable ragdoll states
+                if humanoid then
+                    humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+                    humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+                    
+                    -- Keep humanoid in running/jumping state if ragdolled
+                    if humanoid:GetState() == Enum.HumanoidStateType.Ragdoll or 
+                       humanoid:GetState() == Enum.HumanoidStateType.FallingDown then
+                        humanoid:ChangeState(Enum.HumanoidStateType.Running)
+                    end
+                end
+                
+                -- Remove any BallSocketConstraints (ragdoll constraints)
+                for _, descendant in pairs(character:GetDescendants()) do
+                    if descendant:IsA("BallSocketConstraint") then
+                        descendant:Destroy()
+                    end
+                end
+                
+                -- Restore Motor6Ds if destroyed
+                for _, motorData in pairs(motors) do
+                    if not motorData.Motor or not motorData.Motor.Parent then
+                        local newMotor = Instance.new("Motor6D")
+                        newMotor.Part0 = motorData.Part0
+                        newMotor.Part1 = motorData.Part1
+                        newMotor.C0 = motorData.C0
+                        newMotor.C1 = motorData.C1
+                        newMotor.Parent = motorData.Parent
+                        motorData.Motor = newMotor
+                    end
+                end
+            end)
+            
+            -- Monitor for new constraints being added
+            local connection2 = character.DescendantAdded:Connect(function(descendant)
+                if not States.AntiRagdoll then return end
+                
+                if descendant:IsA("BallSocketConstraint") then
+                    task.wait()
+                    descendant:Destroy()
+                end
+            end)
+            
+            -- Store connections
+            if not Connections.AntiRagdoll then
+                Connections.AntiRagdoll = {}
+            end
+            table.insert(Connections.AntiRagdoll, connection1)
+            table.insert(Connections.AntiRagdoll, connection2)
+        end
+        
+        -- Setup for current character
+        if LocalPlayer.Character then
+            setupAntiRagdoll(LocalPlayer.Character)
+        end
+        
+        -- Setup for future characters (respawn)
+        local charAddedConnection = LocalPlayer.CharacterAdded:Connect(function(character)
+            if States.AntiRagdoll then
+                task.wait(0.5)
+                setupAntiRagdoll(character)
+            end
         end)
+        
+        if not Connections.AntiRagdoll then
+            Connections.AntiRagdoll = {}
+        end
+        table.insert(Connections.AntiRagdoll, charAddedConnection)
         
         WindUI:Notify({
             Title = "Anti Ragdoll",
@@ -1622,16 +1710,27 @@ local function toggleAntiRagdoll(state)
             Icon = "check",
         })
     else
+        -- Disconnect all connections
         if Connections.AntiRagdoll then
-            Connections.AntiRagdoll:Disconnect()
+            if type(Connections.AntiRagdoll) == "table" then
+                for _, connection in pairs(Connections.AntiRagdoll) do
+                    if connection and connection.Disconnect then
+                        connection:Disconnect()
+                    end
+                end
+            elseif Connections.AntiRagdoll.Disconnect then
+                Connections.AntiRagdoll:Disconnect()
+            end
             Connections.AntiRagdoll = nil
         end
         
+        -- Re-enable ragdoll state
         local character = LocalPlayer.Character
         if character then
             local humanoid = character:FindFirstChild("Humanoid")
             if humanoid then
                 humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, true)
+                humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
             end
         end
         
