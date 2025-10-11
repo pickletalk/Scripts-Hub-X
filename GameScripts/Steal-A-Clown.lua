@@ -671,6 +671,17 @@ local function toggleAntiSteal(state)
     States.AntiSteal = state
     
     if state then
+        Connections.AntiStealNoClip = RunService.Stepped:Connect(function()
+            local character = LocalPlayer.Character
+            if character and States.AntiSteal then
+                for _, part in pairs(character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end)
+        
         Connections.AntiSteal = task.spawn(function()
             local attackingTargets = {} -- Track which podiums are being defended
             
@@ -805,37 +816,56 @@ local function toggleAntiSteal(state)
                                                                         if not bat then
                                                                             bat = char:FindFirstChild("Tung Bat")
                                                                         end
-                                                                                
+        
                                                                         if bat then
                                                                             -- Equip if in backpack
                                                                             if bat.Parent == LocalPlayer.Backpack then
                                                                                 char.Humanoid:EquipTool(bat)
                                                                                 task.wait(0.1)
                                                                             end
+
+                                                                            -- FIRST: Teleport to target
+                                                                            hrp.CFrame = theirRoot.CFrame * CFrame.new(0, 0.5, 0)
+                                                                            task.wait(0.05)
     
-                                                                            -- Attach to target instead of teleporting
-                                                                            local attachment0 = hrp:FindFirstChild("AntiStealAttachment") or Instance.new("Attachment", hrp)
-                                                                            attachment0.Name = "AntiStealAttachment"
+                                                                            -- THEN: Create attachment to stick to target
+                                                                            local attachment0 = hrp:FindFirstChild("AntiStealAttachment")
+                                                                            if not attachment0 then
+                                                                                attachment0 = Instance.new("Attachment")
+                                                                                attachment0.Name = "AntiStealAttachment"
+                                                                                attachment0.Parent = hrp
+                                                                            end
 
-                                                                            local attachment1 = theirRoot:FindFirstChild("TargetAttachment") or Instance.new("Attachment", theirRoot)
-                                                                            attachment1.Name = "TargetAttachment"
+                                                                            local attachment1 = theirRoot:FindFirstChild("TargetAttachment")
+                                                                            if not attachment1 then
+                                                                                attachment1 = Instance.new("Attachment")
+                                                                                attachment1.Name = "TargetAttachment"
+                                                                                attachment1.Position = Vector3.new(0, 0.5, 0) -- Slightly above target
+                                                                                attachment1.Parent = theirRoot
+                                                                            end
 
-                                                                            local alignPos = hrp:FindFirstChild("AntiStealAlign") or Instance.new("AlignPosition", hrp)
-                                                                            alignPos.Name = "AntiStealAlign"
-                                                                            alignPos.Attachment0 = attachment0
-                                                                            alignPos.Attachment1 = attachment1
-                                                                            alignPos.MaxForce = 9e9
-                                                                            alignPos.Responsiveness = 200
+                                                                            local alignPos = hrp:FindFirstChild("AntiStealAlign"
+                                                                            if not alignPos then
+                                                                                alignPos = Instance.new("AlignPosition")
+                                                                                alignPos.Name = "AntiStealAlign"
+                                                                                alignPos.Attachment0 = attachment0
+                                                                                alignPos.Attachment1 = attachments
+                                                                                alignPos.MaxForce = 9e9
+                                                                                alignPos.MaxVelocity = math.huge
+                                                                                alignPos.Responsiveness = 200
+                                                                                alignPos.RigidityEnabled = true
+                                                                                alignPos.Parent = hrp
+                                                                            end
 
-                                                                            -- Activate the bat rapidly while attached
+                                                                            -- Activate the bat while attached
                                                                             if bat:FindFirstChild("Handle") then
                                                                                 bat:Activate()
                                                                                 task.wait(0.03)
                                                                             end
                                                                         else    -- No bat found, just teleport on them rapidly
-                                                                            hrp.CFrame = theirRoot.CFrame * CFrame.new(0, 2, 0)
+                                                                            hrp.CFrame = theirRoot.CFrame * CFrame.new(0, 0.5, 0)
                                                                             task.wait(0.05)
-                                                                        end                                 
+                                                                        end
                                                                     end
 
                                                                     task.wait(0.05)
@@ -886,6 +916,22 @@ local function toggleAntiSteal(state)
         if Connections.AntiSteal then
             task.cancel(Connections.AntiSteal)
             Connections.AntiSteal = nil
+        end
+
+        -- Disable noclip for Anti Steal
+        if Connections.AntiStealNoClip then
+            Connections.AntiStealNoClip:Disconnect()
+            Connections.AntiStealNoClip = nil
+        end
+        
+        -- Restore collision
+        local character = LocalPlayer.Character
+        if character then
+            for _, part in pairs(character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = true
+                end
+            end
         end
         
         WindUI:Notify({
