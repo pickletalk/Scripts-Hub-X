@@ -851,12 +851,14 @@ local function toggleAntiSteal(state)
                                                                                 break
                                                                             end
                                                                                 
-                                                                            -- Teleport 1.5 studs behind target instantly
+                                                                            -- Teleport directly behind target with velocity reset
                                                                             local targetCFrame = theirRoot.CFrame
-                                                                            local behindPosition = targetCFrame * CFrame.new(0, 0, 1.5)
+                                                                            local behindPosition = targetCFrame * CFrame.new(0, 0.5, 1.5) -- Slightly up and behind
                                                                             hrp.CFrame = behindPosition
-        
-                                                                            task.wait() -- Just yield to next frame, no delay
+                                                                            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0) -- Reset velocity
+                                                                            hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0) -- Reset rotation
+
+                                                                            RunService.Heartbeat:Wait() -- Faster than task.wait()
                                                                         end
                                                                     end)
 
