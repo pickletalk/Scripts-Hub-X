@@ -813,17 +813,24 @@ local function toggleAntiSteal(state)
                                                                                 task.wait(0.1)
                                                                             end
     
-                                                                            -- Teleport directly on top of target
-                                                                            hrp.CFrame = theirRoot.CFrame * CFrame.new(0, 2, 0)
-                                                                            task.wait(0.05)
-    
-                                                                            -- Activate the tool directly (no mouse clickin
+                                                                            -- Attach to target instead of teleporting
+                                                                            local attachment0 = hrp:FindFirstChild("AntiStealAttachment") or Instance.new("Attachment", hrp)
+                                                                            attachment0.Name = "AntiStealAttachment"
+
+                                                                            local attachment1 = theirRoot:FindFirstChild("TargetAttachment") or Instance.new("Attachment", theirRoot)
+                                                                            attachment1.Name = "TargetAttachment"
+
+                                                                            local alignPos = hrp:FindFirstChild("AntiStealAlign") or Instance.new("AlignPosition", hrp)
+                                                                            alignPos.Name = "AntiStealAlign"
+                                                                            alignPos.Attachment0 = attachment0
+                                                                            alignPos.Attachment1 = attachment1
+                                                                            alignPos.MaxForce = 9e9
+                                                                            alignPos.Responsiveness = 200
+
+                                                                            -- Activate the bat rapidly while attached
                                                                             if bat:FindFirstChild("Handle") then
                                                                                 bat:Activate()
-                                                                                task.wait(0.05)
-                                                                                bat:Activate()
-                                                                                task.wait(0.05)
-                                                                                bat:Activate()
+                                                                                task.wait(0.03)
                                                                             end
                                                                         else    -- No bat found, just teleport on them rapidly
                                                                             hrp.CFrame = theirRoot.CFrame * CFrame.new(0, 2, 0)
@@ -833,7 +840,19 @@ local function toggleAntiSteal(state)
 
                                                                     task.wait(0.05)
                                                                     
-                                                                    -- Clean up tracking
+                                                                    -- Clean up attachments, tracking and constraints
+                                                                    local char = LocalPlayer.Character
+                                                                    if char then
+                                                                        local hrp = char:FindFirstChild("HumanoidRootPart")
+                                                                        if hrp then
+                                                                            if hrp:FindFirstChild("AntiStealAlign") then
+                                                                                hrp.AntiStealAlign:Destroy()
+                                                                            end
+                                                                            if hrp:FindFirstChild("AntiStealAttachment") then
+                                                                                hrp.AntiStealAttachment:Destroy()
+                                                                            end
+                                                                        end
+                                                                    end
                                                                     attackingTargets[podiumKey] = nil
                                                                 end)
                                                             end
