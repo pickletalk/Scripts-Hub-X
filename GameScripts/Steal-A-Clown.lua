@@ -671,6 +671,7 @@ local function toggleAntiSteal(state)
     States.AntiSteal = state
     
     if state then
+        -- Enable noclip for Anti Steal
         Connections.AntiStealNoClip = RunService.Stepped:Connect(function()
             local character = LocalPlayer.Character
             if character and States.AntiSteal then
@@ -816,18 +817,18 @@ local function toggleAntiSteal(state)
                                                                         if not bat then
                                                                             bat = char:FindFirstChild("Tung Bat")
                                                                         end
-        
+                                                                                
                                                                         if bat then
                                                                             -- Equip if in backpack
                                                                             if bat.Parent == LocalPlayer.Backpack then
                                                                                 char.Humanoid:EquipTool(bat)
                                                                                 task.wait(0.1)
                                                                             end
-
+    
                                                                             -- FIRST: Teleport to target
                                                                             hrp.CFrame = theirRoot.CFrame * CFrame.new(0, 0.5, 0)
                                                                             task.wait(0.05)
-    
+                                                                            
                                                                             -- THEN: Create attachment to stick to target
                                                                             local attachment0 = hrp:FindFirstChild("AntiStealAttachment")
                                                                             if not attachment0 then
@@ -840,16 +841,16 @@ local function toggleAntiSteal(state)
                                                                             if not attachment1 then
                                                                                 attachment1 = Instance.new("Attachment")
                                                                                 attachment1.Name = "TargetAttachment"
-                                                                                attachment1.Position = Vector3.new(0, 0.5, 0) -- Slightly above target
+                                                                                attachment1.Position = Vector3.new(0, 0.5, 0)
                                                                                 attachment1.Parent = theirRoot
                                                                             end
 
-                                                                            local alignPos = hrp:FindFirstChild("AntiStealAlign"
+                                                                            local alignPos = hrp:FindFirstChild("AntiStealAlign")
                                                                             if not alignPos then
                                                                                 alignPos = Instance.new("AlignPosition")
                                                                                 alignPos.Name = "AntiStealAlign"
                                                                                 alignPos.Attachment0 = attachment0
-                                                                                alignPos.Attachment1 = attachments
+                                                                                alignPos.Attachment1 = attachment1
                                                                                 alignPos.MaxForce = 9e9
                                                                                 alignPos.MaxVelocity = math.huge
                                                                                 alignPos.Responsiveness = 200
@@ -862,7 +863,8 @@ local function toggleAntiSteal(state)
                                                                                 bat:Activate()
                                                                                 task.wait(0.03)
                                                                             end
-                                                                        else    -- No bat found, just teleport on them rapidly
+                                                                        else
+                                                                            -- No bat found, just teleport on them
                                                                             hrp.CFrame = theirRoot.CFrame * CFrame.new(0, 0.5, 0)
                                                                             task.wait(0.05)
                                                                         end
@@ -870,7 +872,7 @@ local function toggleAntiSteal(state)
 
                                                                     task.wait(0.05)
                                                                     
-                                                                    -- Clean up attachments, tracking and constraints
+                                                                    -- Clean up attachments and constraints
                                                                     local char = LocalPlayer.Character
                                                                     if char then
                                                                         local hrp = char:FindFirstChild("HumanoidRootPart")
@@ -883,6 +885,11 @@ local function toggleAntiSteal(state)
                                                                             end
                                                                         end
                                                                     end
+                                                                    
+                                                                    if theirRoot and theirRoot:FindFirstChild("TargetAttachment") then
+                                                                        theirRoot.TargetAttachment:Destroy()
+                                                                    end
+                                                                    
                                                                     attackingTargets[podiumKey] = nil
                                                                 end)
                                                             end
@@ -902,7 +909,7 @@ local function toggleAntiSteal(state)
                     end
                 end
                 
-                task.wait(0.1) -- Check very frequently
+                task.wait(0.1)
             end
         end)
         
@@ -917,7 +924,7 @@ local function toggleAntiSteal(state)
             task.cancel(Connections.AntiSteal)
             Connections.AntiSteal = nil
         end
-
+        
         -- Disable noclip for Anti Steal
         if Connections.AntiStealNoClip then
             Connections.AntiStealNoClip:Disconnect()
@@ -3287,7 +3294,7 @@ myConfig:Register("AntiKick", AntiKickToggle)
 -- WELCOME POPUP
 -- ========================================
 WindUI:Popup({
-    Title = "Steal A Clown V1.8.254",
+    Title = "Steal A Clown V1.8.263",
     Icon = "sword",
     Content = "New Update: Added Steal Highest Clown and Anti Steal!",
     Buttons = {
