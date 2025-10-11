@@ -665,7 +665,7 @@ local function toggleStealUI(state)
 end
 
 -- ========================================
--- ANTI STEAL (IMPROVED)
+-- ANTI STEAL (IMPROVED - SINGLE TARGET)
 -- ========================================
 local function toggleAntiSteal(state)
     States.AntiSteal = state
@@ -684,7 +684,7 @@ local function toggleAntiSteal(state)
         end)
         
         Connections.AntiSteal = task.spawn(function()
-            local attackingTargets = {} -- Track which podiums are being defended
+            local currentlyAttacking = false -- Track if we're currently attacking someone
             
             while States.AntiSteal do
                 local character = LocalPlayer.Character
@@ -695,51 +695,49 @@ local function toggleAntiSteal(state)
                     continue
                 end
                 
-                local plotName = getPlayerPlot()
-                if not plotName then
-                    task.wait(0.5)
-                    continue
-                end
-                
-                local plots = Workspace:FindFirstChild("Plots")
-                local plot = plots and plots:FindFirstChild(plotName)
-                
-                if not plot then
-                    task.wait(0.5)
-                    continue
-                end
-                
-                local animalPodiums = plot:FindFirstChild("AnimalPodiums")
-                
-                if animalPodiums then
-                    for i = 1, 30 do
-                        if not States.AntiSteal then break end
-                        
-                        local podium = animalPodiums:FindFirstChild(tostring(i))
-                        
-                        if podium then
-                            local base = podium:FindFirstChild("Base")
-                            if base then
-                                local spawn = base:FindFirstChild("Spawn")
-                                if spawn then
-                                    local attachment = spawn:FindFirstChild("Attachment")
-                                    if attachment then
-                                        local animalOverhead = attachment:FindFirstChild("AnimalOverhead")
-                                        if animalOverhead then
-                                            local stolen = animalOverhead:FindFirstChild("Stolen")
-                                            
-                                            -- Check if brainrot exists
-                                            local brainrotExists = animalOverhead:FindFirstChild("Generation") ~= nil
-                                            
-                                            if stolen and stolen.Visible and brainrotExists then
-                                                -- Podium is being stolen and brainrot exists!
-                                                local podiumKey = plotName .. "_" .. tostring(i)
+                -- Only scan for new targets if we're NOT currently attacking
+                if not currentlyAttacking then
+                    local plotName = getPlayerPlot()
+                    if not plotName then
+                        task.wait(0.5)
+                        continue
+                    end
+                    
+                    local plots = Workspace:FindFirstChild("Plots")
+                    local plot = plots and plots:FindFirstChild(plotName)
+                    
+                    if not plot then
+                        task.wait(0.5)
+                        continue
+                    end
+                    
+                    local animalPodiums = plot:FindFirstChild("AnimalPodiums")
+                    
+                    if animalPodiums then
+                        -- Scan all podiums to find ONE stolen podium
+                        for i = 1, 30 do
+                            if not States.AntiSteal then break end
+                            if currentlyAttacking then break end -- Stop scanning if we started attacking
+                            
+                            local podium = animalPodiums:FindFirstChild(tostring(i))
+                            
+                            if podium then
+                                local base = podium:FindFirstChild("Base")
+                                if base then
+                                    local spawn = base:FindFirstChild("Spawn")
+                                    if spawn then
+                                        local attachment = spawn:FindFirstChild("Attachment")
+                                        if attachment then
+                                            local animalOverhead = attachment:FindFirstChild("AnimalOverhead")
+                                            if animalOverhead then
+                                                local stolen = animalOverhead:FindFirstChild("Stolen")
                                                 
-                                                -- Check if already attacking this podium
-                                                if not attackingTargets[podiumKey] then
-                                                    attackingTargets[podiumKey] = true
-                                                    
-                                                    -- Find closest player
+                                                -- Check if brainrot exists
+                                                local brainrotExists = animalOverhead:FindFirstChild("Generation") ~= nil
+                                                
+                                                if stolen and stolen.Visible and brainrotExists then
+                                                    -- Found a stolen podium with brainrot!
+                                                    -- Find closest player to this podium
                                                     local podio = base:FindFirstChild("Podio")
                                                     if podio then
                                                         local podioPart = podio:FindFirstChild("Part")
@@ -762,144 +760,160 @@ local function toggleAntiSteal(state)
                                                             end
                                                             
                                                             if closestPlayer then
-                                                                -- Start attack loop in separate task
-                                                                task.spawn(function()
-                                                                    local targetPlayer = closestPlayer
-                                                                    local targetName = targetPlayer.DisplayName
+                                                                -- Mark as currently attacking
+                                                                currentlyAttacking = true
+                                                                
+                                                                local targetPlayer = closestPlayer
+                                                                local targetName = targetPlayer.DisplayName
+                                                                local podiumNumber = i
+                                                                
+                                                                WindUI:Notify({
+                                                                    Title = "Anti Steal Active",
+                                                                    Content = string.format("Defending podium %d from %s!", podiumNumber, targetName),
+                                                                    Duration = 2,
+                                                                    Icon = "shield",
+                                                                })
+                                                                
+                                                                -- Attack this ONE target until done
+                                                                while States.AntiSteal and currentlyAttacking do
+                                                                    -- Check if brainrot still exists
+                                                                    local currentAttachment = spawn:FindFirstChild("Attachment")
+                                                                    local currentOverhead = currentAttachment and currentAttachment:FindFirstChild("AnimalOverhead")
+                                                                    local currentGeneration = currentOverhead and currentOverhead:FindFirstChild("Generation")
                                                                     
-                                                                    WindUI:Notify({
-                                                                        Title = "Anti Steal Active",
-                                                                        Content = string.format("Defending podium %d from %s!", i, targetName),
-                                                                        Duration = 2,
-                                                                        Icon = "shield",
-                                                                    })
-                                                                    
-                                                                    -- Attack until podium is no longer stolen OR brainrot disappears
-                                                                    while States.AntiSteal do
-                                                                        -- Check if brainrot still exists
-                                                                        local currentAttachment = spawn:FindFirstChild("Attachment")
-                                                                        local currentOverhead = currentAttachment and currentAttachment:FindFirstChild("AnimalOverhead")
-                                                                        local currentGeneration = currentOverhead and currentOverhead:FindFirstChild("Generation")
-                                                                        
-                                                                        if not currentGeneration then
-                                                                            WindUI:Notify({
-                                                                                Title = "Anti Steal",
-                                                                                Content = string.format("Brainrot on podium %d is gone!", i),
-                                                                                Duration = 2,
-                                                                                Icon = "check",
-                                                                            })
-                                                                            break
-                                                                        end
-                                                                        
-                                                                        -- Check if still stolen
-                                                                        if not stolen or not stolen.Visible then
-                                                                            WindUI:Notify({
-                                                                                Title = "Anti Steal",
-                                                                                Content = string.format("Podium %d is safe!", i),
-                                                                                Duration = 2,
-                                                                                Icon = "check",
-                                                                            })
-                                                                            break
-                                                                        end
-                                                                        
-                                                                        local char = LocalPlayer.Character
-                                                                        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                                                                        
-                                                                        if not hrp or not targetPlayer.Character then
-                                                                            break
-                                                                        end
-                                                                        
-                                                                        local theirRoot = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
-                                                                        if not theirRoot then break end
-                                                                        
-                                                                        -- Equip Tung Bat and attack properly
-                                                                        local bat = LocalPlayer.Backpack:FindFirstChild("Tung Bat")
-                                                                        if not bat then
-                                                                            bat = char:FindFirstChild("Tung Bat")
-                                                                        end
-                                                                                
-                                                                        if bat then
-                                                                            -- Equip if in backpack
-                                                                            if bat.Parent == LocalPlayer.Backpack then
-                                                                                char.Humanoid:EquipTool(bat)
-                                                                                task.wait(0.1)
-                                                                            end
-    
-                                                                            -- FIRST: Teleport to target
-                                                                            hrp.CFrame = theirRoot.CFrame * CFrame.new(0, 0.5, 0)
-                                                                            task.wait(0.05)
-                                                                            
-                                                                            -- THEN: Create attachment to stick to target
-                                                                            local attachment0 = hrp:FindFirstChild("AntiStealAttachment")
-                                                                            if not attachment0 then
-                                                                                attachment0 = Instance.new("Attachment")
-                                                                                attachment0.Name = "AntiStealAttachment"
-                                                                                attachment0.Parent = hrp
-                                                                            end
-
-                                                                            local attachment1 = theirRoot:FindFirstChild("TargetAttachment")
-                                                                            if not attachment1 then
-                                                                                attachment1 = Instance.new("Attachment")
-                                                                                attachment1.Name = "TargetAttachment"
-                                                                                attachment1.Position = Vector3.new(0, 0.5, 0)
-                                                                                attachment1.Parent = theirRoot
-                                                                            end
-
-                                                                            local alignPos = hrp:FindFirstChild("AntiStealAlign")
-                                                                            if not alignPos then
-                                                                                alignPos = Instance.new("AlignPosition")
-                                                                                alignPos.Name = "AntiStealAlign"
-                                                                                alignPos.Attachment0 = attachment0
-                                                                                alignPos.Attachment1 = attachment1
-                                                                                alignPos.MaxForce = 9e9
-                                                                                alignPos.MaxVelocity = math.huge
-                                                                                alignPos.Responsiveness = 200
-                                                                                alignPos.RigidityEnabled = true
-                                                                                alignPos.Parent = hrp
-                                                                            end
-
-                                                                            -- Activate the bat while attached
-                                                                            if bat:FindFirstChild("Handle") then
-                                                                                bat:Activate()
-                                                                                task.wait(0.03)
-                                                                            end
-                                                                        else
-                                                                            -- No bat found, just teleport on them
-                                                                            hrp.CFrame = theirRoot.CFrame * CFrame.new(0, 0.5, 0)
-                                                                            task.wait(0.05)
-                                                                        end
+                                                                    if not currentGeneration then
+                                                                        WindUI:Notify({
+                                                                            Title = "Anti Steal",
+                                                                            Content = string.format("Brainrot on podium %d is gone!", podiumNumber),
+                                                                            Duration = 2,
+                                                                            Icon = "check",
+                                                                        })
+                                                                        currentlyAttacking = false
+                                                                        break
                                                                     end
-
-                                                                    task.wait(0.05)
                                                                     
-                                                                    -- Clean up attachments and constraints
+                                                                    -- Check if still stolen
+                                                                    if not stolen or not stolen.Visible then
+                                                                        WindUI:Notify({
+                                                                            Title = "Anti Steal",
+                                                                            Content = string.format("Podium %d is safe!", podiumNumber),
+                                                                            Duration = 2,
+                                                                            Icon = "check",
+                                                                        })
+                                                                        currentlyAttacking = false
+                                                                        break
+                                                                    end
+                                                                    
                                                                     local char = LocalPlayer.Character
-                                                                    if char then
-                                                                        local hrp = char:FindFirstChild("HumanoidRootPart")
-                                                                        if hrp then
-                                                                            if hrp:FindFirstChild("AntiStealAlign") then
-                                                                                hrp.AntiStealAlign:Destroy()
-                                                                            end
-                                                                            if hrp:FindFirstChild("AntiStealAttachment") then
-                                                                                hrp.AntiStealAttachment:Destroy()
-                                                                            end
-                                                                        end
+                                                                    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                                                                    
+                                                                    if not hrp or not targetPlayer.Character then
+                                                                        currentlyAttacking = false
+                                                                        break
                                                                     end
                                                                     
+                                                                    local theirRoot = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+                                                                    if not theirRoot then
+                                                                        currentlyAttacking = false
+                                                                        break
+                                                                    end
+                                                                    
+                                                                    -- Equip Tung Bat and attack properly
+                                                                    local bat = LocalPlayer.Backpack:FindFirstChild("Tung Bat")
+                                                                    if not bat then
+                                                                        bat = char:FindFirstChild("Tung Bat")
+                                                                    end
+                                                                            
+                                                                    if bat then
+                                                                        -- Equip if in backpack
+                                                                        if bat.Parent == LocalPlayer.Backpack then
+                                                                            char.Humanoid:EquipTool(bat)
+                                                                            task.wait(0.1)
+                                                                        end
+
+                                                                        -- Calculate position 1.5 studs BEHIND the target
+                                                                        local targetCFrame = theirRoot.CFrame
+                                                                        local behindPosition = targetCFrame * CFrame.new(0, 0, 1.5) -- 1.5 studs behind, 0.5 up
+                                                                        
+                                                                        -- FIRST: Teleport to behind target
+                                                                        hrp.CFrame = behindPosition
+                                                                        task.wait(0.05)
+                                                                        
+                                                                        -- THEN: Create attachment to stick behind target
+                                                                        local attachment0 = hrp:FindFirstChild("AntiStealAttachment")
+                                                                        if not attachment0 then
+                                                                            attachment0 = Instance.new("Attachment")
+                                                                            attachment0.Name = "AntiStealAttachment"
+                                                                            attachment0.Parent = hrp
+                                                                        end
+
+                                                                        local attachment1 = theirRoot:FindFirstChild("TargetAttachment")
+                                                                        if not attachment1 then
+                                                                            attachment1 = Instance.new("Attachment")
+                                                                            attachment1.Name = "TargetAttachment"
+                                                                            attachment1.Position = Vector3.new(0, 0, 1.5) -- 1.5 studs behind
+                                                                            attachment1.Parent = theirRoot
+                                                                        end
+
+                                                                        local alignPos = hrp:FindFirstChild("AntiStealAlign")
+                                                                        if not alignPos then
+                                                                            alignPos = Instance.new("AlignPosition")
+                                                                            alignPos.Name = "AntiStealAlign"
+                                                                            alignPos.Attachment0 = attachment0
+                                                                            alignPos.Attachment1 = attachment1
+                                                                            alignPos.MaxForce = 9e9
+                                                                            alignPos.MaxVelocity = math.huge
+                                                                            alignPos.Responsiveness = 200
+                                                                            alignPos.RigidityEnabled = true
+                                                                            alignPos.Parent = hrp
+                                                                        end
+
+                                                                        -- Activate the bat while attached
+                                                                        if bat:FindFirstChild("Handle") then
+                                                                            bat:Activate()
+                                                                            task.wait(0.03)
+                                                                        end
+                                                                    else
+                                                                        -- No bat found, just teleport behind them
+                                                                        local targetCFrame = theirRoot.CFrame
+                                                                        local behindPosition = targetCFrame * CFrame.new(0, 0, 1.5)
+                                                                        hrp.CFrame = behindPosition
+                                                                        task.wait(0.05)
+                                                                    end
+                                                                end
+
+                                                                task.wait(0.05)
+                                                                
+                                                                -- Clean up attachments and constraints
+                                                                local char = LocalPlayer.Character
+                                                                if char then
+                                                                    local hrp = char:FindFirstChild("HumanoidRootPart")
+                                                                    if hrp then
+                                                                        if hrp:FindFirstChild("AntiStealAlign") then
+                                                                            hrp.AntiStealAlign:Destroy()
+                                                                        end
+                                                                        if hrp:FindFirstChild("AntiStealAttachment") then
+                                                                            hrp.AntiStealAttachment:Destroy()
+                                                                        end
+                                                                    end
+                                                                end
+                                                                
+                                                                if targetPlayer.Character then
+                                                                    local theirRoot = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
                                                                     if theirRoot and theirRoot:FindFirstChild("TargetAttachment") then
                                                                         theirRoot.TargetAttachment:Destroy()
                                                                     end
-                                                                    
-                                                                    attackingTargets[podiumKey] = nil
-                                                                end)
+                                                                end
+                                                                
+                                                                -- Mark as no longer attacking
+                                                                currentlyAttacking = false
+                                                                
+                                                                -- Break out of podium loop to rescan from start
+                                                                break
                                                             end
                                                         end
                                                     end
                                                 end
-                                            else
-                                                -- Podium not stolen or brainrot gone, clear tracking
-                                                local podiumKey = plotName .. "_" .. tostring(i)
-                                                attackingTargets[podiumKey] = nil
                                             end
                                         end
                                     end
@@ -909,7 +923,7 @@ local function toggleAntiSteal(state)
                     end
                 end
                 
-                task.wait(0.1)
+                task.wait(0.1) -- Check frequently
             end
         end)
         
@@ -949,7 +963,7 @@ local function toggleAntiSteal(state)
         })
     end
 end
-
+                                        
 -- ========================================
 -- STEAL HIGHEST BRAINROT (SINGLE ACTION)
 -- ========================================
