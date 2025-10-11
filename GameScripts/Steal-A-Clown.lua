@@ -818,68 +818,66 @@ local function toggleAntiSteal(state)
                                                                         break
                                                                     end
                                                                     
-                                                                    -- Equip Tung Bat and attack properly
+                                                                    -- Equip Tung Bat
                                                                     local bat = LocalPlayer.Backpack:FindFirstChild("Tung Bat")
                                                                     if not bat then
                                                                         bat = char:FindFirstChild("Tung Bat")
                                                                     end
-                                                                            
-                                                                    if bat then
-                                                                        -- Equip if in backpack
-                                                                        if bat.Parent == LocalPlayer.Backpack then
-                                                                            char.Humanoid:EquipTool(bat)
-                                                                            task.wait(0.1)
-                                                                        end
-
-                                                                        -- Calculate position 1.5 studs BEHIND the target
-                                                                        local targetCFrame = theirRoot.CFrame
-                                                                        local behindPosition = targetCFrame * CFrame.new(0, 0, 1.5) -- 1.5 studs behind, 0.5 up
-                                                                        
-                                                                        -- FIRST: Teleport to behind target
-                                                                        hrp.CFrame = behindPosition
-                                                                        task.wait(0.05)
-                                                                        
-                                                                        -- THEN: Create attachment to stick behind target
-                                                                        local attachment0 = hrp:FindFirstChild("AntiStealAttachment")
-                                                                        if not attachment0 then
-                                                                            attachment0 = Instance.new("Attachment")
-                                                                            attachment0.Name = "AntiStealAttachment"
-                                                                            attachment0.Parent = hrp
-                                                                        end
-
-                                                                        local attachment1 = theirRoot:FindFirstChild("TargetAttachment")
-                                                                        if not attachment1 then
-                                                                            attachment1 = Instance.new("Attachment")
-                                                                            attachment1.Name = "TargetAttachment"
-                                                                            attachment1.Position = Vector3.new(0, 0, 1.5) -- 1.5 studs behind
-                                                                            attachment1.Parent = theirRoot
-                                                                        end
-
-                                                                        local alignPos = hrp:FindFirstChild("AntiStealAlign")
-                                                                        if not alignPos then
-                                                                            alignPos = Instance.new("AlignPosition")
-                                                                            alignPos.Name = "AntiStealAlign"
-                                                                            alignPos.Attachment0 = attachment0
-                                                                            alignPos.Attachment1 = attachment1
-                                                                            alignPos.MaxForce = 9e9
-                                                                            alignPos.MaxVelocity = math.huge
-                                                                            alignPos.Responsiveness = 200
-                                                                            alignPos.RigidityEnabled = true
-                                                                            alignPos.Parent = hrp
-                                                                        end
-
-                                                                        -- Activate the bat while attached
-                                                                        if bat:FindFirstChild("Handle") then
-                                                                            bat:Activate()
-                                                                            task.wait(0.03)
-                                                                        end
-                                                                    else
-                                                                        -- No bat found, just teleport behind them
-                                                                        local targetCFrame = theirRoot.CFrame
-                                                                        local behindPosition = targetCFrame * CFrame.new(0, 0, 1.5)
-                                                                        hrp.CFrame = behindPosition
-                                                                        task.wait(0.05)
+        
+                                                                    if bat and bat.Parent == LocalPlayer.Backpack then
+                                                                        char.Humanoid:EquipTool(bat)
+                                                                        task.wait(0.1)
                                                                     end
+
+                                                                    -- Create two separate loops: one for teleporting, one for attacking
+                                                                    local attacking = true
+                                                                    local lastBatActivation = 0
+
+                                                                    -- LOOP 1: Continuous teleport (no delay)
+                                                                    task.spawn(function()
+                                                                        while attacking and States.AntiSteal and currentlyAttacking do
+                                                                            local char = LocalPlayer.Character
+                                                                            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                                                                                    
+                                                                            if not hrp or not targetPlayer.Character then
+                                                                                attacking = false
+                                                                                break
+                                                                            end
+        
+
+                                                                            local theirRoot = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+                                                                            if not theirRoot then
+                                                                                attacking = false
+                                                                                break
+                                                                            end
+                                                                                
+                                                                            -- Teleport 1.5 studs behind target instantly
+                                                                            local targetCFrame = theirRoot.CFrame
+                                                                            local behindPosition = targetCFrame * CFrame.new(0, 0, 1.5)
+                                                                            hrp.CFrame = behindPosition
+        
+                                                                            task.wait() -- Just yield to next frame, no delay
+                                                                        end
+                                                                    end)
+
+                                                                    -- LOOP 2: Bat activation with 1.5 second delay
+                                                                    task.spawn(function()
+                                                                        while attacking and States.AntiSteal and currentlyAttacking do
+                                                                            -- Check if 1.5 seconds have passed
+                                                                            if tick() - lastBatActivation >= 0.5 then
+                                                                                local bat = char:FindFirstChild("Tung Bat")
+            
+                                                                                if bat and bat:FindFirstChild("Handle") then
+                                                                                    bat:Activate()
+                                                                                    lastBatActivation = tick()
+                                                                                end
+                                                                            end
+                                                                            task.wait(0.1) -- Check every 0.1 second
+                                                                        end
+                                                                    end)
+
+                                                                    -- Wait for the attack loops to run
+                                                                    task.wait(0.05)
                                                                 end
 
                                                                 task.wait(0.05)
