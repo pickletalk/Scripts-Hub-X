@@ -1,8 +1,184 @@
--- Grow A Garden Auto Farm Script (Optimized)
+-- Grow A Garden Auto Farm Script with Speed Changer
 -- By PickleTalk | Scripts Hub X
 
--- Services
-local Players = game:GetService("Players")
+-- ============================================
+-- SPEED SPOOF SYSTEM
+-- ============================================
+local WalkSpeedSpoof = getgenv().WalkSpeedSpoof
+local Disable = WalkSpeedSpoof and WalkSpeedSpoof.Disable
+if Disable then
+    Disable()
+end
+
+local cloneref = cloneref or function(...)
+    return ...
+end
+
+local WalkSpeedSpoof = {}
+
+local Players = cloneref(game:GetService("Players"))
+if not Players.LocalPlayer then
+    Players:GetPropertyChangedSignal("LocalPlayer"):Wait()
+end
+local lp = cloneref(Players.LocalPlayer)
+
+local split = string.split
+
+local GetDebugIdHandler = Instance.new("BindableFunction")
+local TempHumanoid = Instance.new("Humanoid")
+
+local cachedhumanoids = {}
+
+local CurrentHumanoid
+local newindexhook
+local indexhook
+
+function GetDebugIdHandler.OnInvoke(obj: Instance): string
+    return obj:GetDebugId()
+end
+
+local function GetDebugId(obj: Instance): string
+    return GetDebugIdHandler:Invoke(obj)
+end
+
+local function GetWalkSpeed(obj: any): number
+    TempHumanoid.WalkSpeed = obj
+    return TempHumanoid.WalkSpeed
+end
+
+function cachedhumanoids:cacheHumanoid(DebugId: string,Humanoid: Humanoid)
+    cachedhumanoids[DebugId] = {
+        currentindex = indexhook(Humanoid,"WalkSpeed"),
+        lastnewindex = nil
+    }
+    return self[DebugId]
+end
+
+indexhook = hookmetamethod(game,"__index",function(self,index)
+    if not checkcaller() and typeof(self) == "Instance" then
+        if self:IsA("Humanoid") then
+            local DebugId = GetDebugId(self)
+            local cached = cachedhumanoids[DebugId]
+
+            if self:IsDescendantOf(lp.Character) or cached then
+                if type(index) == "string" then
+                    local cleanindex = split(index,"\0")[1]
+
+                    if cleanindex == "WalkSpeed" then
+                        if not cached then
+                            cached = cachedhumanoids:cacheHumanoid(DebugId,self)
+                        end
+
+                        if not (CurrentHumanoid and CurrentHumanoid:IsDescendantOf(game)) then
+                            CurrentHumanoid = cloneref(self)
+                        end
+
+                        return cached.lastnewindex or cached.currentindex
+                    end
+                end
+            end
+        end
+    end
+
+    return indexhook(self,index)
+end)
+
+newindexhook = hookmetamethod(game,"__newindex",function(self,index,newindex)
+    if not checkcaller() and typeof(self) == "Instance" then
+        if self:IsA("Humanoid") then
+            local DebugId = GetDebugId(self)
+            local cached = cachedhumanoids[DebugId]
+
+            if self:IsDescendantOf(lp.Character) or cached then
+                if type(index) == "string" then
+                    local cleanindex = split(index,"\0")[1]
+
+                    if cleanindex == "WalkSpeed" then
+                        if not cached then
+                            cached = cachedhumanoids:cacheHumanoid(DebugId,self)
+                        end
+
+                        if not (CurrentHumanoid and CurrentHumanoid:IsDescendantOf(game)) then
+                            CurrentHumanoid = cloneref(self)
+                        end
+                        cached.lastnewindex = GetWalkSpeed(newindex)
+                        return CurrentHumanoid.WalkSpeed
+                    end
+                end
+            end
+        end
+    end
+    
+    return newindexhook(self,index,newindex)
+end)
+
+function WalkSpeedSpoof:Disable()
+    WalkSpeedSpoof:RestoreWalkSpeed()
+    hookmetamethod(game,"__index",indexhook)
+    hookmetamethod(game,"__newindex",newindexhook)
+    GetDebugIdHandler:Destroy()
+    TempHumanoid:Destroy()
+    table.clear(WalkSpeedSpoof)
+    getgenv().WalkSpeedSpoof = nil
+end
+
+function WalkSpeedSpoof:GetHumanoid()
+    return CurrentHumanoid or (function()
+        local char = lp.Character
+        local Humanoid = char and char:FindFirstChildWhichIsA("Humanoid") or nil
+        
+        if Humanoid then
+            cachedhumanoids:cacheHumanoid(Humanoid:GetDebugId(),Humanoid)
+            return cloneref(Humanoid)
+        end
+    end)()
+end
+
+function WalkSpeedSpoof:SetWalkSpeed(speed)
+    local Humanoid = WalkSpeedSpoof:GetHumanoid()
+
+    if Humanoid then
+        local connections = {}
+        local function AddConnectionsFromSignal(Signal)
+            for i,v in getconnections(Signal) do
+                if v.State then
+                    v:Disable()
+                    table.insert(connections,v)
+                end
+            end
+        end
+        AddConnectionsFromSignal(Humanoid.Changed)
+        AddConnectionsFromSignal(Humanoid:GetPropertyChangedSignal("WalkSpeed"))
+        Humanoid.WalkSpeed = speed
+        for i,v in connections do
+            v:Enable()
+        end
+    end
+end
+
+function WalkSpeedSpoof:RestoreWalkSpeed()
+    local Humanoid = WalkSpeedSpoof:GetHumanoid()
+    
+    if Humanoid then
+        local cached = cachedhumanoids[Humanoid:GetDebugId()]
+
+        if cached then
+            WalkSpeedSpoof:SetWalkSpeed(cached.lastnewindex or cached.currentindex)
+        end
+    end
+end
+
+getgenv().WalkSpeedSpoof = WalkSpeedSpoof
+
+-- ============================================
+-- SPEED CHANGER STATE
+-- ============================================
+local speedEnabled = false
+local currentSpeedValue = 100 -- Default speed value when enabled
+
+-- ============================================
+-- SERVICES
+-- ============================================
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
@@ -37,6 +213,14 @@ local eggItems = {
     "Jungle Egg", "Bug Egg"
 }
 
+-- BASELINE: What player had BEFORE farming started
+local baselineItemCounts = {
+    Gears = {},
+    Seeds = {},
+    Eggs = {}
+}
+
+-- CURRENT SESSION GAINS: Items gained during this farming session
 local itemCounts = {
     Gears = {},
     Seeds = {},
@@ -51,7 +235,7 @@ local uiLabels = {
 
 local isMinimized = false
 
--- Initialize/reset item counts
+-- Initialize/reset item counts to 0
 local function resetItemCounts()
     for _, item in ipairs(gearItems) do
         itemCounts.Gears[item] = 0
@@ -64,8 +248,104 @@ local function resetItemCounts()
     end
 end
 
-resetItemCounts()
+-- Initialize baseline counts to 0
+local function initializeBaselineCounts()
+    for _, item in ipairs(gearItems) do
+        baselineItemCounts.Gears[item] = 0
+    end
+    for _, item in ipairs(seedItems) do
+        baselineItemCounts.Seeds[item] = 0
+    end
+    for _, item in ipairs(eggItems) do
+        baselineItemCounts.Eggs[item] = 0
+    end
+end
 
+resetItemCounts()
+initializeBaselineCounts()
+
+-- ============================================
+-- CHAT COMMAND SYSTEM
+-- ============================================
+local function handleSpeedCommand(args)
+    if #args < 1 then
+        print("[SPEED] Usage: .speed [number/on/off]")
+        return
+    end
+    
+    local command = string.lower(args[1])
+    
+    if command == "on" then
+        if not speedEnabled then
+            speedEnabled = true
+            WalkSpeedSpoof:SetWalkSpeed(currentSpeedValue)
+            print("[SPEED] Speed changer enabled! Speed set to " .. currentSpeedValue)
+        else
+            print("[SPEED] Speed changer is already enabled!")
+        end
+        
+    elseif command == "off" then
+        if speedEnabled then
+            speedEnabled = false
+            WalkSpeedSpoof:RestoreWalkSpeed()
+            print("[SPEED] Speed changer disabled! Speed restored to normal.")
+        else
+            print("[SPEED] Speed changer is already disabled!")
+        end
+        
+    else
+        -- Try to parse as number
+        local speedValue = tonumber(command)
+        if speedValue then
+            currentSpeedValue = speedValue
+            speedEnabled = true
+            WalkSpeedSpoof:SetWalkSpeed(speedValue)
+            print("[SPEED] Speed set to " .. speedValue .. " and enabled!")
+        else
+            print("[SPEED] Invalid command! Use: .speed [number/on/off]")
+        end
+    end
+end
+
+local function parseChatCommand(message)
+    -- Check if message starts with "."
+    if string.sub(message, 1, 1) ~= "." then
+        return
+    end
+    
+    -- Remove the "." prefix
+    local commandString = string.sub(message, 2)
+    
+    -- Split by spaces
+    local parts = {}
+    for word in string.gmatch(commandString, "[^%s]+") do
+        table.insert(parts, word)
+    end
+    
+    if #parts < 1 then
+        return
+    end
+    
+    local commandName = string.lower(parts[1])
+    local args = {}
+    for i = 2, #parts do
+        table.insert(args, parts[i])
+    end
+    
+    -- Handle commands
+    if commandName == "speed" then
+        handleSpeedCommand(args)
+    end
+end
+
+-- Listen to chat messages
+player.Chatted:Connect(function(message)
+    parseChatCommand(message)
+end)
+
+-- ============================================
+-- UI CREATION
+-- ============================================
 local function createUI()
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "GardenAutoFarmUI"
@@ -305,18 +585,17 @@ local function createUI()
     return screenGui
 end
 
-local function updateUILabel(category, itemName, newCount, increase)
+local function updateUILabel(category, itemName, gainedCount)
     pcall(function()
         if uiLabels[category] and uiLabels[category][itemName] then
             local label = uiLabels[category][itemName]
-            label.Text = itemName .. " (" .. newCount .. ")"
+            label.Text = itemName .. " (" .. gainedCount .. ")"
             
-            local originalColor = label.BackgroundColor3
-            label.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
-            TweenService:Create(label, TweenInfo.new(0.4), {BackgroundColor3 = originalColor}):Play()
-            
-            if increase > 0 then
-                print("[DEBUG] " .. category .. " - " .. itemName .. " increased by +" .. increase .. " (Total: " .. newCount .. ")")
+            -- Flash green if items were gained
+            if gainedCount > 0 then
+                local originalColor = label.BackgroundColor3
+                label.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+                TweenService:Create(label, TweenInfo.new(0.4), {BackgroundColor3 = originalColor}):Play()
             end
         end
     end)
@@ -348,87 +627,150 @@ local function getItemCount(itemName, baseItemName)
     return 0
 end
 
--- Fast backpack checking using Heartbeat
-local function checkInventory()
+-- Get current backpack item counts
+local function getCurrentBackpackCounts()
+    local counts = {
+        Gears = {},
+        Seeds = {},
+        Eggs = {}
+    }
+    
+    -- Initialize all to 0
+    for _, item in ipairs(gearItems) do
+        counts.Gears[item] = 0
+    end
+    for _, item in ipairs(seedItems) do
+        counts.Seeds[item] = 0
+    end
+    for _, item in ipairs(eggItems) do
+        counts.Eggs[item] = 0
+    end
+    
     pcall(function()
         local backpack = player:FindFirstChild("Backpack")
         if not backpack then 
             return 
         end
         
-        for category, items in pairs(itemCounts) do
-            for itemName, currentCount in pairs(items) do
-                local totalCount = 0
-                
-                -- Check all children in backpack
-                for _, child in ipairs(backpack:GetChildren()) do
-                    local count = getItemCount(child.Name, itemName)
-                    totalCount = totalCount + count
+        -- Count all items in backpack
+        for _, child in ipairs(backpack:GetChildren()) do
+            -- Check seeds
+            for _, seedName in ipairs(seedItems) do
+                local count = getItemCount(child.Name, seedName)
+                if count > 0 then
+                    counts.Seeds[seedName] = counts.Seeds[seedName] + count
                 end
-                
-                -- Only update if count increased
-                if totalCount > currentCount then
-                    local increase = totalCount - currentCount
-                    itemCounts[category][itemName] = totalCount
-                    updateUILabel(category, itemName, totalCount, increase)
+            end
+            
+            -- Check gears
+            for _, gearName in ipairs(gearItems) do
+                local count = getItemCount(child.Name, gearName)
+                if count > 0 then
+                    counts.Gears[gearName] = counts.Gears[gearName] + count
+                end
+            end
+            
+            -- Check eggs
+            for _, eggName in ipairs(eggItems) do
+                local count = getItemCount(child.Name, eggName)
+                if count > 0 then
+                    counts.Eggs[eggName] = counts.Eggs[eggName] + count
+                end
+            end
+        end
+    end)
+    
+    return counts
+end
+
+-- Save baseline backpack state on first execution
+local function saveBaselineBackpack()
+    pcall(function()
+        local currentCounts = getCurrentBackpackCounts()
+        
+        -- Copy current counts to baseline
+        for category, items in pairs(currentCounts) do
+            for itemName, count in pairs(items) do
+                baselineItemCounts[category][itemName] = count
+                if count > 0 then
+                    print("[BASELINE] " .. category .. " - " .. itemName .. ": " .. count)
                 end
             end
         end
     end)
 end
 
--- Super fast auto farm using Heartbeat - fires ALL items at once every frame
+-- Calculate items gained during farming session
+local function calculateGainedItems()
+    pcall(function()
+        local currentCounts = getCurrentBackpackCounts()
+        
+        -- Calculate difference for each item
+        for category, items in pairs(currentCounts) do
+            for itemName, currentCount in pairs(items) do
+                local baselineCount = baselineItemCounts[category][itemName] or 0
+                local gainedCount = currentCount - baselineCount
+                
+                -- Only update if positive (we gained items)
+                if gainedCount >= 0 then
+                    itemCounts[category][itemName] = gainedCount
+                    updateUILabel(category, itemName, gainedCount)
+                end
+            end
+        end
+    end)
+end
+
+-- Auto farm loop using Heartbeat
 local function startAutoFarm()
     pcall(function()
         RunService.Heartbeat:Connect(function()
-            -- reset everything first
-            resetItemCounts()
+            -- Reset UI display to 0
             resetUILabels()
-                    
-            -- Fire all seeds (no delay)
+            
+            -- Fire all seeds at once (no delay)
             for _, seedName in ipairs(seedItems) do
                 pcall(function()
                     BuySeedStock:FireServer("Shop", seedName)
                 end)
             end
             
-            -- Fire all gears (no delay)
+            -- Fire all gears at once (no delay)
             for _, gearName in ipairs(gearItems) do
                 pcall(function()
                     BuyGearStock:FireServer(gearName)
                 end)
             end
             
-            -- Fire all eggs (no delay)
+            -- Fire all eggs at once (no delay)
             for _, eggName in ipairs(eggItems) do
                 pcall(function()
                     BuyPetEgg:FireServer(eggName)
                 end)
             end
+            
+            -- Check backpack and calculate gained items
+            calculateGainedItems()
         end)
     end)
 end
 
--- Continuous inventory checking using Heartbeat (super fast)
-local function startInventoryMonitor()
-    pcall(function()
-        RunService.Heartbeat:Connect(function()
-            checkInventory()
-        end)
-    end)
-end
+-- ============================================
+-- INITIALIZATION
+-- ============================================
 
 -- Create UI
 pcall(function()
     createUI()
 end)
 
--- Start ultra-fast inventory monitoring
-spawn(function()
-    startInventoryMonitor()
-end)
+-- Wait a moment for backpack to load
+wait(0.5)
 
--- Start ultra-fast auto farm
+-- Save baseline backpack state on first execution
+saveBaselineBackpack()
+
+-- Start auto farm
 spawn(function()
     startAutoFarm()
 end)
