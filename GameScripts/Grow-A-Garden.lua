@@ -386,7 +386,7 @@ local function startAutoFarm()
         end
     
         checkInventory()
-        wait(300)
+        wait(1)
     end
 end
 
