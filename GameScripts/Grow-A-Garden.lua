@@ -351,54 +351,47 @@ local function startAutoFarm()
     while true do
         local seedStartTime = tick()
         local seedFireCount = 0
-        while tick() - seedStartTime < 5 do
+        while tick() - seedStartTime < 3 do
             for _, seedName in ipairs(seedItems) do
                 pcall(function()
                     BuySeedStock:FireServer("Shop", seedName)
                 end)
             end
             seedFireCount = seedFireCount + 1
-            wait(0.01)
         end
 
         local gearStartTime = tick()
         local gearFireCount = 0
-        while tick() - gearStartTime < 5 do
+        while tick() - gearStartTime < 3 do
             for _, gearName in ipairs(gearItems) do
                 pcall(function()
                     BuyGearStock:FireServer(gearName)
                 end)
             end
             gearFireCount = gearFireCount + 1
-            wait(0.01)
         end
 
         local eggStartTime = tick()
         local eggFireCount = 0
-        while tick() - eggStartTime < 5 do
+        while tick() - eggStartTime < 3 do
             for _, eggName in ipairs(eggItems) do
                 pcall(function()
                     BuyPetEgg:FireServer(eggName)
                 end)
             end
             eggFireCount = eggFireCount + 1
-            wait(0.01)
         end
     
         checkInventory()
-        wait(1)
     end
 end
-
--- Initialize
-print("🌱 Pickle Auto Farm Loading...")
 
 -- Create UI
 createUI()
 
 -- Start continuous inventory monitoring
 spawn(function()
-    while wait(1) do
+    while wait(0.5) do
         checkInventory()
     end
 end)
