@@ -305,7 +305,7 @@ local function createUI()
     return screenGui
 end
 
-local function updateUILabel(category, itemName, newCount)
+local function updateUILabel(category, itemName, newCount, increase)
     pcall(function()
         if uiLabels[category] and uiLabels[category][itemName] then
             local label = uiLabels[category][itemName]
@@ -314,6 +314,10 @@ local function updateUILabel(category, itemName, newCount)
             local originalColor = label.BackgroundColor3
             label.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
             TweenService:Create(label, TweenInfo.new(0.4), {BackgroundColor3 = originalColor}):Play()
+            
+            if increase > 0 then
+                print("[DEBUG] " .. category .. " - " .. itemName .. " increased by +" .. increase .. " (Total: " .. newCount .. ")")
+            end
         end
     end)
 end
@@ -326,10 +330,25 @@ local function resetUILabels()
                 label.Text = itemName .. " (0)"
             end
         end
-        print("[DEBUG] UI labels reset to 0")
     end)
 end
 
+-- Extract count from item name (e.g., "Carrot x5" returns 5)
+local function getItemCount(itemName, baseItemName)
+    -- Check if item name starts with base name
+    if string.sub(itemName, 1, #baseItemName) == baseItemName then
+        -- Try to extract number after "x"
+        local count = string.match(itemName, "x%s*(%d+)")
+        if count then
+            return tonumber(count)
+        end
+        -- If no "x" found, it might be just the item with count 1
+        return 1
+    end
+    return 0
+end
+
+-- Fast backpack checking using Heartbeat
 local function checkInventory()
     pcall(function()
         local backpack = player:FindFirstChild("Backpack")
@@ -339,28 +358,19 @@ local function checkInventory()
         
         for category, items in pairs(itemCounts) do
             for itemName, currentCount in pairs(items) do
-                local itemsFound = 0
-
-                -- Check backpack with EXACT name matching only
+                local totalCount = 0
+                
+                -- Check all children in backpack
                 for _, child in ipairs(backpack:GetChildren()) do
-                    if child:IsA("Tool") and child.Name == itemName then
-                        itemsFound = itemsFound + 1
-                    end
-                end
-
-                -- Check character with EXACT name matching only
-                if player.Character then
-                    for _, child in ipairs(player.Character:GetChildren()) do
-                        if child:IsA("Tool") and child.Name == itemName then
-                            itemsFound = itemsFound + 1
-                        end
-                    end
+                    local count = getItemCount(child.Name, itemName)
+                    totalCount = totalCount + count
                 end
                 
-                -- Only update if count changed
-                if itemsFound ~= currentCount then
-                    itemCounts[category][itemName] = itemsFound
-                    updateUILabel(category, itemName, itemsFound)
+                -- Only update if count increased
+                if totalCount > currentCount then
+                    local increase = totalCount - currentCount
+                    itemCounts[category][itemName] = totalCount
+                    updateUILabel(category, itemName, totalCount, increase)
                 end
             end
         end
@@ -371,6 +381,10 @@ end
 local function startAutoFarm()
     pcall(function()
         RunService.Heartbeat:Connect(function()
+            -- reset everything first
+            resetItemCounts()
+            resetUILabels()
+                    
             -- Fire all seeds (no delay)
             for _, seedName in ipairs(seedItems) do
                 pcall(function()
@@ -392,30 +406,26 @@ local function startAutoFarm()
                 end)
             end
         end)
-        print("[DEBUG] Auto farm started - firing all items every Heartbeat")
     end)
 end
 
--- Handle player respawn/rejoin - reset everything
-player.CharacterAdded:Connect(function()
+-- Continuous inventory checking using Heartbeat (super fast)
+local function startInventoryMonitor()
     pcall(function()
-        print("[DEBUG] Character respawned - resetting all logs")
-        resetItemCounts()
-        resetUILabels()
+        RunService.Heartbeat:Connect(function()
+            checkInventory()
+        end)
     end)
-end)
+end
 
 -- Create UI
 pcall(function()
     createUI()
-    print("[DEBUG] UI created successfully")
 end)
 
--- Start continuous inventory monitoring (every 1 second to avoid spam)
+-- Start ultra-fast inventory monitoring
 spawn(function()
-    while wait(1) do
-        checkInventory()
-    end
+    startInventoryMonitor()
 end)
 
 -- Start ultra-fast auto farm
