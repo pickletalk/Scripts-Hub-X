@@ -1,4 +1,4 @@
--- Grow A Garden Auto Farm Script
+-- Grow A Garden Auto Farm Script (Optimized)
 -- By PickleTalk | Scripts Hub X
 
 -- Services
@@ -6,6 +6,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -42,16 +43,6 @@ local itemCounts = {
     Eggs = {}
 }
 
-for _, item in ipairs(gearItems) do
-    itemCounts.Gears[item] = 0
-end
-for _, item in ipairs(seedItems) do
-    itemCounts.Seeds[item] = 0
-end
-for _, item in ipairs(eggItems) do
-    itemCounts.Eggs[item] = 0
-end
-
 local uiLabels = {
     Gears = {},
     Seeds = {},
@@ -60,14 +51,27 @@ local uiLabels = {
 
 local isMinimized = false
 
+-- Initialize/reset item counts
+local function resetItemCounts()
+    for _, item in ipairs(gearItems) do
+        itemCounts.Gears[item] = 0
+    end
+    for _, item in ipairs(seedItems) do
+        itemCounts.Seeds[item] = 0
+    end
+    for _, item in ipairs(eggItems) do
+        itemCounts.Eggs[item] = 0
+    end
+end
+
+resetItemCounts()
+
 local function createUI()
-    -- Main ScreenGui
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "GardenAutoFarmUI"
     screenGui.ResetOnSpawn = false
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     
-    -- Main Frame (3-Column Layout)
     local mainFrame = Instance.new("Frame")
     mainFrame.Name = "MainFrame"
     mainFrame.Size = UDim2.new(0, 300, 0, 370)
@@ -76,12 +80,10 @@ local function createUI()
     mainFrame.BorderSizePixel = 0
     mainFrame.Parent = screenGui
     
-    -- Corner Rounding
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 10)
     corner.Parent = mainFrame
     
-    -- Header
     local header = Instance.new("Frame")
     header.Name = "Header"
     header.Size = UDim2.new(1, 0, 0, 40)
@@ -93,7 +95,6 @@ local function createUI()
     headerCorner.CornerRadius = UDim.new(0, 10)
     headerCorner.Parent = header
     
-    -- Title
     local title = Instance.new("TextLabel")
     title.Name = "Title"
     title.Size = UDim2.new(1, -45, 0, 20)
@@ -106,7 +107,6 @@ local function createUI()
     title.TextXAlignment = Enum.TextXAlignment.Left
     title.Parent = header
     
-    -- Subtitle
     local subtitle = Instance.new("TextLabel")
     subtitle.Name = "Subtitle"
     subtitle.Size = UDim2.new(1, -45, 0, 15)
@@ -243,7 +243,6 @@ local function createUI()
             contentFrame.Visible = true
         end
         
-        -- Smooth animation
         local tween = TweenService:Create(
             mainFrame,
             TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
@@ -307,97 +306,119 @@ local function createUI()
 end
 
 local function updateUILabel(category, itemName, newCount)
-    if uiLabels[category] and uiLabels[category][itemName] then
-        local label = uiLabels[category][itemName]
-        label.Text = itemName .. " (" .. newCount .. ")"
-        
-        local originalColor = label.BackgroundColor3
-        label.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
-        TweenService:Create(label, TweenInfo.new(0.4), {BackgroundColor3 = originalColor}):Play()
-    end
+    pcall(function()
+        if uiLabels[category] and uiLabels[category][itemName] then
+            local label = uiLabels[category][itemName]
+            label.Text = itemName .. " (" .. newCount .. ")"
+            
+            local originalColor = label.BackgroundColor3
+            label.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+            TweenService:Create(label, TweenInfo.new(0.4), {BackgroundColor3 = originalColor}):Play()
+        end
+    end)
+end
+
+-- Reset all UI labels to 0
+local function resetUILabels()
+    pcall(function()
+        for category, items in pairs(uiLabels) do
+            for itemName, label in pairs(items) do
+                label.Text = itemName .. " (0)"
+            end
+        end
+        print("[DEBUG] UI labels reset to 0")
+    end)
 end
 
 local function checkInventory()
-    local backpack = player:FindFirstChild("Backpack")
-    if not backpack then return end
-    
-    for category, items in pairs(itemCounts) do
-        for itemName, currentCount in pairs(items) do
-            local itemsFound = 0
+    pcall(function()
+        local backpack = player:FindFirstChild("Backpack")
+        if not backpack then 
+            return 
+        end
+        
+        for category, items in pairs(itemCounts) do
+            for itemName, currentCount in pairs(items) do
+                local itemsFound = 0
 
-            for _, child in ipairs(backpack:GetChildren()) do
-                if child.Name == itemName or string.find(child.Name, itemName) then
-                    itemsFound = itemsFound + 1
-                end
-            end
-
-            if player.Character then
-                for _, child in ipairs(player.Character:GetChildren()) do
-                    if child.Name == itemName or string.find(child.Name, itemName) then
+                -- Check backpack with EXACT name matching only
+                for _, child in ipairs(backpack:GetChildren()) do
+                    if child:IsA("Tool") and child.Name == itemName then
                         itemsFound = itemsFound + 1
                     end
                 end
-            end
-            
-            if itemsFound > currentCount then
-                itemCounts[category][itemName] = itemsFound
-                updateUILabel(category, itemName, itemsFound)
+
+                -- Check character with EXACT name matching only
+                if player.Character then
+                    for _, child in ipairs(player.Character:GetChildren()) do
+                        if child:IsA("Tool") and child.Name == itemName then
+                            itemsFound = itemsFound + 1
+                        end
+                    end
+                end
+                
+                -- Only update if count changed
+                if itemsFound ~= currentCount then
+                    itemCounts[category][itemName] = itemsFound
+                    updateUILabel(category, itemName, itemsFound)
+                end
             end
         end
-    end
+    end)
 end
 
+-- Super fast auto farm using Heartbeat - fires ALL items at once every frame
 local function startAutoFarm()
-    while true do
-        local seedStartTime = tick()
-        local seedFireCount = 0
-        while tick() - seedStartTime < 3 do
+    pcall(function()
+        RunService.Heartbeat:Connect(function()
+            -- Fire all seeds (no delay)
             for _, seedName in ipairs(seedItems) do
                 pcall(function()
                     BuySeedStock:FireServer("Shop", seedName)
                 end)
             end
-            seedFireCount = seedFireCount + 1
-        end
-
-        local gearStartTime = tick()
-        local gearFireCount = 0
-        while tick() - gearStartTime < 3 do
+            
+            -- Fire all gears (no delay)
             for _, gearName in ipairs(gearItems) do
                 pcall(function()
                     BuyGearStock:FireServer(gearName)
                 end)
             end
-            gearFireCount = gearFireCount + 1
-        end
-
-        local eggStartTime = tick()
-        local eggFireCount = 0
-        while tick() - eggStartTime < 3 do
+            
+            -- Fire all eggs (no delay)
             for _, eggName in ipairs(eggItems) do
                 pcall(function()
                     BuyPetEgg:FireServer(eggName)
                 end)
             end
-            eggFireCount = eggFireCount + 1
-        end
-    
-        checkInventory()
-        wait(0.005)
-    end
+        end)
+        print("[DEBUG] Auto farm started - firing all items every Heartbeat")
+    end)
 end
 
--- Create UI
-createUI()
+-- Handle player respawn/rejoin - reset everything
+player.CharacterAdded:Connect(function()
+    pcall(function()
+        print("[DEBUG] Character respawned - resetting all logs")
+        resetItemCounts()
+        resetUILabels()
+    end)
+end)
 
--- Start continuous inventory monitoring
+-- Create UI
+pcall(function()
+    createUI()
+    print("[DEBUG] UI created successfully")
+end)
+
+-- Start continuous inventory monitoring (every 1 second to avoid spam)
 spawn(function()
-    while wait(0.5) do
+    while wait(1) do
         checkInventory()
     end
 end)
 
--- Start auto farm with burst buying system
+-- Start ultra-fast auto farm
 spawn(function()
     startAutoFarm()
 end)
