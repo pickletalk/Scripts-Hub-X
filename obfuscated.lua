@@ -109,8 +109,8 @@ local commandsList = {
 	{cmd = ";byfron [user]", desc = "Deletes all GUIs for target or self", example = ";byfron OR ;byfron username", category = "Destructive"},
 	{cmd = ";shutdown [user]", desc = "Shuts down target or self's game", example = ";shutdown OR ;shutdown username", category = "Destructive"},
 	{cmd = ";deletemap [user]", desc = "Deletes workspace for target or self", example = ";deletemap OR ;deletemap username", category = "Server"},
-	{cmd = ";gravity [user] [value]", desc = "Changes gravity for target or self", example = ";gravity 50 OR ;gravity 50 username", category = "Server"},
-	{cmd = ";framerate [user] [fps]", desc = "Sets FPS cap for target or self", example = ";framerate 30 OR ;framerate 30 username", category = "Client"},
+	{cmd = ";gravity [value] [user]", desc = "Changes gravity for target or self", example = ";gravity 50 OR ;gravity 50 username", category = "Server"},
+	{cmd = ";framerate [fps] [user]", desc = "Sets FPS cap for target or self", example = ";framerate 30 OR ;framerate 30 username", category = "Client"},
 	{cmd = ";strawhat [user]", desc = "Changes skybox to Strawhat theme for target or self", example = ";strawhat OR ;strawhat username", category = "Visual"},
 	{cmd = ";scriptshubx [user]", desc = "Changes skybox to SHX theme for target or self", example = ";scriptshubx OR ;scriptshubx username", category = "Visual"},
 }
