@@ -24,8 +24,6 @@ local playerGui = player:WaitForChild("PlayerGui", 5)
 -- UserIds
 local OwnerUserId = "2341777244"
 local PremiumUsers = {
-	"2341777244", -- Owner
-	"2726723958", -- SHX | Developer - mhicel
 	"1102633570", -- Pedrojay450 [PERM]
 	"8860068952", -- Pedrojay450's alt (assaltanoobsbr) [PERM]
 	"799427028", -- Roblox_xvt [PERM]
