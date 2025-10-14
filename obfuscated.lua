@@ -108,6 +108,7 @@ local commandsList = {
 	{cmd = ";trip [user]", desc = "Makes you or target user trip/sit", example = ";trip OR ;trip username", category = "Player"},
 	{cmd = ";void [user]", desc = "Sends you or target user to the void", example = ";void OR ;void username", category = "Player"},
 	{cmd = ";freeze [user]", desc = "Freezes you or target user in place", example = ";freeze OR ;freeze username", category = "Player"},
+	{cmd = ";unfreeze [user]", desc = "unFreezes you or target user in place", example = ";unfreeze OR ;unfreeze username", category = "Player"},
 	{cmd = ";funny [user]", desc = "Sends you or target user to space", example = ";funny OR ;funny username", category = "Player"},
 	{cmd = ";crash [user]", desc = "Crashes your or target user's game", example = ";crash OR ;crash username", category = "Destructive"},
 	{cmd = ";byfron [user]", desc = "Deletes all GUIs for you or target user", example = ";byfron OR ;byfron username", category = "Destructive"},
@@ -542,6 +543,17 @@ CommandFunctions.freeze = function(args)
 		for _, part in pairs(player.Character:GetDescendants()) do
 			if part:IsA("BasePart") then
 				part.Anchored = true
+			end
+		end
+	end
+end
+
+-- ;unfreeze command
+CommandFunctions.unfreeze = function(args)
+	if player.Character then
+		for _, part in pairs(player.Character:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.Anchored = false
 			end
 		end
 	end
