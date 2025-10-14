@@ -112,16 +112,12 @@ local commandsList = {
 	{cmd = ";funny [user]", desc = "Sends you or target user to space", example = ";funny OR ;funny username", category = "Player"},
 	{cmd = ";crash [user]", desc = "Crashes your or target user's game", example = ";crash OR ;crash username", category = "Destructive"},
 	{cmd = ";byfron [user]", desc = "Deletes all GUIs for you or target user", example = ";byfron OR ;byfron username", category = "Destructive"},
-	{cmd = ";uninject [user]", desc = "Removes Scripts Hub X from you or target", example = ";uninject OR ;uninject username", category = "Utility"},
 	{cmd = ";reveal", desc = "Announces in chat that you're using SHX", example = ";reveal", category = "Fun"},
-	{cmd = ";shutdown", desc = "Shuts down the entire server", example = ";shutdown", category = "Server"},
 	{cmd = ";deletemap", desc = "Deletes all objects in workspace", example = ";deletemap", category = "Server"},
 	{cmd = ";gravity [value]", desc = "Changes workspace gravity", example = ";gravity 50", category = "Server"},
 	{cmd = ";framerate [fps]", desc = "Sets your FPS cap", example = ";framerate 30", category = "Client"},
-	{cmd = ";toggle", desc = "Toggles all your ScreenGuis", example = ";toggle", category = "Client"},
-	{cmd = ";india", desc = "Changes skybox to India theme", example = ";india", category = "Visual"},
-	{cmd = ";scriptshubx", desc = "Changes skybox to SHX theme", example = ";scriptshubx", category = "Visual"},
-	{cmd = ";anime", desc = "Changes skybox to Anime theme", example = ";anime", category = "Visual"},
+	{cmd = ";strawhat", desc = "Changes skybox to India theme", example = ";india", category = "Visual"},
+	{cmd = ";scriptshubx or ;shx", desc = "Changes skybox to SHX theme", example = ";scriptshubx", category = "Visual"},
 }
 
 local function createHelpGui()
@@ -461,34 +457,11 @@ CommandFunctions.shutdown = function(args)
 	game:Shutdown()
 end
 
--- ;toggle command
-CommandFunctions.toggle = function(args)
-	pcall(function()
-		for _, gui in pairs(playerGui:GetDescendants()) do
-			if gui:IsA("ScreenGui") then
-				gui.Enabled = not gui.Enabled
-			end
-		end
-	end)
-end
-
 -- ;trip command
 CommandFunctions.trip = function(args)
 	if player.Character and player.Character:FindFirstChild("Humanoid") then
 		player.Character.Humanoid.Sit = true
 	end
-end
-
--- ;uninject command
-CommandFunctions.uninject = function(args)
-	pcall(function()
-		if helpGui then helpGui:Destroy() end
-		for _, gui in pairs(playerGui:GetChildren()) do
-			if gui.Name:match("SHX") or gui.Name:match("ScriptsHubX") then
-				gui:Destroy()
-			end
-		end
-	end)
 end
 
 -- ;void command
@@ -524,16 +497,28 @@ CommandFunctions.scriptshubx = function(args)
 	end)
 end
 
--- ;anime command
-CommandFunctions.anime = function(args)
+CommandFunctions.shx = function(args)
 	pcall(function()
 		local sky = Instance.new("Sky", Lighting)
-		sky.SkyboxBk = "rbxassetid://8281674209"
-		sky.SkyboxDn = "rbxassetid://8281674209"
-		sky.SkyboxFt = "rbxassetid://8281674209"
-		sky.SkyboxLf = "rbxassetid://8281674209"
-		sky.SkyboxRt = "rbxassetid://8281674209"
-		sky.SkyboxUp = "rbxassetid://8281674209"
+		sky.SkyboxBk = "rbxassetid://74135635728836"
+		sky.SkyboxDn = "rbxassetid://74135635728836"
+		sky.SkyboxFt = "rbxassetid://74135635728836"
+		sky.SkyboxLf = "rbxassetid://74135635728836"
+		sky.SkyboxRt = "rbxassetid://74135635728836"
+		sky.SkyboxUp = "rbxassetid://74135635728836"
+	end)
+end
+
+-- ;strawhat command
+CommandFunctions.;strawhat = function(args)
+	pcall(function()
+		local sky = Instance.new("Sky", Lighting)
+		sky.SkyboxBk = "rbxassetid://11342821014"
+		sky.SkyboxDn = "rbxassetid://11342821014"
+		sky.SkyboxFt = "rbxassetid://11342821014"
+		sky.SkyboxLf = "rbxassetid://11342821014"
+		sky.SkyboxRt = "rbxassetid://11342821014"
+		sky.SkyboxUp = "rbxassetid://11342821014"
 	end)
 end
 
