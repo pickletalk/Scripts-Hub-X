@@ -292,12 +292,12 @@ end
 CommandFunctions.scriptshubx = function(args)
 	pcall(function()
 		local sky = Instance.new("Sky", Lighting)
-		sky.SkyboxBk = "rbxassetid://1" -- Replace with Scripts Hub X texture
-		sky.SkyboxDn = "rbxassetid://1"
-		sky.SkyboxFt = "rbxassetid://1"
-		sky.SkyboxLf = "rbxassetid://1"
-		sky.SkyboxRt = "rbxassetid://1"
-		sky.SkyboxUp = "rbxassetid://1"
+		sky.SkyboxBk = "rbxassetid://74135635728836" -- Replace with Scripts Hub X texture
+		sky.SkyboxDn = "rbxassetid://74135635728836"
+		sky.SkyboxFt = "rbxassetid://74135635728836"
+		sky.SkyboxLf = "rbxassetid://74135635728836"
+		sky.SkyboxRt = "rbxassetid://74135635728836"
+		sky.SkyboxUp = "rbxassetid://74135635728836"
 	end)
 end
 
