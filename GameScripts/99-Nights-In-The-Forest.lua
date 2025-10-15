@@ -214,14 +214,12 @@ local States = {
     Speed = false,
     SpeedValue = 100,
     Noclip = false,
-    KillAura = false,
     CurrentTheme = "Dark",
 }
 
 local Connections = {
     LowGFX = nil,
     Noclip = nil,
-    KillAura = nil,
 }
 
 local LowGFXStorage = {
@@ -366,9 +364,9 @@ end
 
 local function activateGodMode()
     local success, err = pcall(function()
-        local RemoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents", 2)
+        local RemoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
         if RemoteEvents then
-            local DamagePlayer = RemoteEvents:WaitForChild("DamagePlayer", 2)
+            local DamagePlayer = RemoteEvents:WaitForChild("DamagePlayer")
             if DamagePlayer then
                 DamagePlayer:FireServer(-math.huge)
                 WindUI:Notify({
@@ -471,63 +469,6 @@ local function toggleNoclip(state)
         WindUI:Notify({
             Title = "Noclip",
             Content = "Noclip disabled",
-            Duration = 3,
-            Icon = "check",
-        })
-    end
-end
-
-local function toggleKillAura(state)
-    States.KillAura = state
-    
-    if state then
-        Connections.KillAura = RunService.RenderStepped:Connect(function()
-            if States.KillAura then
-                for _, player in pairs(Players:GetPlayers()) do
-                    if player.Name ~= LocalPlayer.Name then
-                        pcall(function()
-                            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                                local hrp = player.Character.HumanoidRootPart
-                                hrp.Size = Vector3.new(50, 50, 50)
-                                hrp.Transparency = 0.7
-                                hrp.BrickColor = BrickColor.new("Really blue")
-                                hrp.Material = "Neon"
-                                hrp.CanCollide = false
-                            end
-                        end)
-                    end
-                end
-            end
-        end)
-        
-        WindUI:Notify({
-            Title = "Kill Aura",
-            Content = "Kill Aura enabled! Enemy hitboxes expanded.",
-            Duration = 3,
-            Icon = "sword",
-        })
-    else
-        if Connections.KillAura then
-            Connections.KillAura:Disconnect()
-            Connections.KillAura = nil
-        end
-        
-        for _, player in pairs(Players:GetPlayers()) do
-            if player.Name ~= LocalPlayer.Name then
-                pcall(function()
-                    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                        local hrp = player.Character.HumanoidRootPart
-                        hrp.Size = Vector3.new(2, 2, 1)
-                        hrp.Transparency = 1
-                        hrp.CanCollide = false
-                    end
-                end)
-            end
-        end
-        
-        WindUI:Notify({
-            Title = "Kill Aura",
-            Content = "Kill Aura disabled",
             Duration = 3,
             Icon = "check",
         })
@@ -783,6 +724,45 @@ local GodModeButton = MainTab:Button({
     end
 })
 
+local InfJumpButton = MainTab:Button({
+    Title = "Inf Jump",
+    Desc = "Makes you jump infinitely",
+    Callback = function()
+        -- Infinite Jump Script (Default Jump Height, Respawn Supported)
+        -- by pickletalk
+
+        local Players = game:GetService("Players")
+        local UserInputService = game:GetService("UserInputService")
+
+        local player = Players.LocalPlayer
+        local originalJumpPower = nil
+
+        -- Function to update the default jump power when character spawns/resets
+        local function onCharacterAdded(character)
+            local humanoid = character:WaitForChild("Humanoid")
+            originalJumpPower = humanoid.JumpPower
+        end
+
+        -- Connect for first spawn + future respawns
+        player.CharacterAdded:Connect(onCharacterAdded)
+        if player.Character then
+            onCharacterAdded(player.Character)
+        end
+
+        -- Infinite Jump (always uses normal default jump height)
+        UserInputService.JumpRequest:Connect(function()
+            local character = player.Character
+            if character then
+                local humanoid = character:FindFirstChildOfClass("Humanoid")
+                if humanoid and originalJumpPower then
+                    humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                    humanoid.JumpPower = originalJumpPower -- always normal default jump
+                end
+            end
+        end)
+    end
+})
+
 local SpeedToggle = MainTab:Toggle({
     Title = "Speed",
     Desc = "Enable custom walk speed",
@@ -814,19 +794,9 @@ local NoclipToggle = MainTab:Toggle({
     end
 })
 
-local KillAuraToggle = MainTab:Toggle({
-    Title = "Kill Aura",
-    Desc = "Expand enemy hitboxes for easier hits",
-    Default = false,
-    Callback = function(state)
-        toggleKillAura(state)
-    end
-})
-
 myConfig:Register("Speed", SpeedToggle)
 myConfig:Register("SpeedValue", SpeedSlider)
 myConfig:Register("Noclip", NoclipToggle)
-myConfig:Register("KillAura", KillAuraToggle)
 
 local FullBrightToggle = OptimizationsTab:Toggle({
     Title = "Full Bright",
