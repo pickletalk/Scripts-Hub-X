@@ -30,7 +30,8 @@ local Games = {
     [126884695634066] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Grow-A-Garden.lua",
 
     -- 99 Nights In The Forest
-    [79546208627805] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/99-Nights-In-The-Forest.lua"
+    [79546208627805] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/99-Nights-In-The-Forest.lua",
+    [126509999114328] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/99-Nights-In-The-Forest.lua"
 }
 
 return Games
