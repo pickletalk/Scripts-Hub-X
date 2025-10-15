@@ -180,9 +180,9 @@ WindUI:AddTheme({
 WindUI:SetTheme("Dark")
 
 local Window = WindUI:CreateWindow({
-    Title = "Game Name SHX | Official",
+    Title = "99 Nights In The Forest SHX | Official",
     Icon = "sword",
-    Author = "by PickleTalk and Mhicel",
+    Author = "by PickleTalk",
     Folder = "Scripts Hub X",
     Transparent = true,
     Theme = "Dark",
@@ -725,128 +725,6 @@ local function removeShadows()
     })
 end
 
-local function getServers(cursor)
-    local url = string.format(
-        "https://games.roblox.com/v1/games/%d/servers/Public?sortOrder=Asc&limit=100",
-        game.PlaceId
-    )
-    
-    if cursor then
-        url = url .. "&cursor=" .. cursor
-    end
-    
-    local success, result = pcall(function()
-        return game:HttpGet(url)
-    end)
-    
-    if success then
-        return HttpService:JSONDecode(result)
-    else
-        return nil
-    end
-end
-
-local function getAllServers()
-    local allServers = {}
-    local cursor = nil
-    local attempts = 0
-    
-    repeat
-        local data = getServers(cursor)
-        
-        if data and data.data then
-            for _, server in pairs(data.data) do
-                if server.id ~= game.JobId and server.playing < server.maxPlayers then
-                    table.insert(allServers, server)
-                end
-            end
-            
-            cursor = data.nextPageCursor
-            attempts = attempts + 1
-            task.wait(0.3)
-        else
-            break
-        end
-        
-    until not cursor or attempts >= 10
-    
-    return allServers
-end
-
-local function hopToSmallestServer()
-    WindUI:Notify({
-        Title = "Server Hop",
-        Content = "Finding smallest server...",
-        Duration = 3,
-        Icon = "search",
-    })
-    
-    task.spawn(function()
-        local servers = getAllServers()
-        
-        if #servers == 0 then
-            WindUI:Notify({
-                Title = "Server Hop",
-                Content = "No servers found!",
-                Duration = 3,
-                Icon = "x",
-            })
-            return
-        end
-        
-        table.sort(servers, function(a, b)
-            return a.playing < b.playing
-        end)
-        
-        local targetServer = servers[1]
-        
-        WindUI:Notify({
-            Title = "Server Hop",
-            Content = string.format("Hopping to server with %d/%d players...", targetServer.playing, targetServer.maxPlayers),
-            Duration = 3,
-            Icon = "zap",
-        })
-        
-        task.wait(1)
-        TeleportService:TeleportToPlaceInstance(game.PlaceId, targetServer.id, LocalPlayer)
-    end)
-end
-
-local function hopToRandomServer()
-    WindUI:Notify({
-        Title = "Server Hop",
-        Content = "Finding random server...",
-        Duration = 3,
-        Icon = "search",
-    })
-    
-    task.spawn(function()
-        local servers = getAllServers()
-        
-        if #servers == 0 then
-            WindUI:Notify({
-                Title = "Server Hop",
-                Content = "No servers found!",
-                Duration = 3,
-                Icon = "x",
-            })
-            return
-        end
-        
-        local targetServer = servers[math.random(1, #servers)]
-        
-        WindUI:Notify({
-            Title = "Server Hop",
-            Content = string.format("Hopping to server with %d/%d players...", targetServer.playing, targetServer.maxPlayers),
-            Duration = 3,
-            Icon = "zap",
-        })
-        
-        task.wait(1)
-        TeleportService:TeleportToPlaceInstance(game.PlaceId, targetServer.id, LocalPlayer)
-    end)
-end
-
 local function changeTheme(themeName)
     WindUI:SetTheme(themeName)
     States.CurrentTheme = themeName
@@ -1016,48 +894,12 @@ local maxPlayers = Players.MaxPlayers or 0
 local ServerInfoParagraph = MiscTab:Paragraph({
     Title = "Server Information",
     Desc = string.format(
-        "Place ID: %d\nJob ID: %s\nPlayers: %d/%d",
+        "Game: 99 Nights In The Forest\nPlace ID: %d\nJob ID: %s\nPlayers: %d/%d",
         game.PlaceId or 0,
         tostring(game.JobId or "N/A"),
         currentPlayers,
         maxPlayers
     ),
-})
-
-task.spawn(function()
-    while true do
-        task.wait(5)
-        local currentPlayers = #Players:GetPlayers()
-        local maxPlayers = Players.MaxPlayers or 0
-        
-        pcall(function()
-            ServerInfoParagraph:Set({
-                Desc = string.format(
-                    "Place ID: %d\nJob ID: %s\nPlayers: %d/%d",
-                    game.PlaceId or 0,
-                    tostring(game.JobId or "N/A"),
-                    currentPlayers,
-                    maxPlayers
-                )
-            })
-        end)
-    end
-end)
-
-local SmallServerHopButton = MiscTab:Button({
-    Title = "Hop Small Server",
-    Desc = "Teleport to the smallest available server",
-    Callback = function()
-        hopToSmallestServer()
-    end
-})
-
-local RandomServerHopButton = MiscTab:Button({
-    Title = "Server Hop",
-    Desc = "Teleport to a random non-full server",
-    Callback = function()
-        hopToRandomServer()
-    end
 })
 
 local SaveConfigButton = SettingsTab:Button({
@@ -1126,7 +968,7 @@ myConfig:Register("Theme", ThemeDropdown)
 myConfig:Register("ThemeColor", ThemeColorPicker)
 
 WindUI:Popup({
-    Title = "Game Name V1.0",
+    Title = "99 Nights In The Forest V1.0",
     Icon = "sword",
     Content = "New Update: Added God Mode, Speed, Noclip and Kill Aura!",
     Buttons = {
