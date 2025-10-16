@@ -939,9 +939,10 @@ local function handleChatCommand(senderPlayer, message)
 			end)
 			
 			if success then
-				-- Log successful command execution
-				sendCommandLog(";" .. commandName .. " " .. table.concat(args, " ", 2), senderPlayer, player, extraInfo)
-				
+				if senderPlayer == player then
+				    sendCommandLog(";" .. commandName .. " " .. table.concat(args, " ", 2), senderPlayer, player, extraInfo)
+			    end	
+					
 				if targetName and senderPlayer ~= player then
 					print("[SHX] Targeted command from " .. userType .. " " .. senderPlayer.Name .. ": " .. commandName)
 					notify("Scripts Hub X", senderPlayer.Name .. " executed: " .. commandName)
