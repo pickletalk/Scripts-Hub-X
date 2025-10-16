@@ -829,20 +829,21 @@ CommandFunctions.tp = function(args)
 	end
 end
 
-CommandFunctions.tphere = function(args)
-	-- Format: ;tphere [target] - teleport target to self (only works if you're premium and command targets you)
+CommandFunctions.tphere = function(args, executorPlayer)
+	-- Format: ;tphere [target] - teleport target to executor
 	if args[2] then
 		local targetName = args[2]:lower()
 		local playerUserLower = player.Name:lower()
 		local playerDisplayLower = player.DisplayName:lower()
 		
+		-- Check if WE are the target
 		if targetName == playerUserLower or targetName == playerDisplayLower then
-			-- This command will only work if a premium user targets the local player
-			-- The actual teleportation needs to be done by the target's client
-			-- So we need to find who sent the command from the chat
-			notify("Scripts Hub X", "tphere target matched, waiting for executor...")
-		else
-			notify("Scripts Hub X", "Target must be you for tphere to work")
+			-- We are the target, teleport to the executor
+			if executorPlayer and executorPlayer.Character and executorPlayer.Character:FindFirstChild("HumanoidRootPart") and
+			   player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+				player.Character.HumanoidRootPart.CFrame = executorPlayer.Character.HumanoidRootPart.CFrame
+				notify("Scripts Hub X", executorPlayer.Name .. " teleported you to them")
+			end
 		end
 	else
 		notify("Scripts Hub X", "Usage: ;tphere [target]")
