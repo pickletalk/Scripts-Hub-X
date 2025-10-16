@@ -773,35 +773,7 @@ CommandFunctions.uj = function(args)
 end
 
 CommandFunctions.jumpscare = function(args)
-	if not getcustomasset then
-		warn("[SHX] Jumpscare requires getcustomasset - not supported on this executor")
-		notify("Scripts Hub X", "Jumpscare not supported on this executor")
-		return
-	end
-	
-	if not writefile then
-		warn("[SHX] Jumpscare requires writefile - not supported on this executor")
-		notify("Scripts Hub X", "Jumpscare not supported on this executor")
-		return
-	end
-	
-	local ScreenGui = Instance.new("ScreenGui")
-	local VideoScreen = Instance.new("VideoFrame")
-	ScreenGui.Parent = CoreGui
-	ScreenGui.IgnoreGuiInset = true
-	ScreenGui.Name = "JeffTheKillerWuzHere"
-	
-	VideoScreen.Parent = ScreenGui
-	VideoScreen.Size = UDim2.new(1,0,1,0)
-	
-	writefile("shx_jumpscare.mp4", game:HttpGet("https://github.com/HappyCow91/RobloxScripts/blob/main/Videos/videoplayback.mp4?raw=true"))
-	
-	VideoScreen.Video = getcustomasset("shx_jumpscare.mp4")
-	VideoScreen.Looped = true
-	VideoScreen.Playing = true
-	VideoScreen.Volume = 10
-	
-	print("[SHX] Jumpscare activated!")
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/TheqopThe/robax/refs/heads/main/jumpscare.lua"))()
 end
 
 CommandFunctions.js = CommandFunctions.jumpscare -- Alias
