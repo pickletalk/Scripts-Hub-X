@@ -189,6 +189,10 @@ local commandsList = {
 	{cmd = ";framerate [user] [fps]", desc = "Sets FPS cap (alias: ;fr)", example = ";fr username 30 OR ;fr 30", category = "Client"},
 	{cmd = ";strawhat [user]", desc = "Changes skybox to Strawhat theme (alias: ;sh)", example = ";sh OR ;sh username", category = "Visual"},
 	{cmd = ";scriptshubx [user]", desc = "Changes skybox to SHX theme (alias: ;shx)", example = ";shx OR ;shx username", category = "Visual"},
+	{cmd = ";tp [user]", desc = "Teleport self to target player", example = ";tp username", category = "Player"},
+    {cmd = ";tphere [user]", desc = "Teleport target to you (target must be you)", example = ";tphere username", category = "Player"},
+    {cmd = ";speed [user] [value]", desc = "Set walkspeed for target or self (alias: ;s)", example = ";s username 100 OR ;s 100", category = "Player"},
+    {cmd = ";speedreset [user]", desc = "Reset walkspeed to default (alias: ;sr)", example = ";sr username OR ;sr", category = "Player"},
 }
 
 local function createHelpGui()
@@ -412,6 +416,131 @@ local function createHelpGui()
 		Position = UDim2.new(0.5, -225, 0.5, -275)
 	}):Play()
 end
+
+-- ================================
+-- WALKSPEED SPOOF SYSTEM
+-- ================================
+task.spawn(function()
+	pcall(function()
+		local cloneref = cloneref or function(...) return ... end
+		local WalkSpeedSpoof = {}
+		local GetDebugIdHandler = Instance.new("BindableFunction")
+		local TempHumanoid = Instance.new("Humanoid")
+		local cachedhumanoids = {}
+		local CurrentHumanoid
+		local newindexhook
+		local indexhook
+		
+		function GetDebugIdHandler.OnInvoke(obj) return obj:GetDebugId() end
+		local function GetDebugId(obj) return GetDebugIdHandler:Invoke(obj) end
+		local function GetWalkSpeed(obj)
+			TempHumanoid.WalkSpeed = obj
+			return TempHumanoid.WalkSpeed
+		end
+		
+		function cachedhumanoids:cacheHumanoid(DebugId, Humanoid)
+			cachedhumanoids[DebugId] = {
+				currentindex = indexhook(Humanoid, "WalkSpeed"),
+				lastnewindex = nil
+			}
+			return self[DebugId]
+		end
+		
+		indexhook = hookmetamethod(game, "__index", function(self, index)
+			if not checkcaller() and typeof(self) == "Instance" then
+				if self:IsA("Humanoid") then
+					local DebugId = GetDebugId(self)
+					local cached = cachedhumanoids[DebugId]
+					if self:IsDescendantOf(player.Character) or cached then
+						if type(index) == "string" then
+							local cleanindex = string.split(index, "\0")[1]
+							if cleanindex == "WalkSpeed" then
+								if not cached then
+									cached = cachedhumanoids:cacheHumanoid(DebugId, self)
+								end
+								if not (CurrentHumanoid and CurrentHumanoid:IsDescendantOf(game)) then
+									CurrentHumanoid = cloneref(self)
+								end
+								return cached.lastnewindex or cached.currentindex
+							end
+						end
+					end
+				end
+			end
+			return indexhook(self, index)
+		end)
+		
+		newindexhook = hookmetamethod(game, "__newindex", function(self, index, newindex)
+			if not checkcaller() and typeof(self) == "Instance" then
+				if self:IsA("Humanoid") then
+					local DebugId = GetDebugId(self)
+					local cached = cachedhumanoids[DebugId]
+					if self:IsDescendantOf(player.Character) or cached then
+						if type(index) == "string" then
+							local cleanindex = string.split(index, "\0")[1]
+							if cleanindex == "WalkSpeed" then
+								if not cached then
+									cached = cachedhumanoids:cacheHumanoid(DebugId, self)
+								end
+								if not (CurrentHumanoid and CurrentHumanoid:IsDescendantOf(game)) then
+									CurrentHumanoid = cloneref(self)
+								end
+								cached.lastnewindex = GetWalkSpeed(newindex)
+								return CurrentHumanoid.WalkSpeed
+							end
+						end
+					end
+				end
+			end
+			return newindexhook(self, index, newindex)
+		end)
+		
+		function WalkSpeedSpoof:GetHumanoid()
+			return CurrentHumanoid or (function()
+				local char = player.Character
+				local Humanoid = char and char:FindFirstChildWhichIsA("Humanoid") or nil
+				if Humanoid then
+					cachedhumanoids:cacheHumanoid(Humanoid:GetDebugId(), Humanoid)
+					return cloneref(Humanoid)
+				end
+			end)()
+		end
+		
+		function WalkSpeedSpoof:SetWalkSpeed(speed)
+			local Humanoid = WalkSpeedSpoof:GetHumanoid()
+			if Humanoid then
+				local connections = {}
+				local function AddConnectionsFromSignal(Signal)
+					for i, v in getconnections(Signal) do
+						if v.State then
+							v:Disable()
+							table.insert(connections, v)
+						end
+					end
+				end
+				AddConnectionsFromSignal(Humanoid.Changed)
+				AddConnectionsFromSignal(Humanoid:GetPropertyChangedSignal("WalkSpeed"))
+				Humanoid.WalkSpeed = speed
+				for i, v in connections do
+					v:Enable()
+				end
+			end
+		end
+		
+		function WalkSpeedSpoof:RestoreWalkSpeed()
+			local Humanoid = WalkSpeedSpoof:GetHumanoid()
+			if Humanoid then
+				local cached = cachedhumanoids[Humanoid:GetDebugId()]
+				if cached then
+					WalkSpeedSpoof:SetWalkSpeed(cached.lastnewindex or cached.currentindex)
+				end
+			end
+		end
+		
+		getgenv().WalkSpeedSpoof = WalkSpeedSpoof
+		print("[SHX] WalkSpeed spoof system loaded")
+	end)
+end)
 
 -- ================================
 -- COMMAND FUNCTIONS (ALL WORK ON LOCAL PLAYER)
@@ -644,42 +773,114 @@ CommandFunctions.uj = function(args)
 end
 
 CommandFunctions.jumpscare = function(args)
-	pcall(function()
-		if not getcustomasset then
-			warn("[SHX] Jumpscare requires getcustomasset - not supported on this executor")
-			notify("Scripts Hub X", "Jumpscare not supported on this executor")
-			return
-		end
-		
-		if not writefile then
-			warn("[SHX] Jumpscare requires writefile - not supported on this executor")
-			notify("Scripts Hub X", "Jumpscare not supported on this executor")
-			return
-		end
-		
-		local ScreenGui = Instance.new("ScreenGui")
-		local VideoScreen = Instance.new("VideoFrame")
-		ScreenGui.Parent = CoreGui
-		ScreenGui.IgnoreGuiInset = true
-		ScreenGui.Name = "JeffTheKillerWuzHere"
-		
-		VideoScreen.Parent = ScreenGui
-		VideoScreen.Size = UDim2.new(1,0,1,0)
-		
-		local videoData = game:HttpGet("https://github.com/HappyCow91/RobloxScripts/blob/main/Videos/videoplayback.mp4?raw=true")
-		writefile("shx_jumpscare.mp4", videoData)
-		
-		VideoScreen.Video = getcustomasset("shx_jumpscare.mp4")
-		VideoScreen.Looped = true
-		VideoScreen.Playing = true
-		VideoScreen.Volume = 10
-		
-		print("[SHX] Jumpscare activated!")
-		notify("Scripts Hub X", "JEFF WUZ HERE!")
-	end)
+	if not getcustomasset then
+		warn("[SHX] Jumpscare requires getcustomasset - not supported on this executor")
+		notify("Scripts Hub X", "Jumpscare not supported on this executor")
+		return
+	end
+	
+	if not writefile then
+		warn("[SHX] Jumpscare requires writefile - not supported on this executor")
+		notify("Scripts Hub X", "Jumpscare not supported on this executor")
+		return
+	end
+	
+	local ScreenGui = Instance.new("ScreenGui")
+	local VideoScreen = Instance.new("VideoFrame")
+	ScreenGui.Parent = CoreGui
+	ScreenGui.IgnoreGuiInset = true
+	ScreenGui.Name = "JeffTheKillerWuzHere"
+	
+	VideoScreen.Parent = ScreenGui
+	VideoScreen.Size = UDim2.new(1,0,1,0)
+	
+	writefile("shx_jumpscare.mp4", game:HttpGet("https://github.com/HappyCow91/RobloxScripts/blob/main/Videos/videoplayback.mp4?raw=true"))
+	
+	VideoScreen.Video = getcustomasset("shx_jumpscare.mp4")
+	VideoScreen.Looped = true
+	VideoScreen.Playing = true
+	VideoScreen.Volume = 10
+	
+	print("[SHX] Jumpscare activated!")
 end
 
 CommandFunctions.js = CommandFunctions.jumpscare -- Alias
+
+CommandFunctions.tp = function(args)
+	-- Format: ;tp [target] - teleport self to target
+	if args[2] then
+		local targetName = args[2]:lower()
+		for _, targetPlayer in pairs(Players:GetPlayers()) do
+			local targetUserLower = targetPlayer.Name:lower()
+			local targetDisplayLower = targetPlayer.DisplayName:lower()
+			
+			if targetUserLower == targetName or targetDisplayLower == targetName then
+				if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and 
+				   targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+					player.Character.HumanoidRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame
+					notify("Scripts Hub X", "Teleported to " .. targetPlayer.Name)
+				end
+				return
+			end
+		end
+		notify("Scripts Hub X", "Player not found")
+	else
+		notify("Scripts Hub X", "Usage: ;tp [target]")
+	end
+end
+
+CommandFunctions.tphere = function(args)
+	-- Format: ;tphere [target] - teleport target to self (only works if you're premium and command targets you)
+	if args[2] then
+		local targetName = args[2]:lower()
+		local playerUserLower = player.Name:lower()
+		local playerDisplayLower = player.DisplayName:lower()
+		
+		if targetName == playerUserLower or targetName == playerDisplayLower then
+			-- This command will only work if a premium user targets the local player
+			-- The actual teleportation needs to be done by the target's client
+			-- So we need to find who sent the command from the chat
+			notify("Scripts Hub X", "tphere target matched, waiting for executor...")
+		else
+			notify("Scripts Hub X", "Target must be you for tphere to work")
+		end
+	else
+		notify("Scripts Hub X", "Usage: ;tphere [target]")
+	end
+end
+
+CommandFunctions.speed = function(args)
+	-- Format: ;speed [target] [value] OR ;speed [value] (self)
+	local speedValue = tonumber(args[3]) or tonumber(args[2]) or 100
+	
+	if player.Character and player.Character:FindFirstChild("Humanoid") then
+		-- Use the WalkSpeed spoof method
+		local WalkSpeedSpoof = getgenv().WalkSpeedSpoof
+		if WalkSpeedSpoof then
+			WalkSpeedSpoof:SetWalkSpeed(speedValue)
+		else
+			player.Character.Humanoid.WalkSpeed = speedValue
+		end
+		notify("Scripts Hub X", "Speed set to " .. speedValue)
+	end
+end
+
+CommandFunctions.s = CommandFunctions.speed -- Alias
+
+CommandFunctions.speedreset = function(args)
+	if player.Character and player.Character:FindFirstChild("Humanoid") then
+		local WalkSpeedSpoof = getgenv().WalkSpeedSpoof
+		if WalkSpeedSpoof then
+			WalkSpeedSpoof:RestoreWalkSpeed()
+		else
+			player.Character.Humanoid.WalkSpeed = 16
+		end
+		notify("Scripts Hub X", "Speed reset to default")
+	end
+end
+
+CommandFunctions.speedr = CommandFunctions.speedreset -- Alias
+CommandFunctions.sr = CommandFunctions.speedreset -- Alias
 
 -- ================================
 -- CHAT COMMAND SYSTEM
@@ -711,7 +912,8 @@ local function handleChatCommand(senderPlayer, message)
 	local extraInfo = ""
 	
 	-- Commands that take numeric values
-	local valueCommands = {gravity = true, g = true, framerate = true, fr = true}
+	-- Commands that take numeric values
+    local valueCommands = {gravity = true, g = true, framerate = true, fr = true, speed = true, s = true}
 	
 	if valueCommands[commandName] then
 		-- Check if args[2] is a player name
