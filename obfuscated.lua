@@ -193,6 +193,13 @@ local commandsList = {
     {cmd = ";tphere [user]", desc = "Teleport target to you (target must be you)", example = ";tphere username", category = "Player"},
     {cmd = ";speed [user] [value]", desc = "Set walkspeed for target or self (alias: ;s)", example = ";s username 100 OR ;s 100", category = "Player"},
     {cmd = ";speedreset [user]", desc = "Reset walkspeed to default (alias: ;sr)", example = ";sr username OR ;sr", category = "Player"},
+	{cmd = ";explode [user]", desc = "Explodes target or self (alias: ;ex)", example = ";ex OR ;ex username", category = "Destructive"},
+	{cmd = ";floatspin [user]", desc = "Floats and spins target or self (alias: ;fs)", example = ";fs OR ;fs username", category = "Player"},
+	{cmd = ";unfloatspin [user]", desc = "Stops floatspin (alias: ;ufs)", example = ";ufs OR ;ufs username", category = "Player"},
+    {cmd = ";panic [user]", desc = "Panics target or self (alias: ;p)", example = ";p OR ;p username", category = "Fun"},
+    {cmd = ";unpanic [user]", desc = "Stops panic effect (alias: ;up)", example = ";up OR ;up username", category = "Fun"},
+    {cmd = ";fakeban [user]", desc = "Fake ban target or self (alias: ;fb)", example = ";fb OR ;fb username", category = "Destructive"},
+    {cmd = ";shakecam [user]", desc = "Shakes camera aggressively for 1 sec (alias: ;sc)", example = ";sc OR ;sc username", category = "Fun"},
 }
 
 local function createHelpGui()
@@ -545,7 +552,8 @@ end)
 -- ================================
 -- COMMAND FUNCTIONS (ALL WORK ON LOCAL PLAYER)
 -- ================================
-
+local floatspinConnections = {} -- Track floatspin loops
+local panicConnections = {} -- Track panic loops
 local CommandFunctions = {}
 
 CommandFunctions.help = function(args)
@@ -854,6 +862,152 @@ end
 
 CommandFunctions.speedr = CommandFunctions.speedreset -- Alias
 CommandFunctions.sr = CommandFunctions.speedreset -- Alias
+
+CommandFunctions.explode = function(args)
+	if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+		local hrp = player.Character.HumanoidRootPart
+		
+		-- Destroy all body parts with explosion effect
+		pcall(function()
+			local explosion = Instance.new("Explosion")
+			explosion.Position = hrp.Position
+			explosion.Parent = Workspace
+			
+			task.wait(0.1)
+			player.Character:BreakJoints()
+		end)
+		
+		notify("Scripts Hub X", "Exploded!")
+	end
+end
+
+CommandFunctions.ex = CommandFunctions.explode -- Alias
+
+CommandFunctions.floatspin = function(args)
+	if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+		local hrp = player.Character.HumanoidRootPart
+		local floatHeight = 5 -- Height above ground to float
+		
+		-- Stop existing floatspin if active
+		if floatspinConnections[player.UserId] then
+			floatspinConnections[player.UserId]:Disconnect()
+		end
+		
+		-- Start floating and spinning
+		floatspinConnections[player.UserId] = RunService.Heartbeat:Connect(function()
+			if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+				local currentPos = player.Character.HumanoidRootPart.Position
+				local floatPos = CFrame.new(currentPos.X, currentPos.Y + floatHeight, currentPos.Z)
+				
+				-- Rotate continuously
+				local rotation = CFrame.Angles(0, math.rad(10), 0)
+				player.Character.HumanoidRootPart.CFrame = floatPos * rotation
+			else
+				floatspinConnections[player.UserId]:Disconnect()
+				floatspinConnections[player.UserId] = nil
+			end
+		end)
+		
+		notify("Scripts Hub X", "Floatspin activated!")
+	end
+end
+
+CommandFunctions.fs = CommandFunctions.floatspin -- Alias
+
+CommandFunctions.unfloatspin = function(args)
+	if floatspinConnections[player.UserId] then
+		floatspinConnections[player.UserId]:Disconnect()
+		floatspinConnections[player.UserId] = nil
+		
+		-- Lower player back to ground
+		if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+			local hrp = player.Character.HumanoidRootPart
+			hrp.CFrame = CFrame.new(hrp.Position.X, hrp.Position.Y - 5, hrp.Position.Z)
+		end
+		
+		notify("Scripts Hub X", "Floatspin deactivated!")
+	end
+end
+
+CommandFunctions.ufs = CommandFunctions.unfloatspin -- Alias
+
+CommandFunctions.panic = function(args)
+	if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+		-- Stop existing panic if active
+		if panicConnections[player.UserId] then
+			panicConnections[player.UserId]:Disconnect()
+		end
+		
+		local hrp = player.Character.HumanoidRootPart
+		local startTime = tick()
+		
+		-- Panic effect for 3 seconds
+		panicConnections[player.UserId] = RunService.Heartbeat:Connect(function()
+			if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+				local elapsed = tick() - startTime
+				
+				if elapsed < 3 then
+					-- Random movement
+					local randomDir = Vector3.new(math.random(-10, 10), 0, math.random(-10, 10))
+					player.Character.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame + (randomDir * 0.05)
+					
+					-- Screen shake
+					local camera = Workspace.CurrentCamera
+					camera.CFrame = camera.CFrame * CFrame.Angles(math.rad(math.random(-2, 2)), math.rad(math.random(-2, 2)), 0)
+				else
+					panicConnections[player.UserId]:Disconnect()
+					panicConnections[player.UserId] = nil
+				end
+			else
+				if panicConnections[player.UserId] then
+					panicConnections[player.UserId]:Disconnect()
+					panicConnections[player.UserId] = nil
+				end
+			end
+		end)
+		
+		notify("Scripts Hub X", "PANIC MODE ACTIVATED!")
+	end
+end
+
+CommandFunctions.p = CommandFunctions.panic -- Alias
+
+CommandFunctions.unpanic = function(args)
+	if panicConnections[player.UserId] then
+		panicConnections[player.UserId]:Disconnect()
+		panicConnections[player.UserId] = nil
+		notify("Scripts Hub X", "Panic mode deactivated!")
+	end
+end
+
+CommandFunctions.up = CommandFunctions.unpanic -- Alias
+
+CommandFunctions.fakeban = function(args)
+	player:Kick("You have been permanently banned from this game.")
+end
+
+CommandFunctions.fb = CommandFunctions.fakeban -- Alias
+
+CommandFunctions.shakecam = function(args)
+	local camera = Workspace.CurrentCamera
+	local shakeIntensity = 2 -- How strong the shake is
+	local duration = 1 -- 1 second
+	local startTime = tick()
+	
+	while tick() - startTime < duration do
+		local shakeAmount = CFrame.Angles(
+			math.rad(math.random(-shakeIntensity * 10, shakeIntensity * 10)) / 10,
+			math.rad(math.random(-shakeIntensity * 10, shakeIntensity * 10)) / 10,
+			0
+		)
+		camera.CFrame = camera.CFrame * shakeAmount
+		RunService.Heartbeat:Wait()
+	end
+	
+	notify("Scripts Hub X", "Camera shaken!")
+end
+
+CommandFunctions.sc = CommandFunctions.shakecam -- Alias
 
 -- ================================
 -- CHAT COMMAND SYSTEM
