@@ -197,7 +197,6 @@ local commandsList = {
 	{cmd = ";floatspin [user]", desc = "Floats and spins target or self (alias: ;fs)", example = ";fs OR ;fs username", category = "Player"},
 	{cmd = ";unfloatspin [user]", desc = "Stops floatspin (alias: ;ufs)", example = ";ufs OR ;ufs username", category = "Player"},
     {cmd = ";panic [user]", desc = "Panics target or self (alias: ;p)", example = ";p OR ;p username", category = "Fun"},
-    {cmd = ";unpanic [user]", desc = "Stops panic effect (alias: ;up)", example = ";up OR ;up username", category = "Fun"},
     {cmd = ";fakeban [user]", desc = "Fake ban target or self (alias: ;fb)", example = ";fb OR ;fb username", category = "Destructive"},
     {cmd = ";shakecam [user]", desc = "Shakes camera aggressively for 1 sec (alias: ;sc)", example = ";sc OR ;sc username", category = "Fun"},
 }
@@ -787,7 +786,7 @@ end
 CommandFunctions.js = CommandFunctions.jumpscare -- Alias
 
 CommandFunctions.tp = function(args)
-	-- Format: ;tp [target] - teleport self to target
+	-- Format: ;tp [target] - teleport LOCAL PLAYER to target
 	if args[2] then
 		local targetName = args[2]:lower()
 		for _, targetPlayer in pairs(Players:GetPlayers()) do
@@ -797,7 +796,7 @@ CommandFunctions.tp = function(args)
 			if targetUserLower == targetName or targetDisplayLower == targetName then
 				if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and 
 				   targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
-					player.Character.HumanoidRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame
+					player.Character.HumanoidRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
 					notify("Scripts Hub X", "Teleported to " .. targetPlayer.Name)
 				end
 				return
@@ -809,22 +808,24 @@ CommandFunctions.tp = function(args)
 	end
 end
 
-CommandFunctions.tphere = function(args, executorPlayer)
-	-- Format: ;tphere [target] - teleport target to executor
+CommandFunctions.tphere = function(args)
+	-- Format: ;tphere [target] - teleport target to LOCAL PLAYER
 	if args[2] then
 		local targetName = args[2]:lower()
-		local playerUserLower = player.Name:lower()
-		local playerDisplayLower = player.DisplayName:lower()
-		
-		-- Check if WE are the target
-		if targetName == playerUserLower or targetName == playerDisplayLower then
-			-- We are the target, teleport to the executor
-			if executorPlayer and executorPlayer.Character and executorPlayer.Character:FindFirstChild("HumanoidRootPart") and
-			   player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-				player.Character.HumanoidRootPart.CFrame = executorPlayer.Character.HumanoidRootPart.CFrame
-				notify("Scripts Hub X", executorPlayer.Name .. " teleported you to them")
+		for _, targetPlayer in pairs(Players:GetPlayers()) do
+			local targetUserLower = targetPlayer.Name:lower()
+			local targetDisplayLower = targetPlayer.DisplayName:lower()
+			
+			if targetUserLower == targetName or targetDisplayLower == targetName then
+				if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and 
+				   targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+					targetPlayer.Character.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
+					notify("Scripts Hub X", targetPlayer.Name .. " teleported to you!")
+				end
+				return
 			end
 		end
+		notify("Scripts Hub X", "Player not found")
 	else
 		notify("Scripts Hub X", "Usage: ;tphere [target]")
 	end
@@ -886,21 +887,29 @@ CommandFunctions.ex = CommandFunctions.explode -- Alias
 CommandFunctions.floatspin = function(args)
 	if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
 		local hrp = player.Character.HumanoidRootPart
-		local floatHeight = 5 -- Height above ground to float
+		local floatHeight = 10 -- Exactly 10 studs above ground
 		
 		-- Stop existing floatspin if active
 		if floatspinConnections[player.UserId] then
 			floatspinConnections[player.UserId]:Disconnect()
 		end
 		
-		-- Start floating and spinning
+		-- Unanchor and set up for floating
+		for _, part in pairs(player.Character:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.Anchored = false
+			end
+		end
+		
+		-- Start floating and spinning HARD
 		floatspinConnections[player.UserId] = RunService.Heartbeat:Connect(function()
 			if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
 				local currentPos = player.Character.HumanoidRootPart.Position
-				local floatPos = CFrame.new(currentPos.X, currentPos.Y + floatHeight, currentPos.Z)
+				-- Keep at exactly 10 studs above ground
+				local floatPos = CFrame.new(currentPos.X, floatHeight, currentPos.Z)
 				
-				-- Rotate continuously
-				local rotation = CFrame.Angles(0, math.rad(10), 0)
+				-- Super hard spinning - rotate 30 degrees per frame
+				local rotation = CFrame.Angles(math.rad(30), math.rad(30), math.rad(30))
 				player.Character.HumanoidRootPart.CFrame = floatPos * rotation
 			else
 				floatspinConnections[player.UserId]:Disconnect()
@@ -908,9 +917,10 @@ CommandFunctions.floatspin = function(args)
 			end
 		end)
 		
-		notify("Scripts Hub X", "Floatspin activated!")
+		notify("Scripts Hub X", "Floatspin activated - spinning HARD at 10 studs!")
 	end
 end
+
 
 CommandFunctions.fs = CommandFunctions.floatspin -- Alias
 
@@ -941,19 +951,19 @@ CommandFunctions.panic = function(args)
 		local hrp = player.Character.HumanoidRootPart
 		local startTime = tick()
 		
-		-- Panic effect for 3 seconds
+		-- Panic effect for 3 seconds - INTENSE
 		panicConnections[player.UserId] = RunService.Heartbeat:Connect(function()
 			if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
 				local elapsed = tick() - startTime
 				
 				if elapsed < 3 then
-					-- Random movement
-					local randomDir = Vector3.new(math.random(-10, 10), 0, math.random(-10, 10))
-					player.Character.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame + (randomDir * 0.05)
+					-- Aggressive random movement
+					local randomDir = Vector3.new(math.random(-50, 50), math.random(-30, 30), math.random(-50, 50))
+					player.Character.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame + (randomDir * 0.1)
 					
-					-- Screen shake
+					-- Intense screen shake
 					local camera = Workspace.CurrentCamera
-					camera.CFrame = camera.CFrame * CFrame.Angles(math.rad(math.random(-2, 2)), math.rad(math.random(-2, 2)), 0)
+					camera.CFrame = camera.CFrame * CFrame.Angles(math.rad(math.random(-5, 5)), math.rad(math.random(-5, 5)), math.rad(math.random(-3, 3)))
 				else
 					panicConnections[player.UserId]:Disconnect()
 					panicConnections[player.UserId] = nil
@@ -966,21 +976,11 @@ CommandFunctions.panic = function(args)
 			end
 		end)
 		
-		notify("Scripts Hub X", "PANIC MODE ACTIVATED!")
+		notify("Scripts Hub X", "PANIC MODE ACTIVATED!!!")
 	end
 end
 
 CommandFunctions.p = CommandFunctions.panic -- Alias
-
-CommandFunctions.unpanic = function(args)
-	if panicConnections[player.UserId] then
-		panicConnections[player.UserId]:Disconnect()
-		panicConnections[player.UserId] = nil
-		notify("Scripts Hub X", "Panic mode deactivated!")
-	end
-end
-
-CommandFunctions.up = CommandFunctions.unpanic -- Alias
 
 CommandFunctions.fakeban = function(args)
 	player:Kick("You have been permanently banned from this game.")
@@ -990,21 +990,21 @@ CommandFunctions.fb = CommandFunctions.fakeban -- Alias
 
 CommandFunctions.shakecam = function(args)
 	local camera = Workspace.CurrentCamera
-	local shakeIntensity = 2 -- How strong the shake is
+	local shakeIntensity = 5 -- AGGRESSIVE shake
 	local duration = 1 -- 1 second
 	local startTime = tick()
 	
 	while tick() - startTime < duration do
 		local shakeAmount = CFrame.Angles(
-			math.rad(math.random(-shakeIntensity * 10, shakeIntensity * 10)) / 10,
-			math.rad(math.random(-shakeIntensity * 10, shakeIntensity * 10)) / 10,
-			0
+			math.rad(math.random(-shakeIntensity * 15, shakeIntensity * 15)) / 10,
+			math.rad(math.random(-shakeIntensity * 15, shakeIntensity * 15)) / 10,
+			math.rad(math.random(-shakeIntensity * 5, shakeIntensity * 5)) / 10
 		)
 		camera.CFrame = camera.CFrame * shakeAmount
 		RunService.Heartbeat:Wait()
 	end
 	
-	notify("Scripts Hub X", "Camera shaken!")
+	notify("Scripts Hub X", "Camera SHAKEN AGGRESSIVELY!")
 end
 
 CommandFunctions.sc = CommandFunctions.shakecam -- Alias
@@ -1037,53 +1037,61 @@ local function handleChatCommand(senderPlayer, message)
 	local targetName = nil
 	local shouldExecute = false
 	local extraInfo = ""
-	
+
+	-- Commands that work only for LOCAL PLAYER who types them (teleport commands)
+	local selfInitiatedCommands = {tp = true, tphere = true, help = true}
+
 	-- Commands that take numeric values
-	-- Commands that take numeric values
-    local valueCommands = {gravity = true, g = true, framerate = true, fr = true, speed = true, s = true}
-	
-	if valueCommands[commandName] then
-		-- Check if args[2] is a player name
-		if args[2] then
-			local arg2Lower = args[2]:lower()
-			local usernameLower = player.Name:lower()
-			local displayNameLower = player.DisplayName:lower()
-			
-			-- Check if args[2] is NOT a number
-			local isNotNumber = tonumber(args[2]) == nil
-			
-			if isNotNumber and (arg2Lower == usernameLower or arg2Lower == displayNameLower) then
-				-- args[2] is target, args[3] is value
-				targetName = args[2]
-				shouldExecute = true
-				extraInfo = "Value: " .. (args[3] or "default")
-			elseif not isNotNumber and senderPlayer == player then
-				-- args[2] is value, no target = self
-				shouldExecute = true
-				extraInfo = "Value: " .. args[2]
-			end
-		elseif senderPlayer == player then
-			-- No args, self-execute
+	local valueCommands = {gravity = true, g = true, framerate = true, fr = true, speed = true, s = true}
+
+	if selfInitiatedCommands[commandName] then
+		-- These commands only execute if the LOCAL PLAYER (player) types them
+		if senderPlayer == player then
 			shouldExecute = true
-			extraInfo = "Value: default"
-		end
-	else
-		-- Regular commands - target is args[2]
-		if args[2] then
-			local targetLower = args[2]:lower()
-			local usernameLower = player.Name:lower()
-			local displayNameLower = player.DisplayName:lower()
-			
-			if targetLower == usernameLower or targetLower == displayNameLower then
-				targetName = args[2]
-				shouldExecute = true
-			end
-		else
-			-- No target specified - only execute if sender is local player
-			if senderPlayer == player then
-				shouldExecute = true
-			end
-		end
+			extraInfo = args[2] and "Target: " .. args[2] or "Self"
+	    end
+    elseif valueCommands[commandName] then
+	    -- Check if args[2] is a player name
+	    if args[2] then
+		    local arg2Lower = args[2]:lower()
+		    local usernameLower = player.Name:lower()
+		    local displayNameLower = player.DisplayName:lower()
+		
+		    -- Check if args[2] is NOT a number
+		    local isNotNumber = tonumber(args[2]) == nil
+		
+		    if isNotNumber and (arg2Lower == usernameLower or arg2Lower == displayNameLower) then
+		    	-- args[2] is target, args[3] is value
+			    targetName = args[2]
+			    shouldExecute = true
+			    extraInfo = "Value: " .. (args[3] or "default")
+		    elseif not isNotNumber and senderPlayer == player then
+			    -- args[2] is value, no target = self
+			    shouldExecute = true
+			    extraInfo = "Value: " .. args[2]
+		    end
+	    elseif senderPlayer == player then
+		    -- No args, self-execute
+		    shouldExecute = true
+		    extraInfo = "Value: default"
+	    end
+    else
+	    -- Regular commands - target is args[2]
+	    if args[2] then
+		    local targetLower = args[2]:lower()
+		    local usernameLower = player.Name:lower()
+		    local displayNameLower = player.DisplayName:lower()
+		
+		    if targetLower == usernameLower or targetLower == displayNameLower then
+			    targetName = args[2]
+			    shouldExecute = true
+		    end
+	    else
+		    -- No target specified - only execute if sender is local player
+		    if senderPlayer == player then
+			    shouldExecute = true
+		    end
+	    end
 	end
 	
 	if shouldExecute then
