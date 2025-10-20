@@ -193,7 +193,7 @@ local Window = WindUI:CreateWindow({
     Title = "Steal A Clown SHX | Official",
     Icon = "sword",
     Author = "by PickleTalk",
-    Folder = "StealClownSHX",
+    Folder = "ScriptsHubXConfig",
     Transparent = true,
     Theme = "Anime Dark",
 })
@@ -201,7 +201,7 @@ local Window = WindUI:CreateWindow({
 Window:ToggleTransparency(true)
 
 local ConfigManager = Window.ConfigManager
-local myConfig = ConfigManager:CreateConfig("StealClownConfig")
+local myConfig = ConfigManager:CreateConfig("StealClownSHXConfig")
 
 Window:EditOpenButton({
     Title = "Scripts Hub X | Official",
