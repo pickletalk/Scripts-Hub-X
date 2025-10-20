@@ -2828,13 +2828,6 @@ end
 
 local function saveConfiguration()
     myConfig:Save()
-    
-    WindUI:Notify({
-        Title = "Configuration Saved",
-        Content = "All your settings have been saved successfully!",
-        Duration = 3,
-        Icon = "save",
-    })
 end
 
 local function loadConfiguration()
@@ -2908,6 +2901,7 @@ local AutoStealToggle = MainTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleAutoSteal(state)
+        saveConfiguration()
     end
 })
 
@@ -2917,6 +2911,7 @@ local InstantStealToggle = MainTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleInstantSteal(state)
+        saveConfiguration()
     end
 })
 
@@ -2926,6 +2921,7 @@ local StealUIToggle = MainTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleStealUI(state)
+        saveConfiguration()
     end
 })
 
@@ -2935,6 +2931,7 @@ local AntiStealToggle = MainTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleAntiSteal(state)
+        saveConfiguration()
     end
 })
 
@@ -2944,6 +2941,7 @@ local AutoCollectToggle = MainTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleAutoCollect(state)
+        saveConfiguration()
     end
 })
 
@@ -2953,6 +2951,7 @@ local FastInteractionToggle = MainTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleFastInteraction(state)
+        saveConfiguration()
     end
 })
 
@@ -2962,6 +2961,7 @@ local DesyncToggle = MainTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleDesync(state)
+        saveConfiguration()
     end
 })
 
@@ -2971,6 +2971,7 @@ local AntiVoidToggle = MainTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleAntiVoid(state)
+        saveConfiguration()
     end
 })
 
@@ -2980,6 +2981,7 @@ local AutoLockToggle = MainTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleAutoLock(state)
+        saveConfiguration()
     end
 })
 
@@ -3001,6 +3003,7 @@ local NoClipToggle = PlayerTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleNoClip(state)
+        saveConfiguration()
     end
 })
 
@@ -3010,6 +3013,7 @@ local AntiRagdollToggle = PlayerTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleAntiRagdoll(state)
+        saveConfiguration()
     end
 })
 
@@ -3019,6 +3023,7 @@ local InfiniteJumpToggle = PlayerTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleInfiniteJump(state)
+        saveConfiguration()
     end
 })
 
@@ -3028,6 +3033,7 @@ local GodModeToggle = PlayerTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleGodMode(state)
+        saveConfiguration()
     end
 })
 
@@ -3037,6 +3043,7 @@ local SpeedToggle = PlayerTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleSpeed(state)
+        saveConfiguration()
     end
 })
 
@@ -3050,6 +3057,7 @@ local SpeedSlider = PlayerTab:Slider({
     },
     Callback = function(value)
         updateSpeedValue(value)
+        saveConfiguration()
     end
 })
 
@@ -3070,6 +3078,7 @@ local PlayerESPToggle = VisualTab:Toggle({
     Default = false,
     Callback = function(state)
         togglePlayerESP(state)
+        saveConfiguration()
     end
 })
 
@@ -3079,6 +3088,7 @@ local BaseESPToggle = VisualTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleBaseESP(state)
+        saveConfiguration()
     end
 })
 
@@ -3088,6 +3098,7 @@ local BaseTimeESPToggle = VisualTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleBaseTimeESP(state)
+        saveConfiguration()
     end
 })
 
@@ -3097,6 +3108,7 @@ local BaseRemainingTimeToggle = VisualTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleBaseRemainingTimeESP(state)
+        saveConfiguration()
     end
 })
 
@@ -3115,6 +3127,7 @@ local FullBrightToggle = OptimizationsTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleFullBright(state)
+        saveConfiguration()
     end
 })
 
@@ -3124,6 +3137,7 @@ local LowGFXToggle = OptimizationsTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleLowGFX(state)
+        saveConfiguration()
     end
 })
 
@@ -3229,22 +3243,6 @@ local RandomServerHopButton = MiscTab:Button({
 -- ========================================
 -- SETTINGS TAB ELEMENTS
 -- ========================================
-local SaveConfigButton = SettingsTab:Button({
-    Title = "Save Configuration",
-    Desc = "Save all current settings to file",
-    Callback = function()
-        saveConfiguration()
-    end
-})
-
-local LoadConfigButton = SettingsTab:Button({
-    Title = "Load Configuration",
-    Desc = "Load your saved settings from file",
-    Callback = function()
-        loadConfiguration()
-    end
-})
-
 local ThemeDropdown = SettingsTab:Dropdown({
     Title = "Theme Selector",
     Values = {
@@ -3333,3 +3331,5 @@ WindUI:Popup({
         }
     }
 })
+
+loadConfiguration()
