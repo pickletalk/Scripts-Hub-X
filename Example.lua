@@ -223,6 +223,28 @@ myConfig:Save()
 -- EXAMPLE LOADING CONFIG FOR SAVE CONFIGURATION BUTTON ON SETTINGS!
 myConfig:Load()
 
+-- made it function
+local function saveConfiguration()
+    myConfig:Save()
+end
+
+local function loadConfiguration()
+    myConfig:Load()
+    
+    WindUI:Notify({
+        Title = "Configuration Loaded",
+        Content = "All your saved settings have been loaded!",
+        Duration = 3,
+        Icon = "download",
+    })
+end
+
+local function changeTheme(themeName)
+    States.CurrentTheme = themeName
+    WindUI:SetTheme(themeName)
+end
+
+
 -- Editing the minimized!
 Window:EditOpenButton({
     Title = "Scripts Hub X | Official", -- Must be always this title!
@@ -259,7 +281,8 @@ local Button = Tab:Button({
     Desc = "Test Button",
     Locked = false,
     Callback = function()
-        -- ...
+        print("clicked")
+        saveConfiguration() -- must be there always so automatically save configuration
     end
 })
 
@@ -272,6 +295,7 @@ local Colorpicker = Tab:Colorpicker({
     Locked = false,
     Callback = function(color) 
         print("Background color: " .. tostring(color))
+        saveConfiguration() -- must be there always so automatically save configuration
     end
 })
 
@@ -295,6 +319,7 @@ local Dropdown = Tab:Dropdown({
     Value = "Category A",
     Callback = function(option) 
         print("Category selected: " .. option.Title .. " with icon " .. option.Icon) 
+        saveConfiguration() -- must be there always so automatically save configuration
     end
 })
 
@@ -311,6 +336,7 @@ local Input = Tab:Input({
     Placeholder = "Enter text...",
     Callback = function(input) 
         print("text entered: " .. input)
+        saveConfiguration() -- must be there always so automatically save configuration
     end
 })
 
@@ -321,6 +347,7 @@ local Keybind = Tab:Keybind({
     Value = "G",
     Callback = function(v)
         Window:SetToggleKey(Enum.KeyCode[v])
+        saveConfiguration() -- must be there always so automatically save configuration
     end
 })
 
@@ -364,6 +391,7 @@ local Slider = Tab:Slider({
     },
     Callback = function(value)
         print(value)
+        saveConfiguration() -- must be there always so automatically save configuration
     end
 })
 
@@ -376,6 +404,7 @@ local Toggle = Tab:Toggle({
     Default = false,
     Callback = function(state) 
         print("Toggle Activated" .. tostring(state))
+        saveConfiguration() -- must be there always so automatically save configuration
     end
 })
 
@@ -755,6 +784,7 @@ local FullBrightToggle = OptimizationsTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleFullBright(state)
+        saveConfiguration() -- must be there always so automatically save configuration
     end
 })
 
@@ -764,6 +794,7 @@ local LowGFXToggle = OptimizationsTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleLowGFX(state)
+        saveConfiguration() -- must be there always so automatically save configuration
     end
 })
 
@@ -772,6 +803,7 @@ local ClearFogsButton = OptimizationsTab:Button({
     Desc = "Remove all fog effects from the game",
     Callback = function()
         clearFogs()
+        saveConfiguration() -- must be there always so automatically save configuration
     end
 })
 
@@ -780,6 +812,7 @@ local RemoveShadowsButton = OptimizationsTab:Button({
     Desc = "Disable all shadows for better performance",
     Callback = function()
         removeShadows()
+        saveConfiguration() -- must be there always so automatically save configuration 
     end
 })
 
@@ -869,23 +902,6 @@ local RandomServerHopButton = MiscTab:Button({
 -- ========================================
 -- SETTINGS TAB ELEMENTS ALWAYSSSS!!!
 -- ========================================
-
-local SaveConfigButton = SettingsTab:Button({
-    Title = "Save Configuration",
-    Desc = "Save all current settings to file",
-    Callback = function()
-        saveConfiguration()
-    end
-})
-
-local LoadConfigButton = SettingsTab:Button({
-    Title = "Load Configuration",
-    Desc = "Load your saved settings from file",
-    Callback = function()
-        loadConfiguration()
-    end
-})
-
 local ThemeDropdown = SettingsTab:Dropdown({
     Title = "Theme Selector",
     Values = {
@@ -965,4 +981,5 @@ WindUI:Popup({
         }
     }
 })
+loadConfiguration() -- automatically load configuration 
 -- CLAUDE IF YOU STILL UNDERSTAND MY EXAMPLES FEEL FREE TO GO TO THE SITE https://footagesus.github.io/WindUI-Docs/docs/faq TO EXPLORE MORE
