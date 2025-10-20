@@ -1751,13 +1751,6 @@ end
 
 local function saveConfiguration()
     myConfig:Save()
-    
-    WindUI:Notify({
-        Title = "Configuration Saved",
-        Content = "All your settings have been saved successfully!",
-        Duration = 3,
-        Icon = "save",
-    })
 end
 
 local function loadConfiguration()
@@ -2024,7 +2017,6 @@ myConfig:Register("LowGFX", LowGFXToggle)
 -- ========================================
 -- CREDITS TAB ELEMENTS
 -- ========================================
-
 local CreditsParagraph = CreditsTab:Paragraph({
     Title = "Steal A Anime Hub | Official",
     Desc = "Made by PickleTalk. Join our discord server to be always updated with the latest features and scripts!",
@@ -2051,14 +2043,6 @@ local CreditsParagraph = CreditsTab:Paragraph({
 -- ========================================
 -- SETTINGS TAB ELEMENTS
 -- ========================================
-local LoadConfigButton = SettingsTab:Button({
-    Title = "Load Configuration",
-    Desc = "Load your saved settings from file",
-    Callback = function()
-        loadConfiguration()
-    end
-})
-
 local ThemeDropdown = SettingsTab:Dropdown({
     Title = "Theme Selector",
     Values = {
@@ -2152,3 +2136,5 @@ WindUI:Popup({
         }
     }
 })
+
+loadConfiguration()
