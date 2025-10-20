@@ -197,7 +197,7 @@ local Window = WindUI:CreateWindow({
     Title = "Steal A Anime SHX | Official",
     Icon = "sword",
     Author = "by PickleTalk and Mhicel",
-    Folder = "StealAnimeSHX",
+    Folder = "ScriptsHubXConfig",
     Transparent = true,
     Theme = "Anime Dark",
 })
