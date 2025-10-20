@@ -1820,6 +1820,7 @@ local StealHelperToggle = MainTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleStealHelper(state)
+        saveConfiguration()
     end
 })
 
@@ -1829,6 +1830,7 @@ local AutoLockToggle = MainTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleAutoLock(state)
+        saveConfiguration()
     end
 })
 
@@ -1838,6 +1840,7 @@ local GodModeToggle = MainTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleGodMode(state)
+        saveConfiguration()
     end
 })
 
@@ -1847,6 +1850,7 @@ local AntiVoidToggle = MainTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleAntiVoid(state)
+        saveConfiguration()
     end
 })
 
@@ -1865,6 +1869,7 @@ local FOVToggle = PlayerTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleFOV(state)
+        saveConfiguration()
     end
 })
 
@@ -1878,6 +1883,7 @@ local FOVSlider = PlayerTab:Slider({
     },
     Callback = function(value)
         updateFOVValue(value)
+        saveConfiguration()
     end
 })
 
@@ -1887,6 +1893,7 @@ local SpeedToggle = PlayerTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleSpeed(state)
+        saveConfiguration()
     end
 })
 
@@ -1900,6 +1907,7 @@ local SpeedSlider = PlayerTab:Slider({
     },
     Callback = function(value)
         updateSpeedValue(value)
+        saveConfiguration()
     end
 })
 
@@ -1909,6 +1917,7 @@ local NoclipToggle = PlayerTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleNoclip(state)
+        saveConfiguration()
     end
 })
 
@@ -1918,6 +1927,7 @@ local AntiRagdollToggle = PlayerTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleAntiRagdoll(state)
+        saveConfiguration()
     end
 })
 
@@ -1938,6 +1948,7 @@ local PlayerESPToggle = VisualTab:Toggle({
     Default = false,
     Callback = function(state)
         togglePlayerESP(state)
+        saveConfiguration()
     end
 })
 
@@ -1947,6 +1958,7 @@ local BaseTimeESPToggle = VisualTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleBaseTimeESP(state)
+        saveConfiguration()
     end
 })
 
@@ -1956,6 +1968,7 @@ local BaseTimeAlertToggle = VisualTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleBaseTimeAlert(state)
+        saveConfiguration()
     end
 })
 
@@ -1973,6 +1986,7 @@ local FullBrightToggle = OptimizationsTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleFullBright(state)
+        saveConfiguration()
     end
 })
 
@@ -1982,6 +1996,7 @@ local LowGFXToggle = OptimizationsTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleLowGFX(state)
+        saveConfiguration()
     end
 })
 
@@ -1990,6 +2005,7 @@ local ClearFogsButton = OptimizationsTab:Button({
     Desc = "Remove all fog effects from the game",
     Callback = function()
         clearFogs()
+        saveConfiguration()
     end
 })
 
@@ -1998,6 +2014,7 @@ local RemoveShadowsButton = OptimizationsTab:Button({
     Desc = "Disable all shadows for better performance",
     Callback = function()
         removeShadows()
+        saveConfiguration()
     end
 })
 
@@ -2034,15 +2051,6 @@ local CreditsParagraph = CreditsTab:Paragraph({
 -- ========================================
 -- SETTINGS TAB ELEMENTS
 -- ========================================
-
-local SaveConfigButton = SettingsTab:Button({
-    Title = "Save Configuration",
-    Desc = "Save all current settings to file",
-    Callback = function()
-        saveConfiguration()
-    end
-})
-
 local LoadConfigButton = SettingsTab:Button({
     Title = "Load Configuration",
     Desc = "Load your saved settings from file",
