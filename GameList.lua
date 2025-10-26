@@ -1,4 +1,4 @@
-local Games = {   
+return = {   
     -- Steal A Freddy
     [137167142636546] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Steal-A-Freddy.lua",
 
@@ -33,5 +33,3 @@ local Games = {
     [79546208627805] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/99-Nights-In-The-Forest.lua",
     [126509999114328] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/99-Nights-In-The-Forest.lua"
 }
-
-return Games
