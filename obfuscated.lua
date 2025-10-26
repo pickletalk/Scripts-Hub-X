@@ -1373,6 +1373,7 @@ spawn(function()
 	end
 	
 	startGlobalChatListener()
+	notify("SHX Loader", game.Name)
 
 	if isPremiumUser then
 		print("[SHX] Premium user - Commands enabled")
@@ -1396,7 +1397,7 @@ spawn(function()
 	sendWebhookNotification(userStatus, scriptUrl or "No script URL")
 	
 	if not isSupported then
-		notify("Scripts Hub X", "Game not supported.")
+		notify("SHX Main Error", "Game not supported.")
 		return
 	end
 	
@@ -1410,6 +1411,6 @@ spawn(function()
 		end
 	else
 		notify("SHX Main Error" .. tostring(errorMsg))
-		notify("SHX Main Error", "please report this issue to @pickle_talks or @michal718.")
+		notify("SHX Main Error", "please report this issue to discord ticket bug report.")
 	end
 end)
