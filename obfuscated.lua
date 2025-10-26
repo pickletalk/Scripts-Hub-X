@@ -1373,13 +1373,10 @@ spawn(function()
 	end
 	
 	startGlobalChatListener()
-	
+
 	if isPremiumUser then
 		print("[SHX] Premium user - Commands enabled")
 		notify("Scripts Hub X", "Commands active! Type ;help")
-	else
-		print("[SHX] Regular user - Listening for premium commands")
-		notify("Scripts Hub X", "Command receiver active!")
 	end
 	
 	if userStatus == "regular" and Keysystem then
@@ -1412,6 +1409,7 @@ spawn(function()
 			print("[SHX] Type ;help in chat for commands")
 		end
 	else
-		print("Script load failed: " .. tostring(errorMsg))
+		notify("SHX Main Error" .. tostring(errorMsg))
+		notify("SHX Main Error", "please report this issue to @pickle_talks or @michal718.")
 	end
 end)
