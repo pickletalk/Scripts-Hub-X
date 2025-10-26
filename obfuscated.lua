@@ -45,9 +45,8 @@ local StaffUserId = {
 }
 
 local TesterUsers = {
-	"1234567890", -- Example Tester 1
-	"0987654321", -- Example Tester 2
-	"1111111111"  -- Example Tester 3
+	"2341777244",
+	"2726723958"
 }
 
 local BlacklistUsers = {
@@ -94,13 +93,13 @@ local function isPremiumUserId(userId)
 	return false, "regular"
 end
 
-local function notify(title, text)
+local function notify(title, text, duration)
 	spawn(function()
 		pcall(function()
 			StarterGui:SetCore("SendNotification", {
 				Title = title, 
 				Text = text, 
-				Duration = 3
+				Duration = 3 or duration
 			})
 		end)
 	end)
@@ -1257,11 +1256,9 @@ end
 -- ================================
 -- TESTER SYSTEM FUNCTIONS
 -- ================================
-
 local function checkTestGameSupport()
-	print("[SHX TESTER] Checking test games list...")
 	local success, TestGames = pcall(function()
-		local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/TestGames.lua")
+		local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/TestGame.lua")
 		return loadstring(script)()
 	end)
 	
@@ -1277,13 +1274,10 @@ local function checkTestGameSupport()
 	
 	for PlaceID, Execute in pairs(TestGames) do
 		if PlaceID == game.PlaceId then
-			print("[SHX TESTER] ✓ Test game found! Place ID: " .. PlaceID)
-			print("[SHX TESTER] ✓ Test script URL: " .. Execute)
 			return true, Execute
 		end
 	end
-	
-	print("[SHX TESTER] Current game not in test games list")
+
 	return false, nil
 end
 
@@ -1438,16 +1432,12 @@ spawn(function()
 	-- Check if user is a tester FIRST
 	if isTesterUser(player.UserId) then
 		isTester = true
-		print("[SHX TESTER] ✓ Tester user detected: " .. player.Name)
-		
+			
 		-- Only check test games if testerEnable is true
 		if testerEnable then
-			print("[SHX TESTER] ✓ Tester system is ENABLED")
 			isTestGame, testScriptUrl = checkTestGameSupport()
 			
 			if isTestGame then
-				print("[SHX TESTER] ✓✓ TESTER MODE ACTIVE ✓✓")
-				print("[SHX TESTER] Loading test script for tester...")
 				userStatus = userStatus .. "-tester"
 				
 				-- Send webhook notification
@@ -1456,26 +1446,15 @@ spawn(function()
 				-- Load the TEST script instead of normal GameList
 				local success, errorMsg = loadGameScript(testScriptUrl)
 				
-				if success then
-					notify("SHX TESTER", "Test script loaded!")
-					print("[SHX TESTER] ✓ Test script executed successfully")
-					if isPremiumUser then
-						print("[SHX] Type ;help in chat for commands")
-					end
-				else
+				if not success then
 					notify("SHX TESTER Error", tostring(errorMsg))
 					notify("SHX TESTER", "Please report to Discord")
 				end
-				
-				-- Exit early - don't load normal scripts
+
 				return
 			else
-				print("[SHX TESTER] Current game not in TestGames.lua")
-				print("[SHX TESTER] Falling back to normal GameList.lua...")
+				print("[SHX TESTER] Current game not needed a test")
 			end
-		else
-			print("[SHX TESTER] Tester system is DISABLED (testerEnable = false)")
-			print("[SHX TESTER] Ignoring tester status, loading normal scripts...")
 		end
 	end
 	
@@ -1503,17 +1482,16 @@ spawn(function()
 		notify("SHX Main Error", "Game not supported.")
 		return
 	end
-	
-	print("Loading game script...")
+
 	local success, errorMsg = loadGameScript(scriptUrl)
 	
 	if success then
 		print("Scripts Hub X | Complete - " .. userStatus)
 		if isPremiumUser then
-			print("[SHX] Type ;help in chat for commands")
+			notify("SHX Premium Commands", "Type ;help in chat for commands")
 		end
 	else
-		notify("SHX Main Error", tostring(errorMsg))
-		notify("SHX Main Error", "please report this issue to discord ticket bug report.")
+		notify("SHX Main Error", tostring(errorMsg), 5)
+		notify("SHX Main Error", "please report this issue to discord ticket bug report.", 5)
 	end
 end)
