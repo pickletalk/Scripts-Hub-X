@@ -1961,16 +1961,21 @@ local function toggleFastInteraction(state)
 end
 
 local function setNetworkOwnership(state)
-    local character = LocalPlayer.Character
-    if character then
-        local rootPart = character:FindFirstChild("HumanoidRootPart")
-        if rootPart then
-            if state then
-                sethiddenproperty(rootPart, "NetworkOwnershipRule", Enum.NetworkOwnership.Manual)
-            else
-                sethiddenproperty(rootPart, "NetworkOwnershipRule", Enum.NetworkOwnership.Automatic)
-            end
+    if setfflag then setfflag("WorldStepMax", "-9999999999") end
+        task.wait(0.2)
+        useItemRemote:FireServer()
+        task.wait(1)
+        teleportRemote:FireServer()
+        task.wait(2)
+        if setfflag then setfflag("WorldStepMax", "-1") end
+            print("Desync Activated!")
+            return true
+        end)
+        if not success then
+            warn("Desync failed: " .. tostring(error))
+            return false
         end
+        return success
     end
 end
 
