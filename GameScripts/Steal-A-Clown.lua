@@ -1960,28 +1960,42 @@ local function toggleFastInteraction(state)
     end
 end
 
-local function setNetworkOwnership(state)
-    if setfflag then setfflag("WorldStepMax", "-9999999999") end
-        task.wait(0.2)
-        useItemRemote:FireServer()
-        task.wait(1)
-        teleportRemote:FireServer()
-        task.wait(2)
-        if setfflag then setfflag("WorldStepMax", "-1") end
+local function desync(state)
+    if state then
+        local success, error = pcall(function()
+            if setfflag then 
+                setfflag("WorldStepMax", "-9999999999") 
+            else
+                notify("SHX Desync Error", "setfflag function not available")
+                return false
+            end
+            
+            if setfflag then 
+                setfflag("WorldStepMax", "-1") 
+            end
+            
             print("Desync Activated!")
             return true
         end)
+        
         if not success then
-            warn("Desync failed: " .. tostring(error))
+            notify("SHX Desync Error" .. tostring(error))
             return false
         end
         return success
+    else
+        if setfflag then 
+            pcall(function()
+                setfflag("WorldStepMax", "-1")
+            end)
+        end
+        return true
     end
 end
 
 local function toggleDesync(state)
     States.Desync = state
-    setNetworkOwnership(state)
+    desync(state)
     
     if state then
         WindUI:Notify({
