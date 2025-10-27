@@ -1,4 +1,4 @@
-return = {   
+return {   
     -- Steal A Freddy
     [137167142636546] = "https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameScripts/Steal-A-Freddy.lua",
 
