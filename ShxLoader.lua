@@ -4,7 +4,7 @@
 -- ================================
 
 local Keysystem = false
-local testerEnable = true -- Toggle tester system (true = enabled, false = disabled)
+local testerEnable = false
 
 -- Services
 local TweenService = game:GetService("TweenService")
