@@ -50,8 +50,9 @@ local TesterUsers = {
 }
 
 local BlacklistUsers = {
-	"716599904", -- ImRottingInHell [PERM]
-	"229691" -- ravyn [PERM]
+    "716599904", -- ImRottingInHell [PERM]
+    "229691", -- ravyn [PERM]
+    "4196292931", -- jvpogi233jj [TRIAL<2025-10-27>]
 }
 
 local webhookUrl = "https://discord.com/api/webhooks/1416367485803827230/4OLebMf0rtkCajS5S5lmo99iXe0v6v5B1gn_lPDAzz_MQtj0-HabA9wa2PF-5QBNUmgi"
