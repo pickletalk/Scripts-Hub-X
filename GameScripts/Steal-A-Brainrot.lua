@@ -767,7 +767,7 @@ end
 
 local function disableMobileDesync()
     pcall(function()
-        if setfflag then setfflag("WorldStepMax", "-1") end
+        if setfflag then setfflag("WorldStepMax", "0") end
         print("❌ Mobile Desync desativado!")
     end)
 end
@@ -822,7 +822,7 @@ local function tweenWalkTo(position)
     local startPos = hrp.Position
     local targetPos = Vector3.new(position.X, position.Y + Y_OFFSET, position.Z)
     local distance = (targetPos - startPos).Magnitude
-    local speed = math.max(humanoid.WalkSpeed, 24)
+    local speed = math.max(humanoid.WalkSpeed, 26)
     local duration = distance / speed
     local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
 
@@ -906,25 +906,21 @@ createButton("DESYNC", 1, function(isActive)
         local success = enableMobileDesync()
         if success then
             desyncActive = true
-            print("✓ Desync: ON")
+            print(".")
         else
             desyncActive = false
-            print("✗ Desync: FAILED")
         end
     else
         disableMobileDesync()
         desyncActive = false
-        print("✗ Desync: OFF")
     end
 end)
 
 createButton("TWEEN TO BASE", 2, function(isActive)
     if isActive then
         startTweenToBase()
-        print("✓ Tween to Base: ON")
     else
         stopTweenToBase()
-        print("✗ Tween to Base: OFF")
     end
 end)
 
