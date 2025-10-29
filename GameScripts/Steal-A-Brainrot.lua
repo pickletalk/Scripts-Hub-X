@@ -192,69 +192,6 @@ local function createButton(text, layoutOrder, callback)
 end
 
 -- ========================================
--- GOD MODE SYSTEM (AUTO ON)
--- ========================================
-local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local humanoid = character:WaitForChild("Humanoid")
-local hrp = character:WaitForChild("HumanoidRootPart")
-
-LocalPlayer.CharacterAdded:Connect(function(c)
-    character = c
-    humanoid = character:WaitForChild("Humanoid")
-    hrp = character:WaitForChild("HumanoidRootPart")
-    
-    task.wait(1)
-    enableGodMode()
-end)
-
-local healthConnection = nil
-local stateConnection = nil
-local maxHealth = 100
-
-local function enableGodMode()
-    maxHealth = humanoid.MaxHealth
-    
-    humanoid.MaxHealth = math.huge
-    humanoid.Health = math.huge
-    
-    if healthConnection then
-        healthConnection:Disconnect()
-    end
-    
-    healthConnection = humanoid.HealthChanged:Connect(function(health)
-        if health < math.huge then
-            humanoid.Health = math.huge
-        end
-    end)
-    
-    if stateConnection then
-        stateConnection:Disconnect()
-    end
-    
-    stateConnection = humanoid.StateChanged:Connect(function(oldState, newState)
-        if newState == Enum.HumanoidStateType.Dead then
-            humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
-            humanoid.Health = math.huge
-        end
-    end)
-    
-    RunService.Heartbeat:Connect(function()
-        if humanoid then
-            if humanoid.Health < math.huge then
-                humanoid.Health = math.huge
-            end
-            
-            if humanoid.MaxHealth < math.huge then
-                humanoid.MaxHealth = math.huge
-            end
-        end
-    end)
-end
-
-enableGodMode()
-print("✅ GOD MODE AUTO ENABLED")
-
--- ========================================
 -- XRAY BASE SYSTEM (FROM CODING 2)
 -- ========================================
 local xrayBaseEnabled = false
@@ -287,7 +224,7 @@ local function applyTransparency()
                     if originalTransparency[part] == nil then
                         originalTransparency[part] = part.Transparency
                     end
-                    part.Transparency = 0.5
+                    part.Transparency = 0.3
                 end
             end
         end
