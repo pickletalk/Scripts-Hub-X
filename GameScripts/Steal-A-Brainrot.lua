@@ -44,7 +44,7 @@ screenGui.Parent = LocalPlayer.PlayerGui
 -- Main Frame (Container) - More centered
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 220, 0, 320) -- Increased height to accommodate new button
-mainFrame.Position = UDim2.new(0.5, -110, 0.5, -160)
+mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
 mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
 mainFrame.BorderSizePixel = 0
