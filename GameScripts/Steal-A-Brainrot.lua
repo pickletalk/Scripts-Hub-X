@@ -121,7 +121,46 @@ end)
 -- Minimize/Maximize functionality
 local isMinimized = false
 local MINIMIZED_HEIGHT = 35
-local MAXIMIZED_HEIGHT = 260
+local MAXIMIZED_HEIGHT = 270
+
+local UserInputService = game:GetService("UserInputService")
+local frame = mainFrame  -- Your main GUI frame
+local titleBar = titleBar -- The TextButton you created
+
+local dragging = false
+local dragInput, mousePos, framePos
+
+titleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        mousePos = input.Position
+        framePos = frame.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+titleBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - mousePos
+        frame.Position = UDim2.new(
+            framePos.X.Scale,
+            framePos.X.Offset + delta.X,
+            framePos.Y.Scale,
+            framePos.Y.Offset + delta.Y
+        )
+    end
+end)
 
 titleBar.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
