@@ -224,7 +224,7 @@ local function applyTransparency()
                     if originalTransparency[part] == nil then
                         originalTransparency[part] = part.Transparency
                     end
-                    part.Transparency = 0.2
+                    part.Transparency = 0.8
                 end
             end
         end
