@@ -192,102 +192,6 @@ local function createButton(text, layoutOrder, callback)
 end
 
 -- ========================================
--- XRAY BASE SYSTEM (FROM CODING 2)
--- ========================================
-local xrayBaseEnabled = false
-local originalTransparency = {}
-
-local function saveOriginalTransparency()
-    -- Clear table first
-    originalTransparency = {}
-    
-    local plots = workspace:FindFirstChild("Plots")
-    if plots then
-        for _, plot in pairs(plots:GetChildren()) do
-            for _, part in pairs(plot:GetDescendants()) do
-                if part:IsA("BasePart") and (part.Name:lower():find("base plot") or part.Name:lower():find("base") or part.Name:lower():find("plot")) then
-                    -- Save original transparency
-                    originalTransparency[part] = part.Transparency
-                end
-            end
-        end
-    end
-end
-
-local function applyTransparency()
-    local plots = workspace:FindFirstChild("Plots")
-    if plots then
-        for _, plot in pairs(plots:GetChildren()) do
-            for _, part in pairs(plot:GetDescendants()) do
-                if part:IsA("BasePart") and (part.Name:lower():find("base plot") or part.Name:lower():find("base") or part.Name:lower():find("plot")) then
-                    -- If not saved yet, save it first
-                    if originalTransparency[part] == nil then
-                        originalTransparency[part] = part.Transparency
-                    end
-                    part.Transparency = 0.3
-                end
-            end
-        end
-    end
-end
-
-local function restoreTransparency()
-    local plots = workspace:FindFirstChild("Plots")
-    if plots then
-        for _, plot in pairs(plots:GetChildren()) do
-            for _, part in pairs(plot:GetDescendants()) do
-                if part:IsA("BasePart") and (part.Name:lower():find("base plot") or part.Name:lower():find("base") or part.Name:lower():find("plot")) then
-                    -- Restore to original transparency
-                    if originalTransparency[part] ~= nil then
-                        part.Transparency = originalTransparency[part]
-                    end
-                end
-            end
-        end
-    end
-end
-
-local function toggleXrayBase(enabled)
-    xrayBaseEnabled = enabled
-    
-    if xrayBaseEnabled then
-        -- Save original transparency values first
-        saveOriginalTransparency()
-        -- Apply transparency
-        applyTransparency()
-        print("✓ Xray Base: ON")
-    else
-        -- Restore original transparency
-        restoreTransparency()
-        print("✗ Xray Base: OFF")
-    end
-end
-
--- Monitor for new plots that spawn
-local plots = workspace:FindFirstChild("Plots")
-if plots then
-    plots.ChildAdded:Connect(function(newPlot)
-        task.wait(0.5) -- Wait a bit for plot to fully load
-        if xrayBaseEnabled then
-            -- If toggle is ON, apply transparency to new plot
-            for _, part in pairs(newPlot:GetDescendants()) do
-                if part:IsA("BasePart") and (part.Name:lower():find("base plot") or part.Name:lower():find("base") or part.Name:lower():find("plot")) then
-                    originalTransparency[part] = part.Transparency
-                    part.Transparency = 0.5
-                end
-            end
-        else
-            -- If toggle is OFF, just save original
-            for _, part in pairs(newPlot:GetDescendants()) do
-                if part:IsA("BasePart") and (part.Name:lower():find("base plot") or part.Name:lower():find("base") or part.Name:lower():find("plot")) then
-                    originalTransparency[part] = part.Transparency
-                end
-            end
-        end
-    end)
-end
-
--- ========================================
 -- FLOOR STEAL SYSTEM
 -- ========================================
 local floorStealEnabled = false
@@ -685,13 +589,13 @@ local function enableMobileDesync()
         end
 
         if setfflag then setfflag("WorldStepMax", "-9999999999") end
-        task.wait(0.2)
-        useItemRemote:FireServer()
-        task.wait(1)
-        teleportRemote:FireServer()
-        task.wait(2)
+            task.wait(0.2)
+            useItemRemote:FireServer()
+            task.wait(1)
+            teleportRemote:FireServer()
+            task.wait(2)
         if setfflag then setfflag("WorldStepMax", "-1") end
-        print("✅ Mobile Desync ativado!")
+            print("✅ Mobile Desync ativado!")
         return true
     end)
     
@@ -879,9 +783,4 @@ createButton("FLOOR STEAL", 5, function(isActive)
     else
         disableFloorSteal()
     end
-end)
-
--- NEW XRAY BASE BUTTON
-createButton("XRAY BASE", 6, function(isActive)
-    toggleXrayBase(isActive)
 end)
