@@ -223,12 +223,12 @@ local function createHelpGui()
 	end
 	
 	helpGui = Instance.new("ScreenGui")
-	helpGui.Name = "SHXHelpGui"
+	helpGui.Name = "🌐"
 	helpGui.ResetOnSpawn = false
 	helpGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	
 	local mainFrame = Instance.new("Frame")
-	mainFrame.Name = "MainFrame"
+	mainFrame.Name = "🌐"
 	mainFrame.Size = UDim2.new(0, 450, 0, 550)
 	mainFrame.Position = UDim2.new(0.5, -225, 0.5, -275)
 	mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
@@ -240,7 +240,7 @@ local function createHelpGui()
 	corner.Parent = mainFrame
 	
 	local header = Instance.new("Frame")
-	header.Name = "Header"
+	header.Name = "🌐"
 	header.Size = UDim2.new(1, 0, 0, 50)
 	header.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
 	header.BorderSizePixel = 0
@@ -251,7 +251,7 @@ local function createHelpGui()
 	headerCorner.Parent = header
 	
 	local title = Instance.new("TextLabel")
-	title.Name = "Title"
+	title.Name = "🌐"
 	title.Size = UDim2.new(1, -60, 1, 0)
 	title.Position = UDim2.new(0, 15, 0, 0)
 	title.BackgroundTransparency = 1
@@ -263,7 +263,7 @@ local function createHelpGui()
 	title.Parent = header
 	
 	local closeButton = Instance.new("TextButton")
-	closeButton.Name = "CloseButton"
+	closeButton.Name = "🌐"
 	closeButton.Size = UDim2.new(0, 40, 0, 40)
 	closeButton.Position = UDim2.new(1, -45, 0, 5)
 	closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
@@ -284,7 +284,7 @@ local function createHelpGui()
 	end)
 	
 	local infoLabel = Instance.new("TextLabel")
-	infoLabel.Name = "InfoLabel"
+	infoLabel.Name = "🌐"
 	infoLabel.Size = UDim2.new(1, -30, 0, 50)
 	infoLabel.Position = UDim2.new(0, 15, 0, 55)
 	infoLabel.BackgroundTransparency = 1
@@ -298,7 +298,7 @@ local function createHelpGui()
 	infoLabel.Parent = mainFrame
 	
 	local scrollFrame = Instance.new("ScrollingFrame")
-	scrollFrame.Name = "ScrollFrame"
+	scrollFrame.Name = "🌐"
 	scrollFrame.Size = UDim2.new(1, -20, 1, -120)
 	scrollFrame.Position = UDim2.new(0, 10, 0, 110)
 	scrollFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
@@ -345,7 +345,7 @@ local function createHelpGui()
 		end
 		
 		local cmdFrame = Instance.new("Frame")
-		cmdFrame.Name = "Cmd_" .. cmdData.cmd
+		cmdFrame.Name = "🌐"
 		cmdFrame.Size = UDim2.new(1, -16, 0, 70)
 		cmdFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
 		cmdFrame.BorderSizePixel = 0
@@ -356,7 +356,7 @@ local function createHelpGui()
 		cmdCorner.Parent = cmdFrame
 		
 		local cmdName = Instance.new("TextLabel")
-		cmdName.Name = "CmdName"
+		cmdName.Name = "🌐"
 		cmdName.Size = UDim2.new(1, -10, 0, 20)
 		cmdName.Position = UDim2.new(0, 5, 0, 5)
 		cmdName.BackgroundTransparency = 1
@@ -368,7 +368,7 @@ local function createHelpGui()
 		cmdName.Parent = cmdFrame
 		
 		local cmdDesc = Instance.new("TextLabel")
-		cmdDesc.Name = "CmdDesc"
+		cmdDesc.Name = "🌐"
 		cmdDesc.Size = UDim2.new(1, -10, 0, 20)
 		cmdDesc.Position = UDim2.new(0, 5, 0, 25)
 		cmdDesc.BackgroundTransparency = 1
@@ -381,7 +381,7 @@ local function createHelpGui()
 		cmdDesc.Parent = cmdFrame
 		
 		local cmdExample = Instance.new("TextLabel")
-		cmdExample.Name = "CmdExample"
+		cmdExample.Name = "🌐"
 		cmdExample.Size = UDim2.new(1, -10, 0, 20)
 		cmdExample.Position = UDim2.new(0, 5, 0, 47)
 		cmdExample.BackgroundTransparency = 1
