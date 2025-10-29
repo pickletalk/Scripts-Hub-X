@@ -792,7 +792,7 @@ local function enableMobileDesync()
         teleportRemote:FireServer()
         task.wait(2)
         if setfflag then setfflag("WorldStepMax", "-1") end
-        print("✅ Mobile Desync ativado!")
+        print("✅ Desync Activated!")
         return true
     end)
     
@@ -805,8 +805,8 @@ end
 
 local function disableMobileDesync()
     pcall(function()
-        if setfflag then setfflag("WorldStepMax", "0") end
-        print("❌ Mobile Desync desativado!")
+        if setfflag then setfflag("WorldStepMax", "0.125") end
+        print("❌ Desync deactivated!")
     end)
 end
 
