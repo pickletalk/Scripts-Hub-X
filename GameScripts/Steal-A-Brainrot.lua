@@ -123,69 +123,17 @@ local isMinimized = false
 local MINIMIZED_HEIGHT = 35
 local MAXIMIZED_HEIGHT = 270
 
-local UserInputService = game:GetService("UserInputService")
-
-local frame = mainFrame        -- your main frame
-local titleBar = titleBar      -- your TextButton title bar
-
--- make sure anchor is handled. if you use anchor, this still works.
-local dragging = false
-local dragOffset = Vector2.new(0,0) -- distance from frame top-left to mouse
-local lastInput
-
-local function startDrag(input)
-    dragging = true
-    -- mouse absolute position
-    local mousePos = input.Position
-    -- top-left of frame in screen coordinates
-    local framePos = Vector2.new(frame.AbsolutePosition.X, frame.AbsolutePosition.Y)
-    -- offset from mouse to top-left of frame
-    dragOffset = mousePos - framePos
-    lastInput = input
-end
-
-local function stopDrag()
-    dragging = false
-    lastInput = nil
-end
-
-titleBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        startDrag(input)
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                stopDrag()
-            end
-        end)
-    end
-end)
-
-titleBar.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        lastInput = input
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if not dragging then return end
-    if input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
-
-    -- new absolute top-left position for the frame
-    local newTopLeft = input.Position - dragOffset
-
-    -- parent absolute position and size (screen space)
-    local parentPos = frame.Parent.AbsolutePosition
-    local parentSize = frame.Parent.AbsoluteSize
-
-    -- convert to UDim2 in pixels relative to parent
-    local x = newTopLeft.X - parentPos.X
-    local y = newTopLeft.Y - parentPos.Y
-
-    -- clamp so it stays on screen (optional)
-    x = math.clamp(x, 0, parentSize.X - frame.AbsoluteSize.X)
-    y = math.clamp(y, 0, parentSize.Y - frame.AbsoluteSize.Y)
-
-    frame.Position = UDim2.new(0, x, 0, y)
+titleBar.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    
+    local targetSize = isMinimized and UDim2.new(0, 200, 0, MINIMIZED_HEIGHT) or UDim2.new(0, 200, 0, MAXIMIZED_HEIGHT)
+    
+    TweenService:Create(mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+        Size = targetSize
+    }):Play()
+    
+    scrollFrame.Visible = not isMinimized
+    minimizeIcon.Text = isMinimized and "+" or "−"
 end)
 
 -- Function to create button with toggle state
