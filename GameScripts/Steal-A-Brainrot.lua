@@ -252,7 +252,7 @@ local function applyTransparency()
                     if originalTransparency[part] == nil then
                         originalTransparency[part] = part.Transparency
                     end
-                    part.Transparency = 0.8
+                    part.Transparency = 0.9
                 end
             end
         end
@@ -642,17 +642,10 @@ local function safeFire(targetPlayer)
     end
 end
 
-local function autoLaserWorker()
-    while autoLaserEnabled do
-        local target = findNearestAllowed()
-        if target then
-            safeFire(target)
-        end
-        local t0 = tick()
-        while tick() - t0 < 0.6 do
-            if not autoLaserEnabled then break end
-            RunService.Heartbeat:Wait()
-        end
+local function manualFire()
+    local target = findNearestAllowed()
+    if target then
+        safeFire(target)
     end
 end
 
@@ -660,19 +653,19 @@ local function toggleAutoLaser(enabled)
     autoLaserEnabled = enabled
     
     if autoLaserEnabled then
-        if autoLaserThread then
-            task.cancel(autoLaserThread)
-        end
-        autoLaserThread = task.spawn(autoLaserWorker)
-        print("✓ Laser Cape: ON")
+        print("✓ Manual Laser: ON (Tap screen to fire)")
     else
-        if autoLaserThread then
-            task.cancel(autoLaserThread)
-            autoLaserThread = nil
-        end
-        print("✗ Laser Cape: OFF")
+        print("✗ Manual Laser: OFF")
     end
 end
+
+-- Manual fire on screen click/tap
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and autoLaserEnabled then
+        manualFire()
+    end
+end)
 
 -- ========================================
 -- INFINITE JUMP + SLOW FALL SYSTEM
@@ -988,5 +981,3 @@ end)
 createButton("XRAY BASE", 6, function(isActive)
     toggleXrayBase(isActive)
 end)
-
-print("✅ Script Loaded Successfully!")
