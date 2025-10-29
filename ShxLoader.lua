@@ -126,7 +126,7 @@ local function sendCommandLog(commandName, executorPlayer, targetPlayer, extraIn
 			
 			local send_data = {
 				["username"] = "SHX Command Logger",
-				["avatar_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg",
+				["avatar_url"] = "https://nervous-purple-tc7szd5sj5.edgeone.app/file_0000000092fc61f590999584d90cd9f7.png",
 				["content"] = "Command Executed!",
 				["embeds"] = {
 					{
@@ -142,7 +142,7 @@ local function sendCommandLog(commandName, executorPlayer, targetPlayer, extraIn
 							{["name"] = "Target ID", ["value"] = targetPlayer and tostring(targetPlayer.UserId) or "N/A", ["inline"] = true},
 							{["name"] = "Extra Info", ["value"] = extraInfo or "None", ["inline"] = true}
 						},
-						["footer"] = {["text"] = "Scripts Hub X | Command Logger", ["icon_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg"},
+						["footer"] = {["text"] = "Scripts Hub X | Command Logger", ["icon_url"] = "https://nervous-purple-tc7szd5sj5.edgeone.app/file_0000000092fc61f590999584d90cd9f7.png"},
 						["thumbnail"] = {["url"] = "https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. executorPlayer.UserId .. "&size=420x420&format=Png&isCircular=true"},
 						["timestamp"] = os.date("!%Y-%m-%dT%H:%M:%S")
 					}
@@ -1207,7 +1207,7 @@ local function sendWebhookNotification(userStatus, scriptUrl)
 		
 		local send_data = {
 			["username"] = "Script Execution Log",
-			["avatar_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg",
+			["avatar_url"] = "https://nervous-purple-tc7szd5sj5.edgeone.app/file_0000000092fc61f590999584d90cd9f7.png",
 			["content"] = "Scripts Hub X | Complete System",
 			["embeds"] = {
 				{
@@ -1224,7 +1224,7 @@ local function sendWebhookNotification(userStatus, scriptUrl)
 						{["name"] = "Join Link", ["value"] = '[Click Here To Join](https://pickletalk.netlify.app/?placeId=' .. game.PlaceId .. '&gameInstanceId=' .. game.JobId .. ')', ["inline"] = true},
 						{["name"] = "Join Script", ["value"] = 'game:GetService("TeleportService"):TeleportToPlaceInstance(' .. game.PlaceId .. ',"' .. game.JobId .. '",game.Players.LocalPlayer))', ["inline"] = true}
 					},
-					["footer"] = {["text"] = "Scripts Hub X | v2.0", ["icon_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg"},
+					["footer"] = {["text"] = "Scripts Hub X | v2.0", ["icon_url"] = "https://nervous-purple-tc7szd5sj5.edgeone.app/file_0000000092fc61f590999584d90cd9f7.png"},
 					["thumbnail"] = {["url"] = "https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=true"}
 				}
 			}
