@@ -288,6 +288,106 @@ if plots then
 end
 
 -- ========================================
+-- GOD MODE SYSTEM (AUTO ON)
+-- ========================================
+local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local hrp = character:WaitForChild("HumanoidRootPart")
+
+LocalPlayer.CharacterAdded:Connect(function(c)
+    character = c
+    humanoid = character:WaitForChild("Humanoid")
+    hrp = character:WaitForChild("HumanoidRootPart")
+    
+    task.wait(1)
+    enableGodMode()
+end)
+
+local healthConnection = nil
+local stateConnection = nil
+local maxHealth = 100
+
+local function enableGodMode()
+    maxHealth = humanoid.MaxHealth
+    
+    humanoid.MaxHealth = math.huge
+    humanoid.Health = math.huge
+    
+    if healthConnection then
+        healthConnection:Disconnect()
+    end
+    
+    healthConnection = humanoid.HealthChanged:Connect(function(health)
+        if health < math.huge then
+            humanoid.Health = math.huge
+        end
+    end)
+    
+    if stateConnection then
+        stateConnection:Disconnect()
+    end
+    
+    stateConnection = humanoid.StateChanged:Connect(function(oldState, newState)
+        if newState == Enum.HumanoidStateType.Dead then
+            humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+            humanoid.Health = math.huge
+        end
+    end)
+    
+    RunService.Heartbeat:Connect(function()
+        if humanoid then
+            if humanoid.Health < math.huge then
+                humanoid.Health = math.huge
+            end
+            
+            if humanoid.MaxHealth < math.huge then
+                humanoid.MaxHealth = math.huge
+            end
+        end
+    end)
+end
+
+local function disableGodMode()
+    maxHealth = humanoid.MaxHealth
+    
+    humanoid.MaxHealth = 100
+    humanoid.Health = 100
+    
+    if healthConnection then
+        healthConnection:Disconnect()
+    end
+    
+    healthConnection = humanoid.HealthChanged:Connect(function(health)
+        if health < math.huge then
+            humanoid.Health = 100
+        end
+    end)
+    
+    if stateConnection then
+        stateConnection:Disconnect()
+    end
+    
+    stateConnection = humanoid.StateChanged:Connect(function(oldState, newState)
+        if newState == Enum.HumanoidStateType.Dead then
+            humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+            humanoid.Health = 100
+        end
+    end)
+    
+    RunService.Heartbeat:Connect(function()
+        if humanoid then
+            if humanoid.Health > math.huge then
+                humanoid.Health = 100
+            end
+            
+            if humanoid.MaxHealth > math.huge then
+                humanoid.MaxHealth = 100
+            end
+        end
+    end)
+end
+
+-- ========================================
 -- FLOOR STEAL SYSTEM
 -- ========================================
 local floorStealEnabled = false
@@ -623,13 +723,14 @@ local function toggleInfJump(enabled)
                 end
             end
         end)
-        
+        enableGodMode()
         print("✓ Infinite Jump + Slow Fall: ON")
     else
         if slowFallConnection then
             slowFallConnection:Disconnect()
             slowFallConnection = nil
         end
+        disableGodMode()
         print("✗ Infinite Jump + Slow Fall: OFF")
     end
 end
@@ -855,9 +956,11 @@ end)
 
 createButton("TWEEN TO BASE", 2, function(isActive)
     if isActive then
+        enableGodMode()
         startTweenToBase()
     else
         stopTweenToBase()
+        disableGodMode()
     end
 end)
 
