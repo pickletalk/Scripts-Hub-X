@@ -684,7 +684,7 @@ local function tweenToPosition(targetPos, duration, easingStyle)
     return true
 end
 
-function startTweenToBase()
+function startTweenToBrainrot()
     if tweenToBaseActive then return end
     tweenToBaseActive = true
     
@@ -749,7 +749,7 @@ function startTweenToBase()
     end)
 end
 
-function stopTweenToBase()
+function stopTweenToBrainrot()
     tweenToBaseActive = false
     
     -- Cancel any active tween
@@ -1170,9 +1170,9 @@ end)
 
 createButton("TWEEN TO HIGHEST BRAINROT", 2, function(isActive)
     if isActive then
-        startTweenToBase()
+        startTweenToBrainrot()
     else
-        stopTweenToBase()
+        stopTweenToBrainrot()
     end
 end)
 
