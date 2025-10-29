@@ -287,7 +287,7 @@ local function applyTransparency()
                     if originalTransparency[part] == nil then
                         originalTransparency[part] = part.Transparency
                     end
-                    part.Transparency = 0.5
+                    part.Transparency = 0.2
                 end
             end
         end
@@ -928,7 +928,7 @@ createButton("INFINITE JUMP", 3, function(isActive)
     toggleInfJump(isActive)
 end)
 
-createButton("LASER CAPE", 4, function(isActive)
+createButton("AIMBOT", 4, function(isActive)
     toggleAutoLaser(isActive)
 end)
 
