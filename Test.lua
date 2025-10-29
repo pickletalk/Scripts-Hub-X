@@ -15,50 +15,6 @@ local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 local rootPart = character:WaitForChild("HumanoidRootPart")
 
--- ==================== ANTI-KICK SYSTEM ====================
-local antiKickEnabled = false
-local kickProtectionActive = false
-
-local function setupAntiKick()
-    if kickProtectionActive then return end
-    kickProtectionActive = true
-    
-    pcall(function()
-        -- Hook __namecall metamethod to block kicks
-        local oldnamecall
-        oldnamecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
-            local method = getnamecallmethod()
-            local args = {...}
-            
-            -- Block all kick attempts when anti-kick is enabled
-            if antiKickEnabled and method == "Kick" and self == LocalPlayer then
-                warn("[Anti-Kick] Blocked kick attempt!")
-                return
-            end
-            
-            return oldnamecall(self, ...)
-        end))
-        
-        -- Additional protection for game:Shutdown()
-        local mt = getrawmetatable(game)
-        setreadonly(mt, false)
-        local oldShutdown = mt.__namecall
-        
-        mt.__namecall = newcclosure(function(self, ...)
-            local method = getnamecallmethod()
-            if antiKickEnabled and (method == "Shutdown" or method == "Kick") then
-                warn("[Anti-Kick] Blocked shutdown/kick attempt!")
-                return
-            end
-            return oldShutdown(self, ...)
-        end)
-        
-        setreadonly(mt, true)
-    end)
-    
-    print("[Anti-Kick] Protection system initialized!")
-end
-
 -- ==================== CONFIGURATION SYSTEM ====================
 local ConfigData = {
     antiRagdollEnabled = false,
@@ -1942,12 +1898,6 @@ task.spawn(function()
         end
     end
 end)
-
--- Anti-kick initialization
-if ConfigData.antiKickEnabled then
-    antiKickEnabled = true
-    setupAntiKick()
-end
 
 -- Anti-ragdoll initialization
 if LocalPlayer.Character and ConfigData.antiRagdollEnabled then
