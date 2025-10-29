@@ -439,137 +439,159 @@ local function createHelpGui()
 	}):Play()
 end
 
+local CommandFunctions = {}
 -- ================================
 -- WALKSPEED SPOOF SYSTEM
 -- ================================
-task.spawn(function()
-	pcall(function()
-		local cloneref = cloneref or function(...) return ... end
-		local WalkSpeedSpoof = {}
-		local GetDebugIdHandler = Instance.new("BindableFunction")
-		local TempHumanoid = Instance.new("Humanoid")
-		local cachedhumanoids = {}
-		local CurrentHumanoid
-		local newindexhook
-		local indexhook
+if not game.PlaceId == 109983668079237 or game.PlaceId == 96342491571673 then
+    task.spawn(function()
+	    pcall(function()
+		    local CommandFunctions = {}
+	  	    local cloneref = cloneref or function(...) return ... end
+		    local WalkSpeedSpoof = {}
+		    local GetDebugIdHandler = Instance.new("BindableFunction")
+		    local TempHumanoid = Instance.new("Humanoid")
+	        local cachedhumanoids = {}
+		    local CurrentHumanoid
+		    local newindexhook
+		    local indexhook
 		
-		function GetDebugIdHandler.OnInvoke(obj) return obj:GetDebugId() end
-		local function GetDebugId(obj) return GetDebugIdHandler:Invoke(obj) end
-		local function GetWalkSpeed(obj)
-			TempHumanoid.WalkSpeed = obj
-			return TempHumanoid.WalkSpeed
-		end
+		    function GetDebugIdHandler.OnInvoke(obj) return obj:GetDebugId() end
+		    local function GetDebugId(obj) return GetDebugIdHandler:Invoke(obj) end
+		    local function GetWalkSpeed(obj)
+			    TempHumanoid.WalkSpeed = obj
+			    return TempHumanoid.WalkSpeed
+		    end
 		
-		function cachedhumanoids:cacheHumanoid(DebugId, Humanoid)
-			cachedhumanoids[DebugId] = {
-				currentindex = indexhook(Humanoid, "WalkSpeed"),
-				lastnewindex = nil
-			}
-			return self[DebugId]
-		end
+		    function cachedhumanoids:cacheHumanoid(DebugId, Humanoid)
+			    cachedhumanoids[DebugId] = {
+				    currentindex = indexhook(Humanoid, "WalkSpeed"),
+				    lastnewindex = nil
+			    }
+			    return self[DebugId]
+		    end
 		
-		indexhook = hookmetamethod(game, "__index", function(self, index)
-			if not checkcaller() and typeof(self) == "Instance" then
-				if self:IsA("Humanoid") then
-					local DebugId = GetDebugId(self)
-					local cached = cachedhumanoids[DebugId]
-					if self:IsDescendantOf(player.Character) or cached then
-						if type(index) == "string" then
-							local cleanindex = string.split(index, "\0")[1]
-							if cleanindex == "WalkSpeed" then
-								if not cached then
-									cached = cachedhumanoids:cacheHumanoid(DebugId, self)
-								end
-								if not (CurrentHumanoid and CurrentHumanoid:IsDescendantOf(game)) then
-									CurrentHumanoid = cloneref(self)
-								end
-								return cached.lastnewindex or cached.currentindex
-							end
-						end
-					end
-				end
-			end
-			return indexhook(self, index)
-		end)
+		    indexhook = hookmetamethod(game, "__index", function(self, index)
+			    if not checkcaller() and typeof(self) == "Instance" then
+				    if self:IsA("Humanoid") then
+					    local DebugId = GetDebugId(self)
+					    local cached = cachedhumanoids[DebugId]
+					    if self:IsDescendantOf(player.Character) or cached then
+						    if type(index) == "string" then
+							    local cleanindex = string.split(index, "\0")[1]
+							    if cleanindex == "WalkSpeed" then
+								    if not cached then
+									    cached = cachedhumanoids:cacheHumanoid(DebugId, self)
+								    end
+								    if not (CurrentHumanoid and CurrentHumanoid:IsDescendantOf(game)) then
+									    CurrentHumanoid = cloneref(self)
+								    end
+								    return cached.lastnewindex or cached.currentindex
+							    end
+						    end
+					    end
+				    end
+			    end
+			    return indexhook(self, index)
+		    end)
 		
-		newindexhook = hookmetamethod(game, "__newindex", function(self, index, newindex)
-			if not checkcaller() and typeof(self) == "Instance" then
-				if self:IsA("Humanoid") then
-					local DebugId = GetDebugId(self)
-					local cached = cachedhumanoids[DebugId]
-					if self:IsDescendantOf(player.Character) or cached then
-						if type(index) == "string" then
-							local cleanindex = string.split(index, "\0")[1]
-							if cleanindex == "WalkSpeed" then
-								if not cached then
-									cached = cachedhumanoids:cacheHumanoid(DebugId, self)
-								end
-								if not (CurrentHumanoid and CurrentHumanoid:IsDescendantOf(game)) then
-									CurrentHumanoid = cloneref(self)
-								end
-								cached.lastnewindex = GetWalkSpeed(newindex)
-								return CurrentHumanoid.WalkSpeed
-							end
-						end
-					end
-				end
-			end
-			return newindexhook(self, index, newindex)
-		end)
+		    newindexhook = hookmetamethod(game, "__newindex", function(self, index, newindex)
+			    if not checkcaller() and typeof(self) == "Instance" then
+				    if self:IsA("Humanoid") then
+					    local DebugId = GetDebugId(self)
+					    local cached = cachedhumanoids[DebugId]
+					    if self:IsDescendantOf(player.Character) or cached then
+						    if type(index) == "string" then
+							    local cleanindex = string.split(index, "\0")[1]
+							    if cleanindex == "WalkSpeed" then
+								    if not cached then
+									    cached = cachedhumanoids:cacheHumanoid(DebugId, self)
+								    end
+								    if not (CurrentHumanoid and CurrentHumanoid:IsDescendantOf(game)) then
+									    CurrentHumanoid = cloneref(self)
+								    end
+								    cached.lastnewindex = GetWalkSpeed(newindex)
+								    return CurrentHumanoid.WalkSpeed
+							    end
+						    end
+					    end
+				    end
+			    end
+			    return newindexhook(self, index, newindex)
+		    end)
 		
-		function WalkSpeedSpoof:GetHumanoid()
-			return CurrentHumanoid or (function()
-				local char = player.Character
-				local Humanoid = char and char:FindFirstChildWhichIsA("Humanoid") or nil
-				if Humanoid then
-					cachedhumanoids:cacheHumanoid(Humanoid:GetDebugId(), Humanoid)
-					return cloneref(Humanoid)
-				end
-			end)()
-		end
+		    function WalkSpeedSpoof:GetHumanoid()
+			    return CurrentHumanoid or (function()
+				    local char = player.Character
+				    local Humanoid = char and char:FindFirstChildWhichIsA("Humanoid") or nil
+				    if Humanoid then
+					    cachedhumanoids:cacheHumanoid(Humanoid:GetDebugId(), Humanoid)
+					    return cloneref(Humanoid)
+				    end
+			    end)()
+		    end
 		
-		function WalkSpeedSpoof:SetWalkSpeed(speed)
-			local Humanoid = WalkSpeedSpoof:GetHumanoid()
-			if Humanoid then
-				local connections = {}
-				local function AddConnectionsFromSignal(Signal)
-					for i, v in getconnections(Signal) do
-						if v.State then
-							v:Disable()
-							table.insert(connections, v)
-						end
-					end
-				end
-				AddConnectionsFromSignal(Humanoid.Changed)
-				AddConnectionsFromSignal(Humanoid:GetPropertyChangedSignal("WalkSpeed"))
-				Humanoid.WalkSpeed = speed
-				for i, v in connections do
-					v:Enable()
-				end
-			end
-		end
+		    function WalkSpeedSpoof:SetWalkSpeed(speed)
+			    local Humanoid = WalkSpeedSpoof:GetHumanoid()
+			    if Humanoid then
+				    local connections = {}
+				    local function AddConnectionsFromSignal(Signal)
+					    for i, v in getconnections(Signal) do
+						    if v.State then
+							    v:Disable()
+							    table.insert(connections, v)
+						    end
+					    end
+				    end
+				    AddConnectionsFromSignal(Humanoid.Changed)
+				    AddConnectionsFromSignal(Humanoid:GetPropertyChangedSignal("WalkSpeed"))
+				    Humanoid.WalkSpeed = speed
+				    for i, v in connections do
+					    v:Enable()
+				    end
+			    end
+		    end
 		
-		function WalkSpeedSpoof:RestoreWalkSpeed()
-			local Humanoid = WalkSpeedSpoof:GetHumanoid()
-			if Humanoid then
-				local cached = cachedhumanoids[Humanoid:GetDebugId()]
-				if cached then
-					WalkSpeedSpoof:SetWalkSpeed(cached.lastnewindex or cached.currentindex)
-				end
-			end
-		end
+		    function WalkSpeedSpoof:RestoreWalkSpeed()
+			    local Humanoid = WalkSpeedSpoof:GetHumanoid()
+			    if Humanoid then
+				    local cached = cachedhumanoids[Humanoid:GetDebugId()]
+				    if cached then
+					    WalkSpeedSpoof:SetWalkSpeed(cached.lastnewindex or cached.currentindex)
+				    end
+			    end
+		    end
 		
-		getgenv().WalkSpeedSpoof = WalkSpeedSpoof
-		print("[SHX] WalkSpeed spoof system loaded")
-	end)
-end)
+		    getgenv().WalkSpeedSpoof = WalkSpeedSpoof
+		    print("[SHX] WalkSpeed spoof system loaded")
+
+		    CommandFunctions.speed = function(args)
+	            -- Format: ;speed [target] [value] OR ;speed [value] (self)
+	            local speedValue = tonumber(args[3]) or tonumber(args[2]) or 100
+	
+	            if player.Character and player.Character:FindFirstChild("Humanoid") then
+		            -- Use the WalkSpeed spoof method
+		            local WalkSpeedSpoof = getgenv().WalkSpeedSpoof
+		            if WalkSpeedSpoof then
+			            WalkSpeedSpoof:SetWalkSpeed(speedValue)
+		            else
+			            player.Character.Humanoid.WalkSpeed = speedValue
+		            end
+		            notify("Scripts Hub X", "Speed set to " .. speedValue)
+	            end
+            end
+
+            CommandFunctions.s = CommandFunctions.speed -- Alias
+					
+	    end)
+    end)
+end
 
 -- ================================
 -- COMMAND FUNCTIONS (ALL WORK ON LOCAL PLAYER)
 -- ================================
 local floatspinConnections = {} -- Track floatspin loops
 local panicConnections = {} -- Track panic loops
-local CommandFunctions = {}
 
 CommandFunctions.help = function(args)
 	createHelpGui()
@@ -846,24 +868,6 @@ CommandFunctions.tphere = function(args)
 		notify("Scripts Hub X", "Usage: ;tphere [target]")
 	end
 end
-
-CommandFunctions.speed = function(args)
-	-- Format: ;speed [target] [value] OR ;speed [value] (self)
-	local speedValue = tonumber(args[3]) or tonumber(args[2]) or 100
-	
-	if player.Character and player.Character:FindFirstChild("Humanoid") then
-		-- Use the WalkSpeed spoof method
-		local WalkSpeedSpoof = getgenv().WalkSpeedSpoof
-		if WalkSpeedSpoof then
-			WalkSpeedSpoof:SetWalkSpeed(speedValue)
-		else
-			player.Character.Humanoid.WalkSpeed = speedValue
-		end
-		notify("Scripts Hub X", "Speed set to " .. speedValue)
-	end
-end
-
-CommandFunctions.s = CommandFunctions.speed -- Alias
 
 CommandFunctions.speedreset = function(args)
 	if player.Character and player.Character:FindFirstChild("Humanoid") then
