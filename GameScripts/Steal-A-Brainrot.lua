@@ -122,6 +122,7 @@ end)
 local isMinimized = false
 local MINIMIZED_HEIGHT = 35
 local MAXIMIZED_HEIGHT = 270
+local isDragging = false
 
 -- Make title bar draggable
 local dragging
@@ -134,6 +135,7 @@ local function update(input)
     local delta = input.Position - dragStart
     if math.abs(delta.X) > 2 or math.abs(delta.Y) > 2 then
         hasMoved = true
+        isDragging = true
     end
     mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 end
@@ -147,10 +149,10 @@ titleBar.InputBegan:Connect(function(input)
         
         input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
                 if not hasMoved then
-                    dragging = false
-                else
-                    dragging = false
+                    isDragging = false
+                end
             end
         end)
     end
@@ -170,7 +172,8 @@ end)
 
 titleBar.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
-    if dragging then
+    if isDragging then
+        isDragging = false
         return
     end
     local targetSize = isMinimized and UDim2.new(0, 200, 0, MINIMIZED_HEIGHT) or UDim2.new(0, 200, 0, MAXIMIZED_HEIGHT)
