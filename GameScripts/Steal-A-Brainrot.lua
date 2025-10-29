@@ -49,7 +49,7 @@ mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
-mainFrame.Draggable = true
+mainFrame.Draggable = false
 mainFrame.Parent = screenGui
 
 local mainCorner = Instance.new("UICorner")
@@ -122,6 +122,43 @@ end)
 local isMinimized = false
 local MINIMIZED_HEIGHT = 35
 local MAXIMIZED_HEIGHT = 270
+
+-- Make title bar draggable
+local dragging
+local dragInput
+local dragStart
+local startPos
+
+local function update(input)
+    local delta = input.Position - dragStart
+    mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+titleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+titleBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        update(input)
+    end
+end)
 
 titleBar.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
@@ -567,251 +604,161 @@ local function disableFloorSteal()
 end
 
 -- ========================================
+-- TWEEN TO BASE SYSTEM (NEW - AERIAL ROUTE)
+-- ========================================
+local tweenToBaseActive = false
+local currentTween = nil
 
-
-local function executeHighestBrainrotGrappleTeleport()
-    -- Parse generation text (1k/s, 1m/s, 1b/s, 1t/s, etc.)
-    local function parseGeneration(text)
-        if not text then return 0 end
-        
-        text = tostring(text):lower():gsub("%s+", "") -- Remove spaces
-        local num = tonumber(text:match("[%d%.]+"))
-        if not num then return 0 end
-        
-        -- Check for multipliers
-        if text:find("t") then
-            num = num * 1000000000000 -- Trillion
-        elseif text:find("b") then
-            num = num * 1000000000 -- Billion
-        elseif text:find("m") then
-            num = num * 1000000 -- Million
-        elseif text:find("k") then
-            num = num * 1000 -- Thousand
-        end
-        
-        return num
-    end
-
-    local LocalPlayer = Players.LocalPlayer
-    local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
-    local PlayerDisplayName = LocalPlayer.DisplayName
-    
-    -- Find Plots folder
-    local PlotsFolder = Workspace:FindFirstChild("Plots")
-    if not PlotsFolder then
-        warn("❌ ERROR: workspace.Plots not found!")
-        return
-    end
-
-    -- Get all plot models (exclude player's own plot)
-    local plotModels = {}
-    local skippedOwnPlot = false
-    
-    for _, child in pairs(PlotsFolder:GetChildren()) do
-        if child:IsA("Model") or child:IsA("Folder") then
-            -- Check if this is the player's plot
-            local isPlayerPlot = false
-            local success, plotOwnerText = pcall(function()
-                return child.PlotSign.SurfaceGui.Frame.TextLabel.Text
-            end)
-            
-            if success and plotOwnerText then
-                local expectedText = PlayerDisplayName .. "'s Base"
-                if plotOwnerText == expectedText then
-                    isPlayerPlot = true
-                    skippedOwnPlot = true
-                end
-            end
-            
-            if not isPlayerPlot then
-                table.insert(plotModels, child)
-            end
+local function getBasePosition()
+    local plots = workspace:FindFirstChild("Plots")
+    if not plots then return nil end
+    for _, plot in ipairs(plots:GetChildren()) do
+        local sign = plot:FindFirstChild("PlotSign")
+        local base = plot:FindFirstChild("DeliveryHitbox")
+        if sign and sign:FindFirstChild("YourBase") and sign.YourBase.Enabled and base then
+            return base.Position
         end
     end
-
-    if #plotModels == 0 then
-        warn("❌ ERROR: No plots found to scan!")
-        return
-    end
-    
-    -- Scan all plots and podiums
-    local highestGen = -1
-    local highestPlotName = nil
-    local highestPodiumNum = nil
-    local targetSpawnPart = nil
-    local scannedCount = 0
-    local foundCount = 0
-
-    for _, plotModel in pairs(plotModels) do
-        local AnimalPodiums = plotModel:FindFirstChild("AnimalPodiums")
-        
-        if AnimalPodiums then
-            -- Check podiums 1 to 30
-            for podiumNum = 1, 30 do
-                local podium = AnimalPodiums:FindFirstChild(tostring(podiumNum))
-                
-                if podium then
-                    scannedCount = scannedCount + 1
-                    
-                    -- Try to get Generation TextLabel (safely checks if Attachment exists)
-                    local success, genLabel = pcall(function()
-                        -- This will fail if Attachment doesn't exist - that's okay!
-                        return podium.Base.Spawn.Attachment.AnimalOverhead.Generation
-                    end)
-                    
-                    if success and genLabel then
-                        local textValue = tostring(genLabel.Text or "")
-                        local genValue = parseGeneration(textValue)
-                        
-                        if genValue > 0 then
-                            foundCount = foundCount + 1
-                            print(string.format("  📊 Plot: %s | Podium: %d | Gen: %s (%.0f)", 
-                                plotModel.Name, podiumNum, textValue, genValue))
-                            
-                            if genValue > highestGen then
-                                -- Get the Spawn part as target
-                                local spawnSuccess, spawnPart = pcall(function()
-                                    return podium.Base.Spawn
-                                end)
-                                
-                                if spawnSuccess and spawnPart and spawnPart:IsA("BasePart") then
-                                    highestGen = genValue
-                                    highestPlotName = plotModel.Name
-                                    highestPodiumNum = podiumNum
-                                    targetSpawnPart = spawnPart
-                                end
-                            end
-                        end
-                    end
-                    -- If pcall fails, podium doesn't have Attachment - skip silently
-                end
-            end
-        end
-    end
-
-    if not highestPlotName or not targetSpawnPart then
-        warn("❌ ERROR: No valid generations found!")
-        warn("Possible reasons:")
-        warn("  1. All podiums are empty")
-        warn("  2. No podiums have Attachment (animals not spawned)")
-        warn("  3. Text format doesn't match expected pattern (e.g., '1k/s')")
-        return
-    end
-
-    local SpeedCoil = LocalPlayer.Backpack:FindFirstChild("Speed Coil")
-    
-    if not SpeedCoil then
-        warn("❌ ERROR: Grapple Hook not found in backpack!")
-        return
-    end
-    
-    local Humanoid = Character:FindFirstChild("Humanoid")
-    if not Humanoid then
-        warn("❌ ERROR: Humanoid not found!")
-        return
-    end
-
-    local remote = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"):WaitForChild("RF/CoinsShopService/RequestBuy")
-    remote:InvokeServer("Speed Coil")
-    Humanoid:EquipTool(SpeedCoil)
-    wait(0.5)
-
-    -- Use smooth velocity-based movement (anti-cheat safe)
-    print("🚀 Moving to target with smooth velocity...\n")
-    
-    -- Create BodyVelocity for smooth movement
-    local bodyVelocity = Instance.new("BodyVelocity")
-    bodyVelocity.MaxForce = Vector3.new(100000, 100000, 100000)
-    bodyVelocity.P = 1250
-    bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-    bodyVelocity.Parent = HumanoidRootPart
-    
-    local reachedTarget = false
-    local movementConnection
-    local startTime = tick()
-    local currentVelocity = Vector3.new(0, 0, 0)
-    
-    -- Smooth easing function (mimics Sine.InOut)
-    local function easeInOutSine(t)
-        return -(math.cos(math.pi * t) - 1) / 2
-    end
-    
-    -- Continuous smooth movement loop
-    movementConnection = RunService.Heartbeat:Connect(function()
-        if not HumanoidRootPart or not HumanoidRootPart.Parent or not targetSpawnPart then
-            firing = false
-            if bodyVelocity and bodyVelocity.Parent then bodyVelocity:Destroy() end
-            if movementConnection then movementConnection:Disconnect() end
-            return
-        end
-        
-        local distance = (HumanoidRootPart.Position - targetSpawnPart.Position).Magnitude
-        
-        -- Check if within 5.5 studs
-        if distance <= 5 then
-            reachedTarget = true
-            local timeTaken = tick() - startTime
-
-            -- Stop everything
-            firing = false
-            if bodyVelocity and bodyVelocity.Parent then bodyVelocity:Destroy() end
-            if movementConnection then movementConnection:Disconnect() end
-            
-            -- Unequip grapple
-            if SpeedCoil and SpeedCoil.Parent == Character then
-                Humanoid:UnequipTools()
-            end
-        else
-            -- Calculate direction towards target
-            local direction = (targetSpawnPart.Position - HumanoidRootPart.Position).Unit
-            
-            -- Anti-cheat safe speed with smooth easing
-            local maxSpeed = 50 -- Safe max speed (studs/second)
-            local minSpeed = 10 -- Minimum speed to keep moving
-            
-            -- Apply easing based on distance (slow down when close)
-            local speed
-            if distance < 15 then
-                -- Decelerate when close
-                local t = distance / 15
-                speed = minSpeed + (maxSpeed - minSpeed) * easeInOutSine(t)
-            else
-                -- Normal speed
-                speed = maxSpeed
-            end
-            
-            -- Target velocity
-            local targetVelocity = direction * speed
-            
-            -- Smooth lerp to avoid sudden changes (alpha = 0.15 for smoothness)
-            currentVelocity = currentVelocity:Lerp(targetVelocity, 0.15)
-            
-            -- Apply smoothed velocity
-            if bodyVelocity and bodyVelocity.Parent then
-                bodyVelocity.Velocity = currentVelocity
-            end
-        end
-    end)
-    
-    -- Wait until reached or timeout (30 seconds max)
-    while not reachedTarget and (tick() - startTime) < 3 do
-        wait(0.1)
-    end
-    
-    -- Final cleanup
-    if bodyVelocity and bodyVelocity.Parent then
-        pcall(function() bodyVelocity:Destroy() end)
-    end
-    if movementConnection then
-        movementConnection:Disconnect()
-    end
-    
-    if SpeedCoil and SpeedCoil.Parent == Character then
-        Humanoid:UnequipTools()
-    end
+    return nil
 end
 
+local function getMapCenter()
+    -- Get approximate center of the map (adjust if needed)
+    local mapCenter = Vector3.new(0, 0, 0)
+    local plots = workspace:FindFirstChild("Plots")
+    if plots and #plots:GetChildren() > 0 then
+        local sum = Vector3.new(0, 0, 0)
+        local count = 0
+        for _, plot in ipairs(plots:GetChildren()) do
+            if plot:IsA("Model") and plot.PrimaryPart then
+                sum = sum + plot.PrimaryPart.Position
+                count = count + 1
+            end
+        end
+        if count > 0 then
+            mapCenter = sum / count
+        end
+    end
+    return mapCenter
+end
+
+local function tweenToPosition(targetPos, duration, easingStyle)
+    if not hrp then return false end
+    
+    -- Cancel existing tween
+    if currentTween then
+        currentTween:Cancel()
+        currentTween = nil
+    end
+    
+    -- Create tween info
+    local tweenInfo = TweenInfo.new(
+        duration or 3,
+        easingStyle or Enum.EasingStyle.Sine,
+        Enum.EasingDirection.InOut
+    )
+    
+    -- Create tween
+    currentTween = TweenService:Create(hrp, tweenInfo, {
+        CFrame = CFrame.new(targetPos)
+    })
+    
+    currentTween:Play()
+    
+    -- Wait for completion
+    currentTween.Completed:Wait()
+    
+    return true
+end
+
+function startTweenToBase()
+    if tweenToBaseActive then return end
+    tweenToBaseActive = true
+    
+    enableGodMode() -- Enable god mode for safety
+    
+    task.spawn(function()
+        while tweenToBaseActive do
+            local basePos = getBasePosition()
+            
+            if not basePos then
+                warn("❌ Base not found!")
+                stopTweenToBase()
+                break
+            end
+            
+            if not hrp then
+                warn("❌ HumanoidRootPart not found!")
+                stopTweenToBase()
+                break
+            end
+            
+            -- STEP 1: Tween 5 studs above current position
+            local currentPos = hrp.Position
+            local abovePlayer = currentPos + Vector3.new(0, 5, 0)
+            
+            print("🚀 Step 1: Rising 5 studs...")
+            if not tweenToPosition(abovePlayer, 1, Enum.EasingStyle.Quad) then break end
+            
+            if not tweenToBaseActive then break end
+            
+            -- STEP 2: Tween to 10 studs above map center
+            local mapCenter = getMapCenter()
+            local aboveCenter = mapCenter + Vector3.new(0, 10, 0)
+            
+            print("🚀 Step 2: Moving to map center (10 studs above)...")
+            local distance = (aboveCenter - hrp.Position).Magnitude
+            local duration = math.clamp(distance / 50, 2, 8) -- Adjust speed based on distance
+            
+            if not tweenToPosition(aboveCenter, duration, Enum.EasingStyle.Sine) then break end
+            
+            if not tweenToBaseActive then break end
+            
+            -- STEP 3: Tween to 5 studs above base
+            local aboveBase = basePos + Vector3.new(0, 5, 0)
+            
+            print("🚀 Step 3: Moving to base location...")
+            distance = (aboveBase - hrp.Position).Magnitude
+            duration = math.clamp(distance / 50, 2, 8)
+            
+            if not tweenToPosition(aboveBase, duration, Enum.EasingStyle.Sine) then break end
+            
+            if not tweenToBaseActive then break end
+            
+            -- STEP 4: Descend to base
+            print("🚀 Step 4: Descending to base...")
+            if not tweenToPosition(basePos, 1.5, Enum.EasingStyle.Quad) then break end
+            
+            print("✅ Reached base!")
+            stopTweenToBase()
+            break
+        end
+    end)
+end
+
+function stopTweenToBase()
+    tweenToBaseActive = false
+    
+    -- Cancel any active tween
+    if currentTween then
+        currentTween:Cancel()
+        currentTween = nil
+    end
+    
+    -- Restore normal state
+    disableGodMode()
+    
+    print("🛑 Tween to base stopped")
+end
+
+-- Buy Speed Coil on startup
+task.spawn(function()
+    task.wait(2)
+    pcall(function()
+        local remote = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"):WaitForChild("RF/CoinsShopService/RequestBuy")
+        remote:InvokeServer("Speed Coil")
+    end)
+end)
 -- ========================================
 -- LASER CAPE SYSTEM
 -- ========================================
@@ -1210,20 +1157,9 @@ end)
 
 createButton("TWEEN TO HIGHEST BRAINROT", 2, function(isActive)
     if isActive then
-        enableGodMode()
-        executeHighestBrainrotGrappleTeleport()
+        startTweenToBase()
     else
-        if bodyVelocity and bodyVelocity.Parent then
-        pcall(function() bodyVelocity:Destroy() end)
-        end
-        if movementConnection then
-            movementConnection:Disconnect()
-        end
-    
-        if SpeedCoil and SpeedCoil.Parent == Character then
-            Humanoid:UnequipTools()
-        end
-        disableGodMode()
+        stopTweenToBase()
     end
 end)
 
