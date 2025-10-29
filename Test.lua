@@ -19,7 +19,6 @@ local rootPart = character:WaitForChild("HumanoidRootPart")
 local ConfigData = {
     antiRagdollEnabled = false,
     antiFlingEnabled = false,
-    antiKickEnabled = false,
     playerESPEnabled = false,
     baseTimeESPEnabled = false,
     ownerESPEnabled = false,
