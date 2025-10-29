@@ -1,4 +1,4 @@
--- Steal A Brainrot Script - WindUI Version (IMPROVED & UNDETECTABLE)
+a1-- Steal A Brainrot Script - WindUI Version (IMPROVED & UNDETECTABLE)
 -- by PickleTalk - Enhanced Edition v2.0
 -- Features: Anti-Kick, Config System, Anti-Detection, Cyan Neon Theme
 
@@ -1386,16 +1386,13 @@ local function createFloorStealUI()
 end
 
 -- ==================== WINDUI SETUP ====================
-setupAntiKick()
-loadConfiguration()
-
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 
 local Window = WindUI:CreateWindow({
     Title = "Steal A Brainrot",
     Icon = "home",
     Author = "by PickleTalk",
-    Folder = "StealABrainrotConfig",
+    Folder = "ScriptsHubXConfig",
     Size = UDim2.fromOffset(550, 450),
     Transparent = true,
     Theme = "Dark",
@@ -1443,9 +1440,11 @@ PlayerTab:Toggle({
         ConfigData.antiRagdollEnabled = v
         if v then 
             setupAntiRagdollProtection()
+            saveConfiguration()
             WindUI:Notify({Title = "Anti Ragdoll ON", Content = "Protected from ragdoll!", Icon = "shield", Duration = 2})
         else 
             cleanupAntiRagdoll()
+            saveConfiguration()
             WindUI:Notify({Title = "Anti Ragdoll OFF", Content = "Protection disabled!", Icon = "shield-off", Duration = 2})
         end
     end
@@ -1462,8 +1461,10 @@ PlayerTab:Toggle({
             RunService.Heartbeat:Connect(function()
                 if antiFlingEnabled then preventFling() end
             end)
+            saveConfiguration()
             WindUI:Notify({Title = "Anti Fling ON", Content = "Protected from fling!", Icon = "shield", Duration = 2})
         else
+            saveConfiguration()
             WindUI:Notify({Title = "Anti Fling OFF", Content = "Protection disabled!", Icon = "shield-off", Duration = 2})
         end
     end
@@ -1495,6 +1496,7 @@ VisualsTab:Toggle({
                     end
                 end
             end
+            saveConfiguration()
             WindUI:Notify({Title = "Player ESP OFF", Content = "ESP disabled!", Icon = "users", Duration = 2})
         end
     end
@@ -1516,6 +1518,7 @@ VisualsTab:Toggle({
                 if display.gui then display.gui:Destroy() end
             end
             plotDisplays = {}
+            saveConfiguration()
             WindUI:Notify({Title = "Base Time ESP OFF", Content = "ESP disabled!", Icon = "clock", Duration = 2})
         end
     end
@@ -1542,6 +1545,7 @@ VisualsTab:Toggle({
                     end
                 end
             end
+            saveConfiguration()
             WindUI:Notify({Title = "Owner ESP OFF", Content = "Highlights removed!", Icon = "user-x", Duration = 2})
         end
     end
@@ -1557,8 +1561,10 @@ VisualsTab:Toggle({
         
         if not baseTimeAlertEnabled then
             removeAlertGui()
+            saveConfiguration()
             WindUI:Notify({Title = "Time Alert OFF", Content = "Alerts disabled!", Icon = "bell-off", Duration = 2})
         else
+            saveConfiguration()
             WindUI:Notify({Title = "Time Alert ON", Content = "You'll be alerted when base time is low!", Icon = "bell", Duration = 2})
         end
     end
@@ -1578,27 +1584,12 @@ VisualsTab:Toggle({
                 end
             end)
             WindUI:Notify({Title = "Value ESP ON", Content = "Tracking highest brainrot!", Icon = "target", Duration = 2})
+            saveConfiguration()
         else
             removeHighestValueESP()
             WindUI:Notify({Title = "Value ESP OFF", Content = "Tracking stopped!", Icon = "x", Duration = 2})
+            saveConfiguration()
         end
-    end
-})
-
--- UTILITIES TAB
-UtilitiesTab:Toggle({
-    Title = "Anti Kick",
-    Desc = "Hooks ALL kick methods",
-    Value = ConfigData.antiKickEnabled,
-    Callback = function(v)
-        antiKickEnabled = v
-        ConfigData.antiKickEnabled = v
-        WindUI:Notify({
-            Title = antiKickEnabled and "Anti Kick ON" or "Anti Kick OFF",
-            Content = antiKickEnabled and "Protected from kicks!" or "Protection disabled",
-            Icon = "shield",
-            Duration = 2
-        })
     end
 })
 
@@ -1610,6 +1601,7 @@ UtilitiesTab:Toggle({
         leaveOnStealEnabled = v
         ConfigData.leaveOnStealEnabled = v
         if v then monitorSteals() end
+        saveConfiguration()
     end
 })
 
@@ -1629,30 +1621,6 @@ UtilitiesTab:Button({
 })
 
 -- SETTINGS TAB
-SettingsTab:Section({Title = "Configuration", Icon = "save"})
-
-SettingsTab:Button({
-    Title = "Save Config",
-    Desc = "Save current settings",
-    Icon = "download",
-    Callback = function()
-        if saveConfiguration() then
-            WindUI:Notify({Title = "Saved!", Content = "Config saved successfully", Icon = "check", Duration = 2})
-        end
-    end
-})
-
-SettingsTab:Button({
-    Title = "Load Config",
-    Desc = "Load saved settings",
-    Icon = "upload",
-    Callback = function()
-        if loadConfiguration() then
-            WindUI:Notify({Title = "Loaded!", Content = "Config loaded successfully", Icon = "check", Duration = 2})
-        end
-    end
-})
-
 SettingsTab:Button({
     Title = "Reset Config",
     Desc = "Reset to defaults",
@@ -1813,7 +1781,7 @@ CreditsTab:Paragraph({
 
 CreditsTab:Paragraph({
     Title = "Discord",
-    Desc = "https://discord.gg/bpsNUH5sVb",
+    Desc = "Scripts Hub X | Official",
     Image = "message-circle",
     ImageSize = 20,
     Color = Color3.fromRGB(88, 101, 242),
@@ -1966,3 +1934,5 @@ WindUI:Notify({
     Icon = "check-circle",
     Duration = 4
 })
+
+loadConfiguration()
