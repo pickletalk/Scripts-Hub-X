@@ -987,7 +987,7 @@ local function disableMobileDesync()
 end
 
 -- ========================================
--- TWEEN TO BASE SYSTEM (IMPROVED - MORE UNDETECTABLE)
+-- TWEEN TO BASE SYSTEM
 -- ========================================
 local function buyAndEquipSpeedCoil()
     local success, err = pcall(function()
@@ -1024,36 +1024,32 @@ local function getBasePosition()
     return nil
 end
 
-local STOP_DISTANCE = 8
+local Y_OFFSET = 9
+local STOP_DISTANCE = 5
+local currentTween
 local active = false
 local walkThread
 
--- IMPROVED: Use humanoid:MoveTo() for more natural movement
-local function moveToPosition(position)
-    if not humanoid or not hrp then return end
-    
-    -- Add slight random offset to look more human
-    local randomOffset = Vector3.new(
-        math.random(-2, 2),
-        0,
-        math.random(-2, 2)
-    )
-    local targetPos = position + randomOffset
-    
-    -- Use MoveTo for natural movement
-    humanoid:MoveTo(targetPos)
-    
-    -- Wait for movement to complete or timeout
-    local timeout = 10
-    local startTime = tick()
-    
-    while active and (hrp.Position - targetPos).Magnitude > 5 and (tick() - startTime) < timeout do
-        task.wait(0.1)
-    end
+local function tweenWalkTo(position)
+    if currentTween then currentTween:Cancel() end
+
+    local startPos = hrp.Position
+    local targetPos = Vector3.new(position.X, position.Y + Y_OFFSET, position.Z)
+    local distance = (targetPos - startPos).Magnitude
+    local speed = math.max(humanoid.WalkSpeed, 25)
+    local duration = distance / speed
+    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
+
+    currentTween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(targetPos)})
+    currentTween:Play()
+
+    humanoid:ChangeState(Enum.HumanoidStateType.Running)
+
+    currentTween.Completed:Wait()
 end
 
 local function isAtBase(basePos)
-    if not basePos or not hrp then return false end
+    if not basePos then return false end
     local dist = (hrp.Position - basePos).Magnitude
     return dist <= STOP_DISTANCE
 end
@@ -1072,54 +1068,30 @@ local function walkToBase()
             break
         end
 
-        local path = PathfindingService:CreatePath({
-            AgentRadius = 2,
-            AgentHeight = 5,
-            AgentCanJump = true,
-            AgentMaxSlope = 45
-        })
-        
-        local success, errorMsg = pcall(function()
-            path:ComputeAsync(hrp.Position, target)
-        end)
+        local path = PathfindingService:CreatePath()
+        path:ComputeAsync(hrp.Position, target)
 
-        if success and path.Status == Enum.PathStatus.Success then
-            local waypoints = path:GetWaypoints()
-            
-            for i, waypoint in ipairs(waypoints) do
+        if path.Status == Enum.PathStatus.Success then
+            for _, waypoint in ipairs(path:GetWaypoints()) do
                 if not active then return end
                 if isAtBase(target) then
                     stopTweenToBase()
                     return
                 end
-                
-                -- Jump if needed
-                if waypoint.Action == Enum.PathWaypointAction.Jump then
-                    humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-                    task.wait(0.3)
-                end
-                
-                -- Move to waypoint
-                moveToPosition(waypoint.Position)
-                
-                -- Small random pause to look more human
-                if i % 3 == 0 then
-                    task.wait(math.random(1, 3) / 10)
-                end
+                tweenWalkTo(waypoint.Position)
             end
         else
-            -- Direct move if pathfinding fails
-            moveToPosition(target)
+            tweenWalkTo(target)
         end
 
-        task.wait(0.5)
+        task.wait(1.5)
     end
 end
 
 function startTweenToBase()
     if active then return end
     active = true
-    humanoid.WalkSpeed = 22 -- Slightly slower to look more natural
+    humanoid.WalkSpeed = 24
 
     walkThread = task.spawn(function()
         while active do
@@ -1132,11 +1104,9 @@ end
 function stopTweenToBase()
     if not active then return end
     active = false
+    if currentTween then currentTween:Cancel() end
     if walkThread then task.cancel(walkThread) end
-    humanoid.WalkSpeed = 22
-    
-    -- Ensure god mode is disabled
-    disableGodMode()
+    humanoid.WalkSpeed = 24
 end
 
 buyAndEquipSpeedCoil()
