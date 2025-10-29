@@ -128,9 +128,13 @@ local dragging
 local dragInput
 local dragStart
 local startPos
+local hasMoved = false
 
 local function update(input)
     local delta = input.Position - dragStart
+    if math.abs(delta.X) > 2 or math.abs(delta.Y) > 2 then
+        hasMoved = true
+    end
     mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 end
 
@@ -139,10 +143,14 @@ titleBar.InputBegan:Connect(function(input)
         dragging = true
         dragStart = input.Position
         startPos = mainFrame.Position
+        hasMoved = false
         
         input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
+                if not hasMoved then
+                    dragging = false
+                else
+                    dragging = false
             end
         end)
     end
@@ -162,7 +170,9 @@ end)
 
 titleBar.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
-    
+    if dragging then
+        return
+    end
     local targetSize = isMinimized and UDim2.new(0, 200, 0, MINIMIZED_HEIGHT) or UDim2.new(0, 200, 0, MAXIMIZED_HEIGHT)
     
     TweenService:Create(mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
