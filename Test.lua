@@ -1,4 +1,4 @@
-a1-- Steal A Brainrot Script - WindUI Version (IMPROVED & UNDETECTABLE)
+-- Steal A Brainrot Script - WindUI Version (IMPROVED & UNDETECTABLE)
 -- by PickleTalk - Enhanced Edition v2.0
 -- Features: Anti-Kick, Config System, Anti-Detection, Cyan Neon Theme
 
