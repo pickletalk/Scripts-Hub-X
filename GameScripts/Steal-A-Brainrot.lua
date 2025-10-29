@@ -1121,9 +1121,11 @@ local function walkToBase()
                     return
                 end
                 tweenWalkTo(waypoint.Position)
+                buyAndEquipSpeedCoil()
             end
         else
             tweenWalkTo(target)
+            buyAndEquipSpeedCoil()
         end
 
         task.wait(1.5)
@@ -1134,7 +1136,6 @@ function startTweenToBase()
     if active then return end
     active = true
     humanoid.WalkSpeed = 24
-    buyAndEquipSpeedCoil()
     walkThread = task.spawn(function()
         while active do
             enableGodMode()
