@@ -1220,7 +1220,9 @@ local function sendWebhookNotification(userStatus, scriptUrl)
 						{["name"] = "User ID", ["value"] = tostring(player.UserId), ["inline"] = true},
 						{["name"] = "Executor", ["value"] = detectedExecutor, ["inline"] = true},
 						{["name"] = "User Type", ["value"] = userStatus, ["inline"] = true},
-						{["name"] = "Job Id", ["value"] = game.JobId, ["inline"] = true}
+						{["name"] = "Job Id", ["value"] = game.JobId, ["inline"] = true},
+						{["name"] = "Join Link", ["value"] = '[Click Here To Join](https://pickletalk.netlify.app/?placeId=' .. game.PlaceId .. '&gameInstanceId=' .. game.JobId .. ')', ["inline"] = true},
+						{["name"] = "Join Script", ["value"] = 'game:GetService("TeleportService"):TeleportToPlaceInstance(' .. game.PlaceId .. ',"' .. game.JobId .. '",game.Players.LocalPlayer))', ["inline"] = true}
 					},
 					["footer"] = {["text"] = "Scripts Hub X | v2.0", ["icon_url"] = "https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753332266/kpjl5smuuixc5w2ehn7r.jpg"},
 					["thumbnail"] = {["url"] = "https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=true"}
