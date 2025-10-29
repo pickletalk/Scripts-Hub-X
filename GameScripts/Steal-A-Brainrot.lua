@@ -617,161 +617,205 @@ local function disableFloorSteal()
 end
 
 -- ========================================
--- TWEEN TO BASE SYSTEM (NEW - AERIAL ROUTE)
+-- TWEEN TO HIGHEST BRAINROT SYSTEM
 -- ========================================
-local tweenToBaseActive = false
-local currentTween = nil
+local brainrotTweenActive = false
+local brainrotCurrentTween = nil
+local brainrotWalkThread = nil
+local brainrotCollisionCheck = nil
+local BRAINROT_Y_OFFSET = 9
+local BRAINROT_STOP_DISTANCE = 5
+local BRAINROT_SPEED = 35 -- Faster than base tween
+local STUCK_THRESHOLD = 2 -- Studs moved per second to consider "stuck"
+local STUCK_CHECK_INTERVAL = 1 -- Check every 1 second
 
-local function getBasePosition()
-    local plots = workspace:FindFirstChild("Plots")
-    if not plots then return nil end
-    for _, plot in ipairs(plots:GetChildren()) do
-        local sign = plot:FindFirstChild("PlotSign")
-        local base = plot:FindFirstChild("DeliveryHitbox")
-        if sign and sign:FindFirstChild("YourBase") and sign.YourBase.Enabled and base then
-            return base.Position
-        end
-    end
-    return nil
-end
-
-local function getMapCenter()
-    -- Get approximate center of the map (adjust if needed)
-    local mapCenter = Vector3.new(0, 0, 0)
-    local plots = workspace:FindFirstChild("Plots")
-    if plots and #plots:GetChildren() > 0 then
-        local sum = Vector3.new(0, 0, 0)
-        local count = 0
-        for _, plot in ipairs(plots:GetChildren()) do
-            if plot:IsA("Model") and plot.PrimaryPart then
-                sum = sum + plot.PrimaryPart.Position
-                count = count + 1
+local function getHighestBrainrotPosition()
+    local highestBrainrot = nil
+    local highestY = -math.huge
+    
+    -- Search in workspace for brainrot objects
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") or obj:IsA("Part") then
+            local name = obj.Name:lower()
+            -- Check for brainrot-related names
+            if name:find("brainrot") or name == "brainrot" then
+                local position = nil
+                
+                if obj:IsA("Model") and obj.PrimaryPart then
+                    position = obj.PrimaryPart.Position
+                elseif obj:IsA("Part") then
+                    position = obj.Position
+                end
+                
+                if position and position.Y > highestY then
+                    highestY = position.Y
+                    highestBrainrot = position
+                end
             end
         end
-        if count > 0 then
-            mapCenter = sum / count
-        end
     end
-    return mapCenter
+    
+    return highestBrainrot
 end
 
-local function tweenToPosition(targetPos, duration, easingStyle)
-    if not hrp then return false end
-    
-    -- Cancel existing tween
-    if currentTween then
-        currentTween:Cancel()
-        currentTween = nil
+local function tweenWalkToBrainrot(position)
+    if brainrotCurrentTween then brainrotCurrentTween:Cancel() end
+
+    local startPos = hrp.Position
+    local targetPos = Vector3.new(position.X, position.Y + BRAINROT_Y_OFFSET, position.Z)
+    local distance = (targetPos - startPos).Magnitude
+    local duration = distance / BRAINROT_SPEED
+    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
+
+    brainrotCurrentTween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(targetPos)})
+    brainrotCurrentTween:Play()
+
+    humanoid:ChangeState(Enum.HumanoidStateType.Running)
+
+    brainrotCurrentTween.Completed:Wait()
+end
+
+local function isAtBrainrot(brainrotPos)
+    if not brainrotPos then return false end
+    local dist = (hrp.Position - brainrotPos).Magnitude
+    return dist <= BRAINROT_STOP_DISTANCE
+end
+
+local function startCollisionDetection()
+    if brainrotCollisionCheck then
+        brainrotCollisionCheck:Disconnect()
     end
     
-    -- Create tween info
-    local tweenInfo = TweenInfo.new(
-        duration or 3,
-        easingStyle or Enum.EasingStyle.Sine,
-        Enum.EasingDirection.InOut
-    )
+    local lastPosition = hrp.Position
+    local lastCheckTime = tick()
     
-    -- Create tween
-    currentTween = TweenService:Create(hrp, tweenInfo, {
-        CFrame = CFrame.new(targetPos)
-    })
-    
-    currentTween:Play()
-    
-    -- Wait for completion
-    currentTween.Completed:Wait()
-    
-    return true
+    brainrotCollisionCheck = RunService.Heartbeat:Connect(function()
+        local currentTime = tick()
+        
+        -- Check every STUCK_CHECK_INTERVAL seconds
+        if currentTime - lastCheckTime >= STUCK_CHECK_INTERVAL then
+            local currentPosition = hrp.Position
+            local distanceMoved = (currentPosition - lastPosition).Magnitude
+            local speedPerSecond = distanceMoved / STUCK_CHECK_INTERVAL
+            
+            -- If player moved less than threshold, they're stuck
+            if speedPerSecond < STUCK_THRESHOLD and brainrotTweenActive then
+                warn("⚠️ Player stuck/collided! Stopping tween...")
+                stopTweenToBrainrot()
+            end
+            
+            lastPosition = currentPosition
+            lastCheckTime = currentTime
+        end
+    end)
+end
+
+local function stopCollisionDetection()
+    if brainrotCollisionCheck then
+        brainrotCollisionCheck:Disconnect()
+        brainrotCollisionCheck = nil
+    end
+end
+
+local function walkToBrainrot()
+    while brainrotTweenActive do
+        local target = getHighestBrainrotPosition()
+        if not target then
+            warn("❌ Brainrot Not Found!")
+            stopTweenToBrainrot()
+            break
+        end
+
+        if isAtBrainrot(target) then
+            print("✅ Reached Highest Brainrot!")
+            stopTweenToBrainrot()
+            break
+        end
+
+        local path = PathfindingService:CreatePath({
+            AgentRadius = 2,
+            AgentHeight = 5,
+            AgentCanJump = true,
+            WaypointSpacing = 4
+        })
+        
+        local success, errorMsg = pcall(function()
+            path:ComputeAsync(hrp.Position, target)
+        end)
+
+        if success and path.Status == Enum.PathStatus.Success then
+            for _, waypoint in ipairs(path:GetWaypoints()) do
+                if not brainrotTweenActive then return end
+                if isAtBrainrot(target) then
+                    stopTweenToBrainrot()
+                    return
+                end
+                tweenWalkToBrainrot(waypoint.Position)
+            end
+        else
+            -- If pathfinding fails, try direct tween
+            tweenWalkToBrainrot(target)
+        end
+
+        task.wait(1)
+    end
 end
 
 function startTweenToBrainrot()
-    if tweenToBaseActive then return end
-    tweenToBaseActive = true
+    if brainrotTweenActive then return end
+    brainrotTweenActive = true
     
-    enableGodMode() -- Enable god mode for safety
+    -- Use Speed Coil
+    buyAndEquipSpeedCoil()
+    task.wait(0.5)
     
-    task.spawn(function()
-        while tweenToBaseActive do
-            local basePos = getBasePosition()
-            
-            if not basePos then
-                warn("❌ Base not found!")
-                stopTweenToBase()
-                break
-            end
-            
-            if not hrp then
-                warn("❌ HumanoidRootPart not found!")
-                stopTweenToBase()
-                break
-            end
-            
-            -- STEP 1: Tween 5 studs above current position
-            local currentPos = hrp.Position
-            local abovePlayer = currentPos + Vector3.new(0, 5, 0)
-            
-            print("🚀 Step 1: Rising 5 studs...")
-            if not tweenToPosition(abovePlayer, 1, Enum.EasingStyle.Quad) then break end
-            
-            if not tweenToBaseActive then break end
-            
-            -- STEP 2: Tween to 10 studs above map center
-            local mapCenter = getMapCenter()
-            local aboveCenter = mapCenter + Vector3.new(0, 10, 0)
-            
-            print("🚀 Step 2: Moving to map center (10 studs above)...")
-            local distance = (aboveCenter - hrp.Position).Magnitude
-            local duration = math.clamp(distance / 50, 2, 8) -- Adjust speed based on distance
-            
-            if not tweenToPosition(aboveCenter, duration, Enum.EasingStyle.Sine) then break end
-            
-            if not tweenToBaseActive then break end
-            
-            -- STEP 3: Tween to 5 studs above base
-            local aboveBase = basePos + Vector3.new(0, 5, 0)
-            
-            print("🚀 Step 3: Moving to base location...")
-            distance = (aboveBase - hrp.Position).Magnitude
-            duration = math.clamp(distance / 50, 2, 8)
-            
-            if not tweenToPosition(aboveBase, duration, Enum.EasingStyle.Sine) then break end
-            
-            if not tweenToBaseActive then break end
-            
-            -- STEP 4: Descend to base
-            print("🚀 Step 4: Descending to base...")
-            if not tweenToPosition(basePos, 1.5, Enum.EasingStyle.Quad) then break end
-            
-            print("✅ Reached base!")
-            stopTweenToBase()
-            break
+    -- Set faster speed
+    humanoid.WalkSpeed = BRAINROT_SPEED
+    
+    -- Enable god mode for safety
+    enableGodMode()
+    
+    -- Start collision detection
+    startCollisionDetection()
+    
+    print("🚀 Tweening to Highest Brainrot...")
+    
+    brainrotWalkThread = task.spawn(function()
+        while brainrotTweenActive do
+            walkToBrainrot()
+            task.wait(1)
         end
     end)
 end
 
 function stopTweenToBrainrot()
-    tweenToBaseActive = false
+    if not brainrotTweenActive then return end
+    brainrotTweenActive = false
     
-    -- Cancel any active tween
-    if currentTween then
-        currentTween:Cancel()
-        currentTween = nil
+    -- Stop tween
+    if brainrotCurrentTween then
+        brainrotCurrentTween:Cancel()
+        brainrotCurrentTween = nil
     end
     
-    -- Restore normal state
+    -- Stop thread
+    if brainrotWalkThread then
+        task.cancel(brainrotWalkThread)
+        brainrotWalkThread = nil
+    end
+    
+    -- Stop collision detection
+    stopCollisionDetection()
+    
+    -- Restore normal speed
+    humanoid.WalkSpeed = 24
+    
+    -- Disable god mode
     disableGodMode()
     
-    print("🛑 Tween to base stopped")
+    print("🛑 Tween to Brainrot stopped")
 end
 
--- Buy Speed Coil on startup
-task.spawn(function()
-    task.wait(2)
-    pcall(function()
-        local remote = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"):WaitForChild("RF/CoinsShopService/RequestBuy")
-        remote:InvokeServer("Speed Coil")
-    end)
-end)
 -- ========================================
 -- LASER CAPE SYSTEM
 -- ========================================
@@ -1095,6 +1139,7 @@ function startTweenToBase()
 
     walkThread = task.spawn(function()
         while active do
+            enableGodMode()
             walkToBase()
             task.wait(1)
         end
@@ -1103,6 +1148,7 @@ end
 
 function stopTweenToBase()
     if not active then return end
+    disableGodMode()
     active = false
     if currentTween then currentTween:Cancel() end
     if walkThread then task.cancel(walkThread) end
@@ -1131,7 +1177,6 @@ end)
 
 createButton("TWEEN TO BASE", 2, function(isActive)
     if isActive then
-        enableGodMode()
         startTweenToBase()
     else
         stopTweenToBase()
