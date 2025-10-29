@@ -764,9 +764,7 @@ end
 function startTweenToBrainrot()
     if brainrotTweenActive then return end
     brainrotTweenActive = true
-    
-    -- Use Speed Coil
-    buyAndEquipSpeedCoil()
+
     task.wait(0.5)
     
     -- Set faster speed
@@ -1136,7 +1134,7 @@ function startTweenToBase()
     if active then return end
     active = true
     humanoid.WalkSpeed = 24
-
+    buyAndEquipSpeedCoil()
     walkThread = task.spawn(function()
         while active do
             enableGodMode()
@@ -1155,8 +1153,6 @@ function stopTweenToBase()
     humanoid.WalkSpeed = 24
 end
 
-buyAndEquipSpeedCoil()
-
 -- ========================================
 -- CREATE BUTTONS
 -- ========================================
@@ -1164,11 +1160,10 @@ buyAndEquipSpeedCoil()
 createButton("DESYNC", 1, function(isActive)
     if isActive then
         local success = enableMobileDesync()
-        if success then
-            desyncActive = true
-        else
-            desyncActive = false
+        if not success then
+            warn("❌ Failed to activate Desync")
         end
+        desyncActive = success
     else
         disableMobileDesync()
         desyncActive = false
