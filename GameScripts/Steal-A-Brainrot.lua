@@ -34,7 +34,7 @@ end
 -- SCROLLABLE MENU GUI
 -- ========================================
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "ScrollableMenuGUI"
+screenGui.Name = ":>"
 screenGui.ResetOnSpawn = false
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
