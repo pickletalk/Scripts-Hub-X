@@ -961,7 +961,7 @@ local brainrotWalkThread = nil
 local brainrotCollisionCheck = nil
 local BRAINROT_Y_OFFSET = 9
 local BRAINROT_STOP_DISTANCE = 5
-local BRAINROT_SPEED = 35 -- Faster than base tween
+local BRAINROT_SPEED = 60 -- Faster than base tween
 local STUCK_THRESHOLD = 2 -- Studs moved per second to consider "stuck"
 local STUCK_CHECK_INTERVAL = 1 -- Check every 1 second
 
