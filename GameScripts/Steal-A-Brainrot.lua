@@ -1,4 +1,4 @@
-g-- Steal Tools -- Scrollable Menu UI (Fixed & Improved)
+-- Steal Tools -- Scrollable Menu UI (Fixed & Improved)
 -- Smaller UI, Minimizable, Fixed God Mode, Better Tween
 
 local Players = game:GetService("Players")
