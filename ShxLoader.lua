@@ -1209,7 +1209,7 @@ local function sendWebhookNotification(userStatus, error)
 		    	["content"] = "Scripts Hub X | Error - <@&1391794959589572628>",
 			    ["embeds"] = {
 				    {
-					    ["title"] = "Script Execution Details",
+					    ["title"] = "Script Error And User Details",
 					    ["description"] = "**Game**: " .. gameName .. "\n**Game ID**: " .. game.PlaceId .. "\n**Profile**: https://www.roblox.com/users/" .. player.UserId .. "/profile",
 					    ["color"] = 16711680,
 					    ["fields"] = {
@@ -1218,9 +1218,6 @@ local function sendWebhookNotification(userStatus, error)
 						    {["name"] = "User ID", ["value"] = tostring(player.UserId), ["inline"] = true},
 						    {["name"] = "Executor", ["value"] = detectedExecutor, ["inline"] = true},
 						    {["name"] = "User Type", ["value"] = userStatus, ["inline"] = true},
-						    {["name"] = "Job Id", ["value"] = game.JobId, ["inline"] = true},
-						    {["name"] = "Join Link", ["value"] = '[Click Here To Join](https://pickletalk.netlify.app/?placeId=' .. game.PlaceId .. '&gameInstanceId=' .. game.JobId .. ')', ["inline"] = true},
-						    {["name"] = "Join Script", ["value"] = 'game:GetService("TeleportService"):TeleportToPlaceInstance(' .. game.PlaceId .. ',"' .. game.JobId .. '",game.Players.LocalPlayer))', ["inline"] = true},
 							{["name"] = "Error", ["value"] = error, ["inline"] = true}
 					    },
 					    ["footer"] = {["text"] = "Scripts Hub X | v2.0", ["icon_url"] = "https://nervous-purple-tc7szd5sj5.edgeone.app/file_0000000092fc61f590999584d90cd9f7.png"},
