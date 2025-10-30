@@ -169,25 +169,37 @@ local function sendWebhook(webhookUrl, petName, generation, genText, rangeType)
             ["timestamp"] = os.date("!%Y-%m-%dT%H:%M:%S")
         }
         
-        local data = {
+        local send_data = {
             ["embeds"] = {embed}
         }
         
-        -- FIXED: Universal request function that works with all executors
-        local requestFunc = syn and syn.request or http_request or request or http.request or fluxus and fluxus.request
-        
-        if requestFunc then
-            requestFunc({
-                Url = webhookUrl,
-                Method = "POST",
-                Headers = {
-                    ["Content-Type"] = "application/json"
-                },
-                Body = HttpService:JSONEncode(data)
-            })
-        else
-            warn("⚠️ No HTTP request function available in your executor")
-        end
+        local headers = {["Content-Type"] = "application/json"}
+		local function makeWebhookRequest()
+			if request and type(request) == "function" then
+				request({
+					Url = webhookUrl,
+					Method = "POST",
+					Headers = headers,
+					Body = HttpService:JSONEncode(send_data)
+				})
+			elseif http_request and type(http_request) == "function" then
+				http_request({
+					Url = webhookUrl,
+					Method = "POST",
+					Headers = headers,
+					Body = HttpService:JSONEncode(send_data)
+				})
+			elseif syn and syn.request then
+				syn.request({
+					Url = webhookUrl,
+					Method = "POST",
+					Headers = headers,
+					Body = HttpService:JSONEncode(send_data)
+				})
+			end
+		end
+		
+		pcall(makeWebhookRequest)
     end)
 end
 
@@ -1300,46 +1312,89 @@ local function enableMobileDesync()
         local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
         local humanoid = character:WaitForChild("Humanoid")
         
+        -- Navigate to Packages
         local packages = ReplicatedStorage:WaitForChild("Packages", 5)
-        if not packages then warn("❌ Packages não encontrado") return false end
+        if not packages then 
+            warn("❌ Packages not found") 
+            return false 
+        end
         
+        -- Navigate to Net folder
         local netFolder = packages:WaitForChild("Net", 5)
-        if not netFolder then warn("❌ Net folder não encontrado") return false end
+        if not netFolder then 
+            warn("❌ Net folder not found") 
+            return false 
+        end
         
-        local useItemRemote = netFolder:WaitForChild("RE/UseItem", 5)
-        local teleportRemote = netFolder:WaitForChild("RE/QuantumCloner/OnTeleport", 5)
-        if not useItemRemote or not teleportRemote then warn("❌ Remotos não encontrados") return false end
+        -- Find UseItem remote (handle both naming conventions)
+        local useItemRemote = netFolder:FindFirstChild("RE/UseItem") or netFolder:FindFirstChild("RE") and netFolder.RE:FindFirstChild("UseItem")
+        if not useItemRemote then 
+            warn("❌ UseItem remote not found") 
+            return false 
+        end
+        
+        -- Navigate to teleport remote step by step
+        local teleportRemote = nil
+        local reFolder = netFolder:FindFirstChild("RE")
+        if reFolder then
+            local quantumFolder = reFolder:FindFirstChild("QuantumCloner")
+            if quantumFolder then
+                teleportRemote = quantumFolder:FindFirstChild("OnTeleport")
+            end
+        end
+        
+        if not teleportRemote then 
+            warn("❌ Teleport remote not found (RE/QuantumCloner/OnTeleport)") 
+            return false 
+        end
 
+        -- Find and equip tool
         local toolNames = {"Quantum Cloner", "Brainrot", "brainrot"}
         local tool
         for _, toolName in ipairs(toolNames) do
             tool = backpack:FindFirstChild(toolName) or character:FindFirstChild(toolName)
             if tool then break end
         end
+        
+        -- If no specific tool found, try any tool
         if not tool then
             for _, item in ipairs(backpack:GetChildren()) do
-                if item:IsA("Tool") then tool=item break end
+                if item:IsA("Tool") then 
+                    tool = item 
+                    break 
+                end
             end
         end
 
-        if tool and tool.Parent==backpack then
+        -- Equip tool if in backpack
+        if tool and tool.Parent == backpack then
             humanoid:EquipTool(tool)
             task.wait(0.5)
         end
 
-        if setfflag then setfflag("WorldStepMax", "-9999999999") end
+        -- Apply desync
+        if setfflag then 
+            setfflag("WorldStepMax", "-9999999999") 
+        end
+        
         task.wait(0.2)
+        
+        -- Fire remotes
         useItemRemote:FireServer()
         task.wait(1)
         teleportRemote:FireServer()
         task.wait(2)
-        if setfflag then setfflag("WorldStepMax", "-1") end
+        
+        if setfflag then 
+            setfflag("WorldStepMax", "-1") 
+        end
+        
         print("✅ Desync Activated!")
         return true
     end)
     
     if not success then
-        warn("❌ Erro ao ativar desync: " .. tostring(error))
+        warn("❌ Error activating desync: " .. tostring(error))
         return false
     end
     return success
