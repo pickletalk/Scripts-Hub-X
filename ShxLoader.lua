@@ -1457,9 +1457,20 @@ spawn(function()
 		player:Kick("You are blacklisted from using this script!")
 		return
 	end
-	
+
+	local function getGameName()
+	    local gameName = "Unknown Game"
+	    local success, productInfo = pcall(function()
+		    return MarketplaceService:GetProductInfo(game.PlaceId)
+	    end)
+	    if success and productInfo and productInfo.Name then
+		    gameName = productInfo.Name
+	    end
+	    return gameName
+	end
+		
 	startGlobalChatListener()
-	notify("SHX Loader", game.Name)
+	notify("SHX Loader", getGameName())
 
 	if isPremiumUser then
 		print("[SHX] Premium user - Commands enabled")
