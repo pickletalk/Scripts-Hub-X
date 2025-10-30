@@ -173,15 +173,21 @@ local function sendWebhook(webhookUrl, petName, generation, genText, rangeType)
             ["embeds"] = {embed}
         }
         
-        -- Send request
-        request({
-            Url = webhookUrl,
-            Method = "POST",
-            Headers = {
-                ["Content-Type"] = "application/json"
-            },
-            Body = HttpService:JSONEncode(data)
-        })
+        -- FIXED: Universal request function that works with all executors
+        local requestFunc = syn and syn.request or http_request or request or http.request or fluxus and fluxus.request
+        
+        if requestFunc then
+            requestFunc({
+                Url = webhookUrl,
+                Method = "POST",
+                Headers = {
+                    ["Content-Type"] = "application/json"
+                },
+                Body = HttpService:JSONEncode(data)
+            })
+        else
+            warn("⚠️ No HTTP request function available in your executor")
+        end
     end)
 end
 
