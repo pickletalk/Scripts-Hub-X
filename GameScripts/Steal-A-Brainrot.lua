@@ -21,6 +21,12 @@ local RANGE_1M_MIN = 1000000
 local MAX_PODIUMS = 35
 local notifiedPets = {}
 
+-- ESP System Variables
+local espEnabled = false
+local espObjects = {} -- Store all ESP elements
+local espUpdateConnection = nil
+local BRAINROT_ESP_THRESHOLD = 1000000 -- 1M/s minimum for ESP
+
 local function parseGeneration(text)
     if not text then return 0 end
     
@@ -665,10 +671,8 @@ local function toggleXrayBase(enabled)
     if xrayBaseEnabled then
         saveOriginalTransparency()
         applyTransparency()
-        print("✓ Xray Base: ON")
     else
         restoreTransparency()
-        print("✗ Xray Base: OFF")
     end
 end
 
@@ -720,8 +724,6 @@ local function enableGodMode()
             humanoid.MaxHealth = math.huge
         end
     end)
-    
-    print("✓ God Mode: ON")
 end
 
 local function disableGodMode()
@@ -746,8 +748,6 @@ local function disableGodMode()
         humanoid.MaxHealth = 100
         humanoid.Health = 100
     end
-    
-    print("✗ God Mode: OFF")
 end
 
 -- ========================================
@@ -912,8 +912,6 @@ local function enableFloorSteal()
             end
         end)
     end
-    
-    print("✓ Floor Steal: ON")
 end
 
 local function disableFloorSteal()
@@ -947,11 +945,177 @@ local function disableFloorSteal()
     if LocalPlayer.Character then
         local head = LocalPlayer.Character:FindFirstChild("Head")
         if head then head.CanCollide = false end
-    end
-    
-    print("✗ Floor Steal: OFF")
+	end  
 end
 
+-- ========================================
+-- ESP SYSTEM FOR BRAINROT
+-- ========================================
+local function createBillboardGui(parent, text, textColor, yOffset)
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "BrainrotESP"
+    billboard.Adornee = parent
+    billboard.Size = UDim2.new(0, 200, 0, 50)
+    billboard.StudsOffset = Vector3.new(0, yOffset, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Parent = parent
+    
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = text
+    textLabel.TextColor3 = textColor
+    textLabel.TextSize = 14
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.TextStrokeTransparency = 0.5
+    textLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+    textLabel.Parent = billboard
+    
+    return billboard
+end
+
+local function createHighlight(parent, color)
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "BrainrotHighlight"
+    highlight.Adornee = parent
+    highlight.FillColor = color
+    highlight.FillTransparency = 0.5
+    highlight.OutlineColor = color
+    highlight.OutlineTransparency = 0
+    highlight.Parent = parent
+    
+    return highlight
+end
+
+local function createTracer(fromPart, toPart)
+    local attachment0 = Instance.new("Attachment")
+    attachment0.Name = "TracerStart"
+    attachment0.Parent = fromPart
+    
+    local attachment1 = Instance.new("Attachment")
+    attachment1.Name = "TracerEnd"
+    attachment1.Parent = toPart
+    
+    local beam = Instance.new("Beam")
+    beam.Name = "BrainrotTracer"
+    beam.Attachment0 = attachment0
+    beam.Attachment1 = attachment1
+    beam.Color = ColorSequence.new(Color3.fromRGB(0, 162, 255))
+    beam.FaceCamera = true
+    beam.Width0 = 0.3
+    beam.Width1 = 0.3
+    beam.Transparency = NumberSequence.new(0.3)
+    beam.Parent = fromPart
+    
+    return {beam = beam, att0 = attachment0, att1 = attachment1}
+end
+
+local function clearESP()
+    for _, espData in pairs(espObjects) do
+        if espData.nameGui then espData.nameGui:Destroy() end
+        if espData.genGui then espData.genGui:Destroy() end
+        if espData.highlight then espData.highlight:Destroy() end
+        if espData.tracer then
+            if espData.tracer.beam then espData.tracer.beam:Destroy() end
+            if espData.tracer.att0 then espData.tracer.att0:Destroy() end
+            if espData.tracer.att1 then espData.tracer.att1:Destroy() end
+        end
+    end
+    espObjects = {}
+end
+
+local function updateBrainrotESP()
+    if not espEnabled then return end
+    
+    clearESP()
+    
+    local plots = workspace:FindFirstChild("Plots")
+    if not plots then return end
+    
+    local highestPodium = getHighestBrainrotPodium()
+    local brainrotsToESP = {}
+    
+    -- Collect all brainrots >= 1M/s
+    for _, plot in pairs(plots:GetChildren()) do
+        local podiums = plot:FindFirstChild("AnimalPodiums")
+        if podiums then
+            for i = 1, MAX_PODIUMS do
+                local podium = podiums:FindFirstChild(tostring(i))
+                if podium then
+                    local data = scanPodium(podium, plot.Name, i)
+                    if data and data.genValue >= BRAINROT_ESP_THRESHOLD then
+                        table.insert(brainrotsToESP, {
+                            podium = podium,
+                            data = data,
+                            isHighest = (highestPodium and highestPodium.podium == podium)
+                        })
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Create ESP for each brainrot
+    for _, info in ipairs(brainrotsToESP) do
+        local podium = info.podium
+        local data = info.data
+        local isHighest = info.isHighest
+        
+        local targetPart = podium.Base
+        local espKey = tostring(podium:GetFullName())
+        
+        -- Text colors
+        local nameColor = isHighest and Color3.fromRGB(255, 215, 0) or Color3.fromRGB(200, 200, 200) -- Gold or Gray
+        local genColor = Color3.fromRGB(0, 162, 255) -- Blue
+        local highlightColor = Color3.fromRGB(0, 162, 255) -- Blue
+        
+        -- Create name billboard
+        local nameText = isHighest and "⭐ HIGHEST BRAINROT ⭐" or data.petName
+        local nameGui = createBillboardGui(targetPart, nameText, nameColor, 4)
+        
+        -- Create generation billboard
+        local genGui = createBillboardGui(targetPart, data.genText, genColor, 2)
+        
+        -- Create highlight
+        local highlight = createHighlight(podium, highlightColor)
+        
+        -- Create tracer
+        local tracer = nil
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            tracer = createTracer(LocalPlayer.Character.HumanoidRootPart, targetPart)
+        end
+        
+        -- Store ESP objects
+        espObjects[espKey] = {
+            nameGui = nameGui,
+            genGui = genGui,
+            highlight = highlight,
+            tracer = tracer,
+            podium = podium
+        }
+    end
+end
+
+local function toggleBrainrotESP(enabled)
+    espEnabled = enabled
+    
+    if espEnabled then
+        updateBrainrotESP()
+        
+        -- Update ESP every 2 seconds
+        espUpdateConnection = RunService.Heartbeat:Connect(function()
+            task.wait(2)
+            updateBrainrotESP()
+        end)
+        
+    else
+        if espUpdateConnection then
+            espUpdateConnection:Disconnect()
+            espUpdateConnection = nil
+        end
+        clearESP()
+    end
+end
 -- ========================================
 -- TWEEN TO HIGHEST BRAINROT SYSTEM
 -- ========================================
@@ -965,33 +1129,35 @@ local BRAINROT_SPEED = 60 -- Faster than base tween
 local STUCK_THRESHOLD = 2 -- Studs moved per second to consider "stuck"
 local STUCK_CHECK_INTERVAL = 1 -- Check every 1 second
 
-local function getHighestBrainrotPosition()
-    local highestBrainrot = nil
-    local highestY = -math.huge
+local function getHighestBrainrotPodium()
+    local highestGen = 0
+    local highestPodium = nil
     
-    -- Search in workspace for brainrot objects
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("Model") or obj:IsA("Part") then
-            local name = obj.Name:lower()
-            -- Check for brainrot-related names
-            if name:find("brainrot") or name == "brainrot" then
-                local position = nil
-                
-                if obj:IsA("Model") and obj.PrimaryPart then
-                    position = obj.PrimaryPart.Position
-                elseif obj:IsA("Part") then
-                    position = obj.Position
-                end
-                
-                if position and position.Y > highestY then
-                    highestY = position.Y
-                    highestBrainrot = position
+    local plots = workspace:FindFirstChild("Plots")
+    if not plots then return nil end
+    
+    for _, plot in pairs(plots:GetChildren()) do
+        local podiums = plot:FindFirstChild("AnimalPodiums")
+        if podiums then
+            for i = 1, MAX_PODIUMS do
+                local podium = podiums:FindFirstChild(tostring(i))
+                if podium then
+                    local data = scanPodium(podium, plot.Name, i)
+                    if data and data.genValue > highestGen then
+                        highestGen = data.genValue
+                        highestPodium = {
+                            podium = podium,
+                            genValue = data.genValue,
+                            genText = data.genText,
+                            petName = data.petName
+                        }
+                    end
                 end
             end
         end
     end
     
-    return highestBrainrot
+    return highestPodium
 end
 
 local function tweenWalkToBrainrot(position)
@@ -1036,7 +1202,6 @@ local function startCollisionDetection()
             
             -- If player moved less than threshold, they're stuck
             if speedPerSecond < STUCK_THRESHOLD and brainrotTweenActive then
-                warn("⚠️ Player stuck/collided! Stopping tween...")
                 stopTweenToBrainrot()
             end
             
@@ -1055,7 +1220,8 @@ end
 
 local function walkToBrainrot()
     while brainrotTweenActive do
-        local target = getHighestBrainrotPosition()
+        local highestData = getHighestBrainrotPodium()
+        local target = highestData and highestData.podium.Base.Position or nil
         if not target then
             warn("❌ Brainrot Not Found!")
             stopTweenToBrainrot()
@@ -1063,7 +1229,6 @@ local function walkToBrainrot()
         end
 
         if isAtBrainrot(target) then
-            print("✅ Reached Highest Brainrot!")
             stopTweenToBrainrot()
             break
         end
@@ -1111,9 +1276,7 @@ function startTweenToBrainrot()
     
     -- Start collision detection
     startCollisionDetection()
-    
-    print("🚀 Tweening to Highest Brainrot...")
-    
+
     brainrotWalkThread = task.spawn(function()
         while brainrotTweenActive do
             walkToBrainrot()
@@ -1146,8 +1309,6 @@ function stopTweenToBrainrot()
     
     -- Disable god mode
     disableGodMode()
-    
-    print("🛑 Tween to Brainrot stopped")
 end
 
 -- ========================================
@@ -1235,12 +1396,6 @@ end
 
 local function toggleAutoLaser(enabled)
     autoLaserEnabled = enabled
-    
-    if autoLaserEnabled then
-        print("✓ Manual Laser: ON (Tap screen to fire)")
-    else
-        print("✗ Manual Laser: OFF")
-    end
 end
 
 -- Manual fire on screen click/tap
@@ -1278,14 +1433,12 @@ local function toggleInfJump(enabled)
             end
         end)
         enableGodMode()
-        print("✓ Infinite Jump + Slow Fall: ON")
     else
         if slowFallConnection then
             slowFallConnection:Disconnect()
             slowFallConnection = nil
         end
         disableGodMode()
-        print("✗ Infinite Jump + Slow Fall: OFF")
     end
 end
 
@@ -1388,8 +1541,7 @@ local function enableMobileDesync()
         if setfflag then 
             setfflag("WorldStepMax", "-1") 
         end
-        
-        print("✅ Desync Activated!")
+
         return true
     end)
     
@@ -1403,7 +1555,6 @@ end
 local function disableMobileDesync()
     pcall(function()
         if setfflag then setfflag("WorldStepMax", "0.125") end
-        print("❌ Desync deactivated!")
     end)
 end
 
@@ -1411,25 +1562,36 @@ end
 -- TWEEN TO BASE SYSTEM
 -- ========================================
 local function buyAndEquipSpeedCoil()
-    local success, err = pcall(function()
+    local success = pcall(function()
+        -- Buy Speed Coil
         local remote = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"):WaitForChild("RF/CoinsShopService/RequestBuy")
         remote:InvokeServer("Speed Coil")
-    end)
-    
-    if success then
-        task.delay(0.5, function()
-            local backpack = LocalPlayer:WaitForChild("Backpack", 5)
-            local tool = backpack and backpack:FindFirstChild("Speed Coil")
-            if tool then
+        
+        task.wait(0.5)
+        
+        -- Equip Speed Coil
+        local backpack = LocalPlayer:WaitForChild("Backpack", 3)
+        if backpack then
+            local speedCoil = backpack:FindFirstChild("Speed Coil")
+            if speedCoil and speedCoil:IsA("Tool") then
                 local char = LocalPlayer.Character
                 if char then
-                    tool.Parent = char
-                    task.wait(0.25)
-                    tool.Parent = backpack
+                    local humanoid = char:FindFirstChildOfClass("Humanoid")
+                    if humanoid then
+                        humanoid:EquipTool(speedCoil)
+                        task.wait(0.3)
+                        print("✓ Speed Coil equipped")
+                    end
                 end
             end
-        end)
+        end
+    end)
+    
+    if not success then
+        warn("⚠️ Failed to buy/equip Speed Coil")
     end
+    
+    return success
 end
 
 local function getBasePosition()
@@ -1457,9 +1619,17 @@ local function tweenWalkTo(position)
     local startPos = hrp.Position
     local targetPos = Vector3.new(position.X, position.Y + Y_OFFSET, position.Z)
     local distance = (targetPos - startPos).Magnitude
-    local speed = math.max(humanoid.WalkSpeed, 25)
+    
+    -- Use humanoid speed or minimum 50
+    local speed = math.max(humanoid.WalkSpeed, 50)
     local duration = distance / speed
-    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
+    
+    -- SMOOTH EASING - changed from Linear to Quad
+    local tweenInfo = TweenInfo.new(
+        duration, 
+        Enum.EasingStyle.Quad,  -- Changed from Linear
+        Enum.EasingDirection.InOut  -- Smooth acceleration and deceleration
+    )
 
     currentTween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(targetPos)})
     currentTween:Play()
@@ -1489,10 +1659,18 @@ local function walkToBase()
             break
         end
 
-        local path = PathfindingService:CreatePath()
-        path:ComputeAsync(hrp.Position, target)
+        local path = PathfindingService:CreatePath({
+            AgentRadius = 2,
+            AgentHeight = 5,
+            AgentCanJump = true,
+            WaypointSpacing = 4
+        })
+        
+        local success = pcall(function()
+            path:ComputeAsync(hrp.Position, target)
+        end)
 
-        if path.Status == Enum.PathStatus.Success then
+        if success and path.Status == Enum.PathStatus.Success then
             for _, waypoint in ipairs(path:GetWaypoints()) do
                 if not active then return end
                 if isAtBase(target) then
@@ -1500,24 +1678,34 @@ local function walkToBase()
                     return
                 end
                 tweenWalkTo(waypoint.Position)
-                buyAndEquipSpeedCoil()
+                -- REMOVED: buyAndEquipSpeedCoil() calls from here
             end
         else
+            -- Direct tween if pathfinding fails
             tweenWalkTo(target)
-            buyAndEquipSpeedCoil()
+            -- REMOVED: buyAndEquipSpeedCoil() call from here
         end
 
-        task.wait(1.5)
+        task.wait(1)
     end
 end
 
 function startTweenToBase()
     if active then return end
     active = true
-    humanoid.WalkSpeed = 24
+
+    -- Buy and equip Speed Coil ONCE at the start
+    buyAndEquipSpeedCoil()
+    task.wait(0.5)
+    
+    -- Set faster walk speed
+    humanoid.WalkSpeed = 50
+    
+    -- Enable god mode for safety
+    enableGodMode()
+    
     walkThread = task.spawn(function()
         while active do
-            enableGodMode()
             walkToBase()
             task.wait(1)
         end
@@ -1526,11 +1714,26 @@ end
 
 function stopTweenToBase()
     if not active then return end
-    disableGodMode()
+
     active = false
-    if currentTween then currentTween:Cancel() end
-    if walkThread then task.cancel(walkThread) end
+    
+    -- Stop tween
+    if currentTween then 
+        currentTween:Cancel()
+        currentTween = nil
+    end
+    
+    -- Stop walk thread
+    if walkThread then 
+        task.cancel(walkThread)
+        walkThread = nil
+    end
+    
+    -- Restore normal speed
     humanoid.WalkSpeed = 24
+    
+    -- Disable god mode
+    disableGodMode()
 end
 
 -- ========================================
@@ -1558,7 +1761,7 @@ createButton("TWEEN TO BASE", 2, function(isActive)
     end
 end)
 
-createButton("TWEEN TO HIGHEST BRAINROT", 2, function(isActive)
+createButton("TWEEN TO HIGHEST BRAINROT", 3, function(isActive)
     if isActive then
         startTweenToBrainrot()
     else
@@ -1566,15 +1769,15 @@ createButton("TWEEN TO HIGHEST BRAINROT", 2, function(isActive)
     end
 end)
 
-createButton("INFINITE JUMP", 3, function(isActive)
+createButton("INFINITE JUMP", 4, function(isActive)
     toggleInfJump(isActive)
 end)
 
-createButton("AIMBOT", 4, function(isActive)
+createButton("AIMBOT", 5, function(isActive)
     toggleAutoLaser(isActive)
 end)
 
-createButton("FLOOR STEAL", 5, function(isActive)
+createButton("FLOOR STEAL", 6, function(isActive)
     if isActive then
         enableFloorSteal()
     else
@@ -1582,8 +1785,12 @@ createButton("FLOOR STEAL", 5, function(isActive)
     end
 end)
 
-createButton("XRAY BASE", 6, function(isActive)
+createButton("XRAY BASE", 7, function(isActive)
     toggleXrayBase(isActive)
+end)
+
+createButton("BRAINROT ESP", 8, function(isActive)
+    toggleBrainrotESP(isActive)
 end)
 
 while true do
