@@ -865,21 +865,29 @@ local function toggleAntiSteal(state)
                                                                     -- LOOP 2: Bat activation with 1.5 second delay
                                                                     task.spawn(function()
                                                                         while attacking and States.AntiSteal and currentlyAttacking do
-                                                                            -- Check if 1.5 seconds have passed
+                                                                            -- Check if 0.5 seconds have passed
                                                                             if tick() - lastBatActivation >= 0.5 then
                                                                                 local bat = char:FindFirstChild("Tung Bat")
-            
-                                                                                if bat and bat:FindFirstChild("Handle") then
-                                                                                    bat:Activate()
-                                                                                    lastBatActivation = tick()
+
+                                                                                if bat then
+                                                                                    -- Try to activate using the tool's RemoteEvent instead
+                                                                                    local success = pcall(function()
+                                                                                        if bat:FindFirstChild("Handle") then
+                                                                                            local tool = bat
+                                                                                            if tool.Parent == char then
+                                                                                                tool:Activate()
+                                                                                            end
+                                                                                        end
+                                                                                    end)
+                
+                                                                                    if success then
+                                                                                        lastBatActivation = tick()
+                                                                                    end
                                                                                 end
                                                                             end
-                                                                            task.wait(0.1) -- Check every 0.1 second
+                                                                            task.wait(0.1)
                                                                         end
                                                                     end)
-
-                                                                    -- Wait for the attack loops to run
-                                                                    task.wait(0.05)
                                                                 end
 
                                                                 task.wait(0.05)
