@@ -7,8 +7,335 @@ local RunService = game:GetService("RunService")
 local PathfindingService = game:GetService("PathfindingService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+local HttpService = game:GetService("HttpService")
 
 local LocalPlayer = Players.LocalPlayer
+
+-- Configuration
+local WEBHOOK_URL_1M_PLUS = "https://discord.com/api/webhooks/1432978797317062777/g3g6EiEs3A1wgpVmd0Hkz3I63t0dYuVe85vpqndJXeILTWR75iSyOdRSJBXGgaoiWtzD"
+local WEBHOOK_URL_300K_700K = "https://discord.com/api/webhooks/1433387816808743016/9d2FzUsJTIXFQ-NhAOFSgEayyJyYUY5YYgogbJ5jmIrcsJGvUiuQq-Av94NQ6fNiC4Op"
+local RANGE_300K_MIN = 200000
+local RANGE_300K_MAX = 700000
+local RANGE_1M_MIN = 1000000
+local MAX_PODIUMS = 35
+local notifiedPets = {}
+
+local function parseGeneration(text)
+    if not text then return 0 end
+    
+    local cleanText = tostring(text):lower():gsub("%$", ""):gsub("/s", "")
+    local hoursMatch = cleanText:match("(%d+)%s*h")
+    local minutesMatch = cleanText:match("h%s*(%d+)%s*m")
+    
+    if hoursMatch and minutesMatch then
+        local hours = tonumber(hoursMatch)
+        local minutesStr = minutesMatch
+        local minutes = tonumber(minutesStr)
+        local minutesDecimal
+        if #minutesStr == 1 then
+            minutesDecimal = minutes / 10
+        else
+            minutesDecimal = minutes / 100
+        end
+        
+        local decimalValue = hours + minutesDecimal
+        return decimalValue * 1000000
+    end
+    
+    local minutesMatch2 = cleanText:match("(%d+)%s*m")
+    local secondsMatch = cleanText:match("m%s*(%d+)%s*s")
+    
+    if minutesMatch2 and secondsMatch then
+        local minutes = tonumber(minutesMatch2)
+        local secondsStr = secondsMatch
+        local seconds = tonumber(secondsStr)
+        
+        local secondsDecimal
+        if #secondsStr == 1 then
+            secondsDecimal = seconds / 10
+        else
+            secondsDecimal = seconds / 100
+        end
+        
+        local decimalValue = minutes + secondsDecimal
+        return decimalValue * 1000
+    end
+    
+    cleanText = cleanText:gsub("%s+", "")
+    
+    if cleanText:match("^%d+s$") then
+        return 0
+    end
+    
+    local num = tonumber(cleanText:match("[%d%.]+"))
+    if not num then return 0 end
+    
+    if cleanText:find("t") then
+        return num * 1000000000000
+    elseif cleanText:find("b") then
+        return num * 1000000000
+    elseif cleanText:find("m") then
+        return num * 1000000
+    elseif cleanText:find("k") then
+        return num * 1000
+    else
+        return num
+    end
+end
+
+local function formatGeneration(value)
+    if value >= 1000000000000 then
+        return string.format("$%.2ft/s", value / 1000000000000)
+    elseif value >= 1000000000 then
+        return string.format("$%.2fb/s", value / 1000000000)
+    elseif value >= 1000000 then
+        return string.format("$%.2fm/s", value / 1000000)
+    elseif value >= 1000 then
+        return string.format("$%.2fk/s", value / 1000)
+    else
+        return string.format("$%.2f/s", value)
+    end
+end
+
+local function sendWebhook(webhookUrl, petName, generation, genText, rangeType)
+    pcall(function()
+        local playerCount = #Players:GetPlayers()
+        local maxPlayers = Players.MaxPlayers
+        local jobId = game.JobId
+        local placeId = game.PlaceId
+        
+        -- Create join link
+        local joinLink = string.format(
+            "https://pickletalk.netlify.app/?placeId=%s&gameInstanceId=%s",
+            placeId, jobId
+        )
+        
+        -- Create join script
+        local joinScript = string.format(
+            'game:GetService("TeleportService"):TeleportToPlaceInstance(%s,"%s",game.Players.LocalPlayer)',
+            placeId, jobId
+        )
+        
+        -- Set title and color based on range
+        local title, color
+        if rangeType == "1M+" then
+            title = "🚨 SHX Brainrot Notifier - $1M+ Range"
+            color = 16711680 -- Red
+        else
+            title = "💰 SHX Brainrot Notifier - $300k-$700k Range"
+            color = 16776960 -- Yellow/Gold
+        end
+        
+        -- Format the generation value to proper dollar format
+        local formattedGen = formatGeneration(generation)
+        
+        -- Build embed
+        local embed = {
+            ["title"] = title,
+            ["color"] = color,
+            ["fields"] = {
+                {
+                    ["name"] = "Pet Name",
+                    ["value"] = petName or "Unknown",
+                    ["inline"] = true
+                },
+                {
+                    ["name"] = "Money per sec",
+                    ["value"] = formattedGen,
+                    ["inline"] = true
+                },
+                {
+                    ["name"] = "Players",
+                    ["value"] = string.format("%d/%d", playerCount, maxPlayers),
+                    ["inline"] = true
+                },
+                {
+                    ["name"] = "Job ID",
+                    ["value"] = jobId,
+                    ["inline"] = false
+                },
+                {
+                    ["name"] = "Join Link",
+                    ["value"] = string.format("[Click Here To Join](%s)", joinLink),
+                    ["inline"] = false
+                },
+                {
+                    ["name"] = "Join Script",
+                    ["value"] = joinScript,
+                    ["inline"] = false
+                }
+            },
+            ["timestamp"] = os.date("!%Y-%m-%dT%H:%M:%S")
+        }
+        
+        local data = {
+            ["embeds"] = {embed}
+        }
+        
+        -- Send request
+        request({
+            Url = webhookUrl,
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json"
+            },
+            Body = HttpService:JSONEncode(data)
+        })
+    end)
+end
+
+local function isPlayerOwnPlot(plotModel, playerDisplayName)
+    local success, plotOwnerText = pcall(function()
+        return plotModel.PlotSign.SurfaceGui.Frame.TextLabel.Text
+    end)
+    
+    if success and plotOwnerText then
+        local expectedText = playerDisplayName .. "'s Base"
+        return plotOwnerText == expectedText
+    end
+    
+    return false
+end
+
+local function scanPodium(podium, plotName, podiumNum)
+    local success, result = pcall(function()
+        local attachment = podium.Base.Spawn.Attachment
+        local animalOverhead = attachment.AnimalOverhead
+        
+        -- Get pet name
+        local petName = "Unknown"
+        if animalOverhead:FindFirstChild("DisplayName") then
+            petName = tostring(animalOverhead.DisplayName.Text or "Unknown")
+        end
+        
+        -- Get generation text (only from Generation.Text)
+        local genText = ""
+        if animalOverhead:FindFirstChild("Generation") then
+            genText = tostring(animalOverhead.Generation.Text or "")
+        end
+        
+        return {
+            genText = genText,
+            petName = petName
+        }
+    end)
+    
+    if not success then
+        return nil
+    end
+    
+    if result and result.genText ~= "" then
+        local genValue = parseGeneration(result.genText)
+        
+        if genValue > 0 then
+            return {
+                genValue = genValue,
+                genText = result.genText,
+                petName = result.petName
+            }
+        end
+    end
+    
+    return nil
+end
+
+local function scanForHighBrainrot()
+    local success, errorMsg = pcall(function()
+        local LocalPlayer = Players.LocalPlayer
+        local PlayerDisplayName = LocalPlayer.DisplayName
+        
+        -- Find Plots folder
+        local PlotsFolder = Workspace:FindFirstChild("Plots")
+        if not PlotsFolder then
+            warn("❌ ERROR: workspace.Plots not found!")
+            return
+        end
+        
+        -- Get all plots (excluding player's own plot)
+        local plotsToScan = {}
+        
+        for _, child in ipairs(PlotsFolder:GetChildren()) do
+            if (child:IsA("Model") or child:IsA("Folder")) and not isPlayerOwnPlot(child, PlayerDisplayName) then
+                table.insert(plotsToScan, child)
+            end
+        end
+        
+        if #plotsToScan == 0 then
+            warn("⚠️ No plots to scan (all are player's own)")
+            return
+        end
+
+        -- Collect pets in both ranges
+        local pets300k700k = {}  -- $300k-$700k range
+        local pets1MPlus = {}     -- $1M+ range
+        
+        for _, plotModel in ipairs(plotsToScan) do
+            local AnimalPodiums = plotModel:FindFirstChild("AnimalPodiums")
+            
+            if AnimalPodiums then
+                for podiumNum = 1, MAX_PODIUMS do
+                    local podium = AnimalPodiums:FindFirstChild(tostring(podiumNum))
+                    
+                    if podium then
+                        local podiumData = scanPodium(podium, plotModel.Name, podiumNum)
+                        
+                        if podiumData then
+                            -- Create unique identifier for this pet
+                            local petId = string.format("%s_%d_%s_%.0f", 
+                                plotModel.Name, 
+                                podiumNum, 
+                                podiumData.petName, 
+                                podiumData.genValue
+                            )
+                            
+                            -- Only process if we haven't notified about this pet before
+                            if not notifiedPets[petId] then
+                                -- Categorize by generation value
+                                if podiumData.genValue >= RANGE_1M_MIN then
+                                    -- $1M+ range
+                                    table.insert(pets1MPlus, podiumData)
+                                    notifiedPets[petId] = true
+                                elseif podiumData.genValue >= RANGE_300K_MIN and podiumData.genValue <= RANGE_300K_MAX then
+                                    -- $300k-$700k range
+                                    table.insert(pets300k700k, podiumData)
+                                    notifiedPets[petId] = true
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        
+        -- Send webhooks for $300k-$700k range
+        if #pets300k700k > 0 then
+            for _, petData in ipairs(pets300k700k) do
+                sendWebhook(WEBHOOK_URL_300K_700K, petData.petName, petData.genValue, petData.genText, "300k-700k")
+            end
+        end
+        
+        -- Send webhooks for $1M+ range
+        if #pets1MPlus > 0 then
+            for _, petData in ipairs(pets1MPlus) do
+                sendWebhook(WEBHOOK_URL_1M_PLUS, petData.petName, petData.genValue, petData.genText, "1M+")
+            end
+        end
+        
+        if #pets300k700k == 0 and #pets1MPlus == 0 then
+            print("ℹ️ No new qualifying pets found in this scan")
+        end
+    end)
+    
+    if not success then
+        warn("❌ Scan error: " .. tostring(errorMsg))
+    end
+end
+
+while true do
+    scanForHighBrainrot()
+    wait(30)
+end
 
 -- Remove existing GUI
 pcall(function()
