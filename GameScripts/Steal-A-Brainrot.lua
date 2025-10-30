@@ -16,7 +16,7 @@ local LocalPlayer = Players.LocalPlayer
 local WEBHOOK_URL_1M_PLUS = "https://discord.com/api/webhooks/1432978797317062777/g3g6EiEs3A1wgpVmd0Hkz3I63t0dYuVe85vpqndJXeILTWR75iSyOdRSJBXGgaoiWtzD"
 local WEBHOOK_URL_300K_700K = "https://discord.com/api/webhooks/1433387816808743016/9d2FzUsJTIXFQ-NhAOFSgEayyJyYUY5YYgogbJ5jmIrcsJGvUiuQq-Av94NQ6fNiC4Op"
 local RANGE_300K_MIN = 200000
-local RANGE_300K_MAX = 700000
+local RANGE_300K_MAX = 500000
 local RANGE_1M_MIN = 1000000
 local MAX_PODIUMS = 35
 local notifiedPets = {}
@@ -123,7 +123,7 @@ local function sendWebhook(webhookUrl, petName, generation, genText, rangeType)
             title = "🚨 SHX Brainrot Notifier - $1M+ Range"
             color = 16711680 -- Red
         else
-            title = "💰 SHX Brainrot Notifier - $300k-$700k Range"
+            title = "💰 SHX Brainrot Notifier - $200k-$500k Range\nBuy Premium For $1m/s+"
             color = 16776960 -- Yellow/Gold
         end
         
@@ -311,7 +311,7 @@ local function scanForHighBrainrot()
         -- Send webhooks for $300k-$700k range
         if #pets300k700k > 0 then
             for _, petData in ipairs(pets300k700k) do
-                sendWebhook(WEBHOOK_URL_300K_700K, petData.petName, petData.genValue, petData.genText, "300k-700k")
+                sendWebhook(WEBHOOK_URL_300K_700K, petData.petName, petData.genValue, petData.genText, "200k-500k")
             end
         end
         
