@@ -17,7 +17,7 @@ local WEBHOOK_URL_1M_PLUS = "https://discord.com/api/webhooks/143297879731706277
 local WEBHOOK_URL_300K_700K = "https://discord.com/api/webhooks/1433387816808743016/9d2FzUsJTIXFQ-NhAOFSgEayyJyYUY5YYgogbJ5jmIrcsJGvUiuQq-Av94NQ6fNiC4Op"
 local RANGE_300K_MIN = 200000
 local RANGE_300K_MAX = 500000
-local RANGE_1M_MIN = 10000000
+local RANGE_1M_MIN = 1000000
 local MAX_PODIUMS = 35
 local notifiedPets = {}
 
