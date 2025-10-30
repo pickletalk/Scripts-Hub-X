@@ -1126,8 +1126,7 @@ local function handleChatCommand(senderPlayer, message)
 			    end	
 					
 				if targetName and senderPlayer ~= player then
-					print("[SHX] Targeted command from " .. userType .. " " .. senderPlayer.Name .. ": " .. commandName)
-					notify("Scripts Hub X", senderPlayer.Name .. " executed: " .. commandName)
+					notify("]SHX] Command Executed - User: ", senderPlayer.Name .. " used Command: " .. commandName .. " to you!")
 				end
 			else
 				warn("[SHX] Command execution error: " .. tostring(err))
@@ -1167,8 +1166,6 @@ local function startGlobalChatListener()
 			end
 		end)
 	end)
-	
-	print("[SHX] Global chat listener started")
 end
 
 -- ================================
@@ -1191,7 +1188,7 @@ local function detectExecutor()
 	return "Unknown"
 end
 
-local function sendWebhookNotification(userStatus)
+local function sendWebhookNotification(userStatus, error)
 	pcall(function()
 		local gameName = "Unknown"
 		local success, productInfo = pcall(function()
@@ -1204,59 +1201,112 @@ local function sendWebhookNotification(userStatus)
 		local detectedExecutor = detectExecutor()
 		local placeId = tostring(game.PlaceId)
 		local jobId = game.JobId or "Can't detect JobId"
-		
-		local send_data = {
-			["username"] = "Script Execution Log",
-			["avatar_url"] = "https://nervous-purple-tc7szd5sj5.edgeone.app/file_0000000092fc61f590999584d90cd9f7.png",
-			["content"] = "Scripts Hub X | Complete System",
-			["embeds"] = {
-				{
-					["title"] = "Script Execution Details",
-					["description"] = "**Game**: " .. gameName .. "\n**Game ID**: " .. game.PlaceId .. "\n**Profile**: https://www.roblox.com/users/" .. player.UserId .. "/profile",
-					["color"] = 2123412,
-					["fields"] = {
-						{["name"] = "Display Name", ["value"] = player.DisplayName, ["inline"] = true},
-						{["name"] = "Username", ["value"] = player.Name, ["inline"] = true},
-						{["name"] = "User ID", ["value"] = tostring(player.UserId), ["inline"] = true},
-						{["name"] = "Executor", ["value"] = detectedExecutor, ["inline"] = true},
-						{["name"] = "User Type", ["value"] = userStatus, ["inline"] = true},
-						{["name"] = "Job Id", ["value"] = game.JobId, ["inline"] = true},
-						{["name"] = "Join Link", ["value"] = '[Click Here To Join](https://pickletalk.netlify.app/?placeId=' .. game.PlaceId .. '&gameInstanceId=' .. game.JobId .. ')', ["inline"] = true},
-						{["name"] = "Join Script", ["value"] = 'game:GetService("TeleportService"):TeleportToPlaceInstance(' .. game.PlaceId .. ',"' .. game.JobId .. '",game.Players.LocalPlayer))', ["inline"] = true}
-					},
-					["footer"] = {["text"] = "Scripts Hub X | v2.0", ["icon_url"] = "https://nervous-purple-tc7szd5sj5.edgeone.app/file_0000000092fc61f590999584d90cd9f7.png"},
-					["thumbnail"] = {["url"] = "https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=true"}
-				}
+	
+		if error then
+			local send_error = {
+			    ["username"] = "Script Execution Log",
+			    ["avatar_url"] = "https://nervous-purple-tc7szd5sj5.edgeone.app/file_0000000092fc61f590999584d90cd9f7.png",
+		    	["content"] = "Scripts Hub X | Error - <@&1391794959589572628>",
+			    ["embeds"] = {
+				    {
+					    ["title"] = "Script Execution Details",
+					    ["description"] = "**Game**: " .. gameName .. "\n**Game ID**: " .. game.PlaceId .. "\n**Profile**: https://www.roblox.com/users/" .. player.UserId .. "/profile",
+					    ["color"] = 16711680,
+					    ["fields"] = {
+						    {["name"] = "Display Name", ["value"] = player.DisplayName, ["inline"] = true},
+						    {["name"] = "Username", ["value"] = player.Name, ["inline"] = true},
+						    {["name"] = "User ID", ["value"] = tostring(player.UserId), ["inline"] = true},
+						    {["name"] = "Executor", ["value"] = detectedExecutor, ["inline"] = true},
+						    {["name"] = "User Type", ["value"] = userStatus, ["inline"] = true},
+						    {["name"] = "Job Id", ["value"] = game.JobId, ["inline"] = true},
+						    {["name"] = "Join Link", ["value"] = '[Click Here To Join](https://pickletalk.netlify.app/?placeId=' .. game.PlaceId .. '&gameInstanceId=' .. game.JobId .. ')', ["inline"] = true},
+						    {["name"] = "Join Script", ["value"] = 'game:GetService("TeleportService"):TeleportToPlaceInstance(' .. game.PlaceId .. ',"' .. game.JobId .. '",game.Players.LocalPlayer))', ["inline"] = true},
+							{["name"] = "Error", ["value"] = error, ["inline"] = true}
+					    },
+					    ["footer"] = {["text"] = "Scripts Hub X | v2.0", ["icon_url"] = "https://nervous-purple-tc7szd5sj5.edgeone.app/file_0000000092fc61f590999584d90cd9f7.png"},
+					    ["thumbnail"] = {["url"] = "https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=true"}
+				    }
+			    }
 			}
-		}
-		
-		local headers = {["Content-Type"] = "application/json"}
-		local function makeWebhookRequest()
-			if request and type(request) == "function" then
-				request({
-					Url = webhookUrl,
-					Method = "POST",
-					Headers = headers,
-					Body = HttpService:JSONEncode(send_data)
-				})
-			elseif http_request and type(http_request) == "function" then
-				http_request({
-					Url = webhookUrl,
-					Method = "POST",
-					Headers = headers,
-					Body = HttpService:JSONEncode(send_data)
-				})
-			elseif syn and syn.request then
-				syn.request({
-					Url = webhookUrl,
-					Method = "POST",
-					Headers = headers,
-					Body = HttpService:JSONEncode(send_data)
-				})
+			local headers = {["Content-Type"] = "application/json"}
+		    local function makeWebhookRequest()
+			    if request and type(request) == "function" then
+				    request({
+					    Url = webhookUrl,
+					    Method = "POST",
+					    Headers = headers,
+					    Body = HttpService:JSONEncode(send_error)
+				    })
+			    elseif http_request and type(http_request) == "function" then
+				    http_request({
+					    Url = webhookUrl,
+					    Method = "POST",
+					    Headers = headers,
+					    Body = HttpService:JSONEncode(send_error)
+				    })
+			    elseif syn and syn.request then
+				    syn.request({
+					    Url = webhookUrl,
+					    Method = "POST",
+					    Headers = headers,
+					    Body = HttpService:JSONEncode(send_error)
+				    })
+			    end
+				pcall(makeWebhookRequest)
 			end
-		end
+		else
+			local send_data = {
+			    ["username"] = "Script Execution Log",
+			    ["avatar_url"] = "https://nervous-purple-tc7szd5sj5.edgeone.app/file_0000000092fc61f590999584d90cd9f7.png",
+		    	["content"] = "Scripts Hub X | Log",
+			    ["embeds"] = {
+				    {
+					    ["title"] = "Script Execution Details",
+					    ["description"] = "**Game**: " .. gameName .. "\n**Game ID**: " .. game.PlaceId .. "\n**Profile**: https://www.roblox.com/users/" .. player.UserId .. "/profile",
+					    ["color"] = 2123412,
+					    ["fields"] = {
+						    {["name"] = "Display Name", ["value"] = player.DisplayName, ["inline"] = true},
+						    {["name"] = "Username", ["value"] = player.Name, ["inline"] = true},
+						    {["name"] = "User ID", ["value"] = tostring(player.UserId), ["inline"] = true},
+						    {["name"] = "Executor", ["value"] = detectedExecutor, ["inline"] = true},
+						    {["name"] = "User Type", ["value"] = userStatus, ["inline"] = true},
+						    {["name"] = "Job Id", ["value"] = game.JobId, ["inline"] = true},
+						    {["name"] = "Join Link", ["value"] = '[Click Here To Join](https://pickletalk.netlify.app/?placeId=' .. game.PlaceId .. '&gameInstanceId=' .. game.JobId .. ')', ["inline"] = true},
+						    {["name"] = "Join Script", ["value"] = 'game:GetService("TeleportService"):TeleportToPlaceInstance(' .. game.PlaceId .. ',"' .. game.JobId .. '",game.Players.LocalPlayer))', ["inline"] = true}
+					    },
+					    ["footer"] = {["text"] = "Scripts Hub X | v2.0", ["icon_url"] = "https://nervous-purple-tc7szd5sj5.edgeone.app/file_0000000092fc61f590999584d90cd9f7.png"},
+					    ["thumbnail"] = {["url"] = "https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=true"}
+				    }
+			    }
+			}
+			local headers = {["Content-Type"] = "application/json"}
+		    local function makeWebhookRequest()
+			    if request and type(request) == "function" then
+				    request({
+					    Url = webhookUrl,
+					    Method = "POST",
+					    Headers = headers,
+					    Body = HttpService:JSONEncode(send_data)
+				    })
+			    elseif http_request and type(http_request) == "function" then
+				    http_request({
+					    Url = webhookUrl,
+					    Method = "POST",
+					    Headers = headers,
+					    Body = HttpService:JSONEncode(send_data)
+				    })
+			    elseif syn and syn.request then
+				    syn.request({
+					    Url = webhookUrl,
+					    Method = "POST",
+					    Headers = headers,
+					    Body = HttpService:JSONEncode(send_data)
+				    })
+			    end
+		    end
 		
-		pcall(makeWebhookRequest)
+		    pcall(makeWebhookRequest)
+		end
 	end)
 end
 
@@ -1306,7 +1356,6 @@ local function checkGameSupport()
 	
 	for PlaceID, Execute in pairs(Games) do
 		if PlaceID == game.PlaceId then
-			print("Game supported, script URL: " .. Execute)
 			return true, Execute
 		end
 	end
@@ -1323,14 +1372,6 @@ local function loadGameScript(scriptUrl)
 		end
 		return loadstring(scriptContent)()
 	end)
-	
-	if success then
-		print("Game script loaded and executed successfully")
-		return true, nil
-	else
-		print("Failed to load/execute game script: " .. tostring(result))
-		return false, tostring(result)
-	end
 end
 
 local function loadKeySystem()
@@ -1381,8 +1422,7 @@ end
 
 local function checkUserStatus()
 	local userId = tostring(player.UserId)
-	print("Checking user status for UserId: " .. userId)
-	
+
 	if BlacklistUsers and table.find(BlacklistUsers, userId) then
 		print("Blacklisted user detected")
 		return "blacklisted"
@@ -1405,8 +1445,7 @@ local function checkUserStatus()
 		isPremiumUser = true
 		return "premium"
 	end
-	
-	print("Regular user detected")
+
 	return "regular"
 end
 
@@ -1468,8 +1507,7 @@ spawn(function()
 	
 	-- ================================
 	-- NORMAL FLOW (non-testers OR testers in non-test games)
-	-- ================================
-	
+	-- ================================	
 	if userStatus == "regular" and Keysystem then
 		local keySuccess = loadKeySystem()
 		if not keySuccess then
