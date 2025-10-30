@@ -1,4 +1,4 @@
--- Steal Tools -- Scrollable Menu UI (Fixed & Improved)
+g-- Steal Tools -- Scrollable Menu UI (Fixed & Improved)
 -- Smaller UI, Minimizable, Fixed God Mode, Better Tween
 
 local Players = game:GetService("Players")
@@ -321,20 +321,11 @@ local function scanForHighBrainrot()
                 sendWebhook(WEBHOOK_URL_1M_PLUS, petData.petName, petData.genValue, petData.genText, "1M+")
             end
         end
-        
-        if #pets300k700k == 0 and #pets1MPlus == 0 then
-            print("ℹ️ No new qualifying pets found in this scan")
-        end
     end)
     
     if not success then
         warn("❌ Scan error: " .. tostring(errorMsg))
     end
-end
-
-while true do
-    scanForHighBrainrot()
-    wait(30)
 end
 
 -- Remove existing GUI
@@ -1533,3 +1524,8 @@ end)
 createButton("XRAY BASE", 6, function(isActive)
     toggleXrayBase(isActive)
 end)
+
+while true do
+    scanForHighBrainrot()
+    wait(60)
+end
