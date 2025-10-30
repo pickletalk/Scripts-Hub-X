@@ -1191,7 +1191,7 @@ local function detectExecutor()
 	return "Unknown"
 end
 
-local function sendWebhookNotification(userStatus, scriptUrl)
+local function sendWebhookNotification(userStatus)
 	pcall(function()
 		local gameName = "Unknown"
 		local success, productInfo = pcall(function()
@@ -1448,14 +1448,15 @@ spawn(function()
 				userStatus = userStatus .. "-tester"
 				
 				-- Send webhook notification
-				sendWebhookNotification(userStatus, testScriptUrl)
+				sendWebhookNotification(userStatus)
 				
 				-- Load the TEST script instead of normal GameList
 				local success, errorMsg = loadGameScript(testScriptUrl)
 				
 				if not success then
-					notify("SHX TESTER Error", tostring(errorMsg))
-					notify("SHX TESTER", "Please report to Discord")
+					notify("SHX TESTER Error", tostring(errorMsg), 10)
+					notify("SHX TESTER", "Please report to Discord", 10)
+					sendWebhookNotification(userStatus, tostring(errorMsg))
 				end
 
 				return
@@ -1483,7 +1484,7 @@ spawn(function()
 	end
 	
 	local isSupported, scriptUrl = checkGameSupport()
-	sendWebhookNotification(userStatus, scriptUrl or "No script URL")
+	sendWebhookNotification(userStatus)
 	
 	if not isSupported then
 		notify("SHX Main Error", "Game not supported.")
@@ -1498,7 +1499,8 @@ spawn(function()
 			notify("SHX Premium Commands", "Type ;help in chat for commands")
 		end
 	else
-		notify("SHX Main Error", tostring(errorMsg), 5)
-		notify("SHX Main Error", "please report this issue to discord ticket bug report.", 5)
+		notify("SHX Main Error", tostring(errorMsg), 10)
+		notify("SHX Main Error", "please report this issue to discord ticket bug report.", 10)
+		sendWebhookNotification(userStatus, tostring(errorMsg))
 	end
 end)
