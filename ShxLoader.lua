@@ -1459,14 +1459,26 @@ spawn(function()
 	end
 
 	local function getGameName()
-	    local gameName = "Unknown Game"
+	    -- Try method 1: MarketplaceService
 	    local success, productInfo = pcall(function()
-		    return MarketplaceService:GetProductInfo(game.PlaceId)
+	    	return MarketplaceService:GetProductInfo(game.PlaceId)
 	    end)
-	    if success and productInfo and productInfo.Name then
-		    gameName = productInfo.Name
+	    if success and productInfo and productInfo.Name and productInfo.Name ~= "" and productInfo.Name ~= "Ugc" then
+		    return productInfo.Name
 	    end
-	    return gameName
+	
+	    -- Try method 2: game.Name
+	    if game.Name and game.Name ~= "" and game.Name ~= "Ugc" then
+		    return game.Name
+	    end
+	
+	    -- Try method 3: Workspace name
+	    if Workspace.Name and Workspace.Name ~= "Workspace" then
+		    return Workspace.Name
+	    end
+	
+	    -- Fallback: Just show Place ID
+	    return "Place ID: " .. tostring(game.PlaceId)
 	end
 		
 	startGlobalChatListener()
