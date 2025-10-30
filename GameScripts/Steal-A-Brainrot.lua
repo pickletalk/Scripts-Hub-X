@@ -1485,17 +1485,8 @@ local function enableMobileDesync()
             warn("❌ UseItem remote not found") 
             return false 
         end
-        
-        -- Navigate to teleport remote step by step
-        local teleportRemote = nil
-        local reFolder = netFolder:FindFirstChild("RE")
-        if reFolder then
-            local quantumFolder = reFolder:FindFirstChild("QuantumCloner")
-            if quantumFolder then
-                teleportRemote = quantumFolder:FindFirstChild("OnTeleport")
-            end
-        end
-        
+
+        local teleportRemote = netFolder:FindFirstChild("RE/QuantumCloner/OnTeleport")      
         if not teleportRemote then 
             warn("❌ Teleport remote not found (RE/QuantumCloner/OnTeleport)") 
             return false 
