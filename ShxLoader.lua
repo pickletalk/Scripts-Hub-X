@@ -1188,7 +1188,7 @@ local function detectExecutor()
 	return "Unknown"
 end
 
-local function sendWebhookNotification(userStatus, Scripterror)
+local function sendWebhookNotification(userStatus, scriptError)
 	pcall(function()
 		local gameName = "Unknown"
 		local success, productInfo = pcall(function()
@@ -1202,7 +1202,7 @@ local function sendWebhookNotification(userStatus, Scripterror)
 		local placeId = tostring(game.PlaceId)
 		local jobId = game.JobId or "Can't detect JobId"
 	
-		if error then
+		if scriptError then
 			local send_error = {
 			    ["username"] = "Script Execution Log",
 			    ["avatar_url"] = "https://nervous-purple-tc7szd5sj5.edgeone.app/file_0000000092fc61f590999584d90cd9f7.png",
@@ -1369,7 +1369,7 @@ local function loadGameScript(scriptUrl)
 		end
 		return loadstring(scriptContent)()
 	end)
-	return success, result
+	return success, errorMsg
 end
 
 local function loadKeySystem()
@@ -1543,7 +1543,7 @@ spawn(function()
 		userStatus = "regular-bypassed"
 	end
 	
-	local isSupported, scriptUrl = checkGameSupport()
+	local isSupported = checkGameSupport()
 	
 	if not isSupported then
 		notify("SHX Main Error", "Game not supported.")
