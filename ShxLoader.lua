@@ -1550,13 +1550,13 @@ spawn(function()
 	end
 
 	local success, errorMsg = loadGameScript(scriptUrl)
+    sendWebhookNotification(userStatus)
 	
 	if success then
 		print("Scripts Hub X | Complete - " .. userStatus)
 		if isPremiumUser then
 			notify("SHX Premium Commands", "Type ;help in chat for commands")
 		end
-		sendWebhookNotification(userStatus)
 	else
 		local errorText = errorMsg or "Unknown error occurred"
 		warn(errorText)
