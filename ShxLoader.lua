@@ -1560,7 +1560,8 @@ spawn(function()
 		sendWebhookNotification(userStatus)
 	else
 		local errorText = errorMsg or "Unknown error occurred"
-		notify("SHX Main Error", tostring(errorMsg), 10)
+		warn(errorText)
+		notify("SHX Main Error", tostring(errorText), 10)
 		notify("SHX Main Error", "please report this issue to discord ticket bug report.", 10)
 		sendWebhookNotification(userStatus, errorText)
 	end
