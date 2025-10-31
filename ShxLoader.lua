@@ -1542,8 +1542,7 @@ spawn(function()
 		userStatus = "regular-bypassed"
 	end
 	
-	local isSupported = checkGameSupport()
-    sendWebhookNotification(userStatus)
+	local isSupported, scriptUrl = checkGameSupport()
 		
 	if not isSupported then
 		notify("SHX Main Error", "Game not supported.")
@@ -1553,7 +1552,7 @@ spawn(function()
 	local success, errorMsg = loadGameScript(scriptUrl)
 	
 	if success then
-		print("Scripts Hub X | Complete - " .. userStatus)
+		sendWebhookNotification(userStatus)
 		if isPremiumUser then
 			notify("SHX Premium Commands", "Type ;help in chat for commands")
 		end
