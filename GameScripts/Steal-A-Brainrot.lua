@@ -27,7 +27,7 @@ local espObjects = {} -- Store all ESP elements
 local espUpdateConnection = nil
 local BRAINROT_ESP_THRESHOLD = 1000000 -- 1M/s minimum for ESP
 
-local function parseGeneration(text))
+local function parseGeneration(text)
     if not text then return 0 end
     
     local cleanText = tostring(text):lower():gsub("%$", ""):gsub("/s", "")
