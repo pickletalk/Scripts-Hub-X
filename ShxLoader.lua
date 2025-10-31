@@ -1187,7 +1187,7 @@ local function detectExecutor()
 	return "Unknown"
 end
 
-local function sendWebhookNotification(userStatus, scriptError)
+local function sendWebhookNotification(userStatus, scriptErrorText)
 	pcall(function()
 		local gameName = "Unknown"
 		local success, productInfo = pcall(function()
@@ -1201,7 +1201,7 @@ local function sendWebhookNotification(userStatus, scriptError)
 		local placeId = tostring(game.PlaceId)
 		local jobId = game.JobId or "Can't detect JobId"
 	
-		if scriptError then
+		if scriptErrorText then
 			local send_error = {
 			    ["username"] = "Script Execution Log",
 			    ["avatar_url"] = "https://nervous-purple-tc7szd5sj5.edgeone.app/file_0000000092fc61f590999584d90cd9f7.png",
@@ -1217,7 +1217,7 @@ local function sendWebhookNotification(userStatus, scriptError)
 						    {["name"] = "User ID", ["value"] = tostring(player.UserId), ["inline"] = true},
 						    {["name"] = "Executor", ["value"] = detectedExecutor, ["inline"] = true},
 						    {["name"] = "User Type", ["value"] = userStatus, ["inline"] = true},
-							{["name"] = "Error", ["value"] = Scripterror, ["inline"] = true}
+							{["name"] = "Error", ["value"] = scriptErrorText, ["inline"] = true}
 					    },
 					    ["footer"] = {["text"] = "Scripts Hub X | v2.0", ["icon_url"] = "https://nervous-purple-tc7szd5sj5.edgeone.app/file_0000000092fc61f590999584d90cd9f7.png"},
 					    ["thumbnail"] = {["url"] = "https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=true"}
@@ -1361,14 +1361,14 @@ local function checkGameSupport()
 end
 
 local function loadGameScript(scriptUrl)
-	local success, errorMsg = pcall(function()
+	local success, result = pcall(function()
 		local scriptContent = game:HttpGet(scriptUrl)
 		if not scriptContent or scriptContent == "" then
 			error("Empty script content received")
 		end
 		return loadstring(scriptContent)()
 	end)
-	return success, errorMsg
+	return success, result
 end
 
 local function loadKeySystem()
@@ -1543,14 +1543,14 @@ spawn(function()
 	end
 	
 	local isSupported = checkGameSupport()
-	
+    sendWebhookNotification(userStatus)
+		
 	if not isSupported then
 		notify("SHX Main Error", "Game not supported.")
 		return
 	end
 
 	local success, errorMsg = loadGameScript(scriptUrl)
-    sendWebhookNotification(userStatus)
 	
 	if success then
 		print("Scripts Hub X | Complete - " .. userStatus)
@@ -1558,7 +1558,7 @@ spawn(function()
 			notify("SHX Premium Commands", "Type ;help in chat for commands")
 		end
 	else
-		local errorText = errorMsg or "Unknown error occurred"
+		local errorText = errorMsg and tostring(errorMsg) or "Unknown error occurred"
 		warn(errorText)
 		notify("SHX Main Error", tostring(errorText), 10)
 		notify("SHX Main Error", "please report this issue to discord ticket bug report.", 10)
