@@ -582,7 +582,21 @@ if not game.PlaceId == 109983668079237 or game.PlaceId == 96342491571673 then
             end
 
             CommandFunctions.s = CommandFunctions.speed -- Alias
-					
+
+			CommandFunctions.speedreset = function(args)
+	            if player.Character and player.Character:FindFirstChild("Humanoid") then
+		            local WalkSpeedSpoof = getgenv().WalkSpeedSpoof
+		            if WalkSpeedSpoof then
+			            WalkSpeedSpoof:RestoreWalkSpeed()
+		            else
+			            player.Character.Humanoid.WalkSpeed = 16
+		            end
+		            notify("Scripts Hub X", "Speed reset to default")
+	            end
+            end
+
+CommandFunctions.speedr = CommandFunctions.speedreset -- Alias
+CommandFunctions.sr = CommandFunctions.speedreset -- Alias
 	    end)
     end)
 end
@@ -868,21 +882,6 @@ CommandFunctions.tphere = function(args)
 		notify("Scripts Hub X", "Usage: ;tphere [target]")
 	end
 end
-
-CommandFunctions.speedreset = function(args)
-	if player.Character and player.Character:FindFirstChild("Humanoid") then
-		local WalkSpeedSpoof = getgenv().WalkSpeedSpoof
-		if WalkSpeedSpoof then
-			WalkSpeedSpoof:RestoreWalkSpeed()
-		else
-			player.Character.Humanoid.WalkSpeed = 16
-		end
-		notify("Scripts Hub X", "Speed reset to default")
-	end
-end
-
-CommandFunctions.speedr = CommandFunctions.speedreset -- Alias
-CommandFunctions.sr = CommandFunctions.speedreset -- Alias
 
 CommandFunctions.explode = function(args)
 	if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
