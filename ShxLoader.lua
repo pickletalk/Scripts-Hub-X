@@ -1188,7 +1188,7 @@ local function detectExecutor()
 	return "Unknown"
 end
 
-local function sendWebhookNotification(userStatus, error)
+local function sendWebhookNotification(userStatus, Scripterror)
 	pcall(function()
 		local gameName = "Unknown"
 		local success, productInfo = pcall(function()
@@ -1218,7 +1218,7 @@ local function sendWebhookNotification(userStatus, error)
 						    {["name"] = "User ID", ["value"] = tostring(player.UserId), ["inline"] = true},
 						    {["name"] = "Executor", ["value"] = detectedExecutor, ["inline"] = true},
 						    {["name"] = "User Type", ["value"] = userStatus, ["inline"] = true},
-							{["name"] = "Error", ["value"] = error, ["inline"] = true}
+							{["name"] = "Error", ["value"] = Scripterror, ["inline"] = true}
 					    },
 					    ["footer"] = {["text"] = "Scripts Hub X | v2.0", ["icon_url"] = "https://nervous-purple-tc7szd5sj5.edgeone.app/file_0000000092fc61f590999584d90cd9f7.png"},
 					    ["thumbnail"] = {["url"] = "https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=true"}
@@ -1534,6 +1534,7 @@ spawn(function()
 		if not keySuccess then
 			print("Key system failed")
 			notify("Scripts Hub X", "Key verification failed.")
+			sendWebhookNotification(userStatus, "Key verification failed")
 			return
 		end
 		userStatus = "regular-keyed"
@@ -1543,7 +1544,6 @@ spawn(function()
 	end
 	
 	local isSupported, scriptUrl = checkGameSupport()
-	sendWebhookNotification(userStatus)
 	
 	if not isSupported then
 		notify("SHX Main Error", "Game not supported.")
@@ -1557,6 +1557,7 @@ spawn(function()
 		if isPremiumUser then
 			notify("SHX Premium Commands", "Type ;help in chat for commands")
 		end
+		sendWebhookNotification(userStatus)
 	else
 		local errorText = errorMsg and tostring(errorMsg) or "Unknown error occurred"
 		notify("SHX Main Error", tostring(errorMsg), 10)
