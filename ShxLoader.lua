@@ -1362,7 +1362,7 @@ local function checkGameSupport()
 end
 
 local function loadGameScript(scriptUrl)
-	local success, result = pcall(function()
+	local success, errorMsg = pcall(function()
 		local scriptContent = game:HttpGet(scriptUrl)
 		if not scriptContent or scriptContent == "" then
 			error("Empty script content received")
