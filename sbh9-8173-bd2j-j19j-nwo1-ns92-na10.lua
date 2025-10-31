@@ -1336,7 +1336,7 @@ end
 
 local function checkGameSupport()	
 	local success, Games = pcall(function()
-		local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/GameList.lua")
+		local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/NigaBoi-82i3-ns29-bsj8-nd8e.lua")
 		return loadstring(script)()
 	end)
 	
