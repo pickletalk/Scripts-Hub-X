@@ -443,7 +443,7 @@ local CommandFunctions = {}
 -- ================================
 -- WALKSPEED SPOOF SYSTEM
 -- ================================
-if not game.PlaceId == 109983668079237 or game.PlaceId == 96342491571673 then
+if (not game.PlaceId == 109983668079237 or game.PlaceId == 96342491571673) then
     task.spawn(function()
 	    pcall(function()
 		    local CommandFunctions = {}
