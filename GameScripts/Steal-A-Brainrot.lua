@@ -1611,7 +1611,3 @@ end)
 createButton("XRAY BASE", 7, function(isActive)
     toggleXrayBase(isActive)
 end)
-
-createButton("BRAINROT ESP", 8, function(isActive)
-    toggleBrainrotESP(isActive)
-end)
