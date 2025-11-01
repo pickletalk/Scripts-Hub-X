@@ -386,7 +386,7 @@ screenGui.Parent = LocalPlayer.PlayerGui
 -- Main Frame (Smaller & More Compact)
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 200, 0, 260) -- Smaller size
-mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+mainFrame.Position = UDim2.new(0.5, 0, 2, 0)
 mainFrame.AnchorPoint = Vector2.new(0.5, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
 mainFrame.BorderSizePixel = 0
@@ -954,13 +954,19 @@ end
 local brainrotTweenActive = false
 local brainrotCurrentTween = nil
 local brainrotWalkThread = nil
-local brainrotCollisionCheck = nil
-local BRAINROT_Y_OFFSET = 6
+local brainrotHeartbeatCheck = nil
+local BRAINROT_Y_OFFSET = 2
 local BRAINROT_STOP_DISTANCE = 5
-local BRAINROT_SPEED = 60
-local STUCK_THRESHOLD = 1
+local BRAINROT_SPEED = 50
+local STUCK_THRESHOLD = 2
 local STUCK_CHECK_INTERVAL = 1
-local BRAINROT_WALL_DETECT_DISTANCE = 10
+local RAYCAST_DISTANCE = 15
+local AVOIDANCE_OFFSET = 8
+local PODIUM_CACHE_INTERVAL = 3
+
+local currentTarget = nil
+local cachedHighestPodium = nil
+local lastPodiumScanTime = 0
 
 local function getHighestBrainrotPodium()
     local highestGen = 0
@@ -993,25 +999,15 @@ local function getHighestBrainrotPodium()
     return highestPodium
 end
 
-local function tweenWalkToBrainrot(position)
-    if brainrotCurrentTween then brainrotCurrentTween:Cancel() end
-
-    local startPos = hrp.Position
-    local targetPos = Vector3.new(position.X, position.Y + BRAINROT_Y_OFFSET, position.Z)
-    local distance = (targetPos - startPos).Magnitude
-    local duration = distance / BRAINROT_SPEED
-    local tweenInfo = TweenInfo.new(
-        duration, 
-        Enum.EasingStyle.Quad,
-        Enum.EasingDirection.InOut
-    )
-
-    brainrotCurrentTween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(targetPos)})
-    brainrotCurrentTween:Play()
-
-    humanoid:ChangeState(Enum.HumanoidStateType.Running)
-
-    brainrotCurrentTween.Completed:Wait()
+local function getCachedOrScanPodium()
+    local currentTime = tick()
+    if cachedHighestPodium and (currentTime - lastPodiumScanTime) < PODIUM_CACHE_INTERVAL then
+        return cachedHighestPodium
+    end
+    
+    cachedHighestPodium = getHighestBrainrotPodium()
+    lastPodiumScanTime = currentTime
+    return cachedHighestPodium
 end
 
 local function isAtBrainrot(brainrotPos)
@@ -1020,15 +1016,75 @@ local function isAtBrainrot(brainrotPos)
     return dist <= BRAINROT_STOP_DISTANCE
 end
 
-local function startCollisionDetection()
-    if brainrotCollisionCheck then
-        brainrotCollisionCheck:Disconnect()
+local function tweenToBrainrotPosition(targetPos)
+    if brainrotCurrentTween then 
+        brainrotCurrentTween:Cancel() 
+    end
+
+    local startPos = hrp.Position
+    local adjustedTarget = Vector3.new(targetPos.X, targetPos.Y + BRAINROT_Y_OFFSET, targetPos.Z)
+    local distance = (adjustedTarget - startPos).Magnitude
+    local duration = distance / BRAINROT_SPEED
+    
+    local tweenInfo = TweenInfo.new(
+        duration, 
+        Enum.EasingStyle.Quad,
+        Enum.EasingDirection.InOut
+    )
+
+    brainrotCurrentTween = TweenService:Create(hrp, tweenInfo, {Position = adjustedTarget})
+    brainrotCurrentTween:Play()
+    humanoid:ChangeState(Enum.HumanoidStateType.Running)
+end
+
+local function checkWallAhead()
+    if not currentTarget or not hrp then return false, nil end
+    
+    local direction = (currentTarget - hrp.Position).Unit
+    local rayOrigin = hrp.Position
+    local rayDirection = direction * RAYCAST_DISTANCE
+    
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterDescendantsInstances = {LocalPlayer.Character}
+    raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+    
+    local rayResult = workspace:Raycast(rayOrigin, rayDirection, raycastParams)
+    
+    if rayResult then
+        return true, rayResult
+    end
+    
+    return false, nil
+end
+
+local function calculateAvoidancePosition(rayResult)
+    if not rayResult then return nil end
+    
+    local wallNormal = rayResult.Normal
+    local hitPosition = rayResult.Position
+    
+    local rightVector = wallNormal:Cross(Vector3.new(0, 1, 0))
+    if rightVector.Magnitude < 0.1 then
+        rightVector = Vector3.new(1, 0, 0)
+    end
+    rightVector = rightVector.Unit
+    
+    local avoidancePos = hitPosition + (rightVector * AVOIDANCE_OFFSET)
+    
+    return avoidancePos
+end
+
+local function startHeartbeatCheck()
+    if brainrotHeartbeatCheck then
+        brainrotHeartbeatCheck:Disconnect()
     end
     
     local lastPosition = hrp.Position
     local lastCheckTime = tick()
     
-    brainrotCollisionCheck = RunService.Heartbeat:Connect(function()
+    brainrotHeartbeatCheck = RunService.Heartbeat:Connect(function()
+        if not brainrotTweenActive or not currentTarget then return end
+        
         local currentTime = tick()
         
         if currentTime - lastCheckTime >= STUCK_CHECK_INTERVAL then
@@ -1036,119 +1092,83 @@ local function startCollisionDetection()
             local distanceMoved = (currentPosition - lastPosition).Magnitude
             local speedPerSecond = distanceMoved / STUCK_CHECK_INTERVAL
             
-            if speedPerSecond < STUCK_THRESHOLD and brainrotTweenActive then
+            if speedPerSecond < STUCK_THRESHOLD then
                 stopTweenToBrainrot()
+                return
             end
             
             lastPosition = currentPosition
             lastCheckTime = currentTime
         end
+        
+        local wallDetected, rayResult = checkWallAhead()
+        
+        if wallDetected and rayResult then
+            local avoidPos = calculateAvoidancePosition(rayResult)
+            if avoidPos then
+                tweenToBrainrotPosition(avoidPos)
+                task.wait(0.5)
+                if not brainrotTweenActive then return end
+                tweenToBrainrotPosition(currentTarget)
+            end
+        end
     end)
 end
 
-local function stopCollisionDetection()
-    if brainrotCollisionCheck then
-        brainrotCollisionCheck:Disconnect()
-        brainrotCollisionCheck = nil
+local function stopHeartbeatCheck()
+    if brainrotHeartbeatCheck then
+        brainrotHeartbeatCheck:Disconnect()
+        brainrotHeartbeatCheck = nil
     end
-end
-
-local function isPathBlockedNearTarget(targetPos)
-    local distToTarget = (hrp.Position - targetPos).Magnitude
-    if distToTarget > BRAINROT_WALL_DETECT_DISTANCE then
-        return false
-    end
-    
-    local ray = Ray.new(hrp.Position, (targetPos - hrp.Position).Unit * distToTarget)
-    local part = workspace:FindPartOnRayWithIgnoreList(ray, {LocalPlayer.Character})
-    
-    return part ~= nil
 end
 
 local function walkToBrainrot()
     while brainrotTweenActive do
-        local highestData = getHighestBrainrotPodium()
-        local target = highestData and highestData.podium.Base.Position or nil
-        if not target then
+        local highestData = getCachedOrScanPodium()
+        if not highestData then
             stopTweenToBrainrot()
             break
         end
-
-        if isAtBrainrot(target) then
-            stopTweenToBrainrot()
-            break
-        end
-
-        local path = PathfindingService:CreatePath({
-            AgentRadius = 2,
-            AgentHeight = 5,
-            AgentCanJump = true,
-            AgentCanClimb = false,
-            WaypointSpacing = 3,
-            Costs = {
-                Water = math.huge,
-                DangerZone = math.huge
-            }
-        })
         
-        local success, errorMsg = pcall(function()
-            path:ComputeAsync(hrp.Position, target)
-        end)
-
-        if success and path.Status == Enum.PathStatus.Success then
-            local waypoints = path:GetWaypoints()
-            
-            for i, waypoint in ipairs(waypoints) do
-                if not brainrotTweenActive then return end
-                if isAtBrainrot(target) then
-                    stopTweenToBrainrot()
-                    return
-                end
-                
-                if i == #waypoints and isPathBlockedNearTarget(target) then
-                    local distToTarget = (hrp.Position - target).Magnitude
-                    if distToTarget <= BRAINROT_WALL_DETECT_DISTANCE then
-                        tweenWalkToBrainrot(waypoint.Position)
-                        stopTweenToBrainrot()
-                        return
-                    end
-                end
-                
-                tweenWalkToBrainrot(waypoint.Position)
-            end
-        else
-            if isPathBlockedNearTarget(target) then
-                local distToTarget = (hrp.Position - target).Magnitude
-                if distToTarget <= BRAINROT_WALL_DETECT_DISTANCE then
-                    stopTweenToBrainrot()
-                    return
-                end
-            end
-            
-            tweenWalkToBrainrot(target)
+        if not brainrotTweenActive then return end
+        
+        currentTarget = highestData.podium.Base.Position
+        
+        if isAtBrainrot(currentTarget) then
+            stopTweenToBrainrot()
+            break
         end
-
-        task.wait(1)
+        
+        tweenToBrainrotPosition(currentTarget)
+        
+        if brainrotCurrentTween then
+            brainrotCurrentTween.Completed:Wait()
+        end
+        
+        if not brainrotTweenActive then return end
+        
+        task.wait(0.5)
+        
+        if not brainrotTweenActive then return end
     end
 end
 
 function startTweenToBrainrot()
     if brainrotTweenActive then return end
     brainrotTweenActive = true
+    
+    cachedHighestPodium = nil
+    lastPodiumScanTime = 0
 
     task.wait(0.5)
+    if not brainrotTweenActive then return end
     
     humanoid.WalkSpeed = BRAINROT_SPEED
-    
     enableGodMode()
-    
-    startCollisionDetection()
+    startHeartbeatCheck()
 
     brainrotWalkThread = task.spawn(function()
-        while brainrotTweenActive do
-            walkToBrainrot()
-            task.wait(1)
-        end
+        walkToBrainrot()
     end)
 end
 
@@ -1166,10 +1186,11 @@ function stopTweenToBrainrot()
         brainrotWalkThread = nil
     end
     
-    stopCollisionDetection()
+    stopHeartbeatCheck()
     
+    currentTarget = nil
+    cachedHighestPodium = nil
     humanoid.WalkSpeed = 24
-    
     disableGodMode()
 end
 
