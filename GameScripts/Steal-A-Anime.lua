@@ -2138,3 +2138,4 @@ WindUI:Popup({
 })
 
 loadConfiguration()
+MainTab:Select()
