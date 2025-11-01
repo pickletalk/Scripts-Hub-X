@@ -615,6 +615,39 @@ local function createButton(text, layoutOrder, callback)
     return button
 end
 
+local function buyAndEquipSpeedCoil()
+    local success = pcall(function()
+        -- Buy Speed Coil
+        local remote = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"):WaitForChild("RF/CoinsShopService/RequestBuy")
+        remote:InvokeServer("Speed Coil")
+        
+        task.wait(0.5)
+        
+        -- Equip Speed Coil
+        local backpack = LocalPlayer:WaitForChild("Backpack", 3)
+        if backpack then
+            local speedCoil = backpack:FindFirstChild("Speed Coil")
+            if speedCoil and speedCoil:IsA("Tool") then
+                local char = LocalPlayer.Character
+                if char then
+                    local humanoid = char:FindFirstChildOfClass("Humanoid")
+                    if humanoid then
+                        humanoid:EquipTool(speedCoil)
+                        task.wait(0.3)
+                        print("✓ Speed Coil equipped")
+                    end
+                end
+            end
+        end
+    end)
+    
+    if not success then
+        warn("⚠️ Failed to buy/equip Speed Coil")
+    end
+    
+    return success
+end
+
 -- ========================================
 -- XRAY BASE SYSTEM
 -- ========================================
@@ -1434,39 +1467,6 @@ end
 -- ========================================
 -- TWEEN TO BASE SYSTEM
 -- ========================================
-local function buyAndEquipSpeedCoil()
-    local success = pcall(function()
-        -- Buy Speed Coil
-        local remote = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"):WaitForChild("RF/CoinsShopService/RequestBuy")
-        remote:InvokeServer("Speed Coil")
-        
-        task.wait(0.5)
-        
-        -- Equip Speed Coil
-        local backpack = LocalPlayer:WaitForChild("Backpack", 3)
-        if backpack then
-            local speedCoil = backpack:FindFirstChild("Speed Coil")
-            if speedCoil and speedCoil:IsA("Tool") then
-                local char = LocalPlayer.Character
-                if char then
-                    local humanoid = char:FindFirstChildOfClass("Humanoid")
-                    if humanoid then
-                        humanoid:EquipTool(speedCoil)
-                        task.wait(0.3)
-                        print("✓ Speed Coil equipped")
-                    end
-                end
-            end
-        end
-    end)
-    
-    if not success then
-        warn("⚠️ Failed to buy/equip Speed Coil")
-    end
-    
-    return success
-end
-
 local function getBasePosition()
     local plots = workspace:FindFirstChild("Plots")
     if not plots then return nil end
