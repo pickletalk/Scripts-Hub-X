@@ -386,7 +386,7 @@ screenGui.Parent = LocalPlayer.PlayerGui
 -- Main Frame (Smaller & More Compact)
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 200, 0, 260) -- Smaller size
-mainFrame.Position = UDim2.new(0.5, 0, 0.6, 0)
+mainFrame.Position = UDim2.new(0.5, 0, 0.4, 0)
 mainFrame.AnchorPoint = Vector2.new(0.5, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
 mainFrame.BorderSizePixel = 0
@@ -1100,18 +1100,15 @@ local function startHeartbeatCheck()
             lastPosition = currentPosition
             lastCheckTime = currentTime
         end
-        
         local wallDetected, rayResult = checkWallAhead()
-        
+
         if wallDetected and rayResult then
-            local avoidPos = calculateAvoidancePosition(rayResult)
-            if avoidPos then
-                tweenToBrainrotPosition(avoidPos)
-                task.wait(0.5)
-                if not brainrotTweenActive then return end
-                tweenToBrainrotPosition(currentTarget)
+            local distToTarget = (hrp.Position - currentTarget).Magnitude
+            if distToTarget <= RAYCAST_DISTANCE then
+                stopTweenToBrainrot()
+                return
             end
-        end
+		end
     end)
 end
 
@@ -1132,7 +1129,7 @@ local function walkToBrainrot()
         
         if not brainrotTweenActive then return end
         
-        currentTarget = highestData.podium.Base.Position
+        currentTarget = highestData.podium.Base.Spawn.Position
         
         if isAtBrainrot(currentTarget) then
             stopTweenToBrainrot()
