@@ -44,11 +44,6 @@ local StaffUserId = {
 	"2726723958" -- mhicel235TOH
 }
 
-local TesterUsers = {
-	"2341777244",
-	"2726723958"
-}
-
 local BlacklistUsers = {
     "716599904", -- ImRottingInHell [PERM]
     "229691", -- ravyn [PERM]
@@ -60,22 +55,12 @@ local commandLogWebhook = "https://discord.com/api/webhooks/1428332314555056158/
 
 -- System Variables
 local isPremiumUser = false
-local isTester = false
 local helpGui = nil
 local jailPart = nil
 
 -- ================================
 -- HELPER FUNCTIONS
 -- ================================
-
-local function isTesterUser(userId)
-	local userIdStr = tostring(userId)
-	if testerEnable and table.find(TesterUsers, userIdStr) then
-		return true
-	end
-	return false
-end
-
 local function isPremiumUserId(userId)
 	local userIdStr = tostring(userId)
 	
@@ -1309,34 +1294,9 @@ end
 -- ================================
 -- TESTER SYSTEM FUNCTIONS
 -- ================================
-local function checkTestGameSupport()
-	local success, TestGames = pcall(function()
-		local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/TestGame.lua")
-		return loadstring(script)()
-	end)
-	
-	if not success then
-		warn("[SHX TESTER] Failed to load test games list: " .. tostring(TestGames))
-		return false, nil
-	end
-	
-	if type(TestGames) ~= "table" then
-		warn("[SHX TESTER] Test games list returned invalid data type: " .. type(TestGames))
-		return false, nil
-	end
-	
-	for PlaceID, Execute in pairs(TestGames) do
-		if PlaceID == game.PlaceId then
-			return true, Execute
-		end
-	end
-
-	return false, nil
-end
-
 local function checkGameSupport()	
 	local success, Games = pcall(function()
-		local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/Scripts-Hub-X/refs/heads/main/NigaBoi-82i3-ns29-bsj8-nd8e.lua")
+		local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/snjsniggernsnjswbnigger/refs/heads/main/NigaBoi-82i3-ns29-bsj8-nd8e.lua?token=GHSAT0AAAAAADLSGVH45GQTEGD4T75YPFKM2IGG2HQ")
 		return loadstring(script)()
 	end)
 	
@@ -1488,45 +1448,9 @@ spawn(function()
 		print("[SHX] Premium user - Commands enabled")
 		notify("Scripts Hub X", "Commands active! Type ;help")
 	end
-	
+		
 	-- ================================
-	-- TESTER SYSTEM PRIORITY CHECK
-	-- ================================
-	local isTestGame = false
-	local testScriptUrl = nil
-	
-	-- Check if user is a tester FIRST
-	if isTesterUser(player.UserId) then
-		isTester = true
-			
-		-- Only check test games if testerEnable is true
-		if testerEnable then
-			isTestGame, testScriptUrl = checkTestGameSupport()
-			
-			if isTestGame then
-				userStatus = userStatus .. "-tester"
-				
-				-- Send webhook notification
-				sendWebhookNotification(userStatus)
-				
-				-- Load the TEST script instead of normal GameList
-				local success, errorMsg = loadGameScript(testScriptUrl)
-				
-				if not success then
-					notify("SHX TESTER Error", tostring(errorMsg), 10)
-					notify("SHX TESTER", "Please report to Discord", 10)
-					sendWebhookNotification(userStatus, tostring(errorMsg))
-				end
-
-				return
-			else
-				print("[SHX TESTER] Current game not needed a test")
-			end
-		end
-	end
-	
-	-- ================================
-	-- NORMAL FLOW (non-testers OR testers in non-test games)
+	-- MAIN FLOW
 	-- ================================	
 	if userStatus == "regular" and Keysystem then
 		local keySuccess = loadKeySystem()
