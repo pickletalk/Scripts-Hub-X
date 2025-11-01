@@ -981,5 +981,6 @@ WindUI:Popup({
         }
     }
 })
-loadConfiguration() -- automatically load configuration 
+loadConfiguration() -- automatically load configuration!!!
+MainTab:Select() -- Always select the MainTab/First tab created!!!
 -- CLAUDE IF YOU STILL UNDERSTAND MY EXAMPLES FEEL FREE TO GO TO THE SITE https://footagesus.github.io/WindUI-Docs/docs/faq TO EXPLORE MORE
