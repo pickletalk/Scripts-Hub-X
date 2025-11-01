@@ -386,7 +386,7 @@ screenGui.Parent = LocalPlayer.PlayerGui
 -- Main Frame (Smaller & More Compact)
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 200, 0, 260) -- Smaller size
-mainFrame.Position = UDim2.new(0.5, 0, 0.4, 0)
+mainFrame.Position = UDim2.new(0.5, 0, 0.3, 0)
 mainFrame.AnchorPoint = Vector2.new(0.5, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
 mainFrame.BorderSizePixel = 0
@@ -1032,7 +1032,7 @@ local function tweenToBrainrotPosition(targetPos)
         Enum.EasingDirection.InOut
     )
 
-    brainrotCurrentTween = TweenService:Create(hrp, tweenInfo, {Position = adjustedTarget})
+    brainrotCurrentTween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(adjustedTarget)})
     brainrotCurrentTween:Play()
     humanoid:ChangeState(Enum.HumanoidStateType.Running)
 end
@@ -1159,7 +1159,9 @@ function startTweenToBrainrot()
 
     task.wait(0.5)
     if not brainrotTweenActive then return end
-    
+    buyAndEquipSpeedCoil()
+    task.wait(0.3)
+    if not brainrotTweenActive then return end
     humanoid.WalkSpeed = BRAINROT_SPEED
     enableGodMode()
     startHeartbeatCheck()
