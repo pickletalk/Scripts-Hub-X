@@ -1136,10 +1136,24 @@ local function startHeartbeatCheck()
         local wallDetected, rayResult = checkWallAhead()
 
         if wallDetected and rayResult then
-            local distToTarget = (hrp.Position - currentTarget).Magnitude
-            if distToTarget <= RAYCAST_DISTANCE then
+            local distToWall = (hrp.Position - rayResult.Position).Magnitude
+    
+            if distToWall <= 1 then
                 stopTweenToBrainrot()
                 return
+            elseif distToWall <= 15 then
+                local wallNormal = rayResult.Normal
+                local rightVector = wallNormal:Cross(Vector3.new(0, 1, 0))
+                if rightVector.Magnitude < 0.1 then
+                    rightVector = Vector3.new(1, 0, 0)
+                end
+                rightVector = rightVector.Unit
+        
+                local avoidancePos = hrp.Position + Vector3.new(rightVector.X * 15, 0, rightVector.Z * 15)
+                tweenToBrainrotPosition(avoidancePos)
+                task.wait(1)
+                if not brainrotTweenActive then return end
+                tweenToBrainrotPosition(currentTarget)
             end
 		end
     end)
@@ -1199,6 +1213,12 @@ function startTweenToBrainrot()
     enableGodMode()
     startHeartbeatCheck()
 
+	if LocalPlayer.Character then
+        local head = LocalPlayer.Character:FindFirstChild("Head")
+        if head then head.CanCollide = true end
+        local humanoidRootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if humanoidRootPart then humanoidRootPart.CanCollide = true end
+	end
     brainrotWalkThread = task.spawn(function()
         walkToBrainrot()
     end)
