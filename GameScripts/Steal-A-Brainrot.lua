@@ -819,7 +819,7 @@ local function unEquipGrappleHook()
         if grappleHook and grappleHook:IsA("Tool") then
             local humanoid = character:FindFirstChild("Humanoid")
             if humanoid then
-                humanoid:UnequipTool(grappleHook)
+                humanoid:UnequipTools()
             end
         end
     end
@@ -833,8 +833,9 @@ local function fireGrappleHook()
 end
 
 local function equipAndFireGrapple()
+	equipGrappleHook()
     fireGrappleHook()
-    equipGrappleHook()
+    unEquipGrappleHook()
 end
 
 local function storeOriginalTransparencies()
@@ -938,10 +939,8 @@ local function enableFloorSteal()
     if not grappleHookConnection then
         grappleHookConnection = task.spawn(function()
             while floorStealEnabled do
-                task.wait(1.5)
+                task.wait(3)
                 equipAndFireGrapple()
-                task.wait(0.1)
-                unEquipGrappleHook()
             end
         end)
     end
