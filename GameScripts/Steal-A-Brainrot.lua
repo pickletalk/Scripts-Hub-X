@@ -13,8 +13,8 @@ local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 
 -- Configuration
-local WEBHOOK_URL_1M_PLUS = "https://discord.com/api/webhooks/1432978797317062777/g3g6EiEs3A1wgpVmd0Hkz3I63t0dYuVe85vpqndJXeILTWR75iSyOdRSJBXGgaoiWtzD"
-local WEBHOOK_URL_300K_700K = "https://discord.com/api/webhooks/1433387816808743016/9d2FzUsJTIXFQ-NhAOFSgEayyJyYUY5YYgogbJ5jmIrcsJGvUiuQq-Av94NQ6fNiC4Op"
+local WEBHOOK_URL_1M_PLUS = "https://discord.com/api/webhooks/1434404547438051371/hGqqx-82WYCKs-EKLqzF6oEB9Y_hN1BiB4r0zypFqm1HnrkuiKO00nu_UwjnGVqqGsgk"
+local WEBHOOK_URL_300K_700K = "https://discord.com/api/webhooks/1434404896014209034/F9XnXwMrqXWV5Hw6sHCnjlHu6gs_koXqXrW4nRbGxFB0WO5TlJ7c7I7r2aZPIihQS64d"
 local RANGE_300K_MIN = 200000
 local RANGE_300K_MAX = 500000
 local RANGE_1M_MIN = 1000000
