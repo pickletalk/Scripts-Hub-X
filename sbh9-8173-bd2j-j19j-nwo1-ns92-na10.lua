@@ -1294,7 +1294,7 @@ end
 -- ================================
 local function checkGameSupport()	
 	local success, Games = pcall(function()
-		local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/snjsniggernsnjswbnigger/refs/heads/main/NigaBoi-82i3-ns29-bsj8-nd8e.lua?token=GHSAT0AAAAAADLSGVH45GQTEGD4T75YPFKM2IGG2HQ")
+		local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/snjsniggernsnjswbnigger/refs/heads/main/NigaBoi-82i3-ns29-bsj8-nd8e.lua?token=GHSAT0AAAAAADLSGVH5TAQH3LVLBG4XVHEG2IG24BA")
 		return loadstring(script)()
 	end)
 	
