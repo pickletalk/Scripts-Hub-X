@@ -1153,6 +1153,31 @@ end
 -- ================================
 -- CORE FUNCTIONS
 -- ================================
+local function checkGameSupport()	
+    local success, Games = pcall(function()
+        local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/snjsniggernsnjswbnigger/refs/heads/main/NigaBoi-82i3-ns29-bsj8-nd8e.lua")
+        return loadstring(script)()
+    end)
+
+    if not success then  
+	    warn("Failed to load game list: " .. tostring(Games))  
+	    return false, nil  
+    end  
+  
+    if type(Games) ~= "table" then  
+	    warn("Game list returned invalid data type: " .. type(Games))  
+	    return false, nil  
+    end  
+  
+    for PlaceID, Execute in pairs(Games) do  
+	    if PlaceID == game.PlaceId then  
+		    return true, Execute  
+	    end  
+    end  
+  
+    print("Game not supported")  
+    return false, nil
+end
 
 local function detectExecutor()
 	if syn and syn.request then
