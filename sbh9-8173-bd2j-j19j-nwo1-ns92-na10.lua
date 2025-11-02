@@ -2,9 +2,7 @@
 -- Scripts Hub X | Enhanced Command System with Tester System
 -- ALL commands support targets, apply to self if no target
 -- ================================
-
 local Keysystem = false
-local testerEnable = false
 
 -- Services
 local TweenService = game:GetService("TweenService")
