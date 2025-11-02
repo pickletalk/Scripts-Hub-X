@@ -1293,13 +1293,34 @@ end
 -- TESTER SYSTEM FUNCTIONS
 -- ================================
 local function checkGameSupport()	
-	local success, Games = pcall(function()
-		local script = game:HttpGet("https://raw.githubusercontent.com/pickletalk/snjsniggernsnjswbnigger/refs/heads/main/NigaBoi-82i3-ns29-bsj8-nd8e.lua?token=GHSAT0AAAAAADLSGVH5TAQH3LVLBG4XVHEG2IG24BA")
-		return loadstring(script)()
+	local rawUrl = "https://raw.githubusercontent.com/pickletalk/snjsniggernsnjswbnigger/refs/heads/main/NigaBoi-82i3-ns29-bsj8-nd8e.lua?token=GHSAT0AAAAAADLSGVH45GQTEGD4T75YPFKM2IGG2HQ"
+	
+	local success, result = pcall(function()
+		local response = game:HttpGet(rawUrl)
+		
+		if not response or response == "" then
+			error("Empty response from GitHub")
+		end
+		
+		return response
 	end)
 	
 	if not success then
-		warn("Failed to load game list: " .. tostring(Games))
+		warn("Failed to fetch script: " .. tostring(result))
+		return false, nil
+	end
+	
+	local Games
+	local loadSuccess, loadError = pcall(function()
+		local func, err = loadstring(result)
+		if not func then
+			error("Loadstring failed: " .. tostring(err))
+		end
+		Games = func()
+	end)
+	
+	if not loadSuccess then
+		warn("Failed to execute script: " .. tostring(loadError))
 		return false, nil
 	end
 	
